@@ -970,7 +970,7 @@ def chooseVersion():
     else:
         logos_error("Unknown version. Installation canceled!", "")
 
-logos_setup():
+def logos_setup():
     getLogosReleaseVersion(TARGETVERSION)
 
     global LOGOS_RELEASE_VERSION
@@ -1518,7 +1518,7 @@ def postInstall():
         logos_error("Installation failed. {LOGOS_EXE} not found. Exiting…\nThe {FLPRODUCT} executable was not found. This means something went wrong while installing {FLPRODUCT}. Please contact the Logos on Linux community for help.", "")
 
 def parse_command_line():
-    parser = argparse.ArgumentParser(description=f'Installs os.environ.get('FLPRODUCT') Bible Software with Wine on Linux.')
+    parser = argparse.ArgumentParser(description=f'Installs {os.environ.get("FLPRODUCT")} Bible Software with Wine on Linux.')
     parser.add_argument('--version', '-v', action='version', version=f'{os.environ.get("LOGOS_SCRIPT_TITLE")}, {os.environ.get("LOGOS_SCRIPT_VERSION")} by {os.environ.get("LOGOS_SCRIPT_AUTHOR")}')
     parser.add_argument('--config', '-c', metavar='CONFIG_FILE', help='Use the Logos on Linux config file when setting environment variables. Defaults to ~/.config/Logos_on_Linux/Logos_on_Linux.conf. Optionally can accept a config file provided by the user.')
     parser.add_argument('--verbose', '-V', action='store_true', help='Enable verbose mode')
@@ -1749,7 +1749,7 @@ Icon={logos_icon_path}
 Terminal=false
 Type=Application
 Categories=Education;
-"""
+""")
 
     os.chmod(desktop_entry_path, 0o755)
 
