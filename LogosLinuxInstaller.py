@@ -267,25 +267,26 @@ def get_package_manager():
     packages = None
 
     # Check for superuser command
-    if subprocess.run(["command", "-v", "sudo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    # Since 'command' is a built-in it has to be run inside of the shell: https://unix.stackexchange.com/a/429403
+    if subprocess.run(["sh", "command -v sudo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         superuser_command = "sudo"
-    elif subprocess.run(["command", "-v", "doas"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif subprocess.run(["sh", "command -v doas"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         superuser_command = "doas"
 
     # Check for package manager and associated packages
-    if subprocess.run(["command", "-v", "apt"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    if subprocess.run(["sh", "command -v apt"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         package_manager_command = "apt install -y"
         packages = "mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc libxml2-utils curl fuse3"
-    elif subprocess.run(["command", "-v", "dnf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif subprocess.run(["sh", "command -v dnf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         package_manager_command = "dnf install -y"
         packages = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
-    elif subprocess.run(["command", "-v", "yum"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif subprocess.run(["sh", "command -v yum"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         package_manager_command = "yum install -y"
         packages = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
-    elif subprocess.run(["command", "-v", "pamac"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif subprocess.run(["sh", "command -v pamac"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         package_manager_command = "pamac install --no-upgrade --no-confirm"
         packages = "patch lsof wget sed grep gawk cabextract samba bc libxml2 curl"
-    elif subprocess.run(["command", "-v", "pacman"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif subprocess.run(["sh", "command -v pacman"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
         package_manager_command = 'pacman -Syu --overwrite \* --noconfirm --needed'
         packages = "patch lsof wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
     # Add more conditions for other package managers as needed
