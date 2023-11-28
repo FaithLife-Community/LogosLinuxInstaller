@@ -35,6 +35,7 @@ from xml.etree import ElementTree as ET
 #TODO: Add an option to reinstall dependencies for SteamOS
 #TODO: Add a get_winetricks option to post-install menu
 #TODO: Simplify variables? Import environment?
+#TODO: Distribute as single executable through PyInstaller
 
 os.environ["LOGOS_SCRIPT_TITLE"] = "Logos Linux Installer"
 os.environ["LOGOS_SCRIPT_AUTHOR"] = "Ferion11, John Goodman, T. H. Wright"
