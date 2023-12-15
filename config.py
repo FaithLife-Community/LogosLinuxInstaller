@@ -87,7 +87,7 @@ def get_config_env(config_file_path):
             cfg = json.load(config_file)
 
         for key, value in cfg.items():
-            __file__.__dict__[key] = value
+            globals()[key] = value
         return cfg
     except TypeError as e:
         logging.error(f"Error opening Config file: {e}")

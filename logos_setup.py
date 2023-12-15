@@ -417,20 +417,16 @@ def postInstall():
         logging.debug(f"{k}: {config.__dict__.get(k)}")
     if os.path.isfile(config.LOGOS_EXE):
         logos_info(f"{config.FLPRODUCT} Bible {config.TARGETVERSION} installed!")
-        if not config.CONFIG_FILE and not os.path.isfile(config.DEFAULT_CONFIG_PATH):
+        if not os.path.isfile(config.CONFIG_FILE): # config.CONFIG_FILE is set in main() function
             os.makedirs(os.path.join(HOME, ".config", "Logos_on_Linux"), exist_ok=True)
-            config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
             if os.path.isdir(os.path.join(HOME, ".config", "Logos_on_Linux")):
                 write_config(config.CONFIG_FILE, config_keys)
-                logos_info(f"A config file was created at {config.DEFAULT_CONFIG_PATH}.")
+                logos_info(f"A config file was created at {config.CONFIG_FILE}.")
             else:
                 logos_warn(f"{HOME}/.config/Logos_on_Linux does not exist. Failed to create config file.")
-        elif not config.CONFIG_FILE and os.path.isfile(config.DEFAULT_CONFIG_PATH):
-            if logos_acknowledge_question(f"The script found a config file at {config.DEFAULT_CONFIG_PATH}. Should the script overwrite the existing config?", "The existing config file was not overwritten."):
-                if os.path.isdir(os.path.join(HOME, ".config", "Logos_on_Linux")):
-                    write_config(config.CONFIG_FILE, config_keys)
-                else:
-                    logos_warn(f"{HOME}/.config/Logos_on_Linux does not exist. Failed to create config file.")
+        elif os.path.isfile(config.CONFIG_FILE):
+            if logos_acknowledge_question(f"The script found a config file at {config.CONFIG_FILE}. Should the script overwrite the existing config?", "The existing config file was not overwritten."):
+                write_config(config.CONFIG_FILE, config_keys)
         else:
             # Script was run with a config file. Skip modifying the config.
             pass

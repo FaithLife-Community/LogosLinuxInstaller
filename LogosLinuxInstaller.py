@@ -113,33 +113,21 @@ def parse_command_line():
             sys.exit()
 
 def run_logos():
-    if config.CONFIG_FILE is None:
-        config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
-    config.get_config_env(config.CONFIG_FILE)
-
     run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
     run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
 
 def run_indexing():
-    if config.CONFIG_FILE is None:
-        config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
-    config.get_config_env(config.CONFIG_FILE)
-
-    for root, dirs, files in os.walk(os.path.join(wineprefix, "drive_c")):
+    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):
         for f in files:
             if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
                 logos_indexer_exe = os.path.join(root, f)
                 break
 
-    run_wine_proc(WINESERVER_EXE, flags=["-k"])
-    run_wine_proc(WINE_EXE, exe=logos_indexer_exe)
-    run_wine_proc(WINESERVER_EXE, flags=["-w"])
+    run_wine_proc(config.WINESERVER_EXE, flags=["-k"])
+    run_wine_proc(config.WINE_EXE, exe=logos_indexer_exe)
+    run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
 
 def remove_library_catalog():
-    if config.CONFIG_FILE is None:
-        config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
-    config.get_config_env(config.CONFIG_FILE)
-
     LOGOS_DIR = os.path.dirname(config.LOGOS_EXE)
     library_catalog_path = os.path.join(LOGOS_DIR, "Data", "*", "LibraryCatalog")
     pattern = os.path.join(library_catalog_path, "*")
@@ -152,10 +140,6 @@ def remove_library_catalog():
             logging.error(f"Error removing {file_to_remove}: {e}")
 
 def remove_all_index_files():
-    if config.CONFIG_FILE is None:
-        config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
-    config.get_config_env(config.CONFIG_FILE)
-
     LOGOS_DIR = os.path.dirname(config.LOGOS_EXE)
     index_paths = [
         os.path.join(logos_dir, "Data", "*", "BibleIndex"),
@@ -187,7 +171,13 @@ def restore():
     pass
 
 def main():
+    # Set initial config; incl. defining CONFIG_FILE.
     set_default_config()
+    # Update config from CONFIG_FILE.
+    # FIXME: This means that values in CONFIG_FILE take precedence over env variables.
+    #   Is this preferred, or should env variables take precedence over CONFIG_FILE?
+    if file_exists(config.CONFIG_FILE):
+        config.get_config_env(config.CONFIG_FILE)
 
     # Check for environment variables.
     if config.DIALOG is None:
@@ -215,9 +205,8 @@ def main():
     options_default = ["Install Logos Bible Software"]
     options_exit = ["Exit"]
     if file_exists(config.CONFIG_FILE):
-        config.get_config_env(config.CONFIG_FILE)
         options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Reinstall Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Control Panel", "Run Winetricks"]
-        if os.environ["LOGS"] == "DISABLED":
+        if os.environ.get("LOGS") == "DISABLED":
             options_installed.extend("Enable Logging")
         else:
             options_installed.extend("Disable Logging")
