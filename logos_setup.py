@@ -486,7 +486,7 @@ def create_shortcut():
         os.makedirs(os.path.join(config.APPDIR, "data"), exist_ok=True)
         raw_bytes = None
         try:
-            with urllib.request.urlopen(config.LOGOS_ICON_URL) as f:
+            with urllib.request.urlopen(config.LOGOS_ICON_URL, timeout=30) as f:
                 raw_bytes = f.read()
         except urllib.error.URLError as e:
             logos_error(e)

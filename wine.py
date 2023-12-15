@@ -146,7 +146,7 @@ def wine_reg_install(REG_FILE):
         text=True,
         cwd=config.WORKDIR,
     )
-    if p.returncode == 0 and config.VERBOSE:
+    if p.returncode == 0:
         logging.info(f"{REG_FILE} installed.")
     elif p.returncode != 0:
         logos_error(f"Failed to install reg file: {REG_FILE}")

@@ -106,7 +106,8 @@ def write_config(config_file_path, config_keys=None):
 
     try:
         with open(config_file_path, 'w') as config_file:
-            json.dump(config_data, config_file, indent=4)
+            json.dump(config_data, config_file, indent=4, sort_keys=True)
+            config_file.write('\n')
 
     except IOError as e:
         print(f"Error writing to config file {config_file_path}: {e}")
@@ -647,7 +648,7 @@ def getLogosReleases(q=None, app=None):
 
     try:
         # Fetch XML content using urllib.
-        with urllib.request.urlopen(url) as f:
+        with urllib.request.urlopen(url, timeout=30) as f:
             response = f.read().decode('utf-8')
     except urllib.error.URLError as e:
         logging.critical(f"Error fetching or parsing XML: {e}")

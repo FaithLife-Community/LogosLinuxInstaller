@@ -186,11 +186,6 @@ def main():
     # Check for environment variables.
     if config.DIALOG is None:
         getDialog()
-        
-    if config.GUI is not None: # NDM: not sure about this logic
-        with open(config.LOGOS_LOG, "a") as f:
-            f.write("Running in a GUI. Enabling logging.\n")
-        setDebug()
 
     die_if_running()
     die_if_root()

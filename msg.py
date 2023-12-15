@@ -73,12 +73,15 @@ def logos_info(message):
 
 def logos_progress(title, text):
     if config.DIALOG in ['whiptail', 'dialog', 'curses']:
-        i = 0
-        spinner = "|/-\\"
-        sys.stdout.write(f"\r{text} {spinner[i]}")
+        sys.stdout.write('.')
         sys.stdout.flush()
-        i = (i + 1) % len(spinner)
-        time.sleep(0.1)
+        time.sleep(0.5)
+        # i = 0
+        # spinner = "|/-\\"
+        # sys.stdout.write(f"\r{text} {spinner[i]}")
+        # sys.stdout.flush()
+        # i = (i + 1) % len(spinner)
+        # time.sleep(0.1)
     elif config.DIALOG == "zenity":
         gtk_progress(title, text)
     elif config.DIALOG == "kdialog":
