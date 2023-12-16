@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -113,7 +114,7 @@ def write_config(config_file_path, config_keys=None):
         print(f"Error writing to config file {config_file_path}: {e}")
 
 def die_if_running():
-    PIDF = '/tmp/LogosLinuxInstaller.pid'
+    PIDF = '/tmp/LogosLinuxInstaller.pid' # FIXME: it's not clear when or how this would get created
     
     if os.path.isfile(PIDF):
         with open(PIDF, 'r') as f:
@@ -148,10 +149,9 @@ def setDebug():
         f.write("Debug mode enabled.\n")
 
 def t(command):
-    try:
-        subprocess.run(['which', command], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if shutil.which(command) is not None:
         return True
-    except subprocess.CalledProcessError:
+    else:
         return False
 
 def tl(library):
@@ -261,26 +261,25 @@ def get_os():
 def get_package_manager():
 
     # Check for superuser command
-    # Since 'command' is a built-in it has to be run inside of the shell: https://unix.stackexchange.com/a/429403
-    if subprocess.run(["sh", "command -v sudo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    if shutil.which('sudo') is not None:
         config.SUPERUSER_COMMAND = "sudo"
-    elif subprocess.run(["sh", "command -v doas"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif shutil.which('doas') is not None:
         config.SUPERUSER_COMMAND = "doas"
 
     # Check for package manager and associated packages
-    if subprocess.run(["sh", "command -v apt"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    if shutil.which('apt') is not None:
         config.PACKAGE_MANAGER_COMMAND = "apt install -y"
         config.PACKAGES = "mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc libxml2-utils curl fuse3"
-    elif subprocess.run(["sh", "command -v dnf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif shutil.which('dnf') is not None:
         config.PACKAGE_MANAGER_COMMAND = "dnf install -y"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
-    elif subprocess.run(["sh", "command -v yum"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif shutil.which('yum') is not None:
         config.PACKAGE_MANAGER_COMMAND = "yum install -y"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
-    elif subprocess.run(["sh", "command -v pamac"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif shutil.which('pamac') is not None:
         config.PACKAGE_MANAGER_COMMAND = "pamac install --no-upgrade --no-confirm"
         config.PACKAGES = "patch lsof wget sed grep gawk cabextract samba bc libxml2 curl"
-    elif subprocess.run(["sh", "command -v pacman"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+    elif shutil.which('pacman') is not None:
         config.PACKAGE_MANAGER_COMMAND = 'pacman -Syu --overwrite \* --noconfirm --needed'
         config.PACKAGES = "patch lsof wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
     # Add more conditions for other package managers as needed
@@ -290,10 +289,9 @@ def install_packages(*packages):
     subprocess.run(command, check=True)
 
 def have_dep(cmd):
-    try:
-        subprocess.run(["command -v", cmd], shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if shutil.which(cmd) is not None:
         return True
-    except subprocess.CalledProcessError:
+    else:
         return False
 
 def clean_all():
@@ -449,10 +447,10 @@ def gtk_download(uri, destination):
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-    pipe_progress = subprocess.Popen(['mktemp'], stdout=subprocess.PIPE).communicate()[0].decode().strip()
+    pipe_progress = '/tmp/logos_pipe_progress'
     os.mkfifo(pipe_progress)
 
-    pipe_wget = subprocess.Popen(['mktemp'], stdout=subprocess.PIPE).communicate()[0].decode().strip()
+    pipe_wget = '/tmp/logos_pipe_wget'
     os.mkfifo(pipe_wget)
 
     subprocess.Popen(['zenity', '--progress', '--title', f'Downloading {filename}...', '--text', f'Downloading: {filename}\ninto: {destination}\n', '--percentage=0', '--auto-close', pipe_wget],
@@ -515,14 +513,13 @@ def gtk_download(uri, destination):
     logging.info(f"{filename} download finished!")
 
 def set_appimage():
-    subprocess.run(["ln", "-s", config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"]) # FIXME: use python function instead of subprocess
+    os.symlink(config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
 
 def make_skel(app_image_filename):
     config.SET_APPIMAGE_FILENAME = app_image_filename
 
     logging.info(f"* Making skel64 inside {config.INSTALLDIR}")
-    # FIXME: use a python function here instead of a subprocess
-    subprocess.run(["mkdir", "-p", config.APPDIR_BINDIR]) or die(f"can't make dir: {config.APPDIR_BINDIR}")
+    os.makedirs(config.APPDIR_BINDIR, exist_ok=True)
 
     # Making the links
     current_dir = os.getcwd()
@@ -744,8 +741,7 @@ def get_system_winetricks():
     try:
         p = subprocess.run(['winetricks', '--version'], capture_output=True, text=True)
         version = int(p.stdout.rstrip()[:8])
-        p = subprocess.run(['which', 'winetricks'], capture_output=True, text=True)
-        path = p.stdout.rstrip()
+        path = shutil.which('winetricks')
         return (path, version)
     except FileNotFoundError:
         return None

@@ -109,7 +109,7 @@ def logos_error(message, secondary=None):
     elif config.DIALOG == "kdialog":
         pass
     if secondary is None or secondary == "":
-        subprocess.run(["rm", "/tmp/LogosLinuxInstaller.pid"])
+        os.remove("/tmp/LogosLinuxInstaller.pid")
         pgid = subprocess.check_output(['ps', '-o', 'pgid=', '-p', str(os.getpid())]).decode().strip()
         subprocess.run(['kill', '-SIGKILL', '-'+pgid], check=True)
     exit(1)

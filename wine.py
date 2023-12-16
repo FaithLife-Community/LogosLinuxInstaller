@@ -48,10 +48,9 @@ def wait_on(command):
         # Start the process in the background
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        sys.stdout.write(f"Waiting on '{' '.join(command)}' to finish.")
         while process.poll() is None:
             logos_progress("Waiting.", f"Waiting on {command} to finish.")
-        print() # FIXME: a workaround until spinner output is fixed
+            time.sleep(0.5)
 
         # Process has finished, check the result
         stdout, stderr = process.communicate()
@@ -134,7 +133,7 @@ def initializeWineBottle():
     cli_msg("Initializing wine...")
     #logos_continue_question(f"Now the script will create and configure the Wine Bottle at {WINEPREFIX}. You can cancel the installation of Mono. Do you wish to continue?", f"The installation was cancelled!", "")
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree=" # avoid wine-mono window
-    run_wine_proc(config.WINE_EXE, exe='wineboot', flags=['--init'])
+    run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])
     config.WINEDLLOVERRIDES = ';'.join([o for o in config.WINEDLLOVERRIDES.split(';') if o != 'mscoree='])
     light_wineserver_wait()
 
@@ -156,19 +155,18 @@ def wine_reg_install(REG_FILE):
     light_wineserver_wait()
 
 def install_msi():
-    env = get_wine_env()
     # Execute the .MSI
     logging.info(f"Running: {config.WINE_EXE} msiexec /i {config.APPDIR}/{config.LOGOS_EXECUTABLE}")
-    subprocess.run([config.WINE_EXE, "msiexec", "/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"], env=env)
+    run_wine_proc(config.WINE_EXE, exe="msiexec", exe_args=["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"])
 
-def run_wine_proc(winecmd, exe=None, flags=None):
+def run_wine_proc(winecmd, exe=None, exe_args=None):
     env = get_wine_env()
 
     command = [winecmd]
     if exe is not None:
         command.append(exe)
-    if flags is not None:
-        command.extend(flags)
+    if exe_args is not None:
+        command.extend(exe_args)
 
     try:
         process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
@@ -181,28 +179,17 @@ def run_wine_proc(winecmd, exe=None, flags=None):
 
 def run_control_panel():
     run_wine_proc(config.WINE_EXE, exe="control")
-    run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def run_winetricks():
-    run_wine_proc(config.WINETRICKSBIN, exe="control") # FIXME: "control" seems like an accident here...
-    run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
+    run_wine_proc(config.WINETRICKSBIN)
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def winetricks_install(*args):
-    cli_msg(f"Installing '{args[-1]}' with winetricks.")
     env = get_wine_env()
-    cmd = [config.WINETRICKSBIN, '-v', *args]
-    # if config.LOG_LEVEL < logging.INFO:
-    #     # "winetricks -v" just activates "set -x", which is more like DEBUG than
-    #     #   VERBOSE/INFO. So only adding '-v' if logging is set to DEBUG.
-    #     cmd.insert(1, '-v')
     logging.info(f"winetricks {' '.join(args)}")
     if config.DIALOG in ["whiptail", "dialog", 'curses', 'tk']:
-        # Ref: https://stackoverflow.com/a/21978778
-        p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        with p.stdout:
-            for oline in iter(p.stdout.readline, b''):
-                logging.info(oline.decode().rstrip())
-        returncode = p.wait()
+        run_wine_proc(config.WINETRICKSBIN, exe_args=args)
     elif config.DIALOG == "zenity":
         pipe_winetricks = tempfile.mktemp()
         os.mkfifo(pipe_winetricks)
@@ -224,10 +211,10 @@ def winetricks_install(*args):
         # NOTE: sometimes the process finishes before the wait command, giving the error code 127
         if ZENITY_RETURN == 0 or ZENITY_RETURN == 127:
             if WINETRICKS_STATUS != 0:
-                subprocess.call([config.WINESERVER_EXE, "-k"], env=env)
+                run_wine_proc(config.WINESERVER_EXE, exe_args=['-k'])
                 logos_error("Winetricks Install ERROR: The installation was cancelled because of sub-job failure!\n * winetricks " + " ".join(args) + "\n  - WINETRICKS_STATUS: " + str(WINETRICKS_STATUS), "")
         else:
-            subprocess.call([config.WINESERVER_EXE, "-k"], env=env)
+            run_wine_proc(config.WINESERVER_EXE, exe_args=['-k'])
             logos_error("The installation was cancelled!\n * ZENITY_RETURN: " + str(ZENITY_RETURN), "")
     elif config.DIALOG == "kdialog":
         no_diag_msg("kdialog not implemented.")
@@ -243,14 +230,8 @@ def winetricks_dll_install(*args):
     env = get_wine_env()
     logging.info(f"winetricks {' '.join(args)}")
     #logos_continue_question("Now the script will install the DLL " + " ".join(args) + ". This may take a while. There will not be any GUI feedback for this. Continue?", "The installation was cancelled!", "")
-    cmd = [config.WINETRICKSBIN, '-v', *args]
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    with p.stdout:
-        for oline in iter(p.stdout.readline, b''):
-            logging.info(oline.decode().rstrip())
-    returncode = p.wait()
+    run_wine_proc(config.WINETRICKSBIN, exe_args=args)
     logging.info(f"winetricks {' '.join(args)} DONE!")
-    
     heavy_wineserver_wait()
 
 def installFonts():
@@ -270,29 +251,28 @@ def installD3DCompiler():
     else:
         winetricks_dll_install('d3dcompiler_47')
 
-def disable_logging():
-    env = get_wine_env()
-    cmd = [
-        config.WINE_EXE, 'reg', 'add', 'HKCU\\Software\\Logos4\\Logging',
-        '/v', 'Enabled', '/t', 'REG_DWORD', '/d', '0001', '/f'
-    ]
-    subprocess.run(cmd, env=env)
-    subprocess.run([wineserver_exe, '-w'])
+def switch_logging(action=None):
+    if action == 'disable':
+        value = '0001'
+        state = 'DISABLED'
+    elif action == 'enable':
+        value = '0000'
+        state = 'ENABLED'
+    else:
+        return
 
-    for line in fileinput.input(config.CONFIG_FILE, inplace=True):
-        print(line.replace('LOGS="ENABLED"', 'LOGS="DISABLED"'), end='')
+    exe_args = ['add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled', '/t',
+        'REG_DWORD', '/d', value, '/f'
+    ]
+    run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+    run_wine_proc(config.WINESERVER_EXE, exe_args=['-w'])
+    config.LOGS = state
+
+def disable_logging():
+    switch_logging(action='disable')
 
 def enable_logging():
-    env = get_wine_env()
-    cmd = [
-        config.WINE_EXE, 'reg', 'add', 'HKCU\\Software\\Logos4\\Logging',
-        '/v', 'Disabled', '/t', 'REG_DWORD', '/d', '0000', '/f'
-    ]
-    subprocess.run(cmd, env=env)
-    subprocess.run([wineserver_exe, '-w'])
-
-    for line in fileinput.input(config.CONFIG_FILE, inplace=True):
-        print(line.replace('LOGS="DISABLED"', 'LOGS="ENABLED"'), end='')
+    switch_logging(action='enable')
 
 def get_wine_env():
     wine_env = os.environ.copy()

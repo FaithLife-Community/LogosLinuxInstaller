@@ -114,7 +114,7 @@ def parse_command_line():
 
 def run_logos():
     run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
-    run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def run_indexing():
     for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):
@@ -123,9 +123,9 @@ def run_indexing():
                 logos_indexer_exe = os.path.join(root, f)
                 break
 
-    run_wine_proc(config.WINESERVER_EXE, flags=["-k"])
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
     run_wine_proc(config.WINE_EXE, exe=logos_indexer_exe)
-    run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def remove_library_catalog():
     LOGOS_DIR = os.path.dirname(config.LOGOS_EXE)
@@ -171,6 +171,9 @@ def restore():
     pass
 
 def main():
+    die_if_running()
+    die_if_root()
+
     # Set initial config; incl. defining CONFIG_FILE.
     set_default_config()
     # Update config from CONFIG_FILE.
@@ -179,6 +182,7 @@ def main():
     if file_exists(config.CONFIG_FILE):
         config.get_config_env(config.CONFIG_FILE)
 
+    parse_command_line()
     # Check for environment variables.
     if config.DIALOG is None:
         getDialog()
@@ -190,10 +194,6 @@ def main():
 
     die_if_running()
     die_if_root()
-
-    parse_command_line()
-    if config.VERBOSE:
-        print(f"{config.DIALOG=}")
 
     cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 
