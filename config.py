@@ -39,11 +39,7 @@ REGENERATE = os.getenv('REGENERATE', False)
 SKEL = os.getenv('SKEL')
 VERBOSE = os.getenv('VERBOSE', False)
 WINEDEBUG = os.getenv('WINEDEBUG', "fixme-all,err-all")
-dlloverrides = 'mscoree=;mshtml='
-if os.getenv('WINEDLLOVERRIDES') is None:
-    WINEDLLOVERRIDES = dlloverrides
-else:
-    WINEDLLOVERRIDES = f"{os.getenv('WINEDLLOVERRIDES')};{dlloverrides}"
+WINEDLLOVERRIDES = os.getenv('WINEDLLOVERRIDES', '')
 WINETRICKS_UNATTENDED = os.getenv('WINETRICKS_UNATTENDED')
 
 # Other installation variables.

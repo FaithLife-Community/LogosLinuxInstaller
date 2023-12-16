@@ -133,9 +133,9 @@ def initializeWineBottle():
     logging.debug("Starting initializeWineBottle()")
     cli_msg("Initializing wine...")
     #logos_continue_question(f"Now the script will create and configure the Wine Bottle at {WINEPREFIX}. You can cancel the installation of Mono. Do you wish to continue?", f"The installation was cancelled!", "")
-    # FIXME: Does the following wineboot only work if there's a system installation of wine?
-    #   I don't see the script creating LogosBible10/data/bin/wineboot...
-    run_wine_proc('wineboot')
+    config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree=" # avoid wine-mono window
+    run_wine_proc(config.WINE_EXE, exe='wineboot', flags=['--init'])
+    config.WINEDLLOVERRIDES = ';'.join([o for o in config.WINEDLLOVERRIDES.split(';') if o != 'mscoree='])
     light_wineserver_wait()
 
 def wine_reg_install(REG_FILE):
