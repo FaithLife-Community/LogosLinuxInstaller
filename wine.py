@@ -1,6 +1,7 @@
 import fileinput
 import logging
 import os
+import psutil
 import subprocess
 import sys
 import tempfile
@@ -12,34 +13,29 @@ from msg import logos_error
 from msg import logos_progress
 
 
-def wait_process_using_dir(directory):
-    VERIFICATION_DIR = directory
-    VERIFICATION_TIME = 7
-    VERIFICATION_NUM = 3
-
-    logging.info(f"* Starting wait_process_using_dir for {VERIFICATION_DIR}…")
-    i = 0
-    while True:
-        i += 1
-        logging.info(f"wait_process_using_dir: loop with i={i}")
-
-        cli_msg(f"wait_process_using_dir: sleep {VERIFICATION_TIME}")
-        time.sleep(VERIFICATION_TIME)
-
+def get_pids_using_file(file_path, mode=None):
+    # Make list (set) of pids using 'directory'.
+    pids = set()
+    for proc in psutil.process_iter(['pid', 'open_files']):
         try:
-            FIRST_PID = subprocess.check_output(["lsof", "-t", VERIFICATION_DIR]).decode().split("\n")[0]
-        except subprocess.CalledProcessError:
-            FIRST_PID = ""
+            if mode is not None:
+                paths = [f.path for f in proc.open_files() if f.mode == mode]
+            else:
+                paths = [f.path for f in proc.open_files()]
+            if len(paths) > 0 and file_path in paths:
+                pids.add(proc.pid)
+        except psutil.AccessDenied:
+            pass
+    return pids
 
-        logging.info(f"wait_process_using_dir FIRST_PID: {FIRST_PID}")
-        if FIRST_PID:
-            i = 0
-            logging.info(f"wait_process_using_dir: tail --pid={FIRST_PID} -f /dev/null")
-            subprocess.run(["tail", "--pid", FIRST_PID, "-f", "/dev/null"])
-            continue
+def wait_process_using_dir(directory):
+    logging.info(f"* Starting wait_process_using_dir for {VERIFICATION_DIR}…")
 
-        if i >= VERIFICATION_NUM:
-            break
+    # Get pids and wait for them to finish.
+    pids = get_pids_using_file(directory)
+    for pid in pids:    
+        logging.info(f"wait_process_using_dir PID: {pid}")
+        psutil.wait(pid)
 
     logging.info("* End of wait_process_using_dir.")
 

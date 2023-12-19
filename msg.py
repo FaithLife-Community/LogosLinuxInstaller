@@ -1,5 +1,6 @@
 import logging
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -110,8 +111,7 @@ def logos_error(message, secondary=None):
         pass
     if secondary is None or secondary == "":
         os.remove("/tmp/LogosLinuxInstaller.pid")
-        pgid = subprocess.check_output(['ps', '-o', 'pgid=', '-p', str(os.getpid())]).decode().strip()
-        subprocess.run(['kill', '-SIGKILL', '-'+pgid], check=True)
+        os.kill(os.getpgid(), signal.SIGKILL)
     exit(1)
 
 def cli_question(QUESTION_TEXT):

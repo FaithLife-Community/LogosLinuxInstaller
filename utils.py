@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import textwrap
@@ -21,6 +22,7 @@ import config
 from msg import logos_continue_question
 from msg import logos_error
 from msg import logos_info
+from wine import get_pids_using_file
 from wine import wineBinaryVersionCheck
 
 
@@ -269,7 +271,9 @@ def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:
         config.PACKAGE_MANAGER_COMMAND = "apt install -y"
-        config.PACKAGES = "mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc libxml2-utils curl fuse3"
+        # FIXME: bash is only a dependency for the built-in 'wait' command, which
+        #   is currently only used in the gtk_download() function.
+        config.PACKAGES = "bash binutils cabextract fuse procps wget winbind"
     elif shutil.which('dnf') is not None:
         config.PACKAGE_MANAGER_COMMAND = "dnf install -y"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
@@ -278,10 +282,10 @@ def get_package_manager():
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
     elif shutil.which('pamac') is not None:
         config.PACKAGE_MANAGER_COMMAND = "pamac install --no-upgrade --no-confirm"
-        config.PACKAGES = "patch lsof wget sed grep gawk cabextract samba bc libxml2 curl"
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"
     elif shutil.which('pacman') is not None:
         config.PACKAGE_MANAGER_COMMAND = 'pacman -Syu --overwrite \* --noconfirm --needed'
-        config.PACKAGES = "patch lsof wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
     # Add more conditions for other package managers as needed
 
 def install_packages(*packages):
@@ -489,7 +493,7 @@ def gtk_download(uri, destination):
             if subprocess.call(['pgrep', '-P', str(os.getpid()), 'zenity']) == 0:
                 wget_pid_current = subprocess.check_output(['pgrep', '-P', str(os.getpid()), 'wget']).decode().strip()
                 if wget_pid_current:
-                    subprocess.call(['kill', '-SIGKILL', wget_pid_current])
+                    os.kill(int(wget_pid_current), signal.SIGKILL)
 
             if percent == 100:
                 break
@@ -498,14 +502,16 @@ def gtk_download(uri, destination):
             print(percent)
             print(f"#Downloading: {filename}\ninto: {destination}\n{current} of {total_size} ({percent}%)\nSpeed: {speed}/Sec Estimated time: {remain}")
 
-        subprocess.call(['wait', str(os.getpid())])
-        wget_return = subprocess.call(['wait', str(os.getpid())])
+        # FIXME: This will ultimately fail:
+        # - 'wait' is a bash built-in; so the command would need to be ['bash', '-c', 'wait pid']
+        # - it will probably also return the error: "pid ### is not a child of this shell"
+        subprocess.call(['wait', wget_pid_current])
+        wget_return = 0 # this somehow needs to be the return code of the wget process
 
-        subprocess.call(['fuser', '-TERM', '-k', '-w', pipe_progress])
-        os.remove(pipe_progress)
-
-        subprocess.call(['fuser', '-TERM', '-k', '-w', pipe_wget])
-        os.remove(pipe_wget)
+        for pipe in [pipe_progress, pipe_wget]:
+            for pid in get_pids_using_file(pipe, mode='w'):
+                os.kill(pid, signal.SIGTERM)
+            os.remove(pipe)
 
         if wget_return != 0 and wget_return != 127:
             raise Exception("ERROR: The installation was cancelled because of an error while attempting a download.\nAttmpted Downloading: {uri}\nTarget Destination: {destination}\nFile Name: {filename}\n- Error Code: WGET_RETURN: {wget_return}")
@@ -594,7 +600,7 @@ def check_libs(libraries):
 
 def checkDependencies():
     logging.info("Checking system's for dependencies:")
-    cmds = ["mktemp", "patch", "lsof", "wget", "find", "sed", "grep", "ntlm_auth", "awk", "tr", "bc", "xmllint", "curl"]
+    cmds = ["wget", "grep"]
     check_commands(cmds)
 
 def checkDependenciesLogos10():
