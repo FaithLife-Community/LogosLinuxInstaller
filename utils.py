@@ -741,7 +741,7 @@ def get_user_downloads_dir():
         with user_dirs_file.open() as f:
             for line in f.readlines():
                 if 'DOWNLOAD' in line:
-                    downloads_path = line.rstrip().split('=')[1].replace('$HOME', str(home))
+                    downloads_path = line.rstrip().split('=')[1].replace('$HOME', str(home)).strip('"')
                     break
     return downloads_path
 
