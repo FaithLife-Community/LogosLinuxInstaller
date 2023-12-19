@@ -733,9 +733,17 @@ def getWineBinOptions(binaries):
     return sorted(WINEBIN_OPTIONS)
 
 def get_user_downloads_dir():
-    cmd = ['xdg-user-dir', 'DOWNLOAD']
-    p = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='UTF8')
-    return p.stdout.rstrip()
+    home = Path.home()
+    xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
+    user_dirs_file = xdg_config / 'user-dirs.dirs'
+    downloads_path = str(home / 'Downloads')
+    if user_dirs_file.is_file():
+        with user_dirs_file.open() as f:
+            for line in f.readlines():
+                if 'DOWNLOAD' in line:
+                    downloads_path = line.rstrip().split('=')[1].replace('$HOME', str(home))
+                    break
+    return downloads_path
 
 def get_system_winetricks():
     try:
