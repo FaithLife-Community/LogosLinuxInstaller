@@ -3,17 +3,14 @@ import glob
 import logging
 import os
 import sys
-import datetime
 import argparse
 
 import config
 from app import InstallerApp
 from app import InstallerWindow
-from logos_setup import install
+from installer import install
 from msg import cli_msg
-from msg import gtk_info
 from msg import initialize_logging
-from msg import gtk_info
 from msg import logos_error
 from utils import checkDependencies
 from utils import curses_menu
@@ -26,18 +23,18 @@ from utils import getDialog
 from utils import set_appimage
 from utils import set_default_config
 from utils import setDebug
-from wine import disable_logging
-from wine import enable_logging
 from wine import run_control_panel
+from wine import run_indexing
+from wine import run_logos
 from wine import run_wine_proc
 from wine import run_winetricks
+from wine import switch_logging
 
 # Basic Functionality
 #TODO: Fix post-install
 #TODO: Test get_os and get_package_manager
 #TODO: Verify necessary packages now that we are using python
 #TODO: Redo logos_progress
-#TODO: Redo all GUI commands
 #TODO: Fix python print lines to use logos_error
 #TODO: Test optargs and menu options
 
@@ -50,8 +47,6 @@ from wine import run_winetricks
 #TODO: Put main menu into a while loop
 #TODO: Add an option to reinstall dependencies for SteamOS
 #TODO: Add a get_winetricks option to post-install menu
-#TODO: Simplify variables? Import environment?
-#TODO: Distribute as single executable through PyInstaller
 #TODO: Implement logging via logging module
 
 
@@ -63,7 +58,7 @@ def parse_command_line():
     parser.add_argument('--skip-fonts', '-F', action='store_true', help='Skip font installations')
     parser.add_argument('--force-root', '-f', action='store_true', help='Set LOGOS_FORCE_ROOT to true, which permits the root user to use the script.')
     parser.add_argument('--reinstall-dependencies', '-I', action='store_true', help="Reinstall your distro's dependencies.")
-    parser.add_argument('--regenerate-scripts', '-g', action='store_true', help='Regenerate the Logos.sh and controlPanel.sh scripts.')
+    parser.add_argument('--debug', '-D', action='store_true', help='Enable Wine debug output.')
     parser.add_argument('--make-skel', '-k', action='store_true', help='Make a skeleton install only.')
     parser.add_argument('--custom-binary-path', '-p', metavar='CUSTOMBINPATH', help='Specify a custom wine binary path.')
     parser.add_argument('--check-resources', '-R', action='store_true', help='Check resources and exit')
@@ -74,12 +69,13 @@ def parse_command_line():
     parser.add_argument('--logs', '-l', action='store_true', help='Enable/disable logs')
     parser.add_argument('--dirlink', '-d', action='store_true', help='Create directory link')
     parser.add_argument('--shortcut', '-s', action='store_true', help='Create shortcut')
+    parser.add_argument('--passive', '-P', action='store_true', help='Install Faithlife product non-interactively')
 
     args = parser.parse_args()
 
     if args.config:
         config.CONFIG_FILE = args.config
-        config.get_config_env(config.CONFIG_FILE)
+        config.set_config_env(config.CONFIG_FILE)
 
     if args.verbose:
         config.LOG_LEVEL = logging.DEBUG
@@ -95,9 +91,6 @@ def parse_command_line():
     if args.reinstall_dependencies:
         config.REINSTALL_DEPENDENCIES = True
 
-    if args.regenerate_scripts:
-        config.REGENERATE = True
-
     if args.debug:
         setDebug()
 
@@ -112,20 +105,10 @@ def parse_command_line():
             parser.print_help()
             sys.exit()
 
-def run_logos():
-    run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
-
-def run_indexing():
-    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):
-        for f in files:
-            if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
-                logos_indexer_exe = os.path.join(root, f)
-                break
-
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
-    run_wine_proc(config.WINE_EXE, exe=logos_indexer_exe)
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+    if args.indexing:
+        config.ACTION = 'indexing'
+    if args.passive:
+        config.PASSIVE = True
 
 def remove_library_catalog():
     LOGOS_DIR = os.path.dirname(config.LOGOS_EXE)
@@ -180,14 +163,31 @@ def main():
     # FIXME: This means that values in CONFIG_FILE take precedence over env variables.
     #   Is this preferred, or should env variables take precedence over CONFIG_FILE?
     if file_exists(config.CONFIG_FILE):
-        config.get_config_env(config.CONFIG_FILE)
+        config.set_config_env(config.CONFIG_FILE)
 
     parse_command_line()
+    if config.VERBOSE:
+        print(f"{config.DIALOG=}")
+
+    # If Logos app is installed, run the desired Logos action.
+    if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
+        if config.ACTION == 'indexing':
+            run_indexing()
+            sys.exit(0)
+
+        elif config.ACTION == 'app':
+            run_logos()
+            sys.exit(0)
+
     # Check for environment variables.
     if config.DIALOG is None:
         getDialog()
+    else:
+        config.DIALOG = config.DIALOG.lower()
+        if config.DIALOG == 'tk':
+            config.GUI = True
         
-    if config.GUI is not None: # NDM: not sure about this logic
+    if config.GUI is True:
         with open(config.LOGOS_LOG, "a") as f:
             f.write("Running in a GUI. Enabling logging.\n")
         setDebug()
@@ -206,68 +206,66 @@ def main():
     options_exit = ["Exit"]
     if file_exists(config.CONFIG_FILE):
         options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Reinstall Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Control Panel", "Run Winetricks"]
-        if os.environ.get("LOGS") == "DISABLED":
-            options_installed.extend("Enable Logging")
+        if config.LOGS == "DISABLED":
+            options_installed.append("Enable Logging")
         else:
-            options_installed.extend("Disable Logging")
+            options_installed.append("Disable Logging")
         options = options_default + options_installed + options_exit
     else:
         options = options_default + options_exit
 
-    if config.DIALOG == 'tk':
-        logging.warning("Tk requires tcl8.6 package, which provides tclsh8.6 binary.")
+    choice = None
+    if config.DIALOG is None or config.DIALOG == 'tk':
         classname = "LogosLinuxInstaller"
         installer_app = InstallerApp(className=classname)
         InstallerWindow(installer_app, class_=classname)
         installer_app.mainloop()
-        return
-
-    elif config.DIALOG in ['whiptail', 'dialog', 'curses']:
+        # # Launch app after installation if successful.
+        # if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
+        #     run_logos()
+        #     sys.exit(0)
+        # else:
+        #     logos_error("Installation was unsuccessful.")
+    elif config.DIALOG == 'curses':
         choice = curses_menu(options, "Welcome to Logos on Linux", "What would you like to do?")
-    elif config.DIALOG == "zenity":
-        gtk_info("Welcome to Logos on Linux", "What would you like to do?")
-        logging.info("Welcome to Logos on Linux", "What would you like to do?")
-    elif config.DIALOG == "kdialog":
-        logos_error("kdialog not implemented.", "")
 
-    if "Exit" in choice:
+    if choice is None or choice == "Exit":
         sys.exit(0)
-    elif "Install" in choice:
+    elif choice.startswith("Install"):
         install()
-    elif f"Run {config.FLPRODUCT}" in choice:
+    elif choice == f"Run {config.FLPRODUCT}":
         run_logos()
-    elif "Run Indexing" in choice:
+    elif choice == "Run Indexing":
         run_indexing()
-    elif "Remove Library Catalog" in choice:
+    elif choice == "Remove Library Catalog":
         remove_library_catalog()
-    elif "Remove All Index Files" in choice:
+    elif choice == "Remove All Index Files":
         remove_all_index_files()
-    elif "Edit Config" in choice:
+    elif choice == "Edit Config":
         edit_config()
-    elif "Reinstall Dependencies":
+    elif choice == "Reinstall Dependencies":
         checkDependencies()
-    elif "Back up Data" in choice:
+    elif choice == "Back up Data":
         backup()
-    elif "Restore Data" in choice:
+    elif choice == "Restore Data":
         restore()
-    elif "Set AppImage" in choice:
+    elif choice == "Set AppImage":
         set_appimage()
-    elif "Control Panel" in choice:
+    elif choice == "Control Panel":
         run_control_panel()
-    elif "Run Winetricks" in choice:
+    elif choice == "Run Winetricks":
         run_winetricks()
-    elif "Logging" in choice:
-        if os.environ["LOGS"] == "DISABLED":
-            enable_logging()
+    elif choice.endswith("Logging"):
+        if config.LOGS == "DISABLED":
+            action = 'disable'
         else:
-            disable_logging()
+            action = 'enable'
+        switch_logging(action=action)
     else:
-        logos_error("Unknown menu choice.", "")
+        logos_error("Unknown menu choice.")
+
+    sys.exit(0)
 # END FUNCTION DECLARATIONS
 
 if __name__ == '__main__':
-    # BEGIN SCRIPT EXECUTION
     main()
-
-    sys.exit(0)
-    # END SCRIPT EXECUTION

@@ -42,38 +42,16 @@ def initialize_logging(stderr_log_level):
     )
     cli_msg(f"Installer log file: {config.LOGOS_LOG}")
 
-def no_diag_msg(message):
-    logging.critical(message)
-    subprocess.Popen(["xterm", "-hold", "-e", "printf", "%s" % message])
-    sys.exit(1)
-
 def cli_msg(message):
     ''' Used for messages that should be printed to stdout regardless of log level. '''
     print(message)
 
-def gtk_info(*args):
-    subprocess.Popen(["zenity", "--info", "--width=300", "--height=200", "--text=" + " ".join(args), "--title=Information"])
-    
-def gtk_progress(title, text):
-    subprocess.Popen(["zenity", "--progress", "--title=" + title, "--text=" + text, "--pulsate", "--auto-close", "--no-cancel"])
-    
-def gtk_warn(*args):
-    subprocess.Popen(["zenity", "--warning", "--width=300", "--height=200", "--text=" + " ".join(args), "--title=Warning!"])
-    
-def gtk_error(*args):
-    subprocess.Popen(["zenity", "--error", "--width=300", "--height=200", "--text=" + " ".join(args), "--title=Error!"])   
-
 def logos_info(message):
-    if config.DIALOG in ['whiptail', 'dialog', 'curses']:
+    if config.DIALOG == 'curses':
         cli_msg(message)
-    elif config.DIALOG == "zenity":
-        gtk_info(message)
-        logging.info(message)
-    elif config.DIALOG == "kdialog":
-        pass
 
 def logos_progress(title, text):
-    if config.DIALOG in ['whiptail', 'dialog', 'curses']:
+    if config.DIALOG == 'curses':
         sys.stdout.write('.')
         sys.stdout.flush()
         time.sleep(0.5)
@@ -83,39 +61,28 @@ def logos_progress(title, text):
         # sys.stdout.flush()
         # i = (i + 1) % len(spinner)
         # time.sleep(0.1)
-    elif config.DIALOG == "zenity":
-        gtk_progress(title, text)
-    elif config.DIALOG == "kdialog":
-        pass
     
 def logos_warn(message):
-    if config.DIALOG in ['whiptail', 'dialog', 'curses']:
-        logging.warning(message)
-    elif config.DIALOG == "zenity":
-        gtk_warn(message)
-        logging.warning(message)
-    elif config.DIALOG == "kdialog":
-        pass
+    if config.DIALOG == 'curses':
+        cli_msg(message)
 
 def logos_error(message, secondary=None):
     WIKI_LINK = "https://github.com/ferion11/LogosLinuxInstaller/wiki"
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"
-    if config.DIALOG in ['whiptail', 'dialog', 'curses']:
+    if config.DIALOG == 'curses':
         logging.critical(f"{message}\n{help_message}")
-    elif config.DIALOG == "zenity":
-        gtk_error(message + "\n" + help_message)
-        logging.critical(message)
-    elif config.DIALOG == "kdialog":
-        pass
+
     if secondary is None or secondary == "":
         os.remove("/tmp/LogosLinuxInstaller.pid")
-        os.kill(os.getpgid(), signal.SIGKILL)
+        os.kill(os.getpgid(os.getpid()), signal.SIGKILL)
     exit(1)
 
 def cli_question(QUESTION_TEXT):
     while True:
+        # FIXME: By convention, the capitalized y/n letter tends to be the
+        # default if the user just hits <Enter>.
         yn = input(f"{QUESTION_TEXT} [Y/n]: ")
         
         if yn.lower() == 'y':
@@ -132,34 +99,14 @@ def cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
 def cli_acknowledge_question(QUESTION_TEXT, NO_TEXT):
     if not cli_question(QUESTION_TEXT):
         logos_info(NO_TEXT)
-        
-def gtk_question(*args):
-    try:
-        subprocess.run(['zenity', '--question', '--width=300', '--height=200', '--text', *args, '--title=Question:'])
-        return True
-    except subprocess.CalledProcessError:
         return False
-        
-def gtk_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
-    if not gtk_question(QUESTION_TEXT):
-        logos_error('The installation was cancelled!', SECONDARY)
-        
-def gtk_acknowledge_question(QUESTION_TEXT, NO_TEXT):
-    if not gtk_question(QUESTION_TEXT):
-        logos_info(NO_TEXT)
+    else:
+        return True
         
 def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
-    if config.DIALOG in ['whiptail', 'dialog', 'curses']:
+    if config.DIALOG == 'curses':
         cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)
-    elif config.DIALOG == 'zenity':
-        gtk_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)
-    elif config.DIALOG == 'kdialog':
-        pass
         
 def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):
-    if config.DIALOG in ['whiptail', 'dialog', 'curses']:
-        cli_acknowledge_question(QUESTION_TEXT, NO_TEXT)
-    elif config.DIALOG == 'zenity':
-        gtk_acknowledge_question(QUESTION_TEXT, NO_TEXT)
-    elif config.DIALOG == 'kdialog':
-        pass
+    if config.DIALOG == 'curses':
+        return cli_acknowledge_question(QUESTION_TEXT, NO_TEXT)

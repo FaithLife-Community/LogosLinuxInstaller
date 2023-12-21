@@ -35,20 +35,18 @@ LOGOS_VERSION = os.getenv('LOGOS_VERSION')
 LOGOS64_MSI = os.getenv('LOGOS64_MSI')
 LOGOS64_URL = os.getenv('LOGOS64_URL')
 REINSTALL_DEPENDENCIES = os.getenv('REINSTALL_DEPENDENCIES', False)
-REGENERATE = os.getenv('REGENERATE', False)
 SKEL = os.getenv('SKEL')
 VERBOSE = os.getenv('VERBOSE', False)
 WINEDEBUG = os.getenv('WINEDEBUG', "fixme-all,err-all")
 WINEDLLOVERRIDES = os.getenv('WINEDLLOVERRIDES', '')
 WINETRICKS_UNATTENDED = os.getenv('WINETRICKS_UNATTENDED')
 
-# Other installation variables.
+# Other run-time variables.
+ACTION = 'app'
 APPIMAGE_LINK_SELECTION_NAME = "selected_wine.AppImage"
-CONTROL_PANEL_TEMPLATE_URL = "https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/controlPanel-Template.sh"
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
 EXTRA_INFO = "The following packages are usually necessary: winbind cabextract libjpeg8."
 GUI = None
-LAUNCHER_TEMPLATE_URL = "https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/Launcher-Template.sh"
 LOGOS_FORCE_ROOT = False
 LOGOS_ICON_FILENAME = None
 LOGOS_ICON_URL = None
@@ -57,6 +55,7 @@ LOGOS_SCRIPT_TITLE = "Logos Linux Installer"
 LOGOS_SCRIPT_AUTHOR = "Ferion11, John Goodman, T. H. Wright"
 LOGOS_SCRIPT_VERSION = "4.0.0"
 MYDOWNLOADS = None
+PASSIVE = None
 PRESENT_WORKING_DIRECTORY = os.getcwd()
 LOG_LEVEL = logging.WARNING
 VERBUM_PATH = None
@@ -77,14 +76,15 @@ PACKAGES = None
 SUPERUSER_COMMAND = None
 
 
-def get_config_env(config_file_path):
+def get_config_file_dict(config_file_path):
+    config_dict = {}
     try:
         with open(config_file_path, 'r') as config_file:
             cfg = json.load(config_file)
 
         for key, value in cfg.items():
-            globals()[key] = value
-        return cfg
+            config_dict[key] = value
+        return config_dict
     except TypeError as e:
         logging.error(f"Error opening Config file: {e}")
         return None
@@ -95,3 +95,10 @@ def get_config_env(config_file_path):
     except json.JSONDecodeError as e:
         logging.error(f"Error decoding config file {config_file_path}: {e}")
         return None
+
+def set_config_env(config_file_path):
+    config_dict = get_config_file_dict(config_file_path)
+    if config_dict is None:
+        print(f"Error: Unable to get config at {config_file_path}")
+    for key, value in config_dict.items():
+        globals()[key] = value

@@ -17,15 +17,15 @@ from tkinter.ttk import Style
 
 import config
 from gui import Gui
-from logos_setup import checkExistingInstall
-from logos_setup import finish_install
-from logos_setup import logos_setup
+from installer import checkExistingInstall
+from installer import finish_install
+from installer import logos_setup
 from msg import cli_msg
-from utils import createWineBinaryList
 from utils import same_size
 from utils import getLogosReleases
 from utils import getWineBinOptions
 from utils import wget
+from wine import createWineBinaryList
 
 
 class InstallerApp(Tk):
@@ -78,7 +78,9 @@ class InstallerWindow(Gui):
         self.root = root
         self.appimage_same_size = None
         self.logos_same_size = None
+        self.icon_same_size = None
         self.tricks_same_size = None
+        self.set_product()
 
         # Set widget callbacks and event bindings.
         self.config_filechooser.config(command=self.get_config_file)
@@ -99,14 +101,26 @@ class InstallerWindow(Gui):
         self.root.bind("<Return>", self.on_okay_released)
         self.root.bind("<Escape>", self.on_cancel_released)
         self.root.bind("<<ReleaseCheckProgress>>", self.update_release_check_progress)
-        self.root.bind("<<WgetAppImage>>", self.update_download_progress)
-        self.root.bind("<<WgetLogos>>", self.update_download_progress)
-        self.root.bind("<<WgetWinetricks>>", self.update_download_progress)
-        self.root.bind("<<CheckAppImage>>", self.update_file_size_check_progress)
-        self.root.bind("<<CheckLogos>>", self.update_file_size_check_progress)
+        download_events = [
+            "<<WgetAppImage>>",
+            "<<WgetLogos>>",
+            "<<WgetWinetricks>>",
+        ]
+        for evt in download_events:
+            self.root.bind(evt, self.update_download_progress)
+        size_events = [
+            "<<CheckAppImage>>",
+            "<<CheckLogos>>",
+            "<<CheckIcon>>",
+        ]
+        for evt in size_events:
+            self.root.bind(evt, self.update_file_size_check_progress)
         self.root.bind("<<CheckInstallProgress>>", self.update_install_progress)
         self.root.bind("<<VerifyDownloads>>", self.start_verify_downloads_thread)
         self.root.bind("<<StartInstall>>", self.start_install_thread)
+
+        self.install_q = Queue()
+        self.root.bind("<<UpdateInstallText>>", self.update_install_text)
 
     def set_product(self, evt=None):
         self.flproduct = self.productvar.get()
@@ -125,7 +139,6 @@ class InstallerWindow(Gui):
         self.targetversion = self.versionvar.get()
         config.TARGETVERSION = self.targetversion
         self.version_dropdown.selection_clear()
-        self.verify_release_check_button()
         self.verify_buttons()
 
     def set_release(self, evt=None):
@@ -162,7 +175,7 @@ class InstallerWindow(Gui):
         ]
         if all(variables):
             self.release_check_button.state(['!disabled'])
-            self.messagevar.set("Download list of Releases and pick one")
+            # self.messagevar.set("Download list of Releases and pick one")
 
     def verify_wine_check_button(self):
         variables = [
@@ -172,7 +185,7 @@ class InstallerWindow(Gui):
         ]
         if all(variables):
             self.wine_check_button.state(['!disabled'])
-            self.messagevar.set("Search for a Wine binary")
+            # self.messagevar.set("Search for a Wine binary")
 
     def verify_okay_button(self):
         variables = [
@@ -183,7 +196,7 @@ class InstallerWindow(Gui):
         ]
         if all(variables):
             self.okay_button.state(['!disabled'])
-            self.messagevar.set("Click Install")
+            # self.messagevar.set("Click Install")
 
     def on_release_check_released(self, evt=None):
         self.progress.config(mode='indeterminate')
@@ -227,17 +240,19 @@ class InstallerWindow(Gui):
 
     def set_downloads(self):
         dl_dir = Path(config.MYDOWNLOADS)
-        appimage_filename = Path(config.WINE64_APPIMAGE_FULL_URL).name
-        appimage_download = Path(dl_dir / appimage_filename)
-        logos_filename = f"{self.flproduct}_v{self.logos_release_version}-x64.msi"
-        logos_download = Path(dl_dir / logos_filename)
+        appimage_download = Path(dl_dir / Path(config.WINE64_APPIMAGE_FULL_URL).name)
+        logos_download = Path(dl_dir / f"{self.flproduct}_v{self.logos_release_version}-x64.msi")
+        icon_download = Path(dl_dir / config.LOGOS_ICON_FILENAME)
         self.downloads = [
             ['appimage', config.WINE64_APPIMAGE_FULL_URL, appimage_download,
-                self.appimage_same_size, '<<WgetAppImage>>', '<<CheckAppImage>>'
+                self.appimage_same_size, '<<WgetAppImage>>', '<<CheckAppImage>>',
             ],
             ['logos', config.LOGOS64_URL, logos_download,
-                self.logos_same_size, '<<WgetLogos>>', '<<CheckLogos>>'
+                self.logos_same_size, '<<WgetLogos>>', '<<CheckLogos>>',
             ],
+            ['icon', config.LOGOS_ICON_URL, icon_download,
+                self.icon_same_size, '<<WgetIcon>>', '<<CheckIcon>>',
+            ]
         ]
         if self.winetricksbin.startswith('Download'):
             tricks_url = config.WINETRICKS_URL
@@ -251,6 +266,9 @@ class InstallerWindow(Gui):
     def on_okay_released(self, evt=None):
         # Set required config.
         config.FLPRODUCT = self.flproduct
+        config.FLPRODUCTi = config.FLPRODUCT.lower()
+        if config.FLPRODUCTi.startswith('logos'):
+            config.FLPRODUCTi += '4'
         config.TARGETVERSION = self.targetversion
         config.LOGOS_RELEASE_VERSION = self.logos_release_version
         config.CONFIG_FILE
@@ -268,12 +286,16 @@ class InstallerWindow(Gui):
         elif self.winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
         config.SKIP_FONTS = self.skip_fonts if self.skip_fonts == 1 else 0
+        if config.LOGOS_ICON_URL is None:
+            config.LOGOS_ICON_URL = "https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/img/" + config.FLPRODUCTi + "-128-icon.png"
+        if config.LOGOS_ICON_FILENAME is None:
+            config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
         self.okay_button.state(['disabled'])
-        self.messagevar.set('')
+        # self.messagevar.set('')
         if checkExistingInstall():
             self.root.destroy()
-            sys.exit(1)
+            return 1
         self.wget_q = Queue()
         self.check_q = Queue()
         self.set_downloads()
@@ -281,7 +303,7 @@ class InstallerWindow(Gui):
 
     def on_cancel_released(self, evt=None):
         self.root.destroy()
-        sys.exit(1)
+        return 1
 
     def start_verify_downloads_thread(self, evt=None):
         th = threading.Thread(target=self.verify_downloads, daemon=True)
@@ -351,6 +373,8 @@ class InstallerWindow(Gui):
                     self.appimage_same_size = None
                 elif name == 'logos':
                     self.logos_same_size = None
+                elif name == 'icon':
+                    self.icon_same_size = None
                 print("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
                 continue
@@ -383,11 +407,12 @@ class InstallerWindow(Gui):
 
     def update_file_size_check_progress(self, evt=None):
         e, r = self.check_q.get()
-        # print(f"Event received: {e=}; {r=}")
         if e == "<<CheckAppImage>>":
             self.appimage_same_size = r
         elif e == "<<CheckLogos>>":
             self.logos_same_size = r
+        elif e == "<<CheckIcon>>":
+            self.icon_same_size = r
         elif e == "<<CheckWinetricks>>":
             self.tricks_same_size = r
         self.downloads[0][3] = r # "current" download should always be 1st item in self.downloads
@@ -400,6 +425,12 @@ class InstallerWindow(Gui):
         d = self.wget_q.get()
         self.progressvar.set(int(d))
 
+    def update_install_text(self, evt=None):
+        text = ''
+        if evt is not None:
+            text = self.install_q.get()
+        self.statusvar.set(text)
+
     def update_install_progress(self, evt=None):
         self.progress.stop()
         self.progress.config(mode='determinate')
@@ -410,3 +441,5 @@ class InstallerWindow(Gui):
             command=self.on_cancel_released,    
         )
         self.okay_button.state(['!disabled'])
+        self.root.destroy()
+        return 0

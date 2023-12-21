@@ -107,7 +107,7 @@ class Gui(Frame):
 
         # Status area.
         self.messagevar = StringVar()
-        self.messagevar.set("Choose Product and Version")
+        # self.messagevar.set("Choose Product and Version")
         self.message_label = Label(self,
             textvariable=self.messagevar,
             font=self.italic,

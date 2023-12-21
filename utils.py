@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import platform
+import psutil
 import re
 import shutil
 import signal
@@ -19,11 +20,10 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 import config
-from msg import logos_continue_question
+from msg import cli_continue_question
+from msg import cli_msg
 from msg import logos_error
 from msg import logos_info
-from wine import get_pids_using_file
-from wine import wineBinaryVersionCheck
 
 
 class Props():
@@ -121,7 +121,7 @@ def die_if_running():
     if os.path.isfile(PIDF):
         with open(PIDF, 'r') as f:
             pid = f.read().strip()
-            if logos_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1"):
+            if cli_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1"):
                 os.kill(int(pid), signal.SIGKILL)
     
     def remove_pid_file():
@@ -134,10 +134,7 @@ def die_if_running():
 
 def die_if_root():
     if os.getuid() == 0 and not LOGOS_FORCE_ROOT:
-        logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F", "")
-
-def debug():
-    return config.DEBUG
+        logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")
 
 def die(message):
     logging.critical(message)
@@ -165,51 +162,24 @@ def tl(library):
 
 def getDialog():
     if not os.environ.get('DISPLAY'):
-        logos_error("The installer does not work unless you are running a display", "")
+        logos_error("The installer does not work unless you are running a display")
         sys.exit(1)
 
-    if sys.__stdin__.isatty():
-        if tl("curses"):
-            config.DIALOG = "curses"
-            config.GUI = False
-            # DIALOG = "whiptail"
-            # elif t("dialog"):
-            # DIALOG = "dialog"
-            # DIALOG_ESCAPE = "--"
-            # os.environ['DIALOG_ESCAPE'] = DIALOG_ESCAPE
-        else:
-            if os.environ.get('XDG_CURRENT_DESKTOP') != "KDE":
-                if t("zenity"):
-                    config.DIALOG = "zenity"
-                    config.GUI = True
-                # elif t("kdialog"):
-                #     DIALOG = "kdialog"
-                #     GUI = True
-            elif os.environ.get('XDG_CURRENT_DESKTOP') == "KDE":
-                # if t("kdialog"):
-                #     DIALOG = "kdialog"
-                #     GUI = True
-                if t("zenity"):
-                    config.DIALOG = "zenity"
-                    config.GUI = True
-            else:
-                logging.critical("No dialog program found. Please install either dialog, whiptail, zenity, or kdialog")
-                sys.exit(1)
+    DIALOG = os.getenv('DIALOG')
+    config.GUI = False
+    # Set config.DIALOG.
+    if DIALOG is not None:
+        DIALOG = DIALOG.lower()
+        if DIALOG not in ['curses', 'tk']:
+            logos_error("Valid values for DIALOG are 'curses' or 'tk'.")
+        config.DIALOG = DIALOG
+    elif sys.__stdin__.isatty():
+        config.DIALOG = 'curses'
     else:
-        if os.environ.get('XDG_CURRENT_DESKTOP') != "KDE":
-            if t("zenity"):
-                config.DIALOG = "zenity"
-                config.GUI = True
-        elif os.environ.get('XDG_CURRENT_DESKTOP') == "KDE":
-            # if t("kdialog"):
-            #     DIALOG = "kdialog"
-            #     GUI = True
-            if t("zenity"):
-                config.DIALOG = "zenity"
-                config.GUI = True
-        else:
-            no_diag_msg("No dialog program found. Please install either zenity or kdialog.")
-            sys.exit(1)
+        config.DIALOG = 'tk'
+    # Set config.GUI.
+    if config.DIALOG == 'tk':
+        config.GUI = True
 
 def get_os():
     # Try reading /etc/os-release
@@ -261,7 +231,6 @@ def get_os():
     return config.OS_NAME, config.OS_RELEASE
 
 def get_package_manager():
-
     # Check for superuser command
     if shutil.which('sudo') is not None:
         config.SUPERUSER_COMMAND = "sudo"
@@ -271,9 +240,7 @@ def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:
         config.PACKAGE_MANAGER_COMMAND = "apt install -y"
-        # FIXME: bash is only a dependency for the built-in 'wait' command, which
-        #   is currently only used in the gtk_download() function.
-        config.PACKAGES = "bash binutils cabextract fuse procps wget winbind"
+        config.PACKAGES = "binutils cabextract fuse wget winbind"
     elif shutil.which('dnf') is not None:
         config.PACKAGE_MANAGER_COMMAND = "dnf install -y"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
@@ -287,6 +254,12 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND = 'pacman -Syu --overwrite \* --noconfirm --needed'
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
     # Add more conditions for other package managers as needed
+
+def get_runmode():
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return 'binary'
+    else:
+        return 'script'
 
 def install_packages(*packages):
     command = [config.SUPERUSER_COMMAND, config.PACKAGE_MANAGER_COMMAND] + list(packages)
@@ -309,7 +282,7 @@ def mkdir_critical(directory):
     try:
         os.mkdir(directory)
     except OSError:
-        logos_error(f"Can't create the {directory} directory", "")
+        logos_error(f"Can't create the {directory} directory")
 
 def curses_menu(options, title, question_text):
     # Set up the screen
@@ -436,88 +409,6 @@ def cli_download(uri, destination):
 
     subprocess.call(['wget', '-c', uri, '-O', target])
 
-def gtk_download(uri, destination):
-    filename = os.path.basename(uri)
-
-    if destination != destination.rstrip('/'):
-        target = os.path.join(destination, os.path.basename(uri))
-        if not os.path.isdir(destination):
-            os.makedirs(destination)
-    elif os.path.isdir(destination):
-        target = os.path.join(destination, os.path.basename(uri))
-    else:
-        target = destination
-        dirname = os.path.dirname(destination)
-        if not os.path.isdir(dirname):
-            os.makedirs(dirname)
-
-    pipe_progress = '/tmp/logos_pipe_progress'
-    os.mkfifo(pipe_progress)
-
-    pipe_wget = '/tmp/logos_pipe_wget'
-    os.mkfifo(pipe_wget)
-
-    subprocess.Popen(['zenity', '--progress', '--title', f'Downloading {filename}...', '--text', f'Downloading: {filename}\ninto: {destination}\n', '--percentage=0', '--auto-close', pipe_wget],
-                     stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-
-    total_size = "Starting..."
-    percent = 0
-    current = "Starting..."
-    speed = "Starting..."
-    remain = "Starting..."
-
-    with open(pipe_progress) as progress:
-        for data in progress:
-            if data.startswith('Length:'):
-                result = data.split('(')[-1].split(')')[0].strip()
-                if len(result) <= 10:
-                    total_size = result
-
-            if any(x.isdigit() for x in data):
-                result = next((x for x in data if x.isdigit()), None)
-                if len(result) <= 3:
-                    percent = int(result)
-
-                result = ''.join(x for x in data if x.isdigit() or x in ['B', 'K', 'M', 'G'])
-                if len(result) <= 10:
-                    current = result
-
-                result = ''.join(x for x in data if x.isdigit() or x in ['B', 'K', 'M', 'G', '.'])
-                if len(result) <= 10:
-                    speed = result
-
-                result = ''.join(x for x in data if x.isalnum())
-                if len(result) <= 10:
-                    remain = result
-
-            if subprocess.call(['pgrep', '-P', str(os.getpid()), 'zenity']) == 0:
-                wget_pid_current = subprocess.check_output(['pgrep', '-P', str(os.getpid()), 'wget']).decode().strip()
-                if wget_pid_current:
-                    os.kill(int(wget_pid_current), signal.SIGKILL)
-
-            if percent == 100:
-                break
-
-            # Update zenity's progress bar
-            print(percent)
-            print(f"#Downloading: {filename}\ninto: {destination}\n{current} of {total_size} ({percent}%)\nSpeed: {speed}/Sec Estimated time: {remain}")
-
-        # FIXME: This will ultimately fail:
-        # - 'wait' is a bash built-in; so the command would need to be ['bash', '-c', 'wait pid']
-        # - it will probably also return the error: "pid ### is not a child of this shell"
-        subprocess.call(['wait', wget_pid_current])
-        wget_return = 0 # this somehow needs to be the return code of the wget process
-
-        for pipe in [pipe_progress, pipe_wget]:
-            for pid in get_pids_using_file(pipe, mode='w'):
-                os.kill(pid, signal.SIGTERM)
-            os.remove(pipe)
-
-        if wget_return != 0 and wget_return != 127:
-            raise Exception("ERROR: The installation was cancelled because of an error while attempting a download.\nAttmpted Downloading: {uri}\nTarget Destination: {destination}\nFile Name: {filename}\n- Error Code: WGET_RETURN: {wget_return}")
-
-    logging.info(f"{filename} download finished!")
-
 def set_appimage():
     os.symlink(config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
 
@@ -564,7 +455,7 @@ def check_commands(commands):
                 subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
                 subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"], check=True)
 
-            if logos_continue_question(message, config.EXTRA_INFO):
+            if cli_continue_question(message, config.EXTRA_INFO):
                 install_packages(config.PACKAGES)
 
                 if config.OS_NAME == "Steam":
@@ -593,14 +484,14 @@ def check_libs(libraries):
         else:
             if config.PACKAGE_MANAGER_COMMAND:
                 message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND}. Proceed?"
-                if logos_continue_question(message, config.EXTRA_INFO):
+                if cli_continue_question(message, config.EXTRA_INFO):
                     install_packages(config.PACKAGES)
             else:
                 logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.\n{config.EXTRA_INFO}")
 
 def checkDependencies():
     logging.info("Checking system's for dependencies:")
-    cmds = ["wget", "grep"]
+    cmds = ["wget"]
     check_commands(cmds)
 
 def checkDependenciesLogos10():
@@ -611,40 +502,6 @@ def checkDependenciesLogos9():
     cmds = ["xwd", "cabextract"]
     check_commands(cmds);
     logging.info("All dependencies found. Continuing…")
-
-def createWineBinaryList():
-    WineBinPathList = [
-        "/usr/local/bin",
-        os.path.expanduser("~") + "/bin",
-        os.path.expanduser("~") + "/PlayOnLinux/wine/linux-amd64/*/bin",
-        os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",
-        config.CUSTOMBINPATH,
-    ]
-
-    # Temporarily modify PATH for additional WINE64 binaries.
-    for p in WineBinPathList:
-        if p is None:
-            continue
-        if p not in os.environ['PATH'] and os.path.isdir(p):
-            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + p
-
-    # Check each directory in PATH for wine64; add to list
-    binaries = []
-    paths = os.environ["PATH"].split(":")
-    for path in paths:
-        binary_path = os.path.join(path, "wine64")
-        if os.path.exists(binary_path) and os.access(binary_path, os.X_OK):
-            binaries.append(binary_path)
-
-    for binary in binaries[:]:
-        output1, output2 = wineBinaryVersionCheck(binary)
-        if output1 is not None and output1:
-            continue
-        else:
-            binaries.remove(binary)
-            logging.info(f"Removing binary: {binary} because {output2}")
-    
-    return binaries
 
 def file_exists(file_path):
     if file_path is not None:
@@ -696,16 +553,10 @@ def getWineBinOptions(binaries):
     
     # Add AppImage to list
     if config.TARGETVERSION != "9":
-        if config.DIALOG in ["whiptail", "dialog", "curses"]:
+        if config.DIALOG == "curses":
             WINEBIN_OPTIONS.append(["AppImage", f'{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}', f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}"])
-        elif config.DIALOG == "zenity":
-            WINEBIN_OPTIONS.append(["FALSE", "AppImage", f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}", os.path.join(config.APPDIR_BINDIR, config.WINE64_APPIMAGE_FULL_FILENAME)])
-        elif config.DIALOG == "kdialog":
-            no_diag_msg("kdialog not implemented.")
         elif config.DIALOG == 'tk':
             WINEBIN_OPTIONS.append(f"{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}")
-        else:
-            no_diag_msg("No dialog tool found.")
     
     for binary in binaries:
         WINEBIN_PATH = binary
@@ -725,16 +576,10 @@ def getWineBinOptions(binaries):
             WINEBIN_DESCRIPTION = "Use a WINE64 binary from another directory."
 
         # Create wine binary option array
-        if config.DIALOG in ["whiptail", "dialog", "curses"]:
+        if config.DIALOG == "curses":
             WINEBIN_OPTIONS.append([WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION])
-        elif config.DIALOG == "zenity":
-            WINEBIN_OPTIONS.append([WINEBIN_CODE, WINEBIN_DESCRIPTION, WINEBIN_PATH])
-        elif config.DIALOG == "kdialog":
-            no_diag_msg("kdialog not implemented.")
         elif config.DIALOG == 'tk':
             WINEBIN_OPTIONS.append(WINEBIN_PATH)
-        else:
-            no_diag_msg("No dialog tool found.")
 
     return sorted(WINEBIN_OPTIONS)
 
@@ -759,6 +604,34 @@ def get_system_winetricks():
         return (path, version)
     except FileNotFoundError:
         return None
+
+def get_pids_using_file(file_path, mode=None):
+    pids = set()
+    for proc in psutil.process_iter(['pid', 'open_files']):
+        try:
+            if mode is not None:
+                paths = [f.path for f in proc.open_files() if f.mode == mode]
+            else:
+                paths = [f.path for f in proc.open_files()]
+            if len(paths) > 0 and file_path in paths:
+                pids.add(proc.pid)
+        except psutil.AccessDenied:
+            pass
+    return pids
+
+def wait_process_using_dir(directory):
+    if config.VERBOSE:
+        print(f"* Starting wait_process_using_dir for {directory}…")
+
+    # Get pids and wait for them to finish.
+    pids = get_pids_using_file(directory)
+    for pid in pids:    
+        if config.VERBOSE:
+            print(f"wait_process_using_dir PID: {pid}")
+        psutil.wait(pid)
+
+    if config.VERBOSE:
+        print("* End of wait_process_using_dir.")
 
 def wget(uri, target, q=None, app=None, evt=None):
     cmd = ['wget', '-q', '--show-progress', '--progress=dot', '-c', uri, '-O', target]

@@ -11,6 +11,7 @@ import config
 from msg import cli_msg
 from msg import logos_error
 from msg import logos_progress
+from utils import wait_process_using_dir
 
 
 def get_pids_using_file(file_path, mode=None):
@@ -58,6 +59,40 @@ def wait_on(command):
     
     except Exception as e:
         logging.critical(f"{e}")
+
+def createWineBinaryList():
+    WineBinPathList = [
+        "/usr/local/bin",
+        os.path.expanduser("~") + "/bin",
+        os.path.expanduser("~") + "/PlayOnLinux/wine/linux-amd64/*/bin",
+        os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",
+        config.CUSTOMBINPATH,
+    ]
+
+    # Temporarily modify PATH for additional WINE64 binaries.
+    for p in WineBinPathList:
+        if p is None:
+            continue
+        if p not in os.environ['PATH'] and os.path.isdir(p):
+            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + p
+
+    # Check each directory in PATH for wine64; add to list
+    binaries = []
+    paths = os.environ["PATH"].split(":")
+    for path in paths:
+        binary_path = os.path.join(path, "wine64")
+        if os.path.exists(binary_path) and os.access(binary_path, os.X_OK):
+            binaries.append(binary_path)
+
+    for binary in binaries[:]:
+        output1, output2 = wineBinaryVersionCheck(binary)
+        if output1 is not None and output1:
+            continue
+        else:
+            binaries.remove(binary)
+            print(f"Removing binary:", binary, "because:", output2)
+    
+    return binaries
 
 def light_wineserver_wait():
     command = [f"{config.WINESERVER_EXE}", "-w"]
@@ -124,10 +159,13 @@ def wineBinaryVersionCheck(TESTBINARY):
 
     return True, "None"
 
-def initializeWineBottle():
-    logging.debug("Starting initializeWineBottle()")
-    cli_msg("Initializing wine...")
-    #logos_continue_question(f"Now the script will create and configure the Wine Bottle at {WINEPREFIX}. You can cancel the installation of Mono. Do you wish to continue?", f"The installation was cancelled!", "")
+def initializeWineBottle(app):
+    if app is not None:
+        app.install_q.put("Initializing wine bottle...")
+        app.root.event_generate("<<UpdateInstallText>>")
+
+    #cli_continue_question(f"Now the script will create and configure the Wine Bottle at {WINEPREFIX}. You can cancel the installation of Mono. Do you wish to continue?", f"The installation was cancelled!", "")
+
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree=" # avoid wine-mono window
     run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])
     config.WINEDLLOVERRIDES = ';'.join([o for o in config.WINEDLLOVERRIDES.split(';') if o != 'mscoree='])
@@ -152,8 +190,11 @@ def wine_reg_install(REG_FILE):
 
 def install_msi():
     # Execute the .MSI
-    logging.info(f"Running: {config.WINE_EXE} msiexec /i {config.APPDIR}/{config.LOGOS_EXECUTABLE}")
-    run_wine_proc(config.WINE_EXE, exe="msiexec", exe_args=["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"])
+    exe_args = ["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"]
+    if config.PASSIVE is True:
+        exe_args.append('/passive')
+    logginginfo(f"Running: {config.WINE_EXE} msiexec {' '.join(exe_args)}")
+    run_wine_proc(config.WINE_EXE, exe="msiexec", exe_args=exe_args)
 
 def run_wine_proc(winecmd, exe=None, exe_args=None):
     env = get_wine_env()
@@ -165,9 +206,14 @@ def run_wine_proc(winecmd, exe=None, exe_args=None):
         command.extend(exe_args)
 
     try:
-        process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
-
-        if process.returncode != 0:
+        # process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+        with process.stdout:
+            for line in iter(process.stdout.readline, b''):
+                print(line.decode().rstrip())
+        returncode = process.wait()
+                
+        if returncode != 0:
             logging.error(f"Error 1 running {winecmd} {exe}: {process.returncode}")
 
     except subprocess.CalledProcessError as e:
@@ -182,40 +228,9 @@ def run_winetricks():
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def winetricks_install(*args):
-    env = get_wine_env()
     logging.info(f"winetricks {' '.join(args)}")
-    if config.DIALOG in ["whiptail", "dialog", 'curses', 'tk']:
-        run_wine_proc(config.WINETRICKSBIN, exe_args=args)
-    elif config.DIALOG == "zenity":
-        pipe_winetricks = tempfile.mktemp()
-        os.mkfifo(pipe_winetricks)
 
-        # zenity GUI feedback
-        logos_progress("Winetricks " + " ".join(args), "Winetricks installing " + " ".join(args), input=open(pipe_winetricks))
-
-        proc = subprocess.Popen([config.WINETRICKSBIN, *args], stdout=subprocess.PIPE, env=env)
-        with open(pipe_winetricks, "w") as pipe:
-            for line in proc.stdout:
-                pipe.write(line)
-                print(line.decode(), end="")
-
-        WINETRICKS_STATUS = proc.wait()
-        ZENITY_RETURN = proc.poll()
-
-        os.remove(pipe_winetricks)
-
-        # NOTE: sometimes the process finishes before the wait command, giving the error code 127
-        if ZENITY_RETURN == 0 or ZENITY_RETURN == 127:
-            if WINETRICKS_STATUS != 0:
-                run_wine_proc(config.WINESERVER_EXE, exe_args=['-k'])
-                logos_error("Winetricks Install ERROR: The installation was cancelled because of sub-job failure!\n * winetricks " + " ".join(args) + "\n  - WINETRICKS_STATUS: " + str(WINETRICKS_STATUS), "")
-        else:
-            run_wine_proc(config.WINESERVER_EXE, exe_args=['-k'])
-            logos_error("The installation was cancelled!\n * ZENITY_RETURN: " + str(ZENITY_RETURN), "")
-    elif config.DIALOG == "kdialog":
-        no_diag_msg("kdialog not implemented.")
-    else:
-        no_diag_msg("No dialog tool found.")
+    run_wine_proc(config.WINETRICKSBIN, exe_args=args)
 
     logging.info(f"winetricks {' '.join(args)} DONE!")
 
@@ -223,9 +238,9 @@ def winetricks_install(*args):
 
 def winetricks_dll_install(*args):
     cli_msg(f"Installing '{args[-1]}' with winetricks.")
-    env = get_wine_env()
     logging.info(f"winetricks {' '.join(args)}")
     #logos_continue_question("Now the script will install the DLL " + " ".join(args) + ". This may take a while. There will not be any GUI feedback for this. Continue?", "The installation was cancelled!", "")
+
     run_wine_proc(config.WINETRICKSBIN, exe_args=args)
     logging.info(f"winetricks {' '.join(args)} DONE!")
     heavy_wineserver_wait()
@@ -264,12 +279,6 @@ def switch_logging(action=None):
     run_wine_proc(config.WINESERVER_EXE, exe_args=['-w'])
     config.LOGS = state
 
-def disable_logging():
-    switch_logging(action='disable')
-
-def enable_logging():
-    switch_logging(action='enable')
-
 def get_wine_env():
     wine_env = os.environ.copy()
     wine_env['WINE'] = config.WINE_EXE # used by winetricks
@@ -281,7 +290,7 @@ def get_wine_env():
         wine_env['WINETRICKS_SUPER_QUIET'] = "1"
 
     # Config file takes precedence over the above variables.
-    cfg = config.get_config_env(config.CONFIG_FILE)
+    cfg = config.get_config_file_dict(config.CONFIG_FILE)
     if cfg is not None:
         for key, value in cfg.items():
             if value is None:
@@ -289,3 +298,18 @@ def get_wine_env():
             wine_env[key] = value
 
     return wine_env
+
+def run_logos():
+    run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+
+def run_indexing():
+    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):
+        for f in files:
+            if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
+                logos_indexer_exe = os.path.join(root, f)
+                break
+
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
+    run_wine_proc(config.WINE_EXE, exe=logos_indexer_exe)
+    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
