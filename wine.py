@@ -40,6 +40,7 @@ def wait_process_using_dir(directory):
 
         if i >= VERIFICATION_NUM:
             break
+
     logging.info("* End of wait_process_using_dir.")
 
 def wait_on(command):
@@ -247,6 +248,7 @@ def winetricks_dll_install(*args):
             logging.info(oline.decode().rstrip())
     returncode = p.wait()
     logging.info(f"winetricks {' '.join(args)} DONE!")
+    
     heavy_wineserver_wait()
 
 def installFonts():

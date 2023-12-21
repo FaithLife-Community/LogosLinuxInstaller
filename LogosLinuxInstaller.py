@@ -13,6 +13,7 @@ from logos_setup import install
 from msg import cli_msg
 from msg import gtk_info
 from msg import initialize_logging
+from msg import gtk_info
 from msg import logos_error
 from utils import checkDependencies
 from utils import curses_menu
@@ -24,6 +25,7 @@ from utils import get_package_manager
 from utils import getDialog
 from utils import set_appimage
 from utils import set_default_config
+from utils import setDebug
 from wine import disable_logging
 from wine import enable_logging
 from wine import run_control_panel
@@ -82,6 +84,7 @@ def parse_command_line():
     if args.verbose:
         config.LOG_LEVEL = logging.DEBUG
         config.WINEDEBUG = ''
+        config.VERBOSE = True
 
     if args.skip_fonts:
         config.SKIP_FONTS = True
@@ -94,6 +97,9 @@ def parse_command_line():
 
     if args.regenerate_scripts:
         config.REGENERATE = True
+
+    if args.debug:
+        setDebug()
 
     if args.make_skel:
         config.SKEL = True
@@ -186,11 +192,18 @@ def main():
     # Check for environment variables.
     if config.DIALOG is None:
         getDialog()
+        
+    if config.GUI is not None: # NDM: not sure about this logic
+        with open(config.LOGOS_LOG, "a") as f:
+            f.write("Running in a GUI. Enabling logging.\n")
+        setDebug()
 
     die_if_running()
     die_if_root()
 
     parse_command_line()
+    if config.VERBOSE:
+        print(f"{config.DIALOG=}")
 
     cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 

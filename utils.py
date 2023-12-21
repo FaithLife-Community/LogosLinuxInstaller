@@ -140,6 +140,13 @@ def die(message):
     logging.critical(message)
     sys.exit(1)
 
+def setDebug():
+    config.DEBUG = True
+    config.VERBOSE = True
+    config.WINEDEBUG = ""
+    with open(config.LOGOS_LOG, 'a') as f:
+        f.write("Debug mode enabled.\n")
+
 def t(command):
     try:
         subprocess.run(['which', command], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

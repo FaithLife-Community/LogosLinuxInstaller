@@ -114,6 +114,7 @@ def chooseProduct():
         logos_error("Exiting installation.", "")
     else:
         logos_error("Unknown product. Installation canceled!", "")
+
     logging.info(f"Installing {config.FLPRODUCT} Bible Software")
 
     if config.LOGOS_ICON_URL is None:
@@ -332,6 +333,7 @@ def getPremadeWineBottle():
     # logos_progress("Extracting…", "Extracting: " + config.WINE64_BOTTLE_TARGZ_NAME + "\ninto: " + config.APPDIR)
     logging.info(f"Extracting '{config.WINE64_BOTTLE_TARGZ_NAME}' into '{config.APPDIR}'")
 
+
 ## END WINE BOTTLE AND WINETRICKS FUNCTIONS
 ## BEGIN LOGOS INSTALL FUNCTIONS 
 def get_logos_executable():
@@ -345,7 +347,6 @@ def get_logos_executable():
     
     # Getting and installing {FLPRODUCT} Bible
     # First check current directory to see if the .MSI is present; if not, check user's Downloads/; if not, download it new. Once found, copy it to WORKDIR for future use.
-
     cli_msg(f"Installing {config.FLPRODUCT}Bible 64bits…")
     if os.path.isfile(f"{PRESENT_WORKING_DIRECTORY}/{config.LOGOS_EXECUTABLE}"):
         logging.info(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
@@ -461,14 +462,13 @@ def install():
             installLogos9()  # We run the commands specific to Logos 9.
         else:
             logos_error(f"TARGETVERSION unrecognized: '{config.TARGETVERSION}'. Installation canceled!", "")
-        
+            
         heavy_wineserver_wait()
         
         clean_all()
         
         exes = [e for e in glob.glob(f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe", recursive=True) if 'Pending' not in e]
         config.LOGOS_EXE = exes[0]
-
         postInstall()
     else:
         logos_info("The scripts have been regenerated.")
@@ -532,7 +532,6 @@ def finish_install(app=None):
     if len(exes) < 1:
         logos_error("Logos was not installed.")
     config.LOGOS_EXE = exes[0]
-
     postInstall()
     
     # with open(config.LOGOS_LOG, "a") as f:
