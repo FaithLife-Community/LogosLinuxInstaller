@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import glob
+import logging
 import os
 import sys
 import datetime
@@ -9,6 +10,9 @@ import config
 from app import InstallerApp
 from app import InstallerWindow
 from logos_setup import install
+from msg import cli_msg
+from msg import gtk_info
+from msg import initialize_logging
 from msg import gtk_info
 from msg import logos_error
 from utils import checkDependencies
@@ -60,7 +64,6 @@ def parse_command_line():
     parser.add_argument('--force-root', '-f', action='store_true', help='Set LOGOS_FORCE_ROOT to true, which permits the root user to use the script.')
     parser.add_argument('--reinstall-dependencies', '-I', action='store_true', help="Reinstall your distro's dependencies.")
     parser.add_argument('--regenerate-scripts', '-g', action='store_true', help='Regenerate the Logos.sh and controlPanel.sh scripts.')
-    parser.add_argument('--debug', '-D', action='store_true', help='Enable Wine debug output.')
     parser.add_argument('--make-skel', '-k', action='store_true', help='Make a skeleton install only.')
     parser.add_argument('--custom-binary-path', '-p', metavar='CUSTOMBINPATH', help='Specify a custom wine binary path.')
     parser.add_argument('--check-resources', '-R', action='store_true', help='Check resources and exit')
@@ -79,7 +82,10 @@ def parse_command_line():
         config.get_config_env(config.CONFIG_FILE)
 
     if args.verbose:
+        config.LOG_LEVEL = logging.DEBUG
+        config.WINEDEBUG = ''
         config.VERBOSE = True
+
     if args.skip_fonts:
         config.SKIP_FONTS = True
 
@@ -141,9 +147,9 @@ def remove_library_catalog():
     for file_to_remove in files_to_remove:
         try:
             os.remove(file_to_remove)
-            print(f"Removed: {file_to_remove}")
+            logging.info(f"Removed: {file_to_remove}")
         except OSError as e:
-            print(f"Error removing {file_to_remove}: {e}")
+            logging.error(f"Error removing {file_to_remove}: {e}")
 
 def remove_all_index_files():
     if config.CONFIG_FILE is None:
@@ -164,11 +170,11 @@ def remove_all_index_files():
         for file_to_remove in files_to_remove:
             try:
                 os.remove(file_to_remove)
-                print(f"Removed: {file_to_remove}")
+                logging.info(f"Removed: {file_to_remove}")
             except OSError as e:
-                print(f"Error removing {file_to_remove}: {e}")
+                logging.error(f"Error removing {file_to_remove}: {e}")
 
-    print("======= Removing all LogosBible index files done! =======")
+    cli_msg("======= Removing all LogosBible index files done! =======")
     exit(0)
 
 def edit_config():
@@ -199,7 +205,12 @@ def main():
     if config.VERBOSE:
         print(f"{config.DIALOG=}")
 
-    print(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
+    cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
+
+    # Configure logging.
+    initialize_logging(config.LOG_LEVEL)    
+
+    logging.info(f"Using DIALOG: {config.DIALOG}")
 
     options_default = ["Install Logos Bible Software"]
     options_exit = ["Exit"]
@@ -215,7 +226,7 @@ def main():
         options = options_default + options_exit
 
     if config.DIALOG == 'tk':
-        print("Warning: Tk requires tcl8.6 package, which provides tclsh8.6 binary.")
+        logging.warning("Tk requires tcl8.6 package, which provides tclsh8.6 binary.")
         classname = "LogosLinuxInstaller"
         installer_app = InstallerApp(className=classname)
         InstallerWindow(installer_app, class_=classname)
@@ -225,9 +236,8 @@ def main():
     elif config.DIALOG in ['whiptail', 'dialog', 'curses']:
         choice = curses_menu(options, "Welcome to Logos on Linux", "What would you like to do?")
     elif config.DIALOG == "zenity":
-        gtk_info(message)
-        with open(LOGOS_LOG, "a") as file:
-            file.write(f"{datetime.now()} {message}\n")
+        gtk_info("Welcome to Logos on Linux", "What would you like to do?")
+        logging.info("Welcome to Logos on Linux", "What would you like to do?")
     elif config.DIALOG == "kdialog":
         logos_error("kdialog not implemented.", "")
 

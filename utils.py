@@ -2,6 +2,7 @@ import atexit
 import curses
 import hashlib
 import json
+import logging
 import os
 import platform
 import re
@@ -97,7 +98,6 @@ def set_default_config():
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
-    open(config.LOGOS_LOG, "a").close()
 
 def write_config(config_file_path, config_keys=None):
     os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
@@ -106,7 +106,8 @@ def write_config(config_file_path, config_keys=None):
 
     try:
         with open(config_file_path, 'w') as config_file:
-            json.dump(config_data, config_file, indent=4)
+            json.dump(config_data, config_file, indent=4, sort_keys=True)
+            config_file.write('\n')
 
     except IOError as e:
         print(f"Error writing to config file {config_file_path}: {e}")
@@ -135,17 +136,16 @@ def die_if_root():
 def debug():
     return config.DEBUG
 
+def die(message):
+    logging.critical(message)
+    sys.exit(1)
+
 def setDebug():
     config.DEBUG = True
     config.VERBOSE = True
     config.WINEDEBUG = ""
     with open(config.LOGOS_LOG, 'a') as f:
         f.write("Debug mode enabled.\n")
-
-def die(message):
-    print(message, file=sys.stderr)
-    sys.exit(1)
-
 
 def t(command):
     try:
@@ -191,7 +191,7 @@ def getDialog():
                     config.DIALOG = "zenity"
                     config.GUI = True
             else:
-                print("No dialog program found. Please install either dialog, whiptail, zenity, or kdialog")
+                logging.critical("No dialog program found. Please install either dialog, whiptail, zenity, or kdialog")
                 sys.exit(1)
     else:
         if os.environ.get('XDG_CURRENT_DESKTOP') != "KDE":
@@ -417,6 +417,7 @@ def curses_menu(options, title, question_text):
     return choice
 
 def cli_download(uri, destination):
+    cli_msg(f"Downloading '{uri}' to '{destination}'")
     filename = os.path.basename(uri)
 
     if destination != destination.rstrip('/'):
@@ -511,7 +512,7 @@ def gtk_download(uri, destination):
         if wget_return != 0 and wget_return != 127:
             raise Exception("ERROR: The installation was cancelled because of an error while attempting a download.\nAttmpted Downloading: {uri}\nTarget Destination: {destination}\nFile Name: {filename}\n- Error Code: WGET_RETURN: {wget_return}")
 
-    print(f"{filename} download finished!")
+    logging.info(f"{filename} download finished!")
 
 def set_appimage():
     subprocess.run(["ln", "-s", config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"]) # FIXME: use python function instead of subprocess
@@ -519,8 +520,7 @@ def set_appimage():
 def make_skel(app_image_filename):
     config.SET_APPIMAGE_FILENAME = app_image_filename
 
-    if config.VERBOSE:
-        print(f"* Making skel64 inside {config.INSTALLDIR}")
+    logging.info(f"* Making skel64 inside {config.INSTALLDIR}")
     # FIXME: use a python function here instead of a subprocess
     subprocess.run(["mkdir", "-p", config.APPDIR_BINDIR]) or die(f"can't make dir: {config.APPDIR_BINDIR}")
 
@@ -542,16 +542,15 @@ def make_skel(app_image_filename):
 
     os.makedirs(f"{config.APPDIR}/wine64_bottle", exist_ok=True)
 
-    if config.VERBOSE:
-        print("skel64 done!")
+    logging.info("skel64 done!")
 
 def check_commands(commands):
     missing_cmd = []
     for cmd in commands:
         if have_dep(cmd):
-            print(f"* Command {cmd} is installed!")
+            logging.info(f"* Command {cmd} is installed!")
         else:
-            print(f"* Command {cmd} not installed!")
+            logging.warning(f"* Command {cmd} not installed!")
             missing_cmd.append(cmd)
 
     if missing_cmd:
@@ -587,7 +586,7 @@ def check_libs(libraries):
     for library in libraries:
         have_lib_result = have_lib(library, ld_library_path)
         if have_lib_result:
-            print(f"* {library} is installed!")
+            logging.info(f"* {library} is installed!")
         else:
             if config.PACKAGE_MANAGER_COMMAND:
                 message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND}. Proceed?"
@@ -597,23 +596,18 @@ def check_libs(libraries):
                 logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.\n{config.EXTRA_INFO}")
 
 def checkDependencies():
-    if os.getenv('VERBOSE'):
-        print("Checking system's for dependencies:")
+    logging.info("Checking system's for dependencies:")
     cmds = ["mktemp", "patch", "lsof", "wget", "find", "sed", "grep", "ntlm_auth", "awk", "tr", "bc", "xmllint", "curl"]
     check_commands(cmds)
 
 def checkDependenciesLogos10():
-    if os.getenv('VERBOSE'):
-        print("All dependencies found. Continuing…")
+    logging.info("All dependencies found. Continuing…")
 
 def checkDependenciesLogos9():
-    VERBOSE = os.getenv('VERBOSE')
-    if VERBOSE:
-        print("Checking dependencies for Logos 9.")
+    logging.info("Checking dependencies for Logos 9.")
     cmds = ["xwd", "cabextract"]
     check_commands(cmds);
-    if VERBOSE:
-        print("All dependencies found. Continuing…")
+    logging.info("All dependencies found. Continuing…")
 
 def createWineBinaryList():
     WineBinPathList = [
@@ -645,7 +639,7 @@ def createWineBinaryList():
             continue
         else:
             binaries.remove(binary)
-            print(f"Removing binary:", binary, "because:", output2)
+            logging.info(f"Removing binary: {binary} because {output2}")
     
     return binaries
 
@@ -661,10 +655,10 @@ def getLogosReleases(q=None, app=None):
 
     try:
         # Fetch XML content using urllib.
-        with urllib.request.urlopen(url) as f:
+        with urllib.request.urlopen(url, timeout=30) as f:
             response = f.read().decode('utf-8')
     except urllib.error.URLError as e:
-        print(f"Error fetching or parsing XML: {e}")
+        logging.critical(f"Error fetching or parsing XML: {e}")
         if q is not None and app is not None:
             q.put(None)
             app.root.event_generate("<<ReleaseCheckProgress>>")

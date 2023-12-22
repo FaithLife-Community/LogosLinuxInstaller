@@ -1,6 +1,8 @@
 import fileinput
+import logging
 import os
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -15,53 +17,52 @@ def wait_process_using_dir(directory):
     VERIFICATION_TIME = 7
     VERIFICATION_NUM = 3
 
-    if config.VERBOSE:
-        print(f"* Starting wait_process_using_dir for {VERIFICATION_DIR}…")
+    logging.info(f"* Starting wait_process_using_dir for {VERIFICATION_DIR}…")
     i = 0
     while True:
         i += 1
-        if config.VERBOSE:
-            print(f"wait_process_using_dir: loop with i={i}")
+        logging.info(f"wait_process_using_dir: loop with i={i}")
 
-        print(f"wait_process_using_dir: sleep {VERIFICATION_TIME}")
+        cli_msg(f"wait_process_using_dir: sleep {VERIFICATION_TIME}")
         time.sleep(VERIFICATION_TIME)
 
         try:
             FIRST_PID = subprocess.check_output(["lsof", "-t", VERIFICATION_DIR]).decode().split("\n")[0]
         except subprocess.CalledProcessError:
             FIRST_PID = ""
-        if config.VERBOSE:
-            print(f"wait_process_using_dir FIRST_PID: {FIRST_PID}")
+
+        logging.info(f"wait_process_using_dir FIRST_PID: {FIRST_PID}")
         if FIRST_PID:
             i = 0
-            if config.VERBOSE:
-                print(f"wait_process_using_dir: tail --pid={FIRST_PID} -f /dev/null")
+            logging.info(f"wait_process_using_dir: tail --pid={FIRST_PID} -f /dev/null")
             subprocess.run(["tail", "--pid", FIRST_PID, "-f", "/dev/null"])
             continue
 
         if i >= VERIFICATION_NUM:
             break
-    if config.VERBOSE:
-        print("* End of wait_process_using_dir.")
+
+    logging.info("* End of wait_process_using_dir.")
 
 def wait_on(command):
     try:
         # Start the process in the background
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
+        sys.stdout.write(f"Waiting on '{' '.join(command)}' to finish.")
         while process.poll() is None:
             logos_progress("Waiting.", f"Waiting on {command} to finish.")
+        print() # FIXME: a workaround until spinner output is fixed
 
         # Process has finished, check the result
         stdout, stderr = process.communicate()
 
         if process.returncode == 0:
-            print(f"\n\"{' '.join(command)}\" has ended properly.")
+            logging.info(f"\"{' '.join(command)}\" has ended properly.")
         else:
-            print(f"\nError: {stderr}")
+            logging.error(f"Error: {stderr}")
     
     except Exception as e:
-        print(f"Error: {e}")
+        logging.critical(f"{e}")
 
 def light_wineserver_wait():
     command = [f"{config.WINESERVER_EXE}", "-w"]
@@ -129,11 +130,14 @@ def wineBinaryVersionCheck(TESTBINARY):
     return True, "None"
 
 def initializeWineBottle():
+    logging.debug("Starting initializeWineBottle()")
+    cli_msg("Initializing wine...")
     #logos_continue_question(f"Now the script will create and configure the Wine Bottle at {WINEPREFIX}. You can cancel the installation of Mono. Do you wish to continue?", f"The installation was cancelled!", "")
     run_wine_proc('wineboot')
     light_wineserver_wait()
 
 def wine_reg_install(REG_FILE):
+    cli_msg(f"Installing registry file: {REG_FILE}")
     env = get_wine_env()
     p = subprocess.run(
         [config.WINE_EXE, "regedit.exe", REG_FILE],
@@ -143,8 +147,8 @@ def wine_reg_install(REG_FILE):
         text=True,
         cwd=config.WORKDIR,
     )
-    if p.returncode == 0 and config.VERBOSE:
-        cli_msg(f"{REG_FILE} installed.")
+    if p.returncode == 0:
+        logging.info(f"{REG_FILE} installed.")
     elif p.returncode != 0:
         logos_error(f"Failed to install reg file: {REG_FILE}")
     light_wineserver_wait()
@@ -152,8 +156,7 @@ def wine_reg_install(REG_FILE):
 def install_msi():
     env = get_wine_env()
     # Execute the .MSI
-    if config.VERBOSE:
-        cli_msg(f"Running: {config.WINE_EXE} msiexec /i {config.APPDIR}/{config.LOGOS_EXECUTABLE}")
+    logging.info(f"Running: {config.WINE_EXE} msiexec /i {config.APPDIR}/{config.LOGOS_EXECUTABLE}")
     subprocess.run([config.WINE_EXE, "msiexec", "/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"], env=env)
 
 def run_wine_proc(winecmd, exe=None, flags=None):
@@ -169,10 +172,10 @@ def run_wine_proc(winecmd, exe=None, flags=None):
         process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
 
         if process.returncode != 0:
-            cli_msg(f"Error 1 running {winecmd} {exe}: {return_code}")
+            logging.error(f"Error 1 running {winecmd} {exe}: {return_code}")
 
     except subprocess.CalledProcessError as e:
-        cli_msg(f"Error 2 running {winecmd} {exe}: {e}")
+        logging.error(f"Error 2 running {winecmd} {exe}: {e}")
 
 def run_control_panel():
     run_wine_proc(config.WINE_EXE, exe="control")
@@ -183,11 +186,21 @@ def run_winetricks():
     run_wine_proc(config.WINESERVER_EXE, flags=["-w"])
 
 def winetricks_install(*args):
+    cli_msg(f"Installing '{args[-1]}' with winetricks.")
     env = get_wine_env()
-    if config.VERBOSE:
-        print("winetricks", *args)
+    cmd = [config.WINETRICKSBIN, '-v', *args]
+    # if config.LOG_LEVEL < logging.INFO:
+    #     # "winetricks -v" just activates "set -x", which is more like DEBUG than
+    #     #   VERBOSE/INFO. So only adding '-v' if logging is set to DEBUG.
+    #     cmd.insert(1, '-v')
+    logging.info(f"winetricks {' '.join(args)}")
     if config.DIALOG in ["whiptail", "dialog", 'curses', 'tk']:
-        subprocess.call([config.WINETRICKSBIN, *args], env=env)
+        # Ref: https://stackoverflow.com/a/21978778
+        p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        with p.stdout:
+            for oline in iter(p.stdout.readline, b''):
+                logging.info(oline.decode().rstrip())
+        returncode = p.wait()
     elif config.DIALOG == "zenity":
         pipe_winetricks = tempfile.mktemp()
         os.mkfifo(pipe_winetricks)
@@ -219,19 +232,23 @@ def winetricks_install(*args):
     else:
         no_diag_msg("No dialog tool found.")
 
-    if config.VERBOSE:
-        print("winetricks", *args, "DONE!")
+    logging.info(f"winetricks {' '.join(args)} DONE!")
 
     heavy_wineserver_wait()
 
 def winetricks_dll_install(*args):
+    cli_msg(f"Installing '{args[-1]}' with winetricks.")
     env = get_wine_env()
-    if config.VERBOSE:
-        print("winetricks", *args)
+    logging.info(f"winetricks {' '.join(args)}")
     #logos_continue_question("Now the script will install the DLL " + " ".join(args) + ". This may take a while. There will not be any GUI feedback for this. Continue?", "The installation was cancelled!", "")
-    subprocess.call([config.WINETRICKSBIN, *args], env=env)
-    if config.VERBOSE:
-        print("winetricks", *args, "DONE!")
+    cmd = [config.WINETRICKSBIN, '-v', *args]
+    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    with p.stdout:
+        for oline in iter(p.stdout.readline, b''):
+            logging.info(oline.decode().rstrip())
+    returncode = p.wait()
+    logging.info(f"winetricks {' '.join(args)} DONE!")
+    
     heavy_wineserver_wait()
 
 def installFonts():
@@ -280,8 +297,10 @@ def get_wine_env():
     wine_env['WINE'] = config.WINE_EXE # used by winetricks
     wine_env['WINE_EXE'] = config.WINE_EXE
     wine_env['WINEDEBUG'] = config.WINEDEBUG
-    wine_env['WINEDLLOVERRIDES'] = config.WINEDLLOVERRIDES # blocks warnings about wine-mono
+    wine_env['WINEDLLOVERRIDES'] = config.WINEDLLOVERRIDES
     wine_env['WINEPREFIX'] = config.WINEPREFIX
+    if config.LOG_LEVEL > logging.INFO:
+        wine_env['WINETRICKS_SUPER_QUIET'] = "1"
 
     # Config file takes precedence over the above variables.
     cfg = config.get_config_env(config.CONFIG_FILE)

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import tempfile
 
@@ -38,7 +39,11 @@ REGENERATE = os.getenv('REGENERATE', False)
 SKEL = os.getenv('SKEL')
 VERBOSE = os.getenv('VERBOSE', False)
 WINEDEBUG = os.getenv('WINEDEBUG', "fixme-all,err-all")
-WINEDLLOVERRIDES = os.getenv('WINEDLLOVERRIDES', "mscoree=;mshtml=")
+dlloverrides = 'mscoree=;mshtml='
+if os.getenv('WINEDLLOVERRIDES') is None:
+    WINEDLLOVERRIDES = dlloverrides
+else:
+    WINEDLLOVERRIDES = f"{os.getenv('WINEDLLOVERRIDES')};{dlloverrides}"
 WINETRICKS_UNATTENDED = os.getenv('WINETRICKS_UNATTENDED')
 
 # Other installation variables.
@@ -57,6 +62,7 @@ LOGOS_SCRIPT_AUTHOR = "Ferion11, John Goodman, T. H. Wright"
 LOGOS_SCRIPT_VERSION = "4.0.0"
 MYDOWNLOADS = None
 PRESENT_WORKING_DIRECTORY = os.getcwd()
+LOG_LEVEL = logging.WARNING
 VERBUM_PATH = None
 WINE64_APPIMAGE_FILENAME = os.path.basename(WINE64_APPIMAGE_FULL_URL).split(".AppImage")[0]
 WINE64_APPIMAGE_FULL_VERSION = "v8.19-devel"
@@ -84,12 +90,12 @@ def get_config_env(config_file_path):
             __file__.__dict__[key] = value
         return cfg
     except TypeError as e:
-        print(f"Error opening Config file: {e}")
+        logging.error(f"Error opening Config file: {e}")
         return None
     except FileNotFoundError:
         # Most likely a new install with no saved config file yet.
-        # print(f"Warning: Config file not found at {config_file_path}")
+        logging.info(f"No config file not found at {config_file_path}")
         return None
     except json.JSONDecodeError as e:
-        print(f"Error decoding config file {config_file_path}: {e}")
+        logging.error(f"Error decoding config file {config_file_path}: {e}")
         return None
