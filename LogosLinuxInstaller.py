@@ -26,7 +26,6 @@ from utils import setDebug
 from wine import run_control_panel
 from wine import run_indexing
 from wine import run_logos
-from wine import run_wine_proc
 from wine import run_winetricks
 from wine import switch_logging
 

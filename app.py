@@ -3,6 +3,7 @@
 #   - https://tkdocs.com/
 #   - https://github.com/thw26/LogosLinuxInstaller/blob/master/LogosLinuxInstaller.sh
 
+import logging
 import os
 import sys
 import threading
@@ -312,6 +313,7 @@ class InstallerWindow(Gui):
     def start_download_thread(self, name, url, dest, evt):
         m = f"Downloading {url}"
         cli_msg(m)
+        logging.info(m)
         self.statusvar.set(m)
         self.progressvar.set(0)
         self.progress.config(mode='determinate')
@@ -323,6 +325,7 @@ class InstallerWindow(Gui):
     def start_check_thread(self, name, url, dest, evt):
         m = f"Checking size of {dest}"
         cli_msg(m)
+        logging.info(m)
         self.statusvar.set(m)
         self.progressvar.set(0)
         self.progress.config(mode='indeterminate')
@@ -354,13 +357,13 @@ class InstallerWindow(Gui):
 
             # self.after(100)
             if not dest.is_file() and dl_thread is None: # no file; no thread started
-                cli_msg("Starting download thread.")
+                logging.info("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
                 continue
             elif dl_thread is not None: # download thread started
                 continue
             elif dest.is_file() and test is None and ch_thread is None: # file downloaded; no check started
-                cli_msg("Starting file-check thread.")
+                logging.info("Starting file-check thread.")
                 self.start_check_thread(name, url, dest, ch_evt)
                 continue
             elif dest.is_file() and test is None and ch_thread is not None: # file downloaded; still checking
@@ -372,14 +375,14 @@ class InstallerWindow(Gui):
                     self.logos_same_size = None
                 elif name == 'icon':
                     self.icon_same_size = None
-                cli_msg("Starting download thread.")
+                logging.info("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
                 continue
             elif test is True and None not in [ch_thread, dl_thread]:
                 continue # some thread still going
             elif test is True and ch_thread is None and dl_thread is None:
                 # file is downloaded and verified
-                cli_msg("Removing item from download list.")
+                logging.info(f"Removing item from download list: {self.downloads[0]}.")
                 self.downloads.pop(0)
                 continue
 

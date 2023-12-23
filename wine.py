@@ -1,10 +1,7 @@
-import fileinput
 import logging
 import os
 import psutil
 import subprocess
-import sys
-import tempfile
 import time
 
 import config
@@ -189,7 +186,7 @@ def wine_reg_install(REG_FILE):
     light_wineserver_wait()
 
 def install_msi():
-    cli_msg(f"Running MSI installer for {config.FLPRODUCT}.")
+    cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
     exe_args = ["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
