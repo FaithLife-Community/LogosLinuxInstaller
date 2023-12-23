@@ -343,7 +343,6 @@ class InstallerWindow(Gui):
 
     def verify_downloads(self, evt=None):
         while len(self.downloads) > 0:
-            # print(self.downloads[0])
             name, url, dest, test, dl_evt, ch_evt = self.downloads[0]
             ch_thread = None
             dl_thread = None
@@ -355,18 +354,16 @@ class InstallerWindow(Gui):
 
             # self.after(100)
             if not dest.is_file() and dl_thread is None: # no file; no thread started
-                print("Starting download thread.")
+                cli_msg("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
                 continue
             elif dl_thread is not None: # download thread started
-                # print("Download thread in progress.")
                 continue
             elif dest.is_file() and test is None and ch_thread is None: # file downloaded; no check started
-                print("Starting file-check thread.")
+                cli_msg("Starting file-check thread.")
                 self.start_check_thread(name, url, dest, ch_evt)
                 continue
             elif dest.is_file() and test is None and ch_thread is not None: # file downloaded; still checking
-                # print("File-check thread in progress.")
                 continue
             elif dest.is_file() and test is False and dl_thread is None: # file check failed; restart download
                 if name == 'appimage':
@@ -375,15 +372,14 @@ class InstallerWindow(Gui):
                     self.logos_same_size = None
                 elif name == 'icon':
                     self.icon_same_size = None
-                print("Starting download thread.")
+                cli_msg("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
                 continue
             elif test is True and None not in [ch_thread, dl_thread]:
-                print("A thread is still ongoing.")
                 continue # some thread still going
             elif test is True and ch_thread is None and dl_thread is None:
                 # file is downloaded and verified
-                print("Removing item from download list.")
+                cli_msg("Removing item from download list.")
                 self.downloads.pop(0)
                 continue
 
@@ -397,13 +393,16 @@ class InstallerWindow(Gui):
     def update_release_check_progress(self, evt=None):
         self.progress.stop()
         self.statusvar.set('')
+        self.progress.config(mode='determinate')
+        self.progressvar.set(0)
         r = self.release_q.get()
         if r is not None:
             self.release_dropdown['values'] = r
             self.releasevar.set(self.release_dropdown['values'][0])
             self.set_release()
-            self.progress.config(mode='determinate')
-            self.progressvar.set(0)
+        else:
+            self.statusvar.set("Failed to get release list. Check connection and try again.")
+
 
     def update_file_size_check_progress(self, evt=None):
         e, r = self.check_q.get()

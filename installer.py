@@ -13,7 +13,6 @@ import config
 from msg import cli_msg
 from msg import logos_acknowledge_question
 from msg import logos_error
-from msg import logos_info
 from msg import logos_warn
 from utils import check_libs
 from utils import checkDependencies
@@ -52,16 +51,18 @@ def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
     FOUND = 1
     for i in DIRS:
         if os.path.isfile(os.path.join(i, FILE)):
-            logos_info(f"{FILE} exists in {i}. Using it…")
+            logging.info(f"{FILE} exists in {i}. Using it…")
+            cli_msg(f"Copying {FILE} into {TARGETDIR}")
             shutil.copy(os.path.join(i, FILE), TARGETDIR)
-            logos_progress("Copying…", f"Copying {FILE}\ninto {TARGETDIR}")
             FOUND = 0
             break
     if FOUND == 1:
-        logos_info(f"{FILE} does not exist. Downloading…")
+        message = f"{FILE} does not exist. Downloading {SOURCEURL} to {config.MYDOWNLOADS}"
+        logging.info(message)
+        cli_msg(message)
         logos_download(SOURCEURL, os.path.join(config.MYDOWNLOADS, FILE))
+        cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
         shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
-        logos_progress("Copying…", f"Copying: {FILE}\ninto: {TARGETDIR}")
 
 def getAppImage():
     wine64_appimage_full_filename = Path(config.WINE64_APPIMAGE_FULL_FILENAME)
@@ -82,16 +83,14 @@ def chooseProduct():
     else:
         productChoice = config.FLPRODUCT
 
-    print("productChoice:" + str(productChoice))
+    logging.info(f"Product: {str(productChoice)}")
     if str(productChoice).startswith("Logos"):
-        if config.VERBOSE:
-            print("Installing Logos Bible Software")
+        logging.info("Installing Logos Bible Software")
         config.FLPRODUCT = "Logos"
         config.FLPRODUCTi = "logos4" #This is the variable referencing the icon path name in the repo.
         config.VERBUM_PATH = "/"
     elif str(productChoice).startswith("Verbum"):
-        if config.VERBOSE:
-            print("Installing Verbum Bible Software")
+        logging.info("Installing Verbum Bible Software")
         config.FLPRODUCT = "Verbum"
         config.FLPRODUCTi = "verbum" #This is the variable referencing the icon path name in the repo.
         config.VERBUM_PATH = "/Verbum/"
@@ -111,10 +110,11 @@ def getLogosReleaseVersion(releases):
     QUESTION_TEXT=f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"
     logos_release_version = curses_menu(releases, TITLE, QUESTION_TEXT)
 
+    logging.info(f"Release version: {logos_release_version}")
     if logos_release_version is not None:
         config.LOGOS_RELEASE_VERSION = logos_release_version
     else:
-        print("Failed to fetch LOGOS_RELEASE_VERSION.")
+        logos_error("Failed to fetch LOGOS_RELEASE_VERSION.")
 
 def chooseVersion():
     BACKTITLE = "Choose Version Menu"
@@ -125,7 +125,8 @@ def chooseVersion():
         versionChoice = curses_menu(options, TITLE, QUESTION_TEXT)
     else:
         versionChoice = config.TARGETVERSION
-   
+    logging.info(f"Target version: {config.TARGETVERSION}")
+
     checkDependencies()
     if "10" in versionChoice:
         checkDependenciesLogos10()
@@ -134,13 +135,12 @@ def chooseVersion():
         checkDependenciesLogos9()
         config.TARGETVERSION = "9"
     elif versionChoice == "Exit.":
-        exit()
+        sys.exit(0)
     else:
         logos_error("Unknown version. Installation canceled!", "")
 
 def logos_setup():
     if config.LOGOS64_URL is None or config.LOGOS64_URL == "":
-        print(config.TARGETVERSION, config.VERBUM_PATH, config.LOGOS_RELEASE_VERSION, config.FLPRODUCT)
         config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{config.TARGETVERSION}{config.VERBUM_PATH}Installer/{config.LOGOS_RELEASE_VERSION}/{config.FLPRODUCT}-x64.msi"
 
     if config.FLPRODUCT == "Logos":
@@ -154,18 +154,29 @@ def logos_setup():
     
     if config.INSTALLDIR is None:
         config.INSTALLDIR = f"{os.getenv('HOME')}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"
-    if config.APPDIR is None or config.APPDIR == "":
+    if config.APPDIR is None:
         config.APPDIR = f"{config.INSTALLDIR}/data"
-    if config.APPDIR_BINDIR is None or config.APPDIR_BINDIR == "":
+    if config.APPDIR_BINDIR is None:
         config.APPDIR_BINDIR = f"{config.APPDIR}/bin"
+    variables = {
+        'config.FLPRODUCT': config.FLPRODUCT,
+        'config.FLPRODUCTi': config.FLPRODUCTi,
+        'config.LOGOS_VERSION': config.LOGOS_VERSION,
+        'config.INSTALLDIR': config.INSTALLDIR,
+        'config.APPDIR': config.APPDIR,
+        'config.APPDIR_BINDIR': config.APPDIR_BINDIR,
+    }
+    for k, v in variables.items():
+        logging.debug(f"{k}: {v}")
 
 def chooseInstallMethod():
     if config.WINEPREFIX is None:
         config.WINEPREFIX = os.path.join(config.APPDIR, "wine64_bottle")
 
     if config.WINE_EXE is None:
-        logos_info("Creating binary list.")
+        logging.info("Creating binary list.")
         binaries = createWineBinaryList()
+        logging.debug(f"binaries: {', '.join(binaries)}")
         WINEBIN_OPTIONS = getWineBinOptions(binaries)
 
         BACKTITLE="Choose Wine Binary Menu"
@@ -177,53 +188,54 @@ def chooseInstallMethod():
         config.WINE_EXE = installationChoice[1]
 
         config.WINEBIN_CODE = WINECHOICE_CODE
-        if config.VERBOSE:
-            print(f"chooseInstallMethod(): WINEBIN_CODE: {WINECHOICE_CODE}; WINE_EXE: {config.WINE_EXE}")
+        logging.info(f"WINEBIN_CODE: {config.WINEBIN_CODE}; WINE_EXE: {config.WINE_EXE}")
+    variables = {
+        'config.WINEPREFIX': config.WINEPREFIX,
+        'config.WINE_EXE': config.WINE_EXE,
+    }
+    for k, v in variables.items():
+        logging.debug(f"{k}: {v}")
 
 def checkExistingInstall(app=None):
+    message = "Checking for existing installation..."
+    cli_msg(message)
     # Now that we know what the user wants to install and where, determine whether an install exists and whether to continue.
     if app is not None:
-        app.install_q.put("Checking for existing installation...")
+        app.install_q.put(message)
         app.root.event_generate("<<UpdateInstallText>>")
 
     if os.path.isdir(config.INSTALLDIR):
-        if config.VERBOSE:
-            print(f"INSTALLDIR: {config.INSTALLDIR}")
+        logging.info(f"INSTALLDIR: {config.INSTALLDIR}")
         drive_c = f"{config.WINEPREFIX}/drive_c"
         names = ['Logos.exe', 'Verbum.exe']
         if os.path.isdir(drive_c) and any(glob.glob(f"{drive_c}/**/{n}", recursive=True) for n in names):
-            global EXISTING_LOGOS_INSTALL
-            EXISTING_LOGOS_INSTALL = 1
-            print(f"An install was found at {config.INSTALLDIR}. Please remove/rename it or use another location by setting the INSTALLDIR variable.")
+            logos_error(f"An install was found at {config.INSTALLDIR}. Please remove/rename it or use another location by setting the INSTALLDIR variable.")
             return True
         else:
-            global EXISTING_LOGOS_DIRECTORY
-            EXISTING_LOGOS_DIRECTORY = 1
-            print(f"A directory exists at {config.INSTALLDIR}. Please remove/rename it or use another location by setting the INSTALLDIR variable.")
+            logos_error(f"A directory exists at {config.INSTALLDIR}. Please remove/rename it or use another location by setting the INSTALLDIR variable.")
             return True
     else:
-        if config.VERBOSE:
-            print(f"Installing to an empty directory at {config.INSTALLDIR}.")
+        logging.info(f"Installing to an empty directory at {config.INSTALLDIR}.")
 
     if app is not None:
         app.root.event_generate("<<CheckExistingInstallDone>>")
 
 def beginInstall(app):
+    message = "Preparing installation folder..."
+    cli_msg(message)
     if app is not None:
-        app.install_q.put("Preparing installation folder...")
+        app.install_q.put(message)
         app.root.event_generate("<<UpdateInstallText>>")
 
     if config.SKEL == True:
-        if config.VERBOSE:
-            print("Making a skeleton install of the project only. Exiting after completion.")
+        logging.info("Making a skeleton install of the project only. Exiting after completion.")
         make_skel("none.AppImage")
-        exit(0)
+        sys.exit(0)
 
     if config.WINEBIN_CODE:
         if config.WINEBIN_CODE.startswith("AppImage"):
             check_libs(["libfuse"])
-            if config.VERBOSE:
-                print(f"Installing {config.FLPRODUCT} Bible {config.TARGETVERSION} using {config.WINE64_APPIMAGE_FULL_VERSION} AppImage…")
+            logging.info(f"Installing {config.FLPRODUCT} Bible {config.TARGETVERSION} using {config.WINE64_APPIMAGE_FULL_VERSION} AppImage…")
             make_skel(config.WINE64_APPIMAGE_FULL_FILENAME)
             # exporting PATH to internal use if using AppImage, doing backup too:
             os.environ["OLD_PATH"] = os.environ["PATH"]
@@ -233,19 +245,15 @@ def beginInstall(app):
             os.chmod(f"{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}", 0o755)
             config.WINE_EXE = f"{config.APPDIR_BINDIR}/wine64"
         elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:
-            if config.VERBOSE:
-                print(f"Installing {config.FLPRODUCT} Bible {config.TARGETVERSION} using a {config.WINEBIN_CODE} WINE64 binary…")
+            logging.info(f"Installing {config.FLPRODUCT} Bible {config.TARGETVERSION} using a {config.WINEBIN_CODE} WINE64 binary…")
             make_skel("none.AppImage")
         else:
-            print("WINEBIN_CODE error. Installation canceled!")
-            sys.exit(1)
+            logos_error("WINEBIN_CODE error. Installation canceled!")
     else:
-        if config.VERBOSE:
-            print("WINEBIN_CODE is not set in your config file.")
+        logging.info("WINEBIN_CODE is not set in your config file.")
 
-    if config.VERBOSE:
-        wine_version = subprocess.check_output([config.WINE_EXE, "--version"]).decode().strip()
-        print(f"Using: {wine_version}")
+    wine_version = subprocess.check_output([config.WINE_EXE, "--version"]).decode().strip()
+    logging.info(f"Using: {wine_version}")
 
     # Set WINESERVER_EXE based on WINE_EXE.
     if config.WINESERVER_EXE is None:
@@ -254,13 +262,15 @@ def beginInstall(app):
             config.WINESERVER_EXE = wineserver_path
 
         else:
-            print(f"{wineserver_path} not found. Please either add it or create a symlink to it, and rerun.")
+            logos_error(f"{wineserver_path} not found. Please either add it or create a symlink to it, and rerun.")
 
 def downloadWinetricks():
+    cli_msg("Downloading winetricks...")
     logos_reuse_download(config.WINETRICKS_URL, "winetricks", config.APPDIR_BINDIR)
     os.chmod(f"{config.APPDIR_BINDIR}/winetricks", 0o755)
 
 def setWinetricks():
+    cli_msg("Preparing winetricks...")
     # Check if local winetricks version available; else, download it
     if config.WINETRICKSBIN is None:
         local_winetricks_path = shutil.which('winetricks')
@@ -275,32 +285,31 @@ def setWinetricks():
                 options = ["1: Use local winetricks.", "2: Download winetricks from the Internet"]
                 winetricks_choice = curses_menu(options, title, question_text)
 
-                print(f"winetricks_choice: {winetricks_choice}")
+                logging.debug(f"winetricks_choice: {winetricks_choice}")
                 if winetricks_choice.startswith("1"):
-                    print("Setting winetricks to the local binary…")
+                    logging.info("Setting winetricks to the local binary…")
                     config.WINETRICKSBIN = local_winetricks_path
                 elif winetricks_choice.startswith("2"):
                     downloadWinetricks()
                     config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
                 else:
-                    sys.exit("Installation canceled!")
+                    cli_msg("Installation canceled!")
+                    sys.exit(0)
             else:
-                print("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")
+                cli_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")
                 downloadWinetricks()
                 config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
         else:
-            print("Local winetricks not found. Downloading winetricks from the Internet…")
+            cli_msg("Local winetricks not found. Downloading winetricks from the Internet…")
             downloadWinetricks()
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
 
-    print("Winetricks is ready to be used.")
-
 def getPremadeWineBottle():
-    if config.VERBOSE:
-        print("Installing pre-made wineBottle 64bits…")
+    cli_msg("Installing pre-made wineBottle 64bits…")
+    logging.info(f"Downloading {config.WINE64_BOTTLE_TARGZ_URL} to {config.WORKDIR}")
     logos_reuse_download(config.WINE64_BOTTLE_TARGZ_URL, config.WINE64_BOTTLE_TARGZ_NAME, config.WORKDIR)
+    cli_msg(f"Extracting: {config.WINE64_BOTTLE_TARGZ_NAME}\ninto: {config.APPDIR}")
     shutil.unpack_archive(os.path.join(config.WORKDIR, config.WINE64_BOTTLE_TARGZ_NAME), config.APPDIR)
-    logos_progress("Extracting…", "Extracting: " + config.WINE64_BOTTLE_TARGZ_NAME + "\ninto: " + config.APPDIR)
 
 ## END WINE BOTTLE AND WINETRICKS FUNCTIONS
 ## BEGIN LOGOS INSTALL FUNCTIONS 
@@ -315,26 +324,24 @@ def get_logos_executable():
     
     # Getting and installing {FLPRODUCT} Bible
     # First check current directory to see if the .MSI is present; if not, check user's Downloads/; if not, download it new. Once found, copy it to WORKDIR for future use.
-    if config.VERBOSE:
-        print(f"Installing {config.FLPRODUCT}Bible 64bits…")
+    logging.info(f"Installing {config.FLPRODUCT}Bible 64bits…")
     if os.path.isfile(f"{PRESENT_WORKING_DIRECTORY}/{config.LOGOS_EXECUTABLE}"):
-        if config.VERBOSE:
-            print(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
+        logging.info(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
         shutil.copy(f"{PRESENT_WORKING_DIRECTORY}/{config.LOGOS_EXECUTABLE}", f"{config.APPDIR}/")
     elif os.path.isfile(f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}"):
-        if config.VERBOSE:
-            print(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
+        logging.info(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
         shutil.copy(f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}", f"{config.APPDIR}/")
     else:
-        if config.VERBOSE:
-            print(f"{config.LOGOS_EXECUTABLE} does not exist. Downloading…")
+        logging.info(f"{config.LOGOS_EXECUTABLE} does not exist. Downloading…")
         logos_download(config.LOGOS64_URL, f"{config.MYDOWNLOADS}/")
         shutil.move(f"{config.MYDOWNLOADS}/{config.LOGOS64_MSI}", f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}")
         shutil.copy(f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}", f"{config.APPDIR}/")
 
 def installLogos9(app):
+    message = "Configuring wine bottle and installing app..."
+    cli_msg(message)
     if app is not None:
-        app.install_q.put("Configuring wine bottle and installing app...")
+        app.install_q.put(message)
         app.root.event_generate("<<UpdateInstallText>>")
 
     getPremadeWineBottle()
@@ -345,15 +352,15 @@ def installLogos9(app):
     install_msi()
     env = get_wine_env()
 
-    if config.VERBOSE:
-        print(f"======= Set {config.FLPRODUCT}Bible Indexing to Vista Mode: =======")
+    logging.info(f"======= Set {config.FLPRODUCT}Bible Indexing to Vista Mode: =======")
     subprocess.run(f'{config.WINE_EXE} reg add "HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe" /v Version /t REG_SZ /d vista /f', shell=True, env=env)
-    if config.VERBOSE:
-        print(f"======= {config.FLPRODUCT}Bible logging set to Vista mode! =======")
+    logging.info(f"======= {config.FLPRODUCT}Bible logging set to Vista mode! =======")
 
 def installLogos10(app=None):
+    message = "Configuring wine bottle and installing app..."
+    cli_msg(message)
     if app is not None:
-        app.install_q.put("Configuring wine bottle and installing app...")
+        app.install_q.put(message)
         app.root.event_generate("<<UpdateInstallText>>")
 
     reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
@@ -388,29 +395,29 @@ def installLogos10(app=None):
     install_msi()
 
 def postInstall(app):
+    message = "Finishing installation..."
+    cli_msg(message)
     if app is not None:
-        app.install_q.put("Finishing installation...")
+        app.install_q.put(message)
         app.root.event_generate("<<UpdateInstallText>>")
-
-    if config.DEBUG:
-        print("Starting postInstall")
 
     HOME = os.environ.get('HOME')
     config_keys = ["FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "INSTALLDIR", "APPDIR", "APPDIR_BINDIR", "WINETRICKSBIN", "WINEPREFIX", "WINEBIN_CODE", "WINE_EXE", "WINESERVER_EXE", "WINE64_APPIMAGE_FULL_URL", "WINE64_APPIMAGE_FULL_FILENAME", "APPIMAGE_LINK_SELECTION_NAME", "LOGOS_EXECUTABLE", "LOGOS_EXE", "LOGOS_DIR", "LOGS", "BACKUPDIR"]
 
-    if config.VERBOSE:
-        print("postInstall config:")
-        for k in config_keys:
-            print(f"{k}: {config.__dict__.get(k)}")
+    logging.debug("post-install config:")
+    for k in config_keys:
+        logging.debug(f"{k}: {config.__dict__.get(k)}")
 
     if os.path.isfile(config.LOGOS_EXE):
-        logos_info(f"{config.FLPRODUCT} Bible {config.TARGETVERSION} installed!")
+        message = f"{config.FLPRODUCT} Bible {config.TARGETVERSION} installed!"
+        cli_msg(message)
+        logging.info(message)
 
         if not os.path.isfile(config.CONFIG_FILE): # config.CONFIG_FILE is set in main() function
             os.makedirs(os.path.join(HOME, ".config", "Logos_on_Linux"), exist_ok=True)
             if os.path.isdir(os.path.join(HOME, ".config", "Logos_on_Linux")):
                 write_config(config.CONFIG_FILE, config_keys)
-                logos_info(f"A config file was created at {config.CONFIG_FILE}.")
+                logging.info(f"A config file was created at {config.CONFIG_FILE}.")
             else:
                 logos_warn(f"{HOME}/.config/Logos_on_Linux does not exist. Failed to create config file.")
         elif os.path.isfile(config.CONFIG_FILE):
@@ -446,8 +453,9 @@ def postInstall(app):
                 subprocess.Popen(sys.argv)
             elif logos_acknowledge_question(f"Run {config.FLPRODUCT} now?", "The Script has finished. Exiting…"):
                 subprocess.Popen(sys.argv)
-        if config.VERBOSE:
-            print("The script has finished. Exiting…")
+        message = "The Script has finished. Exiting…"
+        cli_msg(message)
+        logging.info(message)
     else:
         logos_error(f"Installation failed. {config.LOGOS_EXE} not found. Exiting…\nThe {config.FLPRODUCT} executable was not found. This means something went wrong while installing {config.FLPRODUCT}. Please contact the Logos on Linux community for help.")
 
@@ -456,70 +464,41 @@ def install():
     finish_install()
 
 def prepare_install():
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     chooseProduct()  # We ask user for his Faithlife product's name and set variables.
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     chooseVersion()  # We ask user for his Faithlife product's version, set variables, and create project skeleton.
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     getLogosReleaseVersion(getLogosReleases())
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     logos_setup() # We set some basic variables for the install, including retrieving the product's latest release.
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     chooseInstallMethod()  # We ask user for his desired install method.
 
 def finish_install(app=None):
+    message = "Beginning installation..."
+    cli_msg(message)
     if app is not None:
-        app.install_q.put("Beginning installation...")
+        app.install_q.put(message)
         app.root.event_generate("<<UpdateInstallText>>")
 
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     if checkExistingInstall(app):
         logos_error("Existing installation.")
-    
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     beginInstall(app)
-
-    if config.VERBOSE:
-        print(datetime.datetime.now())
     initializeWineBottle(app)  # We run wineboot.
-    
     if config.TARGETVERSION == "10":
-        if config.VERBOSE:
-            print(datetime.datetime.now())
         installLogos10(app)  # We run the commands specific to Logos 10.
     elif config.TARGETVERSION == "9":
-        if config.VERBOSE:
-            print(datetime.datetime.now())
         installLogos9(app)  # We run the commands specific to Logos 9.
     else:
         logos_error(f"TARGETVERSION unrecognized: '{config.TARGETVERSION}'. Installation canceled!")
     
-    if config.VERBOSE:
-        print(datetime.datetime.now())
-    
     heavy_wineserver_wait()
-    
     clean_all()
-    
+
+    # Find and set LOGOS_EXE.    
     exes = [e for e in glob.glob(f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe", recursive=True) if 'Pending' not in e]
     if len(exes) < 1:
         logos_error("Logos was not installed.")
     config.LOGOS_EXE = exes[0]
-    
-    if config.VERBOSE:
-        print(datetime.datetime.now())
+
     postInstall(app)
-    
-    # with open(config.LOGOS_LOG, "a") as f:
-    #     f.write(output) # FIXME: What should be in "output"?
-    
+
     if app is not None:
         app.root.event_generate("<<CheckInstallProgress>>")
 

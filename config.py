@@ -100,6 +100,6 @@ def get_config_file_dict(config_file_path):
 def set_config_env(config_file_path):
     config_dict = get_config_file_dict(config_file_path)
     if config_dict is None:
-        print(f"Error: Unable to get config at {config_file_path}")
+        logos_error(f"Error: Unable to get config at {config_file_path}")
     for key, value in config_dict.items():
         globals()[key] = value

@@ -35,7 +35,6 @@ from wine import switch_logging
 #TODO: Test get_os and get_package_manager
 #TODO: Verify necessary packages now that we are using python
 #TODO: Redo logos_progress
-#TODO: Fix python print lines to use logos_error
 #TODO: Test optargs and menu options
 
 # AppImage Handling
@@ -47,7 +46,6 @@ from wine import switch_logging
 #TODO: Put main menu into a while loop
 #TODO: Add an option to reinstall dependencies for SteamOS
 #TODO: Add a get_winetricks option to post-install menu
-#TODO: Implement logging via logging module
 
 
 def parse_command_line():
@@ -105,9 +103,9 @@ def parse_command_line():
         if os.path.isdir(args.custom_binary_path):
             config.CUSTOMBINPATH = args.custom_binary_path
         else:
-            sys.stderr.write(f"{config.LOGOS_SCRIPT_TITLE}: User supplied path: \"{args.custom_binary_path}\". Custom binary path does not exist.\n")
+            cli_msg(f"{config.LOGOS_SCRIPT_TITLE}: User supplied path: \"{args.custom_binary_path}\". Custom binary path does not exist.")
             parser.print_help()
-            sys.exit()
+            sys.exit(1)
 
     if args.indexing:
         config.ACTION = 'indexing'
@@ -146,7 +144,7 @@ def remove_all_index_files():
                 logging.error(f"Error removing {file_to_remove}: {e}")
 
     cli_msg("======= Removing all LogosBible index files done! =======")
-    exit(0)
+    sys.exit(0)
 
 def edit_config():
     pass
@@ -170,8 +168,6 @@ def main():
         config.set_config_env(config.CONFIG_FILE)
 
     parse_command_line()
-    if config.VERBOSE:
-        print(f"{config.DIALOG=}")
 
     # If Logos app is installed, run the desired Logos action.
     if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
@@ -192,18 +188,15 @@ def main():
             config.GUI = True
         
     if config.GUI is True:
-        with open(config.LOGOS_LOG, "a") as f:
-            f.write("Running in a GUI. Enabling logging.\n")
         setDebug()
-
-    die_if_running()
-    die_if_root()
 
     cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 
     # Configure logging.
     if config.DELETE_INSTALL_LOG and os.path.isfile(config.LOGOS_LOG):
         os.remove(config.LOGOS_LOG)
+    initialize_logging(config.LOG_LEVEL)
+    logging.info("Starting installation.") 
     logging.info(f"Using DIALOG: {config.DIALOG}")
 
     options_default = ["Install Logos Bible Software"]
@@ -224,12 +217,6 @@ def main():
         installer_app = InstallerApp(className=classname)
         InstallerWindow(installer_app, class_=classname)
         installer_app.mainloop()
-        # # Launch app after installation if successful.
-        # if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
-        #     run_logos()
-        #     sys.exit(0)
-        # else:
-        #     logos_error("Installation was unsuccessful.")
     elif config.DIALOG == 'curses':
         choice = curses_menu(options, "Welcome to Logos on Linux", "What would you like to do?")
 
