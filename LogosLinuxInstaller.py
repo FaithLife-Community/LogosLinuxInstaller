@@ -62,6 +62,7 @@ def parse_command_line():
     parser.add_argument('--make-skel', '-k', action='store_true', help='Make a skeleton install only.')
     parser.add_argument('--custom-binary-path', '-p', metavar='CUSTOMBINPATH', help='Specify a custom wine binary path.')
     parser.add_argument('--check-resources', '-R', action='store_true', help='Check resources and exit')
+    parser.add_argument('--delete-install-log', '-L', action='store_true', help='Delete the installation log file.')
     parser.add_argument('--edit-config', '-e', action='store_true', help='Edit configuration file')
     parser.add_argument('--indexing', '-i', action='store_true', help='Perform indexing')
     parser.add_argument('--backup', '-b', action='store_true', help='Perform backup')
@@ -81,6 +82,9 @@ def parse_command_line():
         config.LOG_LEVEL = logging.DEBUG
         config.WINEDEBUG = ''
         config.VERBOSE = True
+
+    if args.delete_install_log:
+        config.DELETE_INSTALL_LOG = True
 
     if args.skip_fonts:
         config.SKIP_FONTS = True
@@ -198,8 +202,8 @@ def main():
     cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 
     # Configure logging.
-    initialize_logging(config.LOG_LEVEL)    
-
+    if config.DELETE_INSTALL_LOG and os.path.isfile(config.LOGOS_LOG):
+        os.remove(config.LOGOS_LOG)
     logging.info(f"Using DIALOG: {config.DIALOG}")
 
     options_default = ["Install Logos Bible Software"]
