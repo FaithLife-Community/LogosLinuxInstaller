@@ -6,14 +6,15 @@ import logging
 import os
 import platform
 import psutil
+import queue
 import re
+import requests
 import shutil
 import signal
 import subprocess
 import sys
 import textwrap
-import urllib.error
-import urllib.request
+import threading
 
 from base64 import b64encode
 from pathlib import Path
@@ -36,10 +37,11 @@ class Props():
 class FileProps(Props):
     def __init__(self, f=None):
         super().__init__(f)
-        self.path = Path(self.path)
         if f is not None:
-            self.get_size()
-            # self.get_md5()
+            self.path = Path(self.path)
+            if self.path.is_file():
+                self.get_size()
+                # self.get_md5()
 
     def get_size(self):
         if self.path is None:
@@ -55,39 +57,62 @@ class FileProps(Props):
             for chunk in iter(lambda: f.read(4096), b''):
                 md5.update(chunk)
         self.md5 = b64encode(md5.digest()).decode('utf-8')
+        logging.debug(f"{str(self.path)} MD5: {self.md5}")
         return self.md5
 
 class UrlProps(Props):
     def __init__(self, url=None):
         super().__init__(url)
-        self.header = None
+        self.headers = None
         if url is not None:
-            self.get_header()
+            self.get_headers()
             self.get_size()
-            # self.get_md5()
+            self.get_md5()
 
-    def get_header(self):
+    def get_headers(self):
         if self.path is None:
-            self.header = None
-        cmd = ['wget', '--no-verbose', '--spider', '--server-response', self.path]
-        p = subprocess.run(cmd, stderr=subprocess.PIPE, text=True)
-        self.header = p.stderr
-        return self.header
+            self.headers = None
+        logging.debug(f"Getting headers from {self.path}.")
+        try:
+            r = requests.head(self.path, allow_redirects=True)
+        except Exception as e:
+            logging.error(e)
+            return None
+        except KeyboardInterrupt:
+            print()
+            logos_error("Interrupted by Ctrl+C")
+        self.headers = r.headers
+        return self.headers
 
     def get_size(self):
-        if self.header is None:
-            self.get_header()
-        m = re.findall(r'^\s*Content-Length: ([0-9]+)$', self.header, flags=re.MULTILINE)
-        if len(m) > 0:
-            self.size = int(m[-1])
+        if self.headers is None:
+            r = self.get_headers()
+            if r is None:
+                return
+        content_length = self.headers.get('Content-Length')
+        logging.debug(f"{content_length = }")
+        if content_length is not None:
+            self.size = int(content_length)
         return self.size
 
     def get_md5(self):
-        if self.header is None:
-            self.get_header()
-        m = re.findall(r'^\s*Content-MD5: ([0-9a-zA-Z=+/_-]+)$', self.header, flags=re.MULTILINE)
-        if len(m) > 0:
-            self.md5 = m[0]
+        if self.headers is None:
+            r = self.get_headers()
+            if r is None:
+                return
+        if self.headers.get('server') == 'AmazonS3':
+            content_md5 = self.headers.get('etag')
+            if content_md5 is not None:
+                # Convert from hex to base64
+                content_md5_hex = content_md5.strip('"').strip("'")
+                content_md5 = b64encode(bytes.fromhex(content_md5_hex)).decode()
+        else:
+            content_md5 = self.headers.get('Content-MD5')
+        if content_md5 is not None:
+            content_md5 = content_md5.strip('"').strip("'")
+        logging.debug(f"{content_md5 = }")
+        if content_md5 is not None:
+            self.md5 = content_md5
         return self.md5
 
 
@@ -388,9 +413,12 @@ def curses_menu(options, title, question_text):
     return choice
 
 def cli_download(uri, destination):
-    cli_msg(f"Downloading '{uri}' to '{destination}'")
+    message = f"Downloading '{uri}' to '{destination}'"
+    logging.info(message)
+    cli_msg(message)
     filename = os.path.basename(uri)
 
+    # Set target.
     if destination != destination.rstrip('/'):
         target = os.path.join(destination, os.path.basename(uri))
         if not os.path.isdir(destination):
@@ -403,7 +431,21 @@ def cli_download(uri, destination):
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-    subprocess.call(['wget', '-c', uri, '-O', target])
+    # Download from uri in thread while showing progress bar.
+    cli_queue = queue.Queue()
+    args = [uri, target]
+    kwargs = kwargs={'q': cli_queue}
+    t = threading.Thread(target=net_get, args=args, kwargs=kwargs, daemon=True)
+    t.start()
+    try:
+        while t.is_alive():
+            if cli_queue.empty():
+                continue
+            write_progress_bar(cli_queue.get())
+        print()
+    except KeyboardInterrupt:
+        print()
+        logos_error('Interrupted with Ctrl+C')
 
 def set_appimage():
     os.symlink(config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
@@ -510,19 +552,14 @@ def getLogosReleases(q=None, app=None):
     cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
 
-    try:
-        # Fetch XML content using urllib.
-        with urllib.request.urlopen(url, timeout=30) as f:
-            response = f.read().decode('utf-8')
-    except urllib.error.URLError as e:
-        logging.critical(f"Error fetching or parsing XML: {e}")
-        if q is not None and app is not None:
-            q.put(None)
-            app.root.event_generate("<<ReleaseCheckProgress>>")
+    response_xml = net_get(url)
+    if response_xml is None and None not in [q, app]:
+        q.put(None)
+        app.root.event_generate("<<ReleaseCheckProgress>>")
         return None
 
     # Parse XML
-    root = ET.fromstring(response)
+    root = ET.fromstring(response_xml)
 
     # Define namespaces
     namespaces = {
@@ -641,11 +678,121 @@ def wget(uri, target, q=None, app=None, evt=None):
                     q.put(p)
                     app.root.event_generate(evt)
 
-def same_size(url, file_path, q=None, app=None, evt=None):
+def net_get(url, target=None, app=None, evt=None, q=None):
+    # TODO:
+    # - Check available disk space before starting download
+    logging.debug(f"Download source: {url}")
+    logging.debug(f"Download destination: {target}")
+    target = FileProps(target) # sets path and size attribs
+    url = UrlProps(url) # uses requests to set headers, size, md5 attribs
+    if url.headers is None:
+        logging.critical("Could not get headers.")
+        return None
+
+    # Initialize variables.
+    local_size = 0
+    total_size = url.size # None or int
+    logging.debug(f"File size on server: {total_size}")
+    percent = None
+    chunk_size = 100*1024 # 100 KB default
+    if type(total_size) is int:
+        chunk_size = min([int(total_size/50), 2*1024*1024]) # smaller of 2% of filesize or 2 MB
+    headers = None
+    file_mode = 'wb'
+
+    # If file exists and URL is resumable, set download Range.
+    if target.path is not None and target.path.is_file():
+        logging.debug(f"File exists: {str(target.path)}")
+        local_size = target.get_size()
+        logging.info(f"Current downloaded size in bytes: {local_size}")
+        if url.headers.get('Accept-Ranges') == 'bytes':
+            logging.debug(f"Server accepts byte range; attempting to resume download.")
+            file_mode = 'ab'
+            if type(url.size) is int:
+                headers = {'Range': f'bytes={local_size}-{total_size}'}
+            else:
+                headers = {'Range': f'bytes={local_size}-'}
+
+    logging.debug(f"{chunk_size = }; {file_mode = }; {headers = }")
+
+    # Log download type.
+    if headers is not None:
+        message = f"Continuing download."
+    else:
+        message = f"Starting new download."
+    logging.info(message)
+
+    # Initiate download request.
+    try:
+        if target.path is None: # return url content as text
+            with requests.get(url.path, headers=headers) as r:
+                return r.text
+        else: # download url to target.path
+            with requests.get(url.path, stream=True, headers=headers) as r:
+                with target.path.open(mode=file_mode) as f:
+                    if file_mode == 'wb':
+                        mode_text = 'Writing'
+                    else:
+                        mode_text = 'Appending'
+                    logging.debug(f"{mode_text} data to file {str(target.path)}.")
+                    for chunk in r.iter_content(chunk_size=chunk_size):
+                        f.write(chunk)
+                        local_size = target.get_size()
+                        if type(total_size) is int:
+                            percent = round(local_size / total_size * 100)
+                            if None not in [app, evt]:
+                                # Send progress value to tk window.
+                                app.get_q.put(percent)
+                                app.root.event_generate(evt)
+                            elif q is not None:
+                                # Send progress value to queue param.
+                                q.put(percent)
+    except Exception as e:
+        logos_error(e)
+    except KeyboardInterrupt:
+        print()
+        logos_error("Killed with Ctrl+C")
+
+def verify_downloaded_file(url, file_path, app=None, evt=None):
+    res = False
+    msg = f"{file_path} is the wrong size."
+    right_size = same_size(url, file_path)
+    if right_size:
+        msg = f"{file_path} has the wrong MD5 sum."
+        right_md5 = same_md5(url, file_path)
+        if right_md5:
+            msg = f"{file_path} is verified."
+            res = True
+    logging.info(msg)
+    if None in [app, evt]:
+        return res
+    app.check_q.put((evt, res))
+    app.root.event_generate(evt)
+
+def same_md5(url, file_path):
+    logging.debug(f"Comparing MD5 of {url} and {file_path}.")
+    url_md5 = UrlProps(url).get_md5()
+    logging.debug(f"{url_md5 = }")
+    if url_md5 is None: # skip MD5 check if not provided with URL
+        res = True
+    else:
+        file_md5 = FileProps(file_path).get_md5()
+        logging.debug(f"{file_md5 = }")
+        res = url_md5 == file_md5
+    return res
+
+def same_size(url, file_path):
+    logging.debug(f"Comparing size of {url} and {file_path}.")
     url_size = UrlProps(url).size
     file_size = FileProps(file_path).size
+    logging.debug(f"{url_size = } B; {file_size = } B")
     res = url_size == file_size
-    if None in [q, app, evt]:
-        return res
-    q.put((evt, res))
-    app.root.event_generate(evt)
+    return res
+
+def write_progress_bar(percent, screen_width=80):
+    y = '.'
+    n = ' '
+    l_f = int(screen_width * 0.75) # progress bar length
+    l_y = int(l_f * percent / 100) # num. of chars. complete
+    l_n  = l_f - l_y               # num. of chars. incomplete
+    print(f" [{y*l_y}{n*l_n}] {percent:>3}%", end='\r') # end='\x1b[1K\r' to erase to end of line

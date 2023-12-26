@@ -25,6 +25,7 @@ from utils import get_runmode
 from utils import getLogosReleases
 from utils import getWineBinOptions
 from utils import make_skel
+from utils import verify_downloaded_file
 from utils import write_config
 from wine import createWineBinaryList
 from wine import get_wine_env
@@ -37,10 +38,6 @@ from wine import wine_reg_install
 from wine import winetricks_install
 
 
-def logos_download(uri, destination):
-    if config.DIALOG in ['curses', 'tk']:
-        cli_download(uri, destination)
-
 def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
     DIRS = [
         config.INSTALLDIR,
@@ -49,19 +46,25 @@ def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
     ]
     FOUND = 1
     for i in DIRS:
-        if os.path.isfile(os.path.join(i, FILE)):
-            logging.info(f"{FILE} exists in {i}. Using it…")
-            cli_msg(f"Copying {FILE} into {TARGETDIR}")
-            shutil.copy(os.path.join(i, FILE), TARGETDIR)
-            FOUND = 0
-            break
+        file_path = os.path.join(i, FILE)
+        if os.path.isfile(file_path):
+            logging.info(f"{FILE} exists in {i}. Verifying properties.")
+            if verify_downloaded_file(SOURCEURL, file_path):
+                logging.info(f"{FILE} properties match. Using it…")
+                cli_msg(f"Copying {FILE} into {TARGETDIR}")
+                shutil.copy(os.path.join(i, FILE), TARGETDIR)
+                FOUND = 0
+                break
+            else:
+                logging.info(f"Incomplete file: {file_path}.")
     if FOUND == 1:
-        message = f"{FILE} does not exist. Downloading {SOURCEURL} to {config.MYDOWNLOADS}"
-        logging.info(message)
-        cli_msg(message)
-        logos_download(SOURCEURL, os.path.join(config.MYDOWNLOADS, FILE))
-        cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
-        shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
+        file_path = os.path.join(config.MYDOWNLOADS, FILE)
+        cli_download(SOURCEURL, file_path)
+        if verify_downloaded_file(SOURCEURL, file_path):
+            cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
+            shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
+        else:
+            logos_error(f"Bad file size or checksum: {file_path}")
 
 def getAppImage():
     wine64_appimage_full_filename = Path(config.WINE64_APPIMAGE_FULL_FILENAME)
@@ -316,25 +319,13 @@ def get_logos_executable():
     PRESENT_WORKING_DIRECTORY = config.PRESENT_WORKING_DIRECTORY
     HOME = os.environ.get('HOME')
     # This VAR is used to verify the downloaded MSI is latest
-    if config.LOGOS_EXECUTABLE is None:
-        config.LOGOS_EXECUTABLE = f"{config.FLPRODUCT}_v{config.LOGOS_VERSION}-x64.msi"
+    config.LOGOS_EXECUTABLE = f"{config.FLPRODUCT}_v{config.LOGOS_VERSION}-x64.msi"
     
     #cli_continue_question(f"Now the script will check for the MSI installer. Then it will download and install {FLPRODUCT} Bible at {WINEPREFIX}. You will need to interact with the installer. Do you wish to continue?", "The installation was cancelled!", "")
     
     # Getting and installing {FLPRODUCT} Bible
-    # First check current directory to see if the .MSI is present; if not, check user's Downloads/; if not, download it new. Once found, copy it to WORKDIR for future use.
     logging.info(f"Installing {config.FLPRODUCT}Bible 64bits…")
-    if os.path.isfile(f"{PRESENT_WORKING_DIRECTORY}/{config.LOGOS_EXECUTABLE}"):
-        logging.info(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
-        shutil.copy(f"{PRESENT_WORKING_DIRECTORY}/{config.LOGOS_EXECUTABLE}", f"{config.APPDIR}/")
-    elif os.path.isfile(f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}"):
-        logging.info(f"{config.LOGOS_EXECUTABLE} exists. Using it…")
-        shutil.copy(f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}", f"{config.APPDIR}/")
-    else:
-        logging.info(f"{config.LOGOS_EXECUTABLE} does not exist. Downloading…")
-        logos_download(config.LOGOS64_URL, f"{config.MYDOWNLOADS}/")
-        shutil.move(f"{config.MYDOWNLOADS}/{config.LOGOS64_MSI}", f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}")
-        shutil.copy(f"{config.MYDOWNLOADS}/{config.LOGOS_EXECUTABLE}", f"{config.APPDIR}/")
+    logos_reuse_download(config.LOGOS64_URL, config.LOGOS_EXECUTABLE, f"{config.APPDIR}/")
 
 def installLogos9(app):
     message = "Configuring wine bottle and installing app..."
@@ -447,7 +438,6 @@ def postInstall(app):
         runmode = get_runmode()
         if runmode == 'binary':
             launcher_exe = Path(f"{config.INSTALLDIR}/LogosLinuxLauncher")
-            # FIXME: Confirm file copy and test desktop launcher.
             if launcher_exe.is_file():
                 logging.debug(f"Removing existing launcher binary.")
                 launcher_exe.unlink()
