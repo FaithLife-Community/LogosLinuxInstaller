@@ -453,7 +453,7 @@ def postInstall(app):
                 launcher_exe.unlink()
             logging.info(f"Creating launcher binary by copying this installer binary to {launcher_exe}.")
             shutil.copy(sys.executable, launcher_exe)
-            create_shortcut()
+            create_shortcuts()
 
             if config.DIALOG == 'tk':
                 subprocess.Popen(str(launcher_exe))
@@ -513,8 +513,19 @@ def finish_install(app=None):
     if app is not None:
         app.root.event_generate("<<CheckInstallProgress>>")
 
+def create_desktop_file(name, contents):
+    launcher_path = os.path.expanduser(f"~/.local/share/applications/{name}")
+    if os.path.exists(launcher_path):
+        logging.info(f"Removing desktop launcher at {launcher_path}.")
+        os.remove(launcher_path)
 
-def create_shortcut():
+    logging.info(f"Creating desktop launcher at {launcher_path}.")
+    with open(launcher_path, 'w') as f:
+        f.write(contents)
+    os.chmod(launcher_path, 0o755)
+
+
+def create_shortcuts():
     # Set icon variables.
     if config.LOGOS_ICON_URL is None:
         config.LOGOS_ICON_URL = "https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/img/" + config.FLPRODUCTi + "-128-icon.png"
@@ -543,14 +554,10 @@ def create_shortcut():
     else:
         logging.info(f"Icon found at {logos_icon_path}.")
 
-    desktop_entry_path = os.path.expanduser(f"~/.local/share/applications/{config.FLPRODUCT}Bible.desktop")
-    if os.path.exists(desktop_entry_path):
-        logging.info(f"Removing desktop launcher at {desktop_entry_path}.")
-        os.remove(desktop_entry_path)
-
-    logging.info(f"Creating desktop launcher at {desktop_entry_path}.")
-    with open(desktop_entry_path, 'w') as desktop_file:
-        desktop_file.write(f"""[Desktop Entry]
+    desktop_files = [
+        (
+            f"{config.FLPRODUCT}Bible.desktop",
+            f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible
 Comment=A Bible Study Library with Built-In Tools
 Exec={config.INSTALLDIR}/LogosLinuxLauncher
@@ -558,6 +565,20 @@ Icon={logos_icon_path}
 Terminal=false
 Type=Application
 Categories=Education;
-""")
-
-    os.chmod(desktop_entry_path, 0o755)
+"""
+        ),
+        (
+            f"{config.FLPRODUCT}Bible-ControlPanel.desktop",
+            f"""[Desktop Entry]
+Name={config.FLPRODUCT}Bible Control Panel
+Comment=Perform various tasks for {config.FLPRODUCT} app
+Exec={config.INSTALLDIR}/LogosLinuxLauncher --control-panel
+Icon={logos_icon_path}
+Terminal=false
+Type=Application
+Categories=Education;
+"""
+        ),
+    ]
+    for f, c in desktop_files:
+        create_desktop_file(f, c)

@@ -17,19 +17,26 @@ from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Style
 
 import config
-from gui import Gui
+from control import open_config_file
+from control import remove_all_index_files
+from gui import ControlGui
+from gui import InstallerGui
 from installer import checkExistingInstall
 from installer import finish_install
 from installer import logos_setup
 from msg import cli_msg
+from utils import checkDependencies
 from utils import same_size
 from utils import getLogosReleases
 from utils import getWineBinOptions
 from utils import wget
 from wine import createWineBinaryList
+from wine import get_app_logging_state
+from wine import run_logos
+from wine import switch_logging
 
 
-class InstallerApp(Tk):
+class App(Tk):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.classname = kwargs.get('classname')
@@ -55,28 +62,28 @@ class InstallerApp(Tk):
             )]
         )
 
-        # Set root parameters.
-        self.w = 675
-        self.h = 300
-        self.geometry(f"{self.w}x{self.h}")
-        self.title("Faithlife Bible Software Installer")
-        self.minsize(self.w, self.h)
-        # self.resizable(False, False)
-
         # Make root widget's outer border expand with window.
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-class InstallerWindow(Gui):
+class InstallerWindow(InstallerGui):
     def __init__(self, root, **kwargs):
         super().__init__(**kwargs)
+
+        # Set root parameters.
+        self.root = root
+        self.root.title("Faithlife Bible Software Installer")
+        self.root.w = 675
+        self.root.h = 300
+        self.root.geometry(f"{self.root.w}x{self.root.h}")
+        self.root.minsize(self.root.w, self.root.h)
+        # self.root.resizable(False, False)
 
         # Initialize variables from ENV.
         self.wine_exe = config.WINE_EXE
         self.custombinpath = config.CUSTOMBINPATH
 
         # Set other variables to be used later.
-        self.root = root
         self.appimage_same_size = None
         self.logos_same_size = None
         self.icon_same_size = None
@@ -445,3 +452,111 @@ class InstallerWindow(Gui):
         self.okay_button.state(['!disabled'])
         self.root.destroy()
         return 0
+
+class ControlWindow(ControlGui):
+    def __init__(self, root, **kwargs):
+        super().__init__(**kwargs)
+
+        # Set root parameters.
+        self.root = root
+        self.root.title("Faithlife Bible Software Control Panel")
+        self.root.w = 450
+        self.root.h = 300
+        self.root.geometry(f"{self.root.w}x{self.root.h}")
+        self.root.minsize(self.root.w, self.root.h)
+        # self.root.resizable(False, False)
+
+        self.installdir_filechooser.config(text=self.installdir, command=self.get_installdir)
+        self.run_button.config(command=self.run_logos)
+        self.check_button.config(command=self.check_resources)
+        self.check_button.state(['disabled']) # FIXME: needs function
+        self.indexes_button.config(command=self.remove_indexes)
+        self.loggingstatevar.set('Enable')
+        self.logging_button.config(text=self.loggingstatevar.get(), command=self.switch_logging)
+        self.logging_button.state(['disabled'])
+        self.logging_init_event = '<<InitLoggingButton>>'
+        self.logging_event = '<<UpdateLoggingButton>>'
+        self.logging_q = Queue()
+        
+        self.config_button.config(command=self.open_config)
+        self.deps_button.config(command=self.reinstall_deps)
+        self.deps_button.state(['disabled']) # FIXME: needs function
+        self.message_event = '<<ClearMessage>>'
+
+        self.root.bind(self.logging_event, self.update_logging_button)
+        self.root.bind(self.logging_init_event, self.initialize_logging_button)
+        self.root.bind(self.message_event, self.clear_message)
+
+        # Start function to determine app logging state.
+        t = Thread(target=get_app_logging_state, kwargs={'app': self, 'init': True})
+        t.start()
+        self.messagevar.set('Getting current app logging status...')
+        self.progress.state(['!disabled'])
+        self.progress.start()
+
+    def check_resources(self, evt=None):
+        # FIXME: needs function
+        pass
+
+    def get_installdir(self, evt=None):
+        dirname = askdirectory(
+            initialdir='~',
+            title="Choose installation directory..."
+        )
+        if len(dirname) > 0:
+            self.installdir = dirname
+        self.installdir_filechooser.config(text=self.installdir)
+
+    def reinstall_deps(self, evt=None):
+        checkDependencies()
+
+    def remove_indexes(self, evt=None):
+        self.messagevar.set("Removing indexes...")
+        t = Thread(target=remove_all_index_files, kwargs={'app': self})
+        t.start()
+
+    def run_logos(self, evt=None):
+        t = Thread(target=run_logos)
+        t.start()
+
+    def open_config(self, evt=None):
+        open_config_file()
+
+    def switch_logging(self, evt=None):
+        prev_state = self.loggingstatevar.get()
+        new_state = 'Enable' if prev_state == 'Disable' else 'Disable'
+        kwargs = {
+            'action': new_state.lower(),
+            'app': self,
+        }
+        self.messagevar.set(f"Switching app logging to '{prev_state}d'...")
+        self.progress.state(['!disabled'])
+        self.progress.start()
+        self.logging_button.state(['disabled'])
+        t = Thread(target=switch_logging, kwargs=kwargs)
+        t.start()
+
+    def initialize_logging_button(self, evt=None):
+        self.messagevar.set('')
+        self.progress.stop()
+        self.progress.state(['disabled'])
+        state = self.reverse_logging_state_value(self.logging_q.get())
+        self.loggingstatevar.set(state[:-1].title())
+        self.logging_button.state(['!disabled'])
+
+    def update_logging_button(self, evt=None):
+        self.messagevar.set('')
+        self.progress.stop()
+        self.progress.state(['disabled'])
+        state = self.logging_q.get()
+        self.loggingstatevar.set(state[:-1].title())
+        self.logging_button.state(['!disabled'])
+
+    def clear_message(self, evt=None):
+        self.messagevar.set('')
+
+    def reverse_logging_state_value(self, state):
+        if state == 'DISABLED':
+            return 'ENABLED'
+        else:
+            return 'DISABLED'

@@ -8,11 +8,12 @@ from tkinter.ttk import Combobox
 from tkinter.ttk import Frame
 from tkinter.ttk import Label
 from tkinter.ttk import Progressbar
+from tkinter.ttk import Separator
 
 import config
 from utils import get_system_winetricks
 
-class Gui(Frame):
+class InstallerGui(Frame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -254,4 +255,164 @@ class Gui(Frame):
             columnspan=5,
             sticky='we',
             pady=2,
+        )
+
+class ControlGui(Frame):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.config(padding=5)
+        self.grid(row=0, column=0, sticky='nwes')
+
+        # Initialize vars from ENV.
+        self.installdir = config.INSTALLDIR
+        self.flproduct = config.FLPRODUCT
+        self.targetversion = config.TARGETVERSION
+        self.logos_release_version = config.LOGOS_RELEASE_VERSION
+        self.logs = config.LOGS
+        self.config_file = config.CONFIG_FILE
+
+        # INSTALLDIR file_chooser
+        self.installdir_label = Label(self, text="Installation folder: ")
+        self.installdir_filechooser = Button(self, text="Choose folder...")
+        # Run app button
+        self.run_label = Label(self, text=f"Run app")
+        self.run_button = Button(self, text="Run")
+        # Check resources button
+        self.check_label = Label(self, text="Check resources")
+        self.check_button = Button(self, text="Check")
+        # Remove indexes button
+        self.indexes_label = Label(self, text="Remove indexes")
+        self.indexes_button = Button(self, text="Remove")
+        # App logging toggle
+        self.loggingstatevar = StringVar(value='Enable')
+        self.logging_label = Label(self, text="Toggle app logging")
+        self.logging_button = Button(self, textvariable=self.loggingstatevar)
+        # Edit config button
+        self.config_label = Label(self, text="Edit config file")
+        self.config_button = Button(self, text="Edit ...")
+        # Reinstall deps button
+        self.deps_label = Label(self, text="Reinstall dependencies")
+        self.deps_button = Button(self, text="Reinstall")
+        # Separator
+        self.separator = Separator(self, orient='horizontal')
+        # Status message label
+        self.messagevar = StringVar()
+        self.message_label = Label(self, textvariable=self.messagevar)
+        # Progress bar
+        # self.progressvar = IntVar(value=0)
+        self.progress = Progressbar(self, mode='indeterminate', orient='horizontal')
+        self.progress.state(['disabled'])
+
+        # Place widgets.
+        self.installdir_label.grid(
+            column=0,
+            row=0,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.installdir_filechooser.grid(
+            column=1,
+            row=0,
+            sticky='we',
+            pady=2,
+        )
+        self.run_label.grid(
+            column=0,
+            row=1,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.run_button.grid(
+            column=1,
+            row=1,
+            sticky='w',
+            pady=2,
+        )
+        self.check_label.grid(
+            column=0,
+            row=2,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.check_button.grid(
+            column=1,
+            row=2,
+            sticky='w',
+            pady=2,
+        )
+        self.indexes_label.grid(
+            column=0,
+            row=3,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.indexes_button.grid(
+            column=1,
+            row=3,
+            sticky='w',
+            pady=2,
+        )
+        self.logging_label.grid(
+            column=0,
+            row=4,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.logging_button.grid(
+            column=1,
+            row=4,
+            sticky='w',
+            pady=2,
+        )
+        self.config_label.grid(
+            column=0,
+            row=5,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.config_button.grid(
+            column=1,
+            row=5,
+            sticky='w',
+            pady=2,
+        )
+        self.deps_label.grid(
+            column=0,
+            row=6,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.deps_button.grid(
+            column=1,
+            row=6,
+            sticky='w',
+            pady=2,
+        )
+        self.separator.grid(
+            column=0,
+            row=7,
+            columnspan=2,
+            sticky='we',
+            pady=2,
+        )
+        self.message_label.grid(
+            column=0,
+            row=8,
+            columnspan=2,
+            sticky='we',
+            pady=2
+        )
+        self.progress.grid(
+            column=0,
+            row=9,
+            columnspan=2,
+            sticky='we',
+            pady=2
         )

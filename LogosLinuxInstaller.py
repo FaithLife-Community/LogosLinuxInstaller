@@ -6,8 +6,12 @@ import sys
 import argparse
 
 import config
-from app import InstallerApp
+from app import ControlWindow
+from app import App
 from app import InstallerWindow
+from control import open_config_file
+from control import remove_all_index_files
+from control import remove_library_catalog
 from installer import install
 from msg import cli_msg
 from msg import initialize_logging
@@ -23,7 +27,6 @@ from utils import getDialog
 from utils import set_appimage
 from utils import set_default_config
 from utils import setDebug
-from wine import run_control_panel
 from wine import run_indexing
 from wine import run_logos
 from wine import run_winetricks
@@ -68,6 +71,7 @@ def parse_command_line():
     parser.add_argument('--dirlink', '-d', action='store_true', help='Create directory link')
     parser.add_argument('--shortcut', '-s', action='store_true', help='Create shortcut')
     parser.add_argument('--passive', '-P', action='store_true', help='Install Faithlife product non-interactively')
+    parser.add_argument('--control-panel', '-C', action='store_true', help='Open Control Panel app')
 
     args = parser.parse_args()
 
@@ -110,43 +114,19 @@ def parse_command_line():
         config.ACTION = 'indexing'
     if args.passive:
         config.PASSIVE = True
+    if args.logs:
+        config.ACTION = 'logging'
+    if args.control_panel:
+        config.ACTION = 'control'
 
-def remove_library_catalog():
-    LOGOS_DIR = os.path.dirname(config.LOGOS_EXE)
-    library_catalog_path = os.path.join(LOGOS_DIR, "Data", "*", "LibraryCatalog")
-    pattern = os.path.join(library_catalog_path, "*")
-    files_to_remove = glob.glob(pattern)
-    for file_to_remove in files_to_remove:
-        try:
-            os.remove(file_to_remove)
-            logging.info(f"Removed: {file_to_remove}")
-        except OSError as e:
-            logging.error(f"Error removing {file_to_remove}: {e}")
-
-def remove_all_index_files():
-    LOGOS_DIR = os.path.dirname(config.LOGOS_EXE)
-    index_paths = [
-        os.path.join(logos_dir, "Data", "*", "BibleIndex"),
-        os.path.join(logos_dir, "Data", "*", "LibraryIndex"),
-        os.path.join(logos_dir, "Data", "*", "PersonalBookIndex"),
-        os.path.join(logos_dir, "Data", "*", "LibraryCatalog")
-    ]
-    for index_path in index_paths:
-        pattern = os.path.join(index_path, "*")
-        files_to_remove = glob.glob(pattern)
-
-        for file_to_remove in files_to_remove:
-            try:
-                os.remove(file_to_remove)
-                logging.info(f"Removed: {file_to_remove}")
-            except OSError as e:
-                logging.error(f"Error removing {file_to_remove}: {e}")
-
-    cli_msg("======= Removing all LogosBible index files done! =======")
-    sys.exit(0)
+def run_control_panel():
+    classname = "LogosLinuxControlPanel"
+    app = App(className=classname)
+    win = ControlWindow(app, class_=classname)
+    app.mainloop()
 
 def edit_config():
-    pass
+    open_config_file()
 
 def backup():
     pass
@@ -170,10 +150,15 @@ def main():
 
     # If Logos app is installed, run the desired Logos action.
     if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
-        if config.ACTION == 'indexing':
+        if config.ACTION == 'control':
+            run_control_panel()
+            sys.exit(0)
+        elif config.ACTION == 'indexing':
             run_indexing()
             sys.exit(0)
-
+        elif config.ACTION == 'logging':
+            switch_logging()
+            sys.exit(0)
         elif config.ACTION == 'app':
             run_logos()
             sys.exit(0)
@@ -213,7 +198,7 @@ def main():
     choice = None
     if config.DIALOG is None or config.DIALOG == 'tk':
         classname = "LogosLinuxInstaller"
-        installer_app = InstallerApp(className=classname)
+        installer_app = App(className=classname)
         InstallerWindow(installer_app, class_=classname)
         installer_app.mainloop()
     elif config.DIALOG == 'curses':
@@ -246,11 +231,7 @@ def main():
     elif choice == "Run Winetricks":
         run_winetricks()
     elif choice.endswith("Logging"):
-        if config.LOGS == "DISABLED":
-            action = 'disable'
-        else:
-            action = 'enable'
-        switch_logging(action=action)
+        switch_logging()
     else:
         logos_error("Unknown menu choice.")
 

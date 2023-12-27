@@ -227,10 +227,6 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     except subprocess.CalledProcessError as e:
         logging.error(f"Error 2 running {winecmd} {exe}: {e}")
 
-def run_control_panel():
-    run_wine_proc(config.WINE_EXE, exe="control")
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
-
 def run_winetricks():
     run_wine_proc(config.WINETRICKSBIN)
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
@@ -261,22 +257,64 @@ def installD3DCompiler():
         cmd.insert(0, '-q')
     winetricks_install(*cmd)
 
-def switch_logging(action=None):
-    if action == 'disable':
-        value = '0001'
-        state = 'DISABLED'
-    elif action == 'enable':
-        value = '0000'
-        state = 'ENABLED'
-    else:
-        return
+def get_registry_value(reg_path, name):
+    value = None
+    env = get_wine_env()
+    cmd = [config.WINE_EXE, 'reg', 'query', reg_path, '/v', name]
+    stdout = subprocess.run(
+        cmd, capture_output=True,
+        text=True, encoding=config.WINECMD_ENCODING,
+        env=env).stdout
+    for line in stdout.splitlines():
+        if line.strip().startswith(name):
+            value = line.split()[-1].strip()
+            break
+    return value
 
+def get_app_logging_state(app=None, init=False):
+    state = 'DISABLED'
+    current_value = get_registry_value('HKCU\\Software\\Logos4\\Logging', 'Enabled')
+    if current_value == '0x1':
+        state = 'ENABLED'
+    if app is not None:
+        app.logging_q.put(state)
+        if init:
+            app.root.event_generate(app.logging_init_event)
+        else:
+            app.root.event_generate(app.logging_event)
+    return state
+
+def switch_logging(action=None, app=None):
+    state_disabled = 'DISABLED'
+    value_disabled = '0000'
+    state_enabled = 'ENABLED'
+    value_enabled = '0001'
+    if action == 'disable':
+        value = value_disabled
+        state = state_disabled
+    elif action == 'enable':
+        value = value_enabled
+        state = state_enabled
+    else:
+        current_state = get_app_logging_state()
+        logging.debug(f"app logging {current_state = }")
+        if current_state == state_enabled:
+            value = value_disabled
+            state = state_disabled
+        else:
+            value = value_enabled
+            state = state_enabled
+
+    logging.info(f"Setting app logging to '{state}'.")
     exe_args = ['add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled', '/t',
         'REG_DWORD', '/d', value, '/f'
     ]
     run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
     run_wine_proc(config.WINESERVER_EXE, exe_args=['-w'])
     config.LOGS = state
+    if app is not None:
+        app.logging_q.put(state)
+        app.root.event_generate(app.logging_event)
 
 def get_wine_env():
     wine_env = os.environ.copy()
