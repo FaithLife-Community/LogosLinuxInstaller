@@ -196,6 +196,10 @@ def install_msi():
 
 def run_wine_proc(winecmd, exe=None, exe_args=list()):
     env = get_wine_env()
+    if config.WINECMD_ENCODING is None:
+        # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
+        codepages = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages').split(',')
+        config.WINECMD_ENCODING = codepages[-1]
     logging.debug(f"run_wine_proc: {winecmd} {exe} {' '.join(exe_args)}")
 
     command = [winecmd]
@@ -205,14 +209,16 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
         command.extend(exe_args)
 
     try:
-        # process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
         with process.stdout:
             for line in iter(process.stdout.readline, b''):
                 if winecmd.endswith('winetricks'):
                     logging.debug(line.decode().rstrip())
                 else:
-                    logging.info(line.decode().rstrip())
+                    try:
+                        logging.info(line.decode().rstrip())
+                    except UnicodeDecodeError:
+                        logging.info(line.decode(config.WINECMD_ENCODING).rstrip())
         returncode = process.wait()
 
         if returncode != 0:

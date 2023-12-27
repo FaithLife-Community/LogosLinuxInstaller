@@ -21,6 +21,7 @@ WINE_EXE = os.getenv('WINE_EXE')
 WINE64_APPIMAGE_FULL_URL = os.getenv('WINE64_APPIMAGE_FULL_URL', "https://github.com/ferion11/LogosLinuxInstaller/releases/download/wine-devel-8.19/wine-devel_8.19-x86_64.AppImage")
 WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(WINE64_APPIMAGE_FULL_URL)
 WINEBIN_CODE = os.getenv('WINEBIN_CODE')
+WINECMD_ENCODING = None
 WINEPREFIX = os.getenv('WINEPREFIX')
 WINESERVER_EXE = os.getenv('WINESERVER_EXE')
 WINETRICKSBIN = os.getenv('WINETRICKSBIN')
