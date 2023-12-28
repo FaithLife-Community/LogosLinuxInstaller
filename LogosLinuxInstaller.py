@@ -31,24 +31,6 @@ from wine import run_logos
 from wine import run_winetricks
 from wine import switch_logging
 
-# Basic Functionality
-#TODO: Fix post-install
-#TODO: Test get_os and get_package_manager
-#TODO: Verify necessary packages now that we are using python
-#TODO: Redo logos_progress
-#TODO: Test optargs and menu options
-
-# AppImage Handling
-#TODO: Convert checkAppImages(). See https://github.com/ferion11/LogosLinuxInstaller/pull/193/commits/bfefb3c05c7a9989e81372d77fa785fc75bd4e94
-#TODO: Fix set_appimage()
-#TODO: Add update_appimage()
-
-# Script updates and ideas
-#TODO: Put main menu into a while loop
-#TODO: Add an option to reinstall dependencies for SteamOS
-#TODO: Add a get_winetricks option to post-install menu
-
-
 def parse_command_line():
     parser = argparse.ArgumentParser(description=f'Installs {os.environ.get("FLPRODUCT")} Bible Software with Wine on Linux.')
     parser.add_argument('--version', '-v', action='version', version=f'{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}')
