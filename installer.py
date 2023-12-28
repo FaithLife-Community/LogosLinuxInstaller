@@ -219,7 +219,7 @@ def checkExistingInstall(app=None):
     if app is not None:
         app.root.event_generate("<<CheckExistingInstallDone>>")
 
-def beginInstall(app):
+def beginInstall(app=None):
     message = "Preparing installation folder..."
     cli_msg(message)
     if app is not None:

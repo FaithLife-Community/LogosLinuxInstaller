@@ -25,10 +25,11 @@ from installer import finish_install
 from installer import logos_setup
 from msg import cli_msg
 from utils import checkDependencies
-from utils import verify_downloaded_file
+from utils import get_winebin_code_and_desc
 from utils import getLogosReleases
 from utils import getWineBinOptions
 from utils import net_get
+from utils import verify_downloaded_file
 from wine import createWineBinaryList
 from wine import get_app_logging_state
 from wine import run_logos
@@ -288,7 +289,7 @@ class InstallerWindow(InstallerGui):
             config.CUSTOMBINPATH = self.custombinpath
         config.WINE_EXE = self.wine_exe
         if config.WINEBIN_CODE is None:
-            config.WINEBIN_CODE = 'AppImage' # FIXME: This should depend on the wine_exe path
+            config.WINEBIN_CODE = get_winebin_code_and_desc(config.WINE_EXE)[0]
         if self.winetricksbin.startswith('System') and self.sys_winetricks is not None:
             config.WINETRICKSBIN = self.sys_winetricks[0]
         elif self.winetricksbin.startswith('Download'):

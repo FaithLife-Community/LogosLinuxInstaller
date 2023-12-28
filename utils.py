@@ -594,20 +594,7 @@ def getWineBinOptions(binaries):
     
     for binary in binaries:
         WINEBIN_PATH = binary
-        
-        # Set binary code, description, and path based on path
-        if "/usr/bin/" in binary:
-            WINEBIN_CODE = "System"
-            WINEBIN_DESCRIPTION = "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later. Stable or Devel do not work."
-        elif "Proton" in binary:
-            WINEBIN_CODE = "Proton"
-            WINEBIN_DESCRIPTION = "Install using the Steam Proton fork of WINE."
-        elif "PlayOnLinux" in binary:
-            WINEBIN_CODE = "PlayOnLinux"
-            WINEBIN_DESCRIPTION = "Install using a PlayOnLinux WINE64 binary."
-        else:
-            WINEBIN_CODE = "Custom"
-            WINEBIN_DESCRIPTION = "Use a WINE64 binary from another directory."
+        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(binary)
 
         # Create wine binary option array
         if config.DIALOG == "curses":
@@ -616,6 +603,28 @@ def getWineBinOptions(binaries):
             WINEBIN_OPTIONS.append(WINEBIN_PATH)
 
     return sorted(WINEBIN_OPTIONS)
+
+def get_winebin_code_and_desc(binary):
+    # Set binary code, description, and path based on path
+    codes = {
+        "AppImage": f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}",
+        "System": "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later. Stable or Devel do not work.",
+        "Proton": "Install using the Steam Proton fork of WINE.",
+        "PlayOnLinux": "Install using a PlayOnLinux WINE64 binary.",
+        "Custom": "Use a WINE64 binary from another directory.",
+    }
+    if binary.lower().endswith('.appimage'):
+        code = "AppImage"
+    elif "/usr/bin/" in binary:
+        code = "System"
+    elif "Proton" in binary:
+        code = "Proton"
+    elif "PlayOnLinux" in binary:
+        code = "PlayOnLinux"
+    else:
+        code = "Custom"
+    desc = codes.get(code)
+    return code, desc
 
 def get_user_downloads_dir():
     home = Path.home()
