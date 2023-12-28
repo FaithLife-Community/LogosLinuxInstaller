@@ -1,13 +1,27 @@
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f730f74748c348cb9b3ff2fa1654c84b)](https://app.codacy.com/manual/ferion11/LogosLinuxInstaller?utm_source=github.com&utm_medium=referral&utm_content=ferion11/LogosLinuxInstaller&utm_campaign=Badge_Grade_Dashboard)
-[![Automation testing](https://img.shields.io/badge/Automation-testing-sucess)](https://github.com/ferion11/LogosLinuxInstallTests) [![Installer LogosBible](https://img.shields.io/badge/Installer-LogosBible-blue)](https://www.logos.com) [![LastRelease](https://img.shields.io/github/v/release/ferion11/LogosLinuxInstaller)](https://github.com/ferion11/LogosLinuxInstaller/releases)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f730f74748c348cb9b3ff2fa1654c84b)](https://app.codacy.com/manual/FaithLife-Community/LogosLinuxInstaller?utm_source=github.com&utm_medium=referral&utm_content=FaithLife-Community/LogosLinuxInstaller&utm_campaign=Badge_Grade_Dashboard)
+[![Automation testing](https://img.shields.io/badge/Automation-testing-sucess)](https://github.com/FaithLife-Community/LogosLinuxInstallTests) [![Installer LogosBible](https://img.shields.io/badge/Installer-LogosBible-blue)](https://www.logos.com) [![LastRelease](https://img.shields.io/github/v/release/FaithLife-Community/LogosLinuxInstaller)](https://github.com/FaithLife-Community/LogosLinuxInstaller/releases)
 
-# Logos Bible Software on Linux Install Scripts
+# Install Logos Bible Software on Linux
 
-This repository contains a set of bash scripts for installing Logos Bible (Verbum) Software on Linux.
+This repository contains a Python program for installing and maintaining FaithLife's Logos Bible (Verbum) Software on Linux.
 
-# Usage
+This program is created and maintained by the FaithLife Community and is licensed under the MIT License.
 
-## LogosLinuxInstaller.sh
+## Logos Linux Installer
+
+The main program is a distributable executable and contains Python itself and all necessary Python packages.
+
+When running the program, it will attempt to determine your operating system and package manager.
+It will then attempt to install all needed system dependencies during the install of Logos.
+When the install is finished, it will place two shortcuts on your computer: one will launch Logos directly; the other will launch the Control Panel.
+
+To access the GUI version of the program, double click the executable in your file browser or on your desktop, and then follow the prompts.
+
+The program can also be run from source and should be run from a Python virtual environment.
+See below.
+
+By default the program installs Logos, but you can pass the `-C|--control-panel` optarg to access the Control Panel, which allows you to install Logos or do various maintenance functions on your install.
+In time, you should be able to use the program to restore a backup.
 
 ```
 Usage: ./LogosLinuxInstaller.sh
@@ -18,6 +32,7 @@ Options:
     -v   --version              Prints version information and exit.
     -V   --verbose              Enable extra CLI verbosity.
     -D   --debug                Makes Wine print out additional info.
+    -C   --control-panel        Open the Control Panel app.
     -c   --config               Use the Logos on Linux config file when
                                 setting environment variables. Defaults to:
                                 \$HOME/.config/Logos_on_Linux/Logos_on_Linux.conf
@@ -25,103 +40,61 @@ Options:
                                 the user.
     -b   --custom-binary-path   Set a custom path to search for wine binaries
                                 during the install.
-    -r   --regenerate-scripts   Regenerates the Logos.sh and controlPanel.sh
-                                scripts using the config file.
     -F   --skip-fonts           Skips installing corefonts and tahoma.
+    -s   --shortcut			    Create or update the Logos shortcut, located in
+                                HOME/.local/share/applications.
+    -d   --dirlink              Create a symlink to the Windows Logos directory
+                                in your Logos on Linux install dir.
+                                The symlink's name will be 'installation_dir'.
+    -e   --edit-config          Edit the Logos on Linux config file.
+    -i   --indexing             Run the Logos indexer in the
+                                background.
+    --remove-all-index          Removes all index and library catalog files.
+    --remove-library-catalog    Removes all library catalog files.
+    -l   --logs                 Turn Logos logs on or off.
+	-L   --delete-install-log   Delete the installation log file.
+    -R   --check-resources      Check Logos's resource usage while running.
+    -b   --backup               Saves Logos data to the config's
+                                backup location.
+    -r   --restore              Restores Logos data from the config's
+                                backup location.
     -f   --force-root           Sets LOGOS_FORCE_ROOT to true, which permits
                                 the root user to run the script.
+	-P   --passive              Install Logos non-interactively .
     -k   --make-skel            Make a skeleton install only.
 ```
 
-## Logos.sh
+## Installation
+
+This section is a WIP.
+
+You can either run the program from the CLI for a CLI-only install, or you can double click the icon in your file browser or on your desktop for a GUI install. Then, follow the prompts.
+
+## Installing from Source
+
+You can clone the repo and install the app from source. To do so, you will need to run the application in a Python virtual environment (venv).
 
 ```
-Usage: ./Logos.sh
-Interact with Logos Bible Software in Wine on Linux.
-
-Options:
-    -h   --help                Prints this help message and exit.
-    -v   --version             Prints version information and exit.
-    -D   --debug               Makes Wine print out additional info.
-    -f   --force-root          Sets LOGOS_FORCE_ROOT to true, which
-                               permits the root user to run the script.
-    -R   --check-resources     Check Logos's resource usage.
-    -e   --edit-config         Edit the Logos on Linux config file.
-    -i   --indexing            Run the Logos indexer in the
-                               background.
-    -b   --backup              Saves Logos data to the config's
-                               backup location.
-    -r   --restore             Restores Logos data from the config's
-                               backup location.
-    -l   --logs                Turn Logos logs on or off.
-    -d   --dirlink             Create a symlink to the Windows Logos directory
-                               in your Logos on Linux install dir.
-                               The symlink's name will be 'installation_dir'.
-    -s   --shortcut            Create or update the Logos shortcut, located in
-                               HOME/.local/share/applications.
-    --remove-all-index         Removes all index and library catalog files.
-    --remove-library-catalog   Removes all library catalog files.
+$ python3 -m venv env # create a virtual env folder called "env"
+$ . env/bin/activate # activates the env
+(env) $ pip3 install -r requirements.txt
+(env) $ ./LogosLinuxInstaller.py # run the script
 ```
-
-## controlPanel.sh
-
-```
-Usage: ./controlPanel.sh
-Interact with Logos Bible Software in Wine on Linux.
-
-Options:x
-    -h   --help         Prints this help message and exit.
-    -v   --version      Prints version information and exit.
-    -D   --debug        Makes Wine print out additional info.
-    -f   --force-root   Sets LOGOS_FORCE_ROOT to true, which permits
-                        the root user to run the script.
-    --wine64            Run the script's wine64 binary.
-    --wineserver        Run the script's wineserver binary.
-    --winetricks        Run winetricks.
-    --setAppImage       Set the script's AppImage file. NOTE:
-                        Currently broken. Disabled until fixed.
-```
-
-# Installation [WIP]
-
-Once all dependencies are met, you can either run the script from the CLI for a CLI-only install, or you can double click the icon in your file browser or on your desktop for a GUI install. Then, follow the prompts.
-
-NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
-
-Your system must either have `dialog` or `whiptail` installed for a CLI install (launched from CLI), or you must have `zenity` installed for a GUI install (launched from double clicking).
 
 ## Install Guide
 
-For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/ferion11/LogosLinuxInstaller/wiki/Install-Guide).
+[WIP] For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
 
-NOTE: This install guide is outdated. Please see [#173](https://github.com/ferion11/LogosLinuxInstaller/issues/173).
+NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
+
+If you want to install your distro's dependencies outside of the script, please see the following.
 
 ## Debian and Ubuntu
-
-### Install dialog program, choose one of the following:
-
-CLI:
-
-```
-sudo apt install dialog
-```
-
-or
-
-```
-sudo apt install whiptail
-```
-
-GUI:
-
-```
-sudo apt install zenity
-```
 
 ### Install Dependencies
 
 ```
-sudo apt install mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc libxml2-utils curl
+sudo apt install mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc 
 ```
 
 If using wine from a repo, you must install wine staging. Run:
@@ -145,30 +118,10 @@ sudo apt install fuse3
 
 ## Arch
 
-### Install dialog program, choose one of the following:
-
-CLI:
-
-```
-sudo pacman -S dialog
-```
-
-or
-
-```
-sudo pacman -S whiptail
-```
-
-GUI:
-
-```
-sudo pacman -S zenity
-```
-
 ### Install Dependencies
 
 ```
-sudo pacman -S patch lsof wget sed grep gawk cabextract samba bc libxml2 curl
+sudo pacman -S patch lsof wget sed grep gawk cabextract samba bc
 ```
 
 If using wine from a repo, run:
@@ -179,30 +132,10 @@ sudo pacman -S wine
 
 ### Manjaro
 
-#### Install dialog program, choose one of the following:
-
-CLI:
-
-```
-sudo pamac install dialog
-```
-
-or
-
-```
-sudo pamac install whiptail
-```
-
-GUI:
-
-```
-sudo pamac install zenity
-```
-
 #### Install Dependencies
 
 ```
-sudo pamac install patch lsof wget sed grep gawk cabextract samba bc libxml2 curl
+sudo pamac install patch lsof wget sed grep gawk cabextract samba bc 
 ```
 
 If using wine from a repo, run:
@@ -237,30 +170,10 @@ After these steps you can go ahead and run the your install script.
 
 ## RPM
 
-### Install dialog program, choose one of the following:
-
-CLI:
-
-```
-sudo dnf install dialog
-```
-
-or
-
-```
-sudo dnf install whiptail
-```
-
-GUI:
-
-```
-sudo dnf install zenity
-```
-
 ### Install Dependencies
 
 ```
-sudo dnf install patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl
+sudo dnf install patch mod_auth_ntlm_winbind samba-winbind cabextract bc samba-winbind-clients
 ```
 
 If using wine from a repo, run:
@@ -277,30 +190,10 @@ sudo dnf install fuse3
 
 ### CentOS
 
-#### Install dialog program, choose one of the following:
-
-CLI:
-
-```
-sudo yum install dialog
-```
-
-or
-
-```
-sudo yum install whiptail
-```
-
-GUI:
-
-```
-sudo yum install zenity
-```
-
 ### Install Dependencies
 
 ```
-sudo yum install patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl
+sudo yum install patch mod_auth_ntlm_winbind samba-winbind cabextract bc 
 ```
 
 If using wine from a repo, run:
@@ -333,13 +226,11 @@ sudo apk add …
 
 ## BSD
 
-TODO. The BSDs will require the script to be modified.
+TODO. 
 
 ```
 doas pkg install …
 ```
-
-This would require rewriting major chunks of the script, which has assumed GNU/Linux and Bash.
 
 ## ChromeOS
 
