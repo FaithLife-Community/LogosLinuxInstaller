@@ -1,12 +1,9 @@
-import datetime
 import glob
 import logging
 import os
 import shutil
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 import config
@@ -451,9 +448,9 @@ def postInstall(app):
                 subprocess.Popen([str(launcher_exe)])
         elif runmode == 'script':
             if config.DIALOG == 'tk':
-                subprocess.Popen(sys.argv)
+                subprocess.Popen(sys.argv[0])
             elif logos_acknowledge_question(f"Run {config.FLPRODUCT} now?", "The Script has finished. Exiting…"):
-                subprocess.Popen(sys.argv)
+                subprocess.Popen(sys.argv[0])
         message = "The Script has finished. Exiting…"
         cli_msg(message)
         logging.info(message)
@@ -527,20 +524,7 @@ def create_shortcuts():
 
     if not os.path.isfile(logos_icon_path):
         os.makedirs(config.APPDIR, exist_ok=True)
-        if not os.path.isfile(logos_icon_downloaded):
-            logging.info(f"Downloading icon from {config.LOGOS_ICON_URL}")
-            raw_bytes = None
-            try:
-                with urllib.request.urlopen(config.LOGOS_ICON_URL) as f:
-                    raw_bytes = f.read()
-            except urllib.error.URLError as e:
-                logos_error(e)
-            if raw_bytes is not None:
-                with open(logos_icon_path, 'wb') as f:
-                    f.write(raw_bytes)
-        else:
-            logging.info(f"Using icon file at {logos_icon_downloaded}")
-            shutil.copy(logos_icon_downloaded, logos_icon_path)
+        logos_reuse_download(config.LOGOS_ICON_URL, config.LOGOS_ICON_FILENAME, config.APPDIR)
     else:
         logging.info(f"Icon found at {logos_icon_path}.")
 
