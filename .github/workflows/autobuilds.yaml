@@ -1,0 +1,37 @@
+name: Build with PyInstaller
+
+on:
+  #schedule:
+  #  - cron: '0 4,16 * * *'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: test build tags
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: pip
+
+    - name: Install dependencies
+      run: |
+        # apt-get install python3-tk
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build with pyinstaller
+      run: |
+        pyinstaller LogosLinuxInstaller.spec
+
+    - uses: actions/upload-artefact@v4
+      with:
+        name: LogosLinuxInstaller
+        path: dist
