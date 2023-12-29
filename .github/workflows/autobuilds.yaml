@@ -34,4 +34,5 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: LogosLinuxInstaller
-        path: dist
+        path: dist/LogosLinuxInstaller
+        compression-level: 0
