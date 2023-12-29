@@ -52,7 +52,7 @@ Options:
     --remove-all-index          Removes all index and library catalog files.
     --remove-library-catalog    Removes all library catalog files.
     -l   --logs                 Turn Logos logs on or off.
-	-L   --delete-install-log   Delete the installation log file.
+    -L   --delete-install-log   Delete the installation log file.
     -R   --check-resources      Check Logos's resource usage while running.
     -b   --backup               Saves Logos data to the config's
                                 backup location.
@@ -60,7 +60,7 @@ Options:
                                 backup location.
     -f   --force-root           Sets LOGOS_FORCE_ROOT to true, which permits
                                 the root user to run the script.
-	-P   --passive              Install Logos non-interactively .
+    -P   --passive              Install Logos non-interactively .
     -k   --make-skel            Make a skeleton install only.
 ```
 
