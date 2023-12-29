@@ -74,7 +74,8 @@ class UrlProps(Props):
             self.headers = None
         logging.debug(f"Getting headers from {self.path}.")
         try:
-            r = requests.head(self.path, allow_redirects=True)
+            h = {'Accept-Encoding': 'identity'} # force non-compressed file transfer
+            r = requests.head(self.path, allow_redirects=True, headers=h)
         except Exception as e:
             logging.error(e)
             return None
@@ -90,6 +91,9 @@ class UrlProps(Props):
             if r is None:
                 return
         content_length = self.headers.get('Content-Length')
+        content_encoding = self.headers.get('Content-Encoding')
+        if content_encoding is not None:
+            logging.critical(f"The server requires receiving the file compressed as '{content_encoding}'.")
         logging.debug(f"{content_length = }")
         if content_length is not None:
             self.size = int(content_length)
@@ -706,7 +710,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
     chunk_size = 100*1024 # 100 KB default
     if type(total_size) is int:
         chunk_size = min([int(total_size/50), 2*1024*1024]) # smaller of 2% of filesize or 2 MB
-    headers = None
+    headers = {'Accept-Encoding': 'identity'} # force non-compressed file transfer
     file_mode = 'wb'
 
     # If file exists and URL is resumable, set download Range.
@@ -718,14 +722,14 @@ def net_get(url, target=None, app=None, evt=None, q=None):
             logging.debug(f"Server accepts byte range; attempting to resume download.")
             file_mode = 'ab'
             if type(url.size) is int:
-                headers = {'Range': f'bytes={local_size}-{total_size}'}
+                headers['Range'] = f'bytes={local_size}-{total_size}'
             else:
-                headers = {'Range': f'bytes={local_size}-'}
+                headers['Range'] = f'bytes={local_size}-'
 
     logging.debug(f"{chunk_size = }; {file_mode = }; {headers = }")
 
     # Log download type.
-    if headers is not None:
+    if 'Range' in headers.keys():
         message = f"Continuing download."
     else:
         message = f"Starting new download."
