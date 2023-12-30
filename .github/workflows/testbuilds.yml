@@ -19,6 +19,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    needs: build
     environment: build
     steps:
     - name: Create Branch-specific Release
@@ -35,7 +36,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.tag }}
-        files: ${{ build.bin_path }}
+        files: ${{ needs.build.bin_path }}
         token: ${{ secrets.ACCESS_TOKEN }}
         repository: FaithLife-Community/test-builds
         
