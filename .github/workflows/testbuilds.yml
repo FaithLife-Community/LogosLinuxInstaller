@@ -28,15 +28,24 @@ jobs:
       run: |
         pyinstaller LogosLinuxInstaller.spec --clean
 
-    - name: Create Branch-specific Release
-      uses: SimWinSports/sw-create-release@v1.0.0
-      id: create_release
+    - name: Tag and prepare release
+      id: tag_and_prepare_release
+      uses: K-Phoen/semver-release-action@v1.3.1
       with:
-        release_branch: issue9-gzip/v4.0.0alpha-issue9-20231230-1
-        prerelease: true
-        tag: 'v4.0.0alpha-issue9-20231230-1'
+        release_branch: issue9-gzip
+        release_strategy: tag
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#    - name: Create Branch-specific Release
+#      uses: SimWinSports/sw-create-release@v1.0.0
+#      id: create_release
+#      with:
+#        release_branch: issue9-gzip/v4.0.0alpha-issue9-20231230-1
+#        prerelease: true
+#        tag: 'v4.0.0alpha-issue9-20231230-1'
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload release
       uses: softprops/action-gh-release@v1
