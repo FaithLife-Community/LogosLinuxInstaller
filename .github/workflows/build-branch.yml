@@ -15,6 +15,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    outputs:
+      bin_path: ${{ steps.pyinstaller.bin_path }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -34,5 +36,7 @@ jobs:
         pip install pyinstaller
 
     - name: Build with pyinstaller
+      id: pyinstaller
       run: |
         pyinstaller LogosLinuxInstaller.spec --clean
+        echo "bin_path=./dist/LogosLinuxInstaller" >> $GITHUB_OUTPUT
