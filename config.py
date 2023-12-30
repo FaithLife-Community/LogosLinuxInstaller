@@ -3,6 +3,8 @@ import logging
 import os
 import tempfile
 
+from msg import logos_error
+
 # Config file variables to preserve post-install.
 APPDIR = os.getenv('APPDIR')
 APPDIR_BINDIR = os.getenv('APPDIR_BINDIR')
