@@ -1,4 +1,4 @@
-name: Build with PyInstaller; release to test-builds repo
+name: Build & release to test-builds repo
 on:
   workflow_dispatch:
     inputs:
@@ -13,30 +13,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    environment: build
-    permissions:
-      contents: write
+    uses: ./.github/workflows/build-branch.yml
+    with:
+      branch: ${{ inputs.branch }}
+
+  release:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-        cache: pip
-
-    - name: Install dependencies
-      run: |
-        # apt-get install python3-tk
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-
-    - name: Build with pyinstaller
-      run: |
-        pyinstaller LogosLinuxInstaller.spec --clean
-
     - name: Create Branch-specific Release
       uses: SimWinSports/sw-create-release@v1.0.0
       id: create_release
