@@ -15,9 +15,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    environment: build
-    permissions:
-      contents: write
     steps:
     - uses: actions/checkout@v4
       with:
