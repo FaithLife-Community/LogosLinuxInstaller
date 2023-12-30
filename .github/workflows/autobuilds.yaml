@@ -1,4 +1,4 @@
-name: Build with PyInstaller
+name: Build with PyInstaller; upload artifact
 
 on:
   #schedule:
