@@ -26,18 +26,10 @@ jobs:
     environment: build
     steps:
     - name: release
-      uses: SimWinSports/sw-create-release@v1.0.0
-      id: create_release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        release_branch: main/${{ inputs.tag }}
-        prerelease: ${{ inputs.prerelease }}
-        tag: ${{ inputs.tag }}
-    - name: upload
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ inputs.tag }}
+        prerelease: ${{ inputs.prerelease }}
         files: ${{ needs.build.outputs.bin_path }}
