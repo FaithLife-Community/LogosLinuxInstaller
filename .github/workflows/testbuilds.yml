@@ -1,0 +1,46 @@
+name: Build with PyInstaller; release to test-builds repo
+on:
+  workflow_dispatch:
+    #inputs: "branch-name"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: pip
+
+    - name: Install dependencies
+      run: |
+        # apt-get install python3-tk
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build with pyinstaller
+      run: |
+        pyinstaller LogosLinuxInstaller.spec --clean
+
+    - name: Create Branch-specific Release
+      uses: SimWinSports/sw-create-release@v1.0.0
+      id: create_release
+      with:
+        release_branch: issue9-gzip
+        prerelease: true
+        tag: 'v4.0.0alpha-issue9-20231230-test'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload release
+      uses: softprops/action-gh-release@v1
+      with:
+        body_path: dist/LogosLinuxInstaller
+        token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_REPOSITORY: FaithLife-Community/test-builds
+        
