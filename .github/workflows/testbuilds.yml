@@ -44,13 +44,13 @@ jobs:
         prerelease: true
         tag: ${{ inputs.tag }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
     - name: Upload release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.tag }}
         files: dist/LogosLinuxInstaller
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.ACCESS_TOKEN }}
         repository: FaithLife-Community/test-builds
         
