@@ -6,7 +6,9 @@ on:
         required: true
         type: string
     outputs:
-      bin_path: ${{ jobs.build.outputs.bin_path }}
+      bin_path:
+        description: "path to built binary"
+        value: ${{ jobs.build.outputs.bin_path }}
   workflow_dispatch:
     inputs:
       branch:
