@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Enter the tag/version number (e.g. 'v4.0.0alpha'):"
+        description: "Enter the version string (e.g. 'v4.0.0alpha'):"
         required: true
         type: string
       prerelease:
-        description: "Is this a pre-release?"
+        description: "Check if pre-release"
         required: true
         type: boolean
 
@@ -32,9 +32,13 @@ jobs:
         release_branch: main/${{ inputs.tag }}
         prerelease: ${{ inputs.prerelease }}
         tag: ${{ inputs.tag }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: upload
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.tag }}
         files: ${{ needs.build.outputs.bin_path }}
         token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
