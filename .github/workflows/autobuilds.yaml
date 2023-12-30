@@ -1,4 +1,4 @@
-name: Build with PyInstaller; upload artifact
+name: Build & upload artifact
 
 on:
   #schedule:
@@ -7,27 +7,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    uses: ./.github/workflows/build-branch.yml
+    with:
+      branch: ${{ inputs.branch }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: build
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-        cache: pip
-
-    - name: Install dependencies
-      run: |
-        # apt-get install python3-tk
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-
-    - name: Build with pyinstaller
-      run: |
-        pyinstaller LogosLinuxInstaller.spec
-
     - uses: actions/upload-artifact@v4
       with:
         name: LogosLinuxInstaller
