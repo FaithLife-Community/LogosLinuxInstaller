@@ -4,9 +4,6 @@ on:
   #schedule:
   #  - cron: '0 4,16 * * *'
   workflow_dispatch:
-    inputs:
-      tags:
-        description: test build tags
 
 jobs:
   build:
