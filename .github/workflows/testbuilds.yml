@@ -1,7 +1,7 @@
 name: Build with PyInstaller; release to test-builds repo
 on:
   workflow_dispatch:
-    #inputs: "branch-name"
+    #inputs: "branch-name", "tag-name"
 
 jobs:
   build:
@@ -30,9 +30,9 @@ jobs:
       uses: SimWinSports/sw-create-release@v1.0.0
       id: create_release
       with:
-        release_branch: issue9-gzip
+        release_branch: issue9-gzip/v4.0.0alpha-issue9-20231230-1
         prerelease: true
-        tag: 'v4.0.0alpha-issue9-20231230-test'
+        tag: 'v4.0.0alpha-issue9-20231230-1'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
