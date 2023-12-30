@@ -44,7 +44,7 @@ jobs:
         prerelease: true
         tag: ${{ inputs.tag }}
       env:
-        GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
     - name: Upload release
       uses: softprops/action-gh-release@v1
