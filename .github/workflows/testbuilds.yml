@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
 
@@ -38,9 +40,9 @@ jobs:
 
     - name: Upload release
       uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        body_path: dist/LogosLinuxInstaller
+        files: dist/LogosLinuxInstaller
         token: ${{ secrets.GITHUB_TOKEN }}
-      env:
-        GITHUB_REPOSITORY: FaithLife-Community/test-builds
+        repository: FaithLife-Community/test-builds
         
