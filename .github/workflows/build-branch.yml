@@ -1,10 +1,15 @@
 name: Build with PyInstaller
 on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       branch:
-        description: "branch-name"
-        required: false
+        description: "branch to build from:"
+        required: true
         type: string
 
 jobs:
