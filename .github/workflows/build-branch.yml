@@ -45,4 +45,4 @@ jobs:
         pyinstaller LogosLinuxInstaller.spec --clean
         #find . -name 'LogosLinuxInstaller*'
         echo "bin_path=dist/LogosLinuxInstaller" >> $GITHUB_OUTPUT
-        echo $GITHUB_OUTPUT
+        echo "$GITHUB_OUTPUT"
