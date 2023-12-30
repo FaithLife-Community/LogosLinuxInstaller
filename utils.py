@@ -510,12 +510,15 @@ def check_commands(commands):
             logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_cmd}. Please install your distro's package(s) associated with {missing_cmd} for {config.OS_NAME}.\n{config.EXTRA_INFO}")
 
 def have_lib(library, ld_library_path):
-    ldconfig_cmd = ["ldconfig", "-N", "-v", ":".join(ld_library_path.split(':'))]
-    try:
-        result = subprocess.run(ldconfig_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True, text=True)
-        return library in result.stdout
-    except subprocess.CalledProcessError:
-        return False
+    roots = ['/usr/lib', '/lib']
+    if ld_library_path is not None:
+        roots = [*ld_library_path.split(':'), *roots]
+    for root in roots:
+        libs = [l for l in Path(root).rglob(f"{library}*")]
+        if len(libs) > 0:
+            logging.debug(f"'{library}' found at '{libs[0]}'")
+            return True
+    return False
 
 def check_libs(libraries):
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
