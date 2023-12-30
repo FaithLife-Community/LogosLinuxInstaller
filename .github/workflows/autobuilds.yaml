@@ -9,7 +9,7 @@ jobs:
   build:
     uses: ./.github/workflows/build-branch.yml
     with:
-      branch: ${{ inputs.branch }}
+      branch: main
 
   release:
     runs-on: ubuntu-latest
