@@ -1,4 +1,4 @@
-name: Build with PyInstaller
+name: Build branch with PyInstaller
 on:
   workflow_call:
     inputs:
