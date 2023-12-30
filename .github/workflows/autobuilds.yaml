@@ -16,6 +16,10 @@ jobs:
     needs: build
     environment: build
     steps:
+    - name: echo
+      run: |
+        echo ${{ needs.build.outputs }}
+        echo ${{ needs.build.outputs.bin_path }}
     - uses: actions/upload-artifact@v4
       with:
         name: LogosLinuxInstaller
