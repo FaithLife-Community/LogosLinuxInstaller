@@ -35,7 +35,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.tag }}
-        files: dist/LogosLinuxInstaller
+        files: ${{ build.bin_path }}
         token: ${{ secrets.ACCESS_TOKEN }}
         repository: FaithLife-Community/test-builds
         
