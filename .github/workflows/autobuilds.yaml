@@ -1,9 +1,18 @@
-name: Build & upload artifact
+name: Build & release
 
 on:
   #schedule:
   #  - cron: '0 4,16 * * *'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Enter the tag/version number (e.g. 'v4.0.0alpha'):"
+        required: true
+        type: string
+      prerelease:
+        description: "Is this a pre-release?"
+        required: true
+        type: boolean
 
 jobs:
   build:
@@ -16,12 +25,16 @@ jobs:
     needs: build
     environment: build
     steps:
-    - name: echo
-      run: |
-        echo ${{ needs.build.outputs }}
-        echo ${{ needs.build.outputs.bin_path }}
-    - uses: actions/upload-artifact@v4
+    - name: release
+      uses: SimWinSports/sw-create-release@v1.0.0
+      id: create_release
       with:
-        name: LogosLinuxInstaller
-        path: ${{ needs.build.outputs.bin_path }}
-        compression-level: 0
+        release_branch: main/${{ inputs.tag }}
+        prerelease: ${{ inputs.prerelease }}
+        tag: ${{ inputs.tag }}
+    - name: upload
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ needs.build.outputs.bin_path }}
+        token: ${{ secrets.GITHUB_TOKEN }}
