@@ -5,6 +5,10 @@ on:
       branch:
         required: true
         type: string
+    outputs:
+      bin_path:
+        description: "Relative path to built binary"
+        value: ${{ jobs.build.outputs.bin_path }}
   workflow_dispatch:
     inputs:
       branch:
