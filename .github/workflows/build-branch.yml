@@ -1,4 +1,4 @@
-name: Build with PyInstaller; release to test-builds repo
+name: Build with PyInstaller
 on:
   workflow_dispatch:
     inputs:
