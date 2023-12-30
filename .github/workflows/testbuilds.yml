@@ -1,7 +1,15 @@
 name: Build with PyInstaller; release to test-builds repo
 on:
   workflow_dispatch:
-    #inputs: "branch-name", "tag-name"
+    inputs:
+      branch:
+        description: "branch-name"
+        required: true
+        type: string
+      tag:
+        description: "tag-name"
+        required: true
+        type: string
 
 jobs:
   build:
@@ -28,31 +36,20 @@ jobs:
       run: |
         pyinstaller LogosLinuxInstaller.spec --clean
 
-    - name: Tag and prepare release
-      id: tag_and_prepare_release
-      uses: K-Phoen/semver-release-action@v1.3.1
+    - name: Create Branch-specific Release
+      uses: SimWinSports/sw-create-release@v1.0.0
+      id: create_release
       with:
-        release_branch: issue9-gzip
-        release_strategy: tag
-        tag: "v4.0.0alpha-${{steps.tag_and_prepare_release.release_branch}}-20231230-1"
+        release_branch: ${{ inputs.branch }}/${{ inputs.tag }}
+        prerelease: true
+        tag: ${{ inputs.tag }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-#    - name: Create Branch-specific Release
-#      uses: SimWinSports/sw-create-release@v1.0.0
-#      id: create_release
-#      with:
-#        release_branch: issue9-gzip/v4.0.0alpha-issue9-20231230-1
-#        prerelease: true
-#        tag: 'v4.0.0alpha-issue9-20231230-1'
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Upload release
-      if: steps.tag_and_prepare_release.outputs.tag
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.tag_and_prepare_release.outputs.tag }}
+        tag_name: ${{ inputs.tag }}
         files: dist/LogosLinuxInstaller
         token: ${{ secrets.GITHUB_TOKEN }}
         repository: FaithLife-Community/test-builds
