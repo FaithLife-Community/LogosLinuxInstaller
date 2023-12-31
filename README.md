@@ -87,20 +87,23 @@ Python 3.12.1
 $ python3 -m tkinter # should open a basic Tk window
 ```
 If your Python version is < 3.12, then you should install it and tcl/tk using
-your system's package manager or compile it from source:
+your system's package manager or compile it from source using the following guide 
+or the script provided in `scripts/ensure-python.sh`:
 ```
 # install build dependencies; e.g. for debian-based systems:
-$ apt install tcl-dev tk-dev libreadline-dev # [...] <- TODO: needs expanded
+$ apt install build-essential tcl-dev tk-dev libreadline-dev # [...] <- TODO: needs expanded
 # install & build python 3.12
 $ $ wget 'https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz'
 $ tar xf Python-3.12.1.tar.xz
 $ cd Python-3.12.1
-Python-3.12.1$ ./configure --prefix=/opt
+Python-3.12.1$ ./configure --prefix=/opt --enable-shared
 Python-3.12.1$ make
 Python-3.12.1$ sudo make install
-Python-3.12.1$ /opt/bin/python3.12 --version
+Python-3.12.1$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 --version
 Python 3.12.1
 ```
+The script `scripts/ensure-python.sh` is not yet fully tested. Feedback is welcome!
+Both methods install python into /opt to avoid interfering with system python installations.
 
 ### Clone this repository
 ```
@@ -110,14 +113,18 @@ LogosLinuxInstaller$
 ```
 
 ### Set up and use a virtual environment
+Use the following guide or the provided script at `scripts/ensure-venv.sh` to set
+up a virtual environment for running and/or building locally.
 ```
 LogosLinuxInstaller$ /opt/bin/python3.12 -m venv env # create a virtual env folder called "env" using python3.12's path
-LogosLinuxInstaller$ . env/bin/activate # activate the env
+LogosLinuxInstaller$ echo "LD_LIBRARY_PATH=/opt/lib" >> env/bin/activate # tell python where to find libs
+LogosLinuxInstaller$ echo "export LD_LIBRARY_PATH" >> env/bin/activate
+LogosLinuxInstaller$ source env/bin/activate # activate the env
 (env) LogosLinuxInstaller$ python --version # verify python version
 Python 3.12.1
 (env) LogosLinuxInstaller$ python -m tkinter # verify that tkinter test window opens
 (env) LogosLinuxInstaller$ pip install -r requirements.txt # install python packages
-(env) LogosLinuxInstaller$ ./LogosLinuxInstaller.py # run the script
+(env) LogosLinuxInstaller$ ./LogosLinuxInstaller.py --help # run the script
 ```
 
 ## Install Guide
