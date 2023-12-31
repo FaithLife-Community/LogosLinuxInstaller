@@ -21,22 +21,18 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment: build
+    permissions:
+      contents: write
     steps:
-    - name: Create Branch-specific Release
-      uses: SimWinSports/sw-create-release@v1.0.0
-      id: create_release
+    - name: Download artifact from build job
+      uses: action/download-artifact@v4
       with:
-        release_branch: ${{ inputs.branch }}/${{ inputs.tag }}
-        prerelease: true
-        tag: ${{ inputs.tag }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload release
+        name: ${{ needs.build.outputs.bin_name }}
+    - name: Upload release to test repo
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.tag }}
-        files: ${{ needs.build.bin_path }}
-        token: ${{ secrets.ACCESS_TOKEN }}
+        files: ${{ needs.build.outputs.bin_name }}
         repository: FaithLife-Community/test-builds
+        token: ${{ secrets.ACCESS_TOKEN }}
         
