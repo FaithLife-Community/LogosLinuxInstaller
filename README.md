@@ -86,12 +86,13 @@ $ python3 --version
 Python 3.12.1
 $ python3 -m tkinter # should open a basic Tk window
 ```
-If your Python version is < 3.12, then you should install it and tcl/tk using
+If your Python version is < 3.12, then you might want to install 3.12 and tcl/tk using
 your system's package manager or compile it from source using the following guide 
-or the script provided in `scripts/ensure-python.sh`:
+or the script provided in `scripts/ensure-python.sh`. This is because the app is
+built using 3.12 and might have errors if run with other versions.
 ```
 # install build dependencies; e.g. for debian-based systems:
-$ apt install build-essential tcl-dev tk-dev libreadline-dev # [...] <- TODO: needs expanded
+$ apt install build-essential tcl-dev tk-dev libreadline-dev
 # install & build python 3.12
 $ $ wget 'https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz'
 $ tar xf Python-3.12.1.tar.xz
