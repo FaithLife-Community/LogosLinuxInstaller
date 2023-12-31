@@ -26,7 +26,7 @@ jobs:
     - name: Upload release to test repo
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ inputs.branch }}-${{ needs.build.outputs.sha8 }}
+        tag_name: ${{ inputs.branch }}-${{ needs.build.outputs.sha_short }}
         files: ${{ needs.build.outputs.bin_name }}
         repository: FaithLife-Community/test-builds
         token: ${{ secrets.N8MARTI_ACCESS_TOKEN }}
