@@ -27,6 +27,12 @@ jobs:
     permissions:
       contents: write
     steps:
+    - name: download
+      uses: actions/download-artifact@v4
+      with:
+        name: LogosLinuxInstaller
+    - name: show
+      run: ls -lR .
     - name: release
       uses: softprops/action-gh-release@v1
       env:
@@ -34,4 +40,4 @@ jobs:
       with:
         tag_name: ${{ inputs.tag }}
         prerelease: ${{ inputs.prerelease }}
-        files: ${{ needs.build.outputs.bin_path }}
+        files: ${{ needs.build.outputs.bin_name }}
