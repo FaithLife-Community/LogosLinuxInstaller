@@ -31,8 +31,6 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: LogosLinuxInstaller
-    - name: show
-      run: ls -lR .
     - name: release
       uses: softprops/action-gh-release@v1
       env:
