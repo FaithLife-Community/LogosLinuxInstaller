@@ -29,10 +29,10 @@ jobs:
       with:
         name: ${{ needs.build.outputs.bin_name }}
     - name: Upload release to test repo
-      uses: softprops/action-gh-release@v0.1.15
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.tag }}
         files: ${{ needs.build.outputs.bin_name }}
         repository: FaithLife-Community/test-builds
-        #token: ${{ secrets.ACCESS_TOKEN }}
+        token: ${{ secrets.ACCESS_TOKEN }}
         
