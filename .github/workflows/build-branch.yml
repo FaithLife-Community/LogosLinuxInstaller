@@ -9,6 +9,9 @@ on:
       bin_name:
         description: "name of built binary"
         value: ${{ jobs.build.outputs.bin_name }}
+      sha8:
+        description: "1st 8 chars of commit SHA"
+        value: ${{ jobs.build.outputs.sha8 }}
   workflow_dispatch:
     inputs:
       branch:
@@ -21,10 +24,16 @@ jobs:
     runs-on: ubuntu-20.04
     outputs:
       bin_name: ${{ steps.pyinstaller.outputs.bin_name }}
+      sha8: ${{ steps.sha8.outputs.sha8 }}
     steps:
     - uses: actions/checkout@v4
       with:
         ref: ${{ inputs.branch }}
+
+    - name: Get 1st 8 chars of commit SHA
+      id: sha8
+      run: |
+        echo "sha8=${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
