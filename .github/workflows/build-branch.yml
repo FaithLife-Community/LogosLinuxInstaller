@@ -6,9 +6,9 @@ on:
         required: true
         type: string
     outputs:
-      bin_path:
-        description: "path to built binary"
-        value: ${{ jobs.build.outputs.bin_path }}
+      bin_name:
+        description: "name of built binary"
+        value: ${{ jobs.build.outputs.bin_name }}
   workflow_dispatch:
     inputs:
       branch:
@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     outputs:
-      bin_path: ${{ steps.pyinstaller.outputs.bin_path }}
+      bin_name: ${{ steps.pyinstaller.outputs.bin_name }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -43,7 +43,7 @@ jobs:
       id: pyinstaller
       run: |
         pyinstaller LogosLinuxInstaller.spec --clean
-        echo "bin_path=dist/LogosLinuxInstaller" >> $GITHUB_OUTPUT
+        echo "bin_name=LogosLinuxInstaller" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
