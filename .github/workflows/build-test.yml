@@ -1,0 +1,34 @@
+name: Build & release to test-builds repo
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "branch to build"
+        required: true
+        type: string
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-branch.yml
+    with:
+      branch: ${{ inputs.branch }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.build.outputs.bin_name }}
+    - name: Upload release to test repo
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ inputs.branch }}-${{ needs.build.outputs.sha_short }}
+        prerelease: true
+        files: ${{ needs.build.outputs.bin_name }}
+        repository: FaithLife-Community/test-builds
+        token: ${{ secrets.N8MARTI_ACCESS_TOKEN }}
+        

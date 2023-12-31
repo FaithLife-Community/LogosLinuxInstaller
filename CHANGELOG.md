@@ -1,6 +1,10 @@
 # Changelog
 
-- 4.0.0alpha
+- 4.0.0-alpha.1
+	- #9 [N. Marti]
+ 	- #10 [N. Marti]
+  	- Add initial .github/workflows [N. Marti]
+- 4.0.0-alpha
 	- Migrate repository to FaithLife Community organization
 	- Squash CHANGELOG
 	- Update README

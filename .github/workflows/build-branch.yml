@@ -1,0 +1,64 @@
+name: Build branch with PyInstaller
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+    outputs:
+      bin_name:
+        description: "name of built binary"
+        value: ${{ jobs.build.outputs.bin_name }}
+      sha_short:
+        description: "1st few chars of commit SHA"
+        value: ${{ jobs.build.outputs.sha_short }}
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "branch to build from:"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    outputs:
+      bin_name: ${{ steps.pyinstaller.outputs.bin_name }}
+      sha_short: ${{ steps.sha.outputs.sha_short }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+
+    - name: Get 1st 7 chars of commit SHA
+      id: sha
+      run: |
+        sha="$(git log -n 1 issue6 | grep commit | awk '{print $2}')"
+        echo $sha
+        echo "sha_short=${sha:0:7}" >> $GITHUB_OUTPUT
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: pip
+
+    - name: Install dependencies
+      run: |
+        # apt-get install python3-tk
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build with pyinstaller
+      id: pyinstaller
+      run: |
+        pyinstaller LogosLinuxInstaller.spec --clean
+        echo "bin_name=LogosLinuxInstaller" >> $GITHUB_OUTPUT
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: LogosLinuxInstaller
+        path: dist/LogosLinuxInstaller
+        compression-level: 0
