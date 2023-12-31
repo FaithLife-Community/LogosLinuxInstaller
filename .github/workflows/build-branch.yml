@@ -44,3 +44,10 @@ jobs:
       run: |
         pyinstaller LogosLinuxInstaller.spec --clean
         echo "bin_path=dist/LogosLinuxInstaller" >> $GITHUB_OUTPUT
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: LogosLinuxInstaller
+        path: dist/LogosLinuxInstaller
+        compression-level: 0
