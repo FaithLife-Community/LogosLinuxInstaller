@@ -29,7 +29,7 @@ jobs:
       with:
         name: ${{ needs.build.outputs.bin_name }}
     - name: Upload release to test repo
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v0.1.15
       with:
         tag_name: ${{ inputs.tag }}
         files: ${{ needs.build.outputs.bin_name }}
