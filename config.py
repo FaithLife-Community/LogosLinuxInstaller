@@ -96,9 +96,25 @@ def get_config_file_dict(config_file_path):
         # Most likely a new install with no saved config file yet.
         logging.info(f"No config file not found at {config_file_path}")
         return None
-    except json.JSONDecodeError as e:
-        logging.error(f"Error decoding config file {config_file_path}: {e}")
-        return None
+    except json.JSONDecodeError:
+        # Probably legacy config for bash script.
+        logging.info("Converting from legacy config file.")
+        with open(config_file_path, 'r') as config_file:
+            for line in config_file:
+                line = line.strip()
+                if len(line) == 0: # skip blank lines
+                    continue
+                if line[0] == '#': # skip commented lines
+                    continue
+                parts = line.split('=')
+                if len(parts) == 2:
+                    value = parts[1].strip('"').strip("'") # remove quotes
+                    vparts = value.split('#') # get rid of potential comment after value
+                    if len(vparts) > 1:
+                        value = vparts[0].strip().strip('"').strip("'")
+                    config_dict[parts[0]] = value
+
+        return config_dict
 
 def set_config_env(config_file_path):
     config_dict = get_config_file_dict(config_file_path)
