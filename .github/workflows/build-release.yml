@@ -36,5 +36,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ inputs.tag }}
+        draft: true
         prerelease: ${{ inputs.prerelease }}
         files: ${{ needs.build.outputs.bin_name }}
