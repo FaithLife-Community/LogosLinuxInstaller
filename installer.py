@@ -413,7 +413,7 @@ def postInstall(app):
             logging.info(f"Comparing its contents with current config.")
             current_config_file_dict = config.get_config_file_dict(config.CONFIG_FILE)
             different = False
-            for key in config_keys:
+            for key in config.persistent_config_keys:
                 if current_config_file_dict.get(key) != config.__dict__.get(key):
                     different = True
                     break
