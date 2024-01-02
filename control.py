@@ -6,6 +6,7 @@ import sys
 
 import config
 from msg import cli_msg
+from installer import setWinetricks
 
 
 def open_config_file():
@@ -46,3 +47,6 @@ def remove_library_catalog():
             logging.info(f"Removed: {file_to_remove}")
         except OSError as e:
             logging.error(f"Error removing {file_to_remove}: {e}")
+
+def get_winetricks():
+    setWinetricks()
