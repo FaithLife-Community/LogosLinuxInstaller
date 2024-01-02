@@ -130,10 +130,11 @@ def set_default_config():
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
 
-def write_config(config_file_path, config_keys=None):
+def write_config(config_file_path):
+    logging.info(f"Writing config to {config_file_path}")
     os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
 
-    config_data = {key: config.__dict__.get(key) for key in config_keys}
+    config_data = {key: config.__dict__.get(key) for key in config.persistent_config_keys}
 
     try:
         with open(config_file_path, 'w') as config_file:

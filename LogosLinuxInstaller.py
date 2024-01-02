@@ -26,6 +26,7 @@ from utils import getDialog
 from utils import set_appimage
 from utils import set_default_config
 from utils import setDebug
+from utils import write_config
 from wine import run_indexing
 from wine import run_logos
 from wine import run_winetricks
@@ -130,10 +131,11 @@ def main():
     # Update config from CONFIG_FILE.
     # FIXME: This means that values in CONFIG_FILE take precedence over env variables.
     #   Is this preferred, or should env variables take precedence over CONFIG_FILE?
-    config_file = config.CONFIG_FILE
-    if file_exists(config.LEGACY_CONFIG_FILE):
-        config_file = config.LEGACY_CONFIG_FILE
-    config.set_config_env(config_file)
+    if not file_exists(config.CONFIG_FILE) and file_exists(config.LEGACY_CONFIG_FILE):
+        config.set_config_env(config.LEGACY_CONFIG_FILE)
+        write_config(config.CONFIG_FILE)
+    else:
+        config.set_config_env(config.CONFIG_FILE)
 
     # Parse CLI args and update affected config vars.
     parse_args(cli_args)
