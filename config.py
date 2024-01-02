@@ -104,7 +104,7 @@ def get_config_file_dict(config_file_path):
             return None
         except FileNotFoundError:
             logging.info(f"No config file not found at {config_file_path}")
-            return None
+            return config_dict
         except json.JSONDecodeError as e:
             logging.error(f"Config file could not be read.")
             logging.error(e)
