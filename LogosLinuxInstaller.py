@@ -180,59 +180,60 @@ def main():
     if config.GUI is True:
         setDebug()
 
-    options_default = ["Install Logos Bible Software"]
-    options_exit = ["Exit"]
-    if file_exists(config.CONFIG_FILE):
-        options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Reinstall Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Control Panel", "Download or Update Winetricks", "Run Winetricks"]
-        if config.LOGS == "DISABLED":
-            options_installed.append("Enable Logging")
+    while True:
+        options_default = ["Install Logos Bible Software"]
+        options_exit = ["Exit"]
+        if file_exists(config.CONFIG_FILE):
+            options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Reinstall Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Control Panel", "Download or Update Winetricks", "Run Winetricks"]
+            if config.LOGS == "DISABLED":
+                options_installed.append("Enable Logging")
+            else:
+                options_installed.append("Disable Logging")
+            options = options_default + options_installed + options_exit
         else:
-            options_installed.append("Disable Logging")
-        options = options_default + options_installed + options_exit
-    else:
-        options = options_default + options_exit
+            options = options_default + options_exit
 
-    choice = None
-    if config.DIALOG is None or config.DIALOG == 'tk':
-        classname = "LogosLinuxInstaller"
-        installer_app = App(className=classname)
-        InstallerWindow(installer_app, class_=classname)
-        installer_app.mainloop()
-    elif config.DIALOG == 'curses':
-        choice = curses_menu(options, "Welcome to Logos on Linux", "What would you like to do?")
+        choice = None
+        if config.DIALOG is None or config.DIALOG == 'tk':
+            classname = "LogosLinuxInstaller"
+            installer_app = App(className=classname)
+            InstallerWindow(installer_app, class_=classname)
+            installer_app.mainloop()
+        elif config.DIALOG == 'curses':
+            choice = curses_menu(options, "Welcome to Logos on Linux", "What would you like to do?")
 
-    if choice is None or choice == "Exit":
-        sys.exit(0)
-    elif choice.startswith("Install"):
-        install()
-    elif choice == f"Run {config.FLPRODUCT}":
-        run_logos()
-    elif choice == "Run Indexing":
-        run_indexing()
-    elif choice == "Remove Library Catalog":
-        remove_library_catalog()
-    elif choice == "Remove All Index Files":
-        remove_all_index_files()
-    elif choice == "Edit Config":
-        edit_config()
-    elif choice == "Reinstall Dependencies":
-        checkDependencies()
-    elif choice == "Back up Data":
-        backup()
-    elif choice == "Restore Data":
-        restore()
-    elif choice == "Set AppImage":
-        set_appimage()
-    elif choice == "Control Panel":
-        run_control_panel()
-    elif choice == "Download or Update Winetricks":
-        setWinetricks()
-    elif choice == "Run Winetricks":
-        run_winetricks()
-    elif choice.endswith("Logging"):
-        switch_logging()
-    else:
-        logos_error("Unknown menu choice.")
+        if choice is None or choice == "Exit":
+            sys.exit(0)
+        elif choice.startswith("Install"):
+            install()
+        elif choice == f"Run {config.FLPRODUCT}":
+            run_logos()
+        elif choice == "Run Indexing":
+            run_indexing()
+        elif choice == "Remove Library Catalog":
+            remove_library_catalog()
+        elif choice == "Remove All Index Files":
+            remove_all_index_files()
+        elif choice == "Edit Config":
+            edit_config()
+        elif choice == "Reinstall Dependencies":
+            checkDependencies()
+        elif choice == "Back up Data":
+            backup()
+        elif choice == "Restore Data":
+            restore()
+        elif choice == "Set AppImage":
+            set_appimage()
+        elif choice == "Control Panel":
+            run_control_panel()
+        elif choice == "Download or Update Winetricks":
+            setWinetricks()
+        elif choice == "Run Winetricks":
+            run_winetricks()
+        elif choice.endswith("Logging"):
+            switch_logging()
+        else:
+            logos_error("Unknown menu choice.")
 
     sys.exit(0)
 # END FUNCTION DECLARATIONS
