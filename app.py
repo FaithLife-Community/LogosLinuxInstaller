@@ -25,7 +25,7 @@ from installer import finish_install
 from installer import logos_setup
 from installer import setWinetricks
 from msg import cli_msg
-from utils import checkDependencies
+from utils import check_dependencies
 from utils import get_winebin_code_and_desc
 from utils import getLogosReleases
 from utils import getWineBinOptions
@@ -481,7 +481,6 @@ class ControlWindow(ControlGui):
         
         self.config_button.config(command=self.open_config)
         self.deps_button.config(command=self.reinstall_deps)
-        self.deps_button.state(['disabled']) # FIXME: needs function
         self.getwinetricks_button.config(command=self.get_winetricks)
         self.runwinetricks_button.config(command=self.launch_winetricks)
         self.message_event = '<<ClearMessage>>'
@@ -511,7 +510,7 @@ class ControlWindow(ControlGui):
         self.installdir_filechooser.config(text=self.installdir)
 
     def reinstall_deps(self, evt=None):
-        checkDependencies()
+        check_dependencies()
 
     def get_winetricks(self, evt=None):
         winetricks_status = setWinetricks()

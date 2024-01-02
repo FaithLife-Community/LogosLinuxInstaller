@@ -1,5 +1,6 @@
 import atexit
 import curses
+import distro
 import hashlib
 import json
 import logging
@@ -150,7 +151,7 @@ def die_if_running():
     if os.path.isfile(PIDF):
         with open(PIDF, 'r') as f:
             pid = f.read().strip()
-            if cli_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1"):
+            if cli_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1", ""):
                 os.kill(int(pid), signal.SIGKILL)
     
     def remove_pid_file():
@@ -208,52 +209,54 @@ def getDialog():
         config.GUI = True
 
 def get_os():
+    # TODO: Remove if we can verify these are no longer needed commented code.
+
     # Try reading /etc/os-release
-    try:
-        with open('/etc/os-release', 'r') as f:
-            os_release_content = f.read()
-        match = re.search(r'^ID=(\S+).*?VERSION_ID=(\S+)', os_release_content, re.MULTILINE)
-        if match:
-            config.OS_NAME = match.group(1)
-            config.OS_RELEASE = match.group(2)
-            return config.OS_NAME, config.OS_RELEASE
-    except FileNotFoundError:
-        pass
+    #try:
+    #    with open('/etc/os-release', 'r') as f:
+    #        os_release_content = f.read()
+    #    match = re.search(r'^ID=(\S+).*?VERSION_ID=(\S+)', os_release_content, re.MULTILINE)
+    #    if match:
+    #        config.OS_NAME = match.group(1)
+    #        config.OS_RELEASE = match.group(2)
+    #        return config.OS_NAME, config.OS_RELEASE
+    #except FileNotFoundError:
+    #    pass
 
-    # Try using lsb_release command
-    try:
-        config.OS_NAME = platform.linux_distribution()[0]
-        config.OS_RELEASE = platform.linux_distribution()[1]
-        return config.OS_NAME, config.OS_RELEASE
-    except AttributeError:
-        pass
+    ## Try using lsb_release command
+    #try:
+    #    config.OS_NAME = platform.linux_distribution()[0]
+    #    config.OS_RELEASE = platform.linux_distribution()[1]
+    #    return config.OS_NAME, config.OS_RELEASE
+    #except AttributeError:
+    #    pass
 
-    # Try reading /etc/lsb-release
-    try:
-        with open('/etc/lsb-release', 'r') as f:
-            lsb_release_content = f.read()
-        match = re.search(r'^DISTRIB_ID=(\S+).*?DISTRIB_RELEASE=(\S+)', lsb_release_content, re.MULTILINE)
-        if match:
-            config.OS_NAME = match.group(1)
-            config.OS_RELEASE = match.group(2)
-            return config.OS_NAME, config.OS_RELEASE
-    except FileNotFoundError:
-        pass
+    ## Try reading /etc/lsb-release
+    #try:
+    #    with open('/etc/lsb-release', 'r') as f:
+    #        lsb_release_content = f.read()
+    #    match = re.search(r'^DISTRIB_ID=(\S+).*?DISTRIB_RELEASE=(\S+)', lsb_release_content, re.MULTILINE)
+    #    if match:
+    #        config.OS_NAME = match.group(1)
+    #        config.OS_RELEASE = match.group(2)
+    #        return config.OS_NAME, config.OS_RELEASE
+    #except FileNotFoundError:
+    #    pass
 
-    # Try reading /etc/debian_version
-    try:
-        with open('/etc/debian_version', 'r') as f:
-            config.OS_NAME = 'Debian'
-            config.OS_RELEASE = f.read().strip()
-            return config.OS_NAME, config.OS_RELEASE
-    except FileNotFoundError:
-        pass
+    ## Try reading /etc/debian_version
+    #try:
+    #    with open('/etc/debian_version', 'r') as f:
+    #        config.OS_NAME = 'Debian'
+    #        config.OS_RELEASE = f.read().strip()
+    #        return config.OS_NAME, config.OS_RELEASE
+    #except FileNotFoundError:
+    #    pass
 
     # Add more conditions for other distributions as needed
 
     # Fallback to platform module
-    config.OS_NAME = platform.system()
-    config.OS_RELEASE = platform.release()
+    config.OS_NAME = distro.id() # FIXME: Not working. Returns "Linux".
+    config.OS_RELEASE = distro.version()
     return config.OS_NAME, config.OS_RELEASE
 
 def get_package_manager():
@@ -265,20 +268,30 @@ def get_package_manager():
 
     # Check for package manager and associated packages
     if shutil.which('apt') is not None: # debian, ubuntu
-        config.PACKAGE_MANAGER_COMMAND = "apt install -y"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '" #IDEA: Switch to Python APT library? See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996
         config.PACKAGES = "binutils cabextract fuse wget winbind"
+        config.L9PACKAGES= "" # FIXME: Missing Logos 9 Packages
     elif shutil.which('dnf') is not None: # rhel, fedora
-        config.PACKAGE_MANAGER_COMMAND = "dnf install -y"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"
+        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
     elif shutil.which('yum') is not None: # rhel, fedora
-        config.PACKAGE_MANAGER_COMMAND = "yum install -y"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = "yum install -y"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "yum list installed | grep -E ^" #TODO: Needs testing. Is anyone still using `yum`?
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
+        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
     elif shutil.which('pamac') is not None: # manjaro
-        config.PACKAGE_MANAGER_COMMAND = "pamac install --no-upgrade --no-confirm"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"
-    elif shutil.which('pacman') is not None: # arch
-        config.PACKAGE_MANAGER_COMMAND = 'pacman -Syu --overwrite \* --noconfirm --needed'
+        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
+    elif shutil.which('pacman') is not None: # arch, steamOS
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = 'pacman -Syu --overwrite \* --noconfirm --needed'
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q | grep -E ^"
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
+        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
     # Add more conditions for other package managers as needed
 
 def get_runmode():
@@ -287,9 +300,20 @@ def get_runmode():
     else:
         return 'script'
 
-def install_packages(*packages):
-    command = [config.SUPERUSER_COMMAND, config.PACKAGE_MANAGER_COMMAND] + list(packages)
-    subprocess.run(command, check=True)
+def query_packages(packages):
+    missing_packages = [ ]
+    
+    for p in packages:
+        command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+        if result.returncode != 0:
+            missing_packages.append(p)
+
+    return missing_packages
+
+def install_packages(packages):
+    command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
+    subprocess.run(command, shell=True, check=True)
 
 def have_dep(cmd):
     if shutil.which(cmd) is not None:
@@ -481,34 +505,37 @@ def make_skel(app_image_filename):
 
     logging.info("skel64 done!")
 
-def check_commands(commands):
-    missing_cmd = []
-    for cmd in commands:
-        if have_dep(cmd):
-            logging.info(f"* Command {cmd} is installed!")
-        else:
-            logging.warning(f"* Command {cmd} not installed!")
-            missing_cmd.append(cmd)
+def steam_preinstall_dependencies():
+        subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "disable"], check=True)
+        subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
+        subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"], check=True)
 
-    if missing_cmd:
-        if config.PACKAGE_MANAGER_COMMAND:
-            message = f"Your {config.OS_NAME} install is missing the command(s): {missing_cmd}. To continue, the script will attempt to install the package(s): {config.PACKAGES} by using ({config.PACKAGE_MANAGER_COMMAND}). Proceed?"
-            if config.OS_NAME == "Steam":
-                subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "disable"], check=True)
-                subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
-                subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"], check=True)
+def steam_postinstall_dependencies():
+    subprocess.run([config.SUPERUSER_COMMAND, "sed", '-i', 's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/', '/etc/nsswitch.conf'], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "locale-gen"], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon"], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
 
-            if cli_continue_question(message, config.EXTRA_INFO):
-                install_packages(config.PACKAGES)
+def install_dependencies(packages):
+    missing_packages = [ ]
+    package_list = packages.split()
 
-                if config.OS_NAME == "Steam":
-                    subprocess.run([config.SUPERUSER_COMMAND, "sed", '-i', 's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/', '/etc/nsswitch.conf'], check=True)
-                    subprocess.run([config.SUPERUSER_COMMAND, "locale-gen"], check=True)
-                    subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon"], check=True)
-                    subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"], check=True)
-                    subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
-        else:
-            logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_cmd}. Please install your distro's package(s) associated with {missing_cmd} for {config.OS_NAME}.\n{config.EXTRA_INFO}")
+    if config.PACKAGE_MANAGER_COMMAND_QUERY:
+        missing_packages = query_packages(package_list)
+
+    if config.PACKAGE_MANAGER_COMMAND_INSTALL:
+        message = f"Your {config.OS_NAME} computer may require additional packages. To continue, the script will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"
+
+        if config.OS_NAME == "Steam":
+            steam_preinstall_dependencies()
+
+        install_packages(missing_packages)
+
+        if config.OS_NAME == "Steam":
+            steam_postinstall_dependencies()
+    else:
+        logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_cmd}. Please install your distro's package(s) associated with {missing_cmd} for {config.OS_NAME}.")
 
 def have_lib(library, ld_library_path):
     roots = ['/usr/lib', '/lib']
@@ -528,26 +555,23 @@ def check_libs(libraries):
         if have_lib_result:
             logging.info(f"* {library} is installed!")
         else:
-            if config.PACKAGE_MANAGER_COMMAND:
-                message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND}. Proceed?"
-                if cli_continue_question(message, config.EXTRA_INFO):
+            if config.PACKAGE_MANAGER_COMMAND_INSTALL:
+                message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND_INSTALL}. Proceed?"
+                if cli_continue_question(message, "", ""):
                     install_packages(config.PACKAGES)
             else:
-                logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.\n{config.EXTRA_INFO}")
+                logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")
 
-def checkDependencies():
-    logging.info("Checking system's for dependencies:")
-    cmds = ["wget"]
-    check_commands(cmds)
-
-def checkDependenciesLogos10():
-    logging.info("All dependencies found. Continuing…")
-
-def checkDependenciesLogos9():
-    logging.info("Checking dependencies for Logos 9.")
-    cmds = ["xwd", "cabextract"]
-    check_commands(cmds);
-    logging.info("All dependencies found. Continuing…")
+def check_dependencies():
+    if int(config.TARGETVERSION) == 10:
+        logging.info("Checking Logos 10 dependencies")
+        install_dependencies(config.PACKAGES)
+    elif int(config.TARGETVERSION) == 9:
+        logging.info("Checking Logos 9 dependencies")
+        install_dependencies(config.PACKAGES)
+        install_dependencies(config.L9PACKAGES)
+    else:
+        logging.error("TARGETVERSION not found.")
 
 def file_exists(file_path):
     if file_path is not None:
