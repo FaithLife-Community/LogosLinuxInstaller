@@ -147,10 +147,13 @@ def main():
     config.get_env_config()
 
     if config.DELETE_INSTALL_LOG and os.path.isfile(config.LOGOS_LOG):
-        os.remove(config.LOGOS_LOG)
+        # Write empty file before continuing.
+        with open(config.LOGOS_LOG, 'w') as f:
+            f.write('')
 
     # If Logos app is installed, run the desired Logos action.
     if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
+        logging.info(f"App is installed: {config.LOGOS_EXE}")
         if config.ACTION == 'control':
             run_control_panel()
             sys.exit(0)
