@@ -246,7 +246,6 @@ def main():
                 switch_logging()
             else:
                 logos_error("Unknown menu choice.")
-
     sys.exit(0)
 # END FUNCTION DECLARATIONS
 
