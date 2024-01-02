@@ -119,6 +119,9 @@ def restore():
 def main():
     cli_args = parse_command_line()
 
+    # Initialize logging.
+    initialize_logging(logging.WARNING)
+
     die_if_running()
     die_if_root()
 
@@ -132,16 +135,16 @@ def main():
         config_file = config.LEGACY_CONFIG_FILE
     config.set_config_env(config_file)
 
+    # Parse CLI args and update affected config vars.
+    parse_args(cli_args)
+
     # Update logging level from config.
     logger = logging.getLogger()
     logger.setLevel(config.LOG_LEVEL)
 
-    parse_args(cli_args)
-
     if config.DELETE_INSTALL_LOG and os.path.isfile(config.LOGOS_LOG):
         os.remove(config.LOGOS_LOG)
-    initialize_logging(config.LOG_LEVEL)
-
+    
     # If Logos app is installed, run the desired Logos action.
     if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):
         if config.ACTION == 'control':
