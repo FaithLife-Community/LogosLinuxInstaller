@@ -31,10 +31,11 @@ from wine import run_logos
 from wine import run_winetricks
 from wine import switch_logging
 
+
 def parse_command_line():
-    parser = argparse.ArgumentParser(description=f'Installs {os.environ.get("FLPRODUCT")} Bible Software with Wine on Linux.')
+    parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
     parser.add_argument('--version', '-v', action='version', version=f'{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}')
-    parser.add_argument('--config', '-c', metavar='CONFIG_FILE', help='Use the Logos on Linux config file when setting environment variables. Defaults to ~/.config/Logos_on_Linux/Logos_on_Linux.conf. Optionally can accept a config file provided by the user.')
+    parser.add_argument('--config', '-c', metavar='CONFIG_FILE', help=f'Use a custom Logos on Linux config file during installation. Default config is at {config.DEFAULT_CONFIG_PATH}.')
     parser.add_argument('--verbose', '-V', action='store_true', help='Enable verbose mode')
     parser.add_argument('--skip-fonts', '-F', action='store_true', help='Skip font installations')
     parser.add_argument('--force-root', '-f', action='store_true', help='Set LOGOS_FORCE_ROOT to true, which permits the root user to use the script.')
@@ -53,9 +54,9 @@ def parse_command_line():
     parser.add_argument('--shortcut', '-s', action='store_true', help='Create shortcut')
     parser.add_argument('--passive', '-P', action='store_true', help='Install Faithlife product non-interactively')
     parser.add_argument('--control-panel', '-C', action='store_true', help='Open Control Panel app')
+    return parser.parse_args()
 
-    args = parser.parse_args()
-
+def parse_args(args):
     if args.config:
         config.CONFIG_FILE = args.config
         config.set_config_env(config.CONFIG_FILE)
@@ -116,6 +117,8 @@ def restore():
     pass
 
 def main():
+    cli_args = parse_command_line()
+
     die_if_running()
     die_if_root()
 
@@ -124,12 +127,17 @@ def main():
     # Update config from CONFIG_FILE.
     # FIXME: This means that values in CONFIG_FILE take precedence over env variables.
     #   Is this preferred, or should env variables take precedence over CONFIG_FILE?
-    if file_exists(config.CONFIG_FILE):
-        config.set_config_env(config.CONFIG_FILE)
+    config_file = config.CONFIG_FILE
+    if file_exists(config.LEGACY_CONFIG_FILE):
+        config_file = config.LEGACY_CONFIG_FILE
+    config.set_config_env(config_file)
 
-    parse_command_line()
+    # Update logging level from config.
+    logger = logging.getLogger()
+    logger.setLevel(config.LOG_LEVEL)
 
-    # Configure logging.
+    parse_args(cli_args)
+
     if config.DELETE_INSTALL_LOG and os.path.isfile(config.LOGOS_LOG):
         os.remove(config.LOGOS_LOG)
     initialize_logging(config.LOG_LEVEL)
