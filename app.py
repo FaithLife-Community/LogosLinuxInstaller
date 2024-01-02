@@ -23,6 +23,7 @@ from gui import InstallerGui
 from installer import checkExistingInstall
 from installer import finish_install
 from installer import logos_setup
+from installer import setWinetricks
 from msg import cli_msg
 from utils import checkDependencies
 from utils import get_winebin_code_and_desc
@@ -33,6 +34,7 @@ from utils import verify_downloaded_file
 from wine import createWineBinaryList
 from wine import get_app_logging_state
 from wine import run_logos
+from wine import run_winetricks
 from wine import switch_logging
 
 
@@ -460,7 +462,7 @@ class ControlWindow(ControlGui):
         self.root = root
         self.root.title("Faithlife Bible Software Control Panel")
         self.root.w = 450
-        self.root.h = 300
+        self.root.h = 350
         self.root.geometry(f"{self.root.w}x{self.root.h}")
         self.root.minsize(self.root.w, self.root.h)
         # self.root.resizable(False, False)
@@ -480,6 +482,8 @@ class ControlWindow(ControlGui):
         self.config_button.config(command=self.open_config)
         self.deps_button.config(command=self.reinstall_deps)
         self.deps_button.state(['disabled']) # FIXME: needs function
+        self.getwinetricks_button.config(command=self.get_winetricks)
+        self.runwinetricks_button.config(command=self.launch_winetricks)
         self.message_event = '<<ClearMessage>>'
 
         self.root.bind(self.logging_event, self.update_logging_button)
@@ -500,7 +504,7 @@ class ControlWindow(ControlGui):
     def get_installdir(self, evt=None):
         dirname = askdirectory(
             initialdir='~',
-            title="Choose installation directory..."
+            title="Choose installation directory…"
         )
         if len(dirname) > 0:
             self.installdir = dirname
@@ -509,8 +513,17 @@ class ControlWindow(ControlGui):
     def reinstall_deps(self, evt=None):
         checkDependencies()
 
+    def get_winetricks(self, evt=None):
+        winetricks_status = setWinetricks()
+        if winetricks_status == 0:
+            self.messagevar.set("Winetricks has been reinstalled.")
+
+    def launch_winetricks(self, evt=None):
+        self.messagevar.set("Launching Winetricks…")
+        run_winetricks()
+
     def remove_indexes(self, evt=None):
-        self.messagevar.set("Removing indexes...")
+        self.messagevar.set("Removing indexes…")
         t = Thread(target=remove_all_index_files, kwargs={'app': self})
         t.start()
 

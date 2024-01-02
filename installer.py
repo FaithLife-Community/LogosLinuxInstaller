@@ -271,7 +271,7 @@ def downloadWinetricks():
 def setWinetricks():
     cli_msg("Preparing winetricks…")
     # Check if local winetricks version available; else, download it
-    if config.WINETRICKSBIN is None:
+    if config.WINETRICKSBIN is None or not os.access(config.WINETRICKSBIN, os.X_OK):
         local_winetricks_path = shutil.which('winetricks')
         if local_winetricks_path is not None:
             # Check if local winetricks version is up-to-date; if so, offer to use it or to download; else, download it
@@ -288,9 +288,11 @@ def setWinetricks():
                 if winetricks_choice.startswith("1"):
                     logging.info("Setting winetricks to the local binary…")
                     config.WINETRICKSBIN = local_winetricks_path
+                    return 0
                 elif winetricks_choice.startswith("2"):
                     downloadWinetricks()
                     config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
+                    return 0
                 else:
                     cli_msg("Installation canceled!")
                     sys.exit(0)
@@ -298,10 +300,12 @@ def setWinetricks():
                 cli_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")
                 downloadWinetricks()
                 config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
+                return 0
         else:
             cli_msg("Local winetricks not found. Downloading winetricks from the Internet…")
             downloadWinetricks()
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
+            return 0
 
 def getPremadeWineBottle():
     cli_msg("Installing pre-made wineBottle 64bits…")
