@@ -12,6 +12,7 @@ from control import open_config_file
 from control import remove_all_index_files
 from control import remove_library_catalog
 from installer import install
+from installer import setWinetricks
 from msg import cli_msg
 from msg import initialize_logging
 from msg import logos_error
@@ -56,6 +57,8 @@ def parse_command_line():
     parser.add_argument('--shortcut', '-s', action='store_true', help='Create shortcut')
     parser.add_argument('--passive', '-P', action='store_true', help='Install Faithlife product non-interactively')
     parser.add_argument('--control-panel', '-C', action='store_true', help='Open Control Panel app')
+    parser.add_argument('--get-winetricks', action='store_true', help='Download or update Winetricks')
+    parser.add_argument('--run-winetricks', action='store_true', help='Download or update Winetricks')
     return parser.parse_args()
 
 def parse_args(args):
@@ -180,7 +183,7 @@ def main():
     options_default = ["Install Logos Bible Software"]
     options_exit = ["Exit"]
     if file_exists(config.CONFIG_FILE):
-        options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Reinstall Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Control Panel", "Run Winetricks"]
+        options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Reinstall Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Control Panel", "Download or Update Winetricks", "Run Winetricks"]
         if config.LOGS == "DISABLED":
             options_installed.append("Enable Logging")
         else:
@@ -222,6 +225,8 @@ def main():
         set_appimage()
     elif choice == "Control Panel":
         run_control_panel()
+    elif choice == "Download or Update Winetricks":
+        setWinetricks()
     elif choice == "Run Winetricks":
         run_winetricks()
     elif choice.endswith("Logging"):

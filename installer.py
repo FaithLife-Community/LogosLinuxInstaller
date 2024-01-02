@@ -264,12 +264,12 @@ def beginInstall(app=None):
             logos_error(f"{wineserver_path} not found. Please either add it or create a symlink to it, and rerun.")
 
 def downloadWinetricks():
-    cli_msg("Downloading winetricks...")
+    cli_msg("Downloading winetricks…")
     logos_reuse_download(config.WINETRICKS_URL, "winetricks", config.APPDIR_BINDIR)
     os.chmod(f"{config.APPDIR_BINDIR}/winetricks", 0o755)
 
 def setWinetricks():
-    cli_msg("Preparing winetricks...")
+    cli_msg("Preparing winetricks…")
     # Check if local winetricks version available; else, download it
     if config.WINETRICKSBIN is None:
         local_winetricks_path = shutil.which('winetricks')
