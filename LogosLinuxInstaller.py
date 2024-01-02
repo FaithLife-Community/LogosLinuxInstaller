@@ -130,8 +130,6 @@ def main():
     # Set initial config; incl. defining CONFIG_FILE.
     set_default_config()
     # Update config from CONFIG_FILE.
-    # FIXME: This means that values in CONFIG_FILE take precedence over env variables.
-    #   Is this preferred, or should env variables take precedence over CONFIG_FILE?
     if not file_exists(config.CONFIG_FILE) and file_exists(config.LEGACY_CONFIG_FILE):
         config.set_config_env(config.LEGACY_CONFIG_FILE)
         write_config(config.CONFIG_FILE)
@@ -141,11 +139,15 @@ def main():
     # Parse CLI args and update affected config vars.
     parse_args(cli_args)
 
+    # Set terminal log level based on CLI config.
+    cli_log_level = config.LOG_LEVEL
+    update_log_level(config.LOG_LEVEL)
+
+    # Re-read environment variables.
+    config.get_env_config()
+
     if config.DELETE_INSTALL_LOG and os.path.isfile(config.LOGOS_LOG):
         os.remove(config.LOGOS_LOG)
-
-    # Set terminal log level based on current config.
-    update_log_level(config.LOG_LEVEL)
 
     # If Logos app is installed, run the desired Logos action.
     if config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK):

@@ -135,3 +135,10 @@ def set_config_env(config_file_path):
     logging.info(f"Setting {len(config_dict)} variables from config file.")
     for key, value in config_dict.items():
         globals()[key] = value
+
+def get_env_config():
+    for var in globals().keys():
+        val = os.getenv(var)
+        if val is not None:
+            logging.info(f"Setting '{var}' to '{val}'")
+            globals()[var] = val
