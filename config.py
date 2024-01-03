@@ -34,6 +34,7 @@ CUSTOMBINPATH = os.getenv('CUSTOMBINPATH')
 DEBUG = os.getenv('DEBUG', False)
 DELETE_INSTALL_LOG = os.getenv('DELETE_INSTALL_LOG', False)
 DIALOG = os.getenv('DIALOG')
+LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
 LOGOS_LOG = os.getenv('LOGOS_LOG', os.path.expanduser("~/.local/state/Logos_on_Linux/install.log"))
 LOGOS_VERSION = os.getenv('LOGOS_VERSION')
 LOGOS64_MSI = os.getenv('LOGOS64_MSI')
@@ -48,7 +49,7 @@ WINETRICKS_UNATTENDED = os.getenv('WINETRICKS_UNATTENDED')
 # Other run-time variables.
 ACTION = 'app'
 APPIMAGE_LINK_SELECTION_NAME = "selected_wine.AppImage"
-DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
+DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")
 EXTRA_INFO = "The following packages are usually necessary: winbind cabextract libjpeg8."
 GUI = None
 LOGOS_FORCE_ROOT = False
@@ -79,30 +80,65 @@ PACKAGE_MANAGER_COMMAND = None
 PACKAGES = None
 SUPERUSER_COMMAND = None
 
+persistent_config_keys = [
+    "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "INSTALLDIR", "APPDIR",
+    "APPDIR_BINDIR", "WINETRICKSBIN", "WINEPREFIX", "WINEBIN_CODE", "WINE_EXE",
+    "WINESERVER_EXE", "WINE64_APPIMAGE_FULL_URL", "WINECMD_ENCODING",
+    "WINE64_APPIMAGE_FULL_FILENAME", "APPIMAGE_LINK_SELECTION_NAME",
+    "LOGOS_EXECUTABLE", "LOGOS_EXE", "LOGOS_DIR", "LOGS", "BACKUPDIR"
+]
 
 def get_config_file_dict(config_file_path):
     config_dict = {}
-    try:
-        with open(config_file_path, 'r') as config_file:
-            cfg = json.load(config_file)
+    if config_file_path.endswith('.json'):
+        try:
+            with open(config_file_path, 'r') as config_file:
+                cfg = json.load(config_file)
 
-        for key, value in cfg.items():
-            config_dict[key] = value
+            for key, value in cfg.items():
+                config_dict[key] = value
+            return config_dict
+        except TypeError as e:
+            logging.error(f"Error opening Config file.")
+            logging.error(e)
+            return None
+        except FileNotFoundError:
+            logging.info(f"No config file not found at {config_file_path}")
+            return config_dict
+        except json.JSONDecodeError as e:
+            logging.error(f"Config file could not be read.")
+            logging.error(e)
+            return None
+    elif config_file_path.endswith('.conf'):
+        # Legacy config from bash script.
+        logging.info("Reading from legacy config file.")
+        with open(config_file_path, 'r') as config_file:
+            for line in config_file:
+                line = line.strip()
+                if len(line) == 0: # skip blank lines
+                    continue
+                if line[0] == '#': # skip commented lines
+                    continue
+                parts = line.split('=')
+                if len(parts) == 2:
+                    value = parts[1].strip('"').strip("'") # remove quotes
+                    vparts = value.split('#') # get rid of potential comment after value
+                    if len(vparts) > 1:
+                        value = vparts[0].strip().strip('"').strip("'")
+                    config_dict[parts[0]] = value
         return config_dict
-    except TypeError as e:
-        logging.error(f"Error opening Config file: {e}")
-        return None
-    except FileNotFoundError:
-        # Most likely a new install with no saved config file yet.
-        logging.info(f"No config file not found at {config_file_path}")
-        return None
-    except json.JSONDecodeError as e:
-        logging.error(f"Error decoding config file {config_file_path}: {e}")
-        return None
 
 def set_config_env(config_file_path):
     config_dict = get_config_file_dict(config_file_path)
     if config_dict is None:
         logos_error(f"Error: Unable to get config at {config_file_path}")
+    logging.info(f"Setting {len(config_dict)} variables from config file.")
     for key, value in config_dict.items():
         globals()[key] = value
+
+def get_env_config():
+    for var in globals().keys():
+        val = os.getenv(var)
+        if val is not None:
+            logging.info(f"Setting '{var}' to '{val}'")
+            globals()[var] = val

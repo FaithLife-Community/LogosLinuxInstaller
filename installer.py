@@ -389,16 +389,9 @@ def postInstall(app):
         app.root.event_generate("<<UpdateInstallText>>")
 
     HOME = os.environ.get('HOME')
-    config_keys = [
-        "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "INSTALLDIR", "APPDIR",
-        "APPDIR_BINDIR", "WINETRICKSBIN", "WINEPREFIX", "WINEBIN_CODE", "WINE_EXE",
-        "WINESERVER_EXE", "WINE64_APPIMAGE_FULL_URL", "WINECMD_ENCODING",
-        "WINE64_APPIMAGE_FULL_FILENAME", "APPIMAGE_LINK_SELECTION_NAME",
-        "LOGOS_EXECUTABLE", "LOGOS_EXE", "LOGOS_DIR", "LOGS", "BACKUPDIR"
-    ]
 
     logging.debug("post-install config:")
-    for k in config_keys:
+    for k in config.persistent_config_keys:
         logging.debug(f"{k}: {config.__dict__.get(k)}")
 
     if os.path.isfile(config.LOGOS_EXE):
@@ -410,7 +403,7 @@ def postInstall(app):
             logging.info(f"No config file at {config.CONFIG_FILE}")
             os.makedirs(os.path.join(HOME, ".config", "Logos_on_Linux"), exist_ok=True)
             if os.path.isdir(os.path.join(HOME, ".config", "Logos_on_Linux")):
-                write_config(config.CONFIG_FILE, config_keys)
+                write_config(config.CONFIG_FILE)
                 logging.info(f"A config file was created at {config.CONFIG_FILE}.")
             else:
                 logos_warn(f"{HOME}/.config/Logos_on_Linux does not exist. Failed to create config file.")
@@ -420,13 +413,13 @@ def postInstall(app):
             logging.info(f"Comparing its contents with current config.")
             current_config_file_dict = config.get_config_file_dict(config.CONFIG_FILE)
             different = False
-            for key in config_keys:
+            for key in config.persistent_config_keys:
                 if current_config_file_dict.get(key) != config.__dict__.get(key):
                     different = True
                     break
             if different is True and logos_acknowledge_question(f"Update config file at {config.CONFIG_FILE}?", "The existing config file was not overwritten."):
                 logging.info(f"Updating config file.")
-                write_config(config.CONFIG_FILE, config_keys)
+                write_config(config.CONFIG_FILE)
         else:
             # Script was run with a config file. Skip modifying the config.
             pass

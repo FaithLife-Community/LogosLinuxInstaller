@@ -6,6 +6,21 @@ import sys
 import config
 
 
+def get_log_level_name(level):
+    name = None
+    levels = {
+        "CRITICAL": logging.CRITICAL,
+        "ERROR": logging.ERROR,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+    }
+    for k, v in levels.items():
+        if level == v:
+            name = k
+            break
+    return name
+
 def initialize_logging(stderr_log_level):
     '''
     Log levels:
@@ -39,6 +54,13 @@ def initialize_logging(stderr_log_level):
         handlers=handlers,
     )
     cli_msg(f"Installer log file: {config.LOGOS_LOG}")
+
+def update_log_level(new_level):
+    # Update logging level from config.
+    for h in logging.getLogger().handlers:
+        if type(h) == logging.StreamHandler:
+            h.setLevel(new_level)
+    logging.info(f"Terminal log level set to {get_log_level_name(new_level)}")
 
 def cli_msg(message, end='\n'):
     ''' Used for messages that should be printed to stdout regardless of log level. '''
