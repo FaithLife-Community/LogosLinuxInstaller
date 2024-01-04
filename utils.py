@@ -813,3 +813,11 @@ def write_progress_bar(percent, screen_width=80):
     l_y = int(l_f * percent / 100) # num. of chars. complete
     l_n  = l_f - l_y               # num. of chars. incomplete
     print(f" [{y*l_y}{n*l_n}] {percent:>3}%", end='\r') # end='\x1b[1K\r' to erase to end of line
+
+def is_appimage(file_path):
+    file_path = Path(file_path)
+    with file_path.open('rb') as f:
+        elf_sig = f.read(4)
+        _ = f.read(4)
+        ai_sig = f.read(2)
+    return elf_sig == b'\x7fELF' and ai_sig == b'AI'

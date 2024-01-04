@@ -1,13 +1,16 @@
 import logging
 import os
 import psutil
+import re
 import subprocess
 import time
+from pathlib import Path
 
 import config
 from msg import cli_msg
 from msg import logos_error
 from msg import logos_progress
+from utils import is_appimage
 from utils import wait_process_using_dir
 
 
@@ -315,6 +318,23 @@ def switch_logging(action=None, app=None):
     if app is not None:
         app.logging_q.put(state)
         app.root.event_generate(app.logging_event)
+
+def get_wine_branch(binary):
+    logging.info(f"Determining wine branch of '{binary}'")
+    binary_obj = Path(binary).resolve()
+    if is_appimage(binary_obj):
+        logging.error("Can't handle AppImages yet.")
+        return None
+    logging.info(f"'{binary}' resolved to '{binary_obj}'")
+    mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'
+    try:
+        with mscoree64.open('rb') as f:
+            for line in f:
+                m = re.search(rb'wine-[a-z]+', line)
+                if m is not None:
+                    return m[0].decode().lstrip('wine-')
+    except FileNotFoundError as e:
+        logging.error(e)
 
 def get_wine_env():
     wine_env = os.environ.copy()
