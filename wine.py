@@ -2,6 +2,7 @@ import logging
 import os
 import psutil
 import re
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -321,14 +322,30 @@ def switch_logging(action=None, app=None):
 
 def get_wine_branch(binary):
     logging.info(f"Determining wine branch of '{binary}'")
-    binary_obj = Path(binary).resolve()
-    if is_appimage(binary_obj):
-        logging.error("Can't handle AppImages yet.")
-        return None
+    binary_obj = Path(binary).expanduser().resolve()
+    appimage, appimage_type = is_appimage(binary_obj)
+    if appimage:
+        if appimage_type == 1:
+            logging.error(f"Can't handle AppImage type {str(appimage_type)} yet.")
+        # Mount appimage to inspect files.
+        p = subprocess.Popen([binary_obj, '--appimage-mount'], stdout=subprocess.PIPE, encoding='UTF8')
+        while p.returncode is None:
+            for line in p.stdout:
+                if line.startswith('/tmp'):
+                    tmp_dir = Path(line.rstrip())
+                    for f in tmp_dir.glob('**/lib64/**/mscoree.dll'):
+                        branch = get_mscoree_winebranch(f)
+                        break
+                p.send_signal(signal.SIGINT)
+            p.poll()
+        return branch
     logging.info(f"'{binary}' resolved to '{binary_obj}'")
     mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'
+    return get_mscoree_winebranch(mscoree64)
+
+def get_mscoree_winebranch(mscoree_file):
     try:
-        with mscoree64.open('rb') as f:
+        with mscoree_file.open('rb') as f:
             for line in f:
                 m = re.search(rb'wine-[a-z]+', line)
                 if m is not None:
