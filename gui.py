@@ -273,7 +273,7 @@ class ControlGui(Frame):
 
         # INSTALLDIR file_chooser
         self.installdir_label = Label(self, text="Installation folder: ")
-        self.installdir_filechooser = Button(self, text="Choose folder...")
+        self.installdir_filechooser = Button(self, text="Choose folder…")
         # Run app button
         self.run_label = Label(self, text=f"Run app")
         self.run_button = Button(self, text="Run")
@@ -289,10 +289,16 @@ class ControlGui(Frame):
         self.logging_button = Button(self, textvariable=self.loggingstatevar)
         # Edit config button
         self.config_label = Label(self, text="Edit config file")
-        self.config_button = Button(self, text="Edit ...")
+        self.config_button = Button(self, text="Edit …")
         # Reinstall deps button
         self.deps_label = Label(self, text="Reinstall dependencies")
         self.deps_button = Button(self, text="Reinstall")
+        # Reinstall or update winetricks
+        self.getwinetricks_label = Label(self, text="Download or Update Winetricks")
+        self.getwinetricks_button = Button(self, text="Download or Update Winetricks")
+        # Reinstall or update winetricks
+        self.runwinetricks_label = Label(self, text="Run Winetricks")
+        self.runwinetricks_button = Button(self, text="Run Winetricks")
         # Separator
         self.separator = Separator(self, orient='horizontal')
         # Status message label
@@ -395,23 +401,49 @@ class ControlGui(Frame):
             sticky='w',
             pady=2,
         )
-        self.separator.grid(
+        self.getwinetricks_label.grid(
             column=0,
             row=7,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.getwinetricks_button.grid(
+            column=1,
+            row=7,
+            sticky='w',
+            pady=2,
+        )
+        self.runwinetricks_label.grid(
+            column=0,
+            row=8,
+            sticky='w',
+            padx=2,
+            pady=2,
+        )
+        self.runwinetricks_button.grid(
+            column=1,
+            row=8,
+            sticky='w',
+            pady=2,
+        )
+        self.separator.grid(
+            column=0,
+            row=9,
             columnspan=2,
             sticky='we',
             pady=2,
         )
         self.message_label.grid(
             column=0,
-            row=8,
+            row=10,
             columnspan=2,
             sticky='we',
             pady=2
         )
         self.progress.grid(
             column=0,
-            row=9,
+            row=11,
             columnspan=2,
             sticky='we',
             pady=2
