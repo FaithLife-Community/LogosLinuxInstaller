@@ -152,9 +152,10 @@ def chooseInstallMethod():
 
     if config.WINE_EXE is None:
         logging.info("Creating binary list.")
+        appimages = find_appimage_files()
         binaries = wine.createWineBinaryList()
         logging.debug(f"binaries: {', '.join(binaries)}")
-        WINEBIN_OPTIONS = utils.getWineBinOptions(binaries)
+        WINEBIN_OPTIONS = utils.getWineBinOptions(appimages, binaries)
 
         BACKTITLE="Choose Wine Binary Menu"
         TITLE="Choose Wine Binary"

@@ -351,6 +351,14 @@ def mkdir_critical(directory):
     except OSError:
         msg.logos_error(f"Can't create the {directory} directory")
 
+def curses_get_user_input(stdscr, prompt):
+    curses.echo()
+    stdscr.addstr(0, 0, prompt)
+    stdscr.refresh()
+    user_input = stdscr.getstr(1, 0, 50).decode('utf-8')
+    curses.noecho()
+    return user_input
+
 def curses_menu(options, title, question_text):
     # Set up the screen
     stdscr = curses.initscr()
@@ -493,8 +501,30 @@ def cli_download(uri, destination):
         print()
         msg.logos_error('Interrupted with Ctrl+C')
 
-def set_appimage():
-    os.symlink(config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
+def set_appimage_selector(appimage_filename=config.WINE64_APPIMAGE_FILENAME):
+    appimage_path = f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"
+
+    if os.path.exists(appimage_path):
+        os.unlink(appimage_path)
+
+    os.symlink(appimage_filename, appimage_path)
+
+    config.WINE64_APPIMAGE_FILENAME = appimage_filename
+
+def find_appimage_files(directory=""):
+    appimages = []
+    directories = [config.APPDIR_BINDIR, get_user_downloads_dir(), directory]
+    for dir in directories:
+        for root, dirs, files in os.walk(dir):
+            for filename in files:
+                if filename.lower().startswith("wine") and filename.lower().endswith("appimage"):
+                    appimage_path = os.path.join(root, filename)
+                    if os.access(appimage_path, os.X_OK):
+                        appimages.append(appimage_path)
+                    else:
+                        pass
+                
+    return appimages
 
 def make_skel(app_image_filename):
     config.SET_APPIMAGE_FILENAME = app_image_filename
@@ -509,7 +539,7 @@ def make_skel(app_image_filename):
     except OSError as e:
         die(f"ERROR: Can't open dir: {config.APPDIR_BINDIR}: {e}")
     if not os.path.islink(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"):
-        os.symlink(config.SET_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
+        os.symlink(config.SET_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}") # FIXME: I think config.SET_APPIMAGE_FILENAME is an incorrect variable???
     for name in ["wine", "wine64", "wineserver"]:
         if not os.path.islink(name):
             os.symlink(config.APPIMAGE_LINK_SELECTION_NAME, name)
@@ -631,15 +661,18 @@ def getLogosReleases(q=None, app=None):
     logging.debug(f"Available releases: {', '.join(releases)}")
     return releases
 
-def getWineBinOptions(binaries):
+def getWineBinOptions(appimages, binaries):
     WINEBIN_OPTIONS = []
     
-    # Add AppImage to list
+    appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]
+    #TODO: Need to Test AppImage Wine Versions as with 
+    # Add AppImages to list
     if config.TARGETVERSION != "9":
         if config.DIALOG == "curses":
-            WINEBIN_OPTIONS.append(["AppImage", f'{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}', f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}"])
+            for e in appimage_entries:
+                WINEBIN_OPTIONS.append(e)
         elif config.DIALOG == 'tk':
-            WINEBIN_OPTIONS.append(f"{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}")
+            WINEBIN_OPTIONS.extend(appimages)
     
     for binary in binaries:
         WINEBIN_PATH = binary
@@ -656,7 +689,7 @@ def getWineBinOptions(binaries):
 def get_winebin_code_and_desc(binary):
     # Set binary code, description, and path based on path
     codes = {
-        "AppImage": f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}",
+        "AppImage": f"AppImage of Wine64",
         "System": "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later. Stable or Devel do not work.",
         "Proton": "Install using the Steam Proton fork of WINE.",
         "PlayOnLinux": "Install using a PlayOnLinux WINE64 binary.",
