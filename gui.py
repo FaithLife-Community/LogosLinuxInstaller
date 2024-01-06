@@ -8,14 +8,16 @@ from tkinter.ttk import Combobox
 from tkinter.ttk import Frame
 from tkinter.ttk import Label
 from tkinter.ttk import Progressbar
+from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
 import config
-from utils import get_system_winetricks
+import utils
+
 
 class InstallerGui(Frame):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, root, **kwargs):
+        super(InstallerGui, self).__init__(root, **kwargs)
 
         self.italic = font.Font(slant='italic')
         self.config(padding=5)
@@ -26,23 +28,14 @@ class InstallerGui(Frame):
         self.targetversion = config.TARGETVERSION
         self.logos_release_version = config.LOGOS_RELEASE_VERSION
         self.default_config_path = config.DEFAULT_CONFIG_PATH
-        self.config_file = config.CONFIG_FILE
-        if self.config_file is None:
-            self.config_file = 'Default'
         self.winetricksbin = config.WINETRICKSBIN
         if self.winetricksbin is None:
-            self.sys_winetricks = get_system_winetricks()
+            self.sys_winetricks = utils.get_system_winetricks()
             if self.sys_winetricks is not None and self.sys_winetricks[1] >= 20220411:
                 self.winetricksbin = f'System (v{self.sys_winetricks[1]})'
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
             self.skip_fonts = 0
-
-        # Config File row.
-        self.config_label = Label(self, text="Config file: ")
-        self.config_filechooser = Button(self,
-            text=self.config_file if self.config_file is not None else "Choose file...",
-        )
 
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
@@ -72,14 +65,10 @@ class InstallerGui(Frame):
         self.release_check_button = Button(self, text="Get Release list")
         self.release_check_button.state(['disabled'])
 
-        # Custom binary row.
-        self.bin_label = Label(self, text="Wine exe custom folder: ")
-        self.bin_filechooser = Button(self, text="Choose folder...")
-
         # Wine row.
         self.wine_label = Label(self, text="Wine exe: ")
         self.winevar = StringVar()
-        self.wine_dropdown = Combobox(self, textvariable=self.winevar, width=45)
+        self.wine_dropdown = Combobox(self, textvariable=self.winevar)
         self.wine_dropdown.state(['readonly'])
         self.wine_dropdown['values'] = []
         self.wine_check_button = Button(self, text="Get exe list")
@@ -107,159 +96,37 @@ class InstallerGui(Frame):
         self.okay_button.state(['disabled'])
 
         # Status area.
+        s1 = Separator(self, orient='horizontal')
         self.messagevar = StringVar()
-        # self.messagevar.set("Choose Product and Version")
-        self.message_label = Label(self,
-            textvariable=self.messagevar,
-            font=self.italic,
-        )
         self.statusvar = StringVar()
         self.status_label = Label(self, textvariable=self.statusvar)
         self.progressvar = IntVar()
         self.progress = Progressbar(self, variable=self.progressvar)
 
         # Place widgets.
-        self.config_label.grid(
-            column=0,
-            row=0,
-            sticky='w',
-            pady=2,
-        )
-        self.config_filechooser.grid(
-            column=1,
-            columnspan=4,
-            row=0,
-            sticky='we',
-            pady=2,
-        )
-        self.product_label.grid(
-            column=0,
-            row=1,
-            sticky='nws',
-            pady=2,
-        )
-        self.product_dropdown.grid(
-            column=1,
-            row=1,
-            sticky='w',
-            pady=2,
-        )
-        self.version_dropdown.grid(
-            column=2,
-            row=1,
-            sticky='w',
-            pady=2,
-        )
-        self.release_label.grid(
-            column=0,
-            row=2,
-            sticky='w',
-            pady=2,            
-        )
-        self.release_dropdown.grid(
-            column=1,
-            row=2,
-            sticky='w',
-            pady=2,
-        )
-        self.release_check_button.grid(
-            column=2,
-            row=2,
-            sticky='w',
-            pady=2,
-        )
-        self.bin_label.grid(
-            column=0,
-            row=3,
-            sticky='nws',
-            pady=2,
-        )
-        self.bin_filechooser.grid(
-            column=1,
-            row=3,
-            sticky='we',
-            pady=2,
-        )
-        self.wine_label.grid(
-            column=0,
-            row=4,
-            sticky='w',
-            pady=2,
-        )
-        self.wine_dropdown.grid(
-            column=1,
-            row=4,
-            columnspan=3,
-            sticky='we',
-            pady=2,
-        )
-        self.wine_check_button.grid(
-            column=4,
-            row=4,
-            sticky='e',
-            pady=2,
-        )
-        self.tricks_label.grid(
-            column=0,
-            row=5,
-            sticky='w',
-            pady=2,
-        )
-        self.tricks_dropdown.grid(
-            column=1,
-            row=5,
-            sticky='we',
-            pady=2,
-        )
-        self.fonts_label.grid(
-            column=0,
-            row=6,
-            sticky='nws',
-            pady=2,
-        )
-        self.fonts_checkbox.grid(
-            column=1,
-            row=6,
-            sticky='w',
-            pady=2,
-        )
-        self.cancel_button.grid(
-            column=3,
-            row=7,
-            sticky='e',
-            pady=2,
-        )
-        self.okay_button.grid(
-            column=4,
-            row=7,
-            sticky='e',
-            pady=2,
-        )
-        self.message_label.grid(
-            column=0,
-            row=7,
-            columnspan=3,
-            sticky='w',
-            pady=2,
-        )
-        self.status_label.grid(
-            column=0,
-            row=8,
-            columnspan=5,
-            sticky='w',
-            pady=2,
-        )
-        self.progress.grid(
-            column=0,
-            row=9,
-            columnspan=5,
-            sticky='we',
-            pady=2,
-        )
+        self.product_label.grid(column=0, row=0, sticky='nws', pady=2)
+        self.product_dropdown.grid(column=1, row=0, sticky='w', pady=2)
+        self.version_dropdown.grid(column=2, row=0, sticky='w', pady=2)
+        self.release_label.grid(column=0, row=1, sticky='w', pady=2)
+        self.release_dropdown.grid(column=1, row=1, sticky='w', pady=2)
+        self.release_check_button.grid(column=2, row=1, sticky='w', pady=2)
+        self.wine_label.grid(column=0, row=2, sticky='w', pady=2)
+        self.wine_dropdown.grid(column=1, row=2, columnspan=3, sticky='we', pady=2)
+        self.wine_check_button.grid(column=4, row=2, sticky='e', pady=2)
+        self.tricks_label.grid(column=0, row=3, sticky='w', pady=2)
+        self.tricks_dropdown.grid(column=1, row=3, sticky='we', pady=2)
+        self.fonts_label.grid(column=0, row=4, sticky='nws', pady=2)
+        self.fonts_checkbox.grid(column=1, row=4, sticky='w', pady=2)
+        self.cancel_button.grid(column=3, row=5, sticky='e', pady=2)
+        self.okay_button.grid(column=4, row=5, sticky='e', pady=2)
+        # Status area
+        s1.grid(column=0, row=6, columnspan=5, sticky='we')
+        self.status_label.grid(column=0, row=7, columnspan=5, sticky='w', pady=2)
+        self.progress.grid(column=0, row=8, columnspan=5, sticky='we', pady=2)
 
 class ControlGui(Frame):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, root, *args, **kwargs):
+        super(ControlGui, self).__init__(root, **kwargs)
         self.config(padding=5)
         self.grid(row=0, column=0, sticky='nwes')
 
@@ -271,36 +138,56 @@ class ControlGui(Frame):
         self.logs = config.LOGS
         self.config_file = config.CONFIG_FILE
 
-        # INSTALLDIR file_chooser
-        self.installdir_label = Label(self, text="Installation folder: ")
-        self.installdir_filechooser = Button(self, text="Choose folder…")
-        # Run app button
-        self.run_label = Label(self, text=f"Run app")
-        self.run_button = Button(self, text="Run")
-        # Check resources button
-        self.check_label = Label(self, text="Check resources")
-        self.check_button = Button(self, text="Check")
-        # Remove indexes button
-        self.indexes_label = Label(self, text="Remove indexes")
-        self.indexes_button = Button(self, text="Remove")
-        # App logging toggle
-        self.loggingstatevar = StringVar(value='Enable')
-        self.logging_label = Label(self, text="Toggle app logging")
-        self.logging_button = Button(self, textvariable=self.loggingstatevar)
+        # Run/install app button
+        self.app_buttonvar = StringVar()
+        self.app_buttonvar.set("Install")
+        self.app_label = Label(self, text="FaithLife app") # FIXME: use app name if installed
+        self.app_button = Button(self, textvariable=self.app_buttonvar) # or Install
+
+        # Installed app actions
+        # -> Run indexing, Remove library catalog, Remove all index files
+        s1 = Separator(self, orient='horizontal')
+        self.actionsvar = StringVar()
+        self.actioncmd = None
+        self.actions_label = Label(self, text="App actions: ")
+        self.run_indexing_radio = Radiobutton(self,
+            text="Run indexing", variable=self.actionsvar, value='run-indexing',
+        )
+        self.remove_library_catalog_radio = Radiobutton(self,
+            text="Remove library catalog", variable=self.actionsvar, value='remove-library-catalog',
+        )
+        self.remove_index_files_radio = Radiobutton(self,
+            text="Remove all index files", variable=self.actionsvar, value='remove-index-files',
+        )
+        self.actions_button = Button(self, text="Run action")
+        self.actions_button.state(['disabled'])
+        s2 = Separator(self, orient='horizontal')
+
         # Edit config button
         self.config_label = Label(self, text="Edit config file")
         self.config_button = Button(self, text="Edit …")
         # Reinstall deps button
         self.deps_label = Label(self, text="Reinstall dependencies")
         self.deps_button = Button(self, text="Reinstall")
-        # Reinstall or update winetricks
-        self.getwinetricks_label = Label(self, text="Download or Update Winetricks")
-        self.getwinetricks_button = Button(self, text="Download or Update Winetricks")
-        # Reinstall or update winetricks
-        self.runwinetricks_label = Label(self, text="Run Winetricks")
-        self.runwinetricks_button = Button(self, text="Run Winetricks")
+        # Backup/restore data buttons
+        self.backups_label = Label(self, text="Backup/restore data")
+        self.backup_button = Button(self, text="Backup")
+        self.backup_button.state(['disabled']) # FIXME: needs function
+        self.restore_button = Button(self, text="Restore")
+        self.restore_button.state(['disabled']) # FIXME: needs function
+        # Set AppImage button
+        self.appimage_label = Label(self, text="Set AppImage")
+        self.appimage_button = Button(self, text="Run")
+        # Run winetricks
+        self.winetricks_label = Label(self, text="Winetricks")
+        self.run_winetricks_button = Button(self, text="Run")
+        self.get_winetricks_button = Button(self, text="Download/Update")
+        # App logging toggle
+        self.loggingstatevar = StringVar(value='Enable')
+        self.logging_label = Label(self, text="Toggle app logging")
+        self.logging_button = Button(self, textvariable=self.loggingstatevar)
         # Separator
-        self.separator = Separator(self, orient='horizontal')
+        s3 = Separator(self, orient='horizontal')
         # Status message label
         self.messagevar = StringVar()
         self.message_label = Label(self, textvariable=self.messagevar)
@@ -310,141 +197,37 @@ class ControlGui(Frame):
         self.progress.state(['disabled'])
 
         # Place widgets.
-        self.installdir_label.grid(
-            column=0,
-            row=0,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.installdir_filechooser.grid(
-            column=1,
-            row=0,
-            sticky='we',
-            pady=2,
-        )
-        self.run_label.grid(
-            column=0,
-            row=1,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.run_button.grid(
-            column=1,
-            row=1,
-            sticky='w',
-            pady=2,
-        )
-        self.check_label.grid(
-            column=0,
-            row=2,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.check_button.grid(
-            column=1,
-            row=2,
-            sticky='w',
-            pady=2,
-        )
-        self.indexes_label.grid(
-            column=0,
-            row=3,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.indexes_button.grid(
-            column=1,
-            row=3,
-            sticky='w',
-            pady=2,
-        )
-        self.logging_label.grid(
-            column=0,
-            row=4,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.logging_button.grid(
-            column=1,
-            row=4,
-            sticky='w',
-            pady=2,
-        )
-        self.config_label.grid(
-            column=0,
-            row=5,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.config_button.grid(
-            column=1,
-            row=5,
-            sticky='w',
-            pady=2,
-        )
-        self.deps_label.grid(
-            column=0,
-            row=6,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.deps_button.grid(
-            column=1,
-            row=6,
-            sticky='w',
-            pady=2,
-        )
-        self.getwinetricks_label.grid(
-            column=0,
-            row=7,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.getwinetricks_button.grid(
-            column=1,
-            row=7,
-            sticky='w',
-            pady=2,
-        )
-        self.runwinetricks_label.grid(
-            column=0,
-            row=8,
-            sticky='w',
-            padx=2,
-            pady=2,
-        )
-        self.runwinetricks_button.grid(
-            column=1,
-            row=8,
-            sticky='w',
-            pady=2,
-        )
-        self.separator.grid(
-            column=0,
-            row=9,
-            columnspan=2,
-            sticky='we',
-            pady=2,
-        )
-        self.message_label.grid(
-            column=0,
-            row=10,
-            columnspan=2,
-            sticky='we',
-            pady=2
-        )
-        self.progress.grid(
-            column=0,
-            row=11,
-            columnspan=2,
-            sticky='we',
-            pady=2
-        )
+        self.app_label.grid(column=0, row=0, sticky='w', pady=2)
+        self.app_button.grid(column=1, row=0, sticky='w', pady=2)
+
+        s1.grid(column=0, row=1, columnspan=3, sticky='we')
+        self.actions_label.grid(column=0, row=2, sticky='e', padx=20, pady=2)
+        self.actions_button.grid(column=0, row=4, sticky='e', padx=20, pady=2)
+        self.run_indexing_radio.grid(column=1, row=2, sticky='w', pady=2, columnspan=2)
+        self.remove_library_catalog_radio.grid(column=1, row=3, sticky='w', pady=2, columnspan=2)
+        self.remove_index_files_radio.grid(column=1, row=4, sticky='w', pady=2, columnspan=2)
+        s2.grid(column=0, row=5, columnspan=3, sticky='we')
+        
+        self.config_label.grid(column=0, row=6, sticky='w', pady=2)
+        self.config_button.grid(column=1, row=6, sticky='w', pady=2)
+
+        self.deps_label.grid(column=0, row=7, sticky='w', pady=2)
+        self.deps_button.grid(column=1, row=7, sticky='w', pady=2)
+
+        self.backups_label.grid(column=0, row=8, sticky='w', pady=2)
+        self.backup_button.grid(column=1, row=8, sticky='w', pady=2)
+        self.restore_button.grid(column=2, row=8, sticky='w', pady=2)
+
+        self.appimage_label.grid(column=0, row=9, sticky='w', pady=2)
+        self.appimage_button.grid(column=1, row=9, sticky='w', pady=2)
+
+        self.winetricks_label.grid(column=0, row=10, sticky='w', pady=2)
+        self.run_winetricks_button.grid(column=1, row=10, sticky='w', pady=2)
+        self.get_winetricks_button.grid(column=2, row=10, sticky='w', pady=2)
+
+        self.logging_label.grid(column=0, row=11, sticky='w', pady=2)
+        self.logging_button.grid(column=1, row=11, sticky='w', pady=2)
+
+        s3.grid(column=0, row=12, columnspan=3, sticky='we', pady=2)
+        self.message_label.grid(column=0, row=13, columnspan=2, sticky='we', pady=2)
+        self.progress.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)

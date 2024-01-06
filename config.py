@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 
-from msg import logos_error
 
 # Config file variables to preserve post-install.
 APPDIR = os.getenv('APPDIR')
@@ -32,7 +31,7 @@ WINETRICKSBIN = os.getenv('WINETRICKSBIN')
 CONFIG_FILE = os.getenv('CONFIG_FILE')
 CUSTOMBINPATH = os.getenv('CUSTOMBINPATH')
 DEBUG = os.getenv('DEBUG', False)
-DELETE_INSTALL_LOG = os.getenv('DELETE_INSTALL_LOG', False)
+DELETE_LOG = os.getenv('DELETE_INSTALL_LOG', False)
 DIALOG = os.getenv('DIALOG')
 LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
 LOGOS_LOG = os.getenv('LOGOS_LOG', os.path.expanduser("~/.local/state/Logos_on_Linux/install.log"))
@@ -131,7 +130,8 @@ def get_config_file_dict(config_file_path):
 def set_config_env(config_file_path):
     config_dict = get_config_file_dict(config_file_path)
     if config_dict is None:
-        logos_error(f"Error: Unable to get config at {config_file_path}")
+        return
+        # msg.logos_error(f"Error: Unable to get config at {config_file_path}")
     logging.info(f"Setting {len(config_dict)} variables from config file.")
     for key, value in config_dict.items():
         globals()[key] = value

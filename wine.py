@@ -8,11 +8,8 @@ import time
 from pathlib import Path
 
 import config
-from msg import cli_msg
-from msg import logos_error
-from msg import logos_progress
-from utils import is_appimage
-from utils import wait_process_using_dir
+import msg
+import utils
 
 
 def get_pids_using_file(file_path, mode=None):
@@ -30,24 +27,13 @@ def get_pids_using_file(file_path, mode=None):
             pass
     return pids
 
-def wait_process_using_dir(directory):
-    logging.info(f"* Starting wait_process_using_dir for {directory}…")
-
-    # Get pids and wait for them to finish.
-    pids = get_pids_using_file(directory)
-    for pid in pids:    
-        logging.info(f"wait_process_using_dir PID: {pid}")
-        psutil.wait(pid)
-
-    logging.info("* End of wait_process_using_dir.")
-
 def wait_on(command):
     try:
         # Start the process in the background
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        cli_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
+        msg.cli_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
         while process.poll() is None:
-            logos_progress()
+            msg.logos_progress()
             time.sleep(0.5)
         print()
 
@@ -101,7 +87,7 @@ def light_wineserver_wait():
     wait_on(command)
 
 def heavy_wineserver_wait():
-    wait_process_using_dir(config.WINEPREFIX)
+    utils.wait_process_using_dir(config.WINEPREFIX)
     wait_on([f"{config.WINESERVER_EXE}", "-w"])
 
 def wineBinaryVersionCheck(TESTBINARY):
@@ -162,7 +148,7 @@ def wineBinaryVersionCheck(TESTBINARY):
     return True, "None"
 
 def initializeWineBottle(app):
-    cli_msg(f"Initializing wine bottle...")
+    msg.cli_msg(f"Initializing wine bottle...")
     if app is not None:
         app.install_q.put("Initializing wine bottle...")
         app.root.event_generate("<<UpdateInstallText>>")
@@ -173,7 +159,7 @@ def initializeWineBottle(app):
     light_wineserver_wait()
 
 def wine_reg_install(REG_FILE):
-    cli_msg(f"Installing registry file: {REG_FILE}")
+    msg.cli_msg(f"Installing registry file: {REG_FILE}")
     env = get_wine_env()
     p = subprocess.run(
         [config.WINE_EXE, "regedit.exe", REG_FILE],
@@ -186,11 +172,11 @@ def wine_reg_install(REG_FILE):
     if p.returncode == 0:
         logging.info(f"{REG_FILE} installed.")
     elif p.returncode != 0:
-        logos_error(f"Failed to install reg file: {REG_FILE}")
+        msg.logos_error(f"Failed to install reg file: {REG_FILE}")
     light_wineserver_wait()
 
 def install_msi():
-    cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
+    msg.cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
     exe_args = ["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
@@ -204,13 +190,16 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
         # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
         codepages = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages').split(',')
         config.WINECMD_ENCODING = codepages[-1]
-    logging.debug(f"run_wine_proc: {winecmd} {exe} {' '.join(exe_args)}")
+    logging.debug(f"run_wine_proc: {winecmd}; {exe = }; {exe_args = }")
+    wine_env_vars = {k: v for k, v in env.items() if k.startswith('WINE')}
+    logging.debug(f"wine environment: {wine_env_vars}")
 
     command = [winecmd]
     if exe is not None:
         command.append(exe)
-    if len(exe_args) > 0:
+    if exe_args:
         command.extend(exe_args)
+    logging.debug(f"subprocess cmd: '{' '.join(command)}'")
 
     try:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
@@ -231,20 +220,20 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     except subprocess.CalledProcessError as e:
         logging.error(f"Error 2 running {winecmd} {exe}: {e}")
 
-def run_winetricks():
-    run_wine_proc(config.WINETRICKSBIN)
+def run_winetricks(cmd=None):
+    run_wine_proc(config.WINETRICKSBIN, exe=cmd)
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def winetricks_install(*args):
     cmd = ['-v', *args]
-    cli_msg(f"Running winetricks \"{args[-1]}\"")
+    msg.cli_msg(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     heavy_wineserver_wait()
 
 def installFonts():
-    cli_msg("Configuring fonts...")
+    msg.cli_msg("Configuring fonts...")
     fonts = ['corefonts', 'tahoma']
     if not config.SKIP_FONTS:
         for f in fonts:
@@ -359,6 +348,7 @@ def get_wine_env():
     wine_env['WINE_EXE'] = config.WINE_EXE
     wine_env['WINEDEBUG'] = config.WINEDEBUG
     wine_env['WINEDLLOVERRIDES'] = config.WINEDLLOVERRIDES
+    wine_env['WINELOADER'] = config.WINE_EXE
     wine_env['WINEPREFIX'] = config.WINEPREFIX
     if config.LOG_LEVEL > logging.INFO:
         wine_env['WINETRICKS_SUPER_QUIET'] = "1"

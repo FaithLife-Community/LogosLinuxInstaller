@@ -11,35 +11,22 @@ from queue import Queue
 from threading import Thread
 
 from tkinter import Tk
+from tkinter import Toplevel
 from tkinter.filedialog import askdirectory
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Style
 
 import config
-from control import open_config_file
-from control import remove_all_index_files
-from gui import ControlGui
-from gui import InstallerGui
-from installer import checkExistingInstall
-from installer import finish_install
-from installer import logos_setup
-from installer import setWinetricks
-from msg import cli_msg
-from utils import check_dependencies
-from utils import get_winebin_code_and_desc
-from utils import getLogosReleases
-from utils import getWineBinOptions
-from utils import net_get
-from utils import verify_downloaded_file
-from wine import createWineBinaryList
-from wine import get_app_logging_state
-from wine import run_logos
-from wine import run_winetricks
-from wine import switch_logging
+import control
+import gui
+import installer
+import msg
+import utils
+import wine
 
 
-class App(Tk):
-    def __init__(self, **kwargs):
+class Root(Tk):
+    def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
         self.classname = kwargs.get('classname')
         # Set the theme.
@@ -68,22 +55,22 @@ class App(Tk):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-class InstallerWindow(InstallerGui):
+class InstallerWindow():
     def __init__(self, root, **kwargs):
-        super().__init__(**kwargs)
+        # super().__init__(**kwargs)
 
         # Set root parameters.
         self.root = root
         self.root.title("Faithlife Bible Software Installer")
-        self.root.w = 675
-        self.root.h = 300
-        self.root.geometry(f"{self.root.w}x{self.root.h}")
-        self.root.minsize(self.root.w, self.root.h)
-        # self.root.resizable(False, False)
+        # self.root.w = 675
+        # self.root.h = 200
+        # self.root.geometry(f"{self.root.w}x{self.root.h}")
+        # self.root.minsize(self.root.w, self.root.h)
+        self.root.resizable(False, False)
+        self.gui = gui.InstallerGui(self.root)
 
         # Initialize variables from ENV.
         self.wine_exe = config.WINE_EXE
-        self.custombinpath = config.CUSTOMBINPATH
 
         # Set other variables to be used later.
         self.appimage_verified = None
@@ -93,19 +80,17 @@ class InstallerWindow(InstallerGui):
         self.set_product()
 
         # Set widget callbacks and event bindings.
-        self.config_filechooser.config(command=self.get_config_file)
-        self.product_dropdown.bind('<<ComboboxSelected>>', self.set_product)
-        self.version_dropdown.bind('<<ComboboxSelected>>', self.set_version)
-        self.release_dropdown.bind('<<ComboboxSelected>>', self.set_release)
-        self.release_check_button.config(command=self.on_release_check_released)
-        self.bin_filechooser.config(command=self.get_bindir_name)
-        self.wine_dropdown.bind('<<ComboboxSelected>>', self.set_wine)
-        self.wine_check_button.config(command=self.on_wine_check_released)
-        self.tricks_dropdown.bind('<<WinetricksSelected>>', self.set_winetricks)
+        self.gui.product_dropdown.bind('<<ComboboxSelected>>', self.set_product)
+        self.gui.version_dropdown.bind('<<ComboboxSelected>>', self.set_version)
+        self.gui.release_dropdown.bind('<<ComboboxSelected>>', self.set_release)
+        self.gui.release_check_button.config(command=self.on_release_check_released)
+        self.gui.wine_dropdown.bind('<<ComboboxSelected>>', self.set_wine)
+        self.gui.wine_check_button.config(command=self.on_wine_check_released)
+        self.gui.tricks_dropdown.bind('<<WinetricksSelected>>', self.set_winetricks)
         self.set_winetricks()
-        self.fonts_checkbox.config(command=self.set_skip_fonts)
-        self.cancel_button.config(command=self.on_cancel_released)
-        self.okay_button.config(command=self.on_okay_released)
+        self.gui.fonts_checkbox.config(command=self.set_skip_fonts)
+        self.gui.cancel_button.config(command=self.on_cancel_released)
+        self.gui.okay_button.config(command=self.on_okay_released)
 
         # Set root widget event bindings.
         self.root.bind("<Return>", self.on_okay_released)
@@ -134,7 +119,7 @@ class InstallerWindow(InstallerGui):
         self.root.bind("<<UpdateInstallText>>", self.update_install_text)
 
     def set_product(self, evt=None):
-        self.flproduct = self.productvar.get()
+        self.flproduct = self.gui.productvar.get()
         if self.flproduct.startswith('Logos'):
             config.FLPRODUCT = 'Logos'
             config.FLPRODUCTi = 'logos4' # icon
@@ -143,30 +128,30 @@ class InstallerWindow(InstallerGui):
             config.FLPRODUCT = 'Verbum'
             config.FLPRODUCTi = 'verbum' # icon
             config.VERBUM_PATH = '/Verbum/'
-        self.product_dropdown.selection_clear()
+        self.gui.product_dropdown.selection_clear()
         self.verify_buttons()
 
     def set_version(self, evt=None):
-        self.targetversion = self.versionvar.get()
-        config.TARGETVERSION = self.targetversion
-        self.version_dropdown.selection_clear()
+        self.gui.targetversion = self.gui.versionvar.get()
+        config.TARGETVERSION = self.gui.targetversion
+        self.gui.version_dropdown.selection_clear()
         self.verify_buttons()
 
     def set_release(self, evt=None):
-        self.logos_release_version = self.releasevar.get()
-        self.release_dropdown.selection_clear()
+        self.gui.logos_release_version = self.gui.releasevar.get()
+        self.gui.release_dropdown.selection_clear()
         self.verify_buttons()
 
     def set_wine(self, evt=None):
-        self.wine_exe = self.winevar.get()
-        self.wine_dropdown.selection_clear()
+        self.wine_exe = self.gui.winevar.get()
+        self.gui.wine_dropdown.selection_clear()
         if config.WINEPREFIX is None:
             config.WINEPREFIX = os.path.join(config.APPDIR, "wine64_bottle")
         self.verify_buttons()
 
     def set_winetricks(self, evt=None):
-        self.winetricksbin = self.tricksvar.get()
-        self.tricks_dropdown.selection_clear()
+        self.winetricksbin = self.gui.tricksvar.get()
+        self.gui.tricks_dropdown.selection_clear()
         if config.WINETRICKSBIN is None:
             config.WINETRICKSBIN = '/usr/bin/winetricks' # FIXME: find dynamically
 
@@ -182,77 +167,59 @@ class InstallerWindow(InstallerGui):
     def verify_release_check_button(self):
         variables = [
             self.flproduct,
-            self.targetversion,
+            self.gui.targetversion,
         ]
         if all(variables):
-            self.release_check_button.state(['!disabled'])
+            self.gui.release_check_button.state(['!disabled'])
             # self.messagevar.set("Download list of Releases and pick one")
 
     def verify_wine_check_button(self):
         variables = [
             self.flproduct,
-            self.targetversion,
-            self.logos_release_version,
+            self.gui.targetversion,
+            self.gui.logos_release_version,
         ]
         if all(variables):
-            self.wine_check_button.state(['!disabled'])
+            self.gui.wine_check_button.state(['!disabled'])
             # self.messagevar.set("Search for a Wine binary")
 
     def verify_okay_button(self):
         variables = [
             self.flproduct,
-            self.targetversion,
-            self.logos_release_version,
+            self.gui.targetversion,
+            self.gui.logos_release_version,
             self.wine_exe,
         ]
         if all(variables):
-            self.okay_button.state(['!disabled'])
+            self.gui.okay_button.state(['!disabled'])
             # self.messagevar.set("Click Install")
 
     def on_release_check_released(self, evt=None):
-        self.progress.config(mode='indeterminate')
+        self.gui.progress.config(mode='indeterminate')
         self.release_q = Queue()
         self.release_thread = Thread(
-            target=getLogosReleases,
+            target=utils.getLogosReleases,
             kwargs={'q': self.release_q, 'app': self},
             daemon=True,
         )
         self.release_thread.start()
-        self.progress.start()
-        self.statusvar.set("Downloading Release list...")
+        self.gui.progress.start()
+        self.gui.statusvar.set("Downloading Release list...")
 
     def on_wine_check_released(self, evt=None):
-        config.LOGOS_RELEASE_VERSION = self.release_version = self.releasevar.get()
-        logos_setup()
-        self.wine_dropdown['values'] = getWineBinOptions(createWineBinaryList())
-        self.winevar.set(self.wine_dropdown['values'][0])
+        config.LOGOS_RELEASE_VERSION = self.release_version = self.gui.releasevar.get()
+        installer.logos_setup()
+        self.gui.wine_dropdown['values'] = utils.getWineBinOptions(wine.createWineBinaryList())
+        self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
         self.set_wine()
 
-    def get_config_file(self):
-        filename =  askopenfilename(
-            initialdir='~',
-            title="Choose custom Config file...",
-        )
-        self.config_file = filename if len(filename) > 0 else 'Default'
-        self.config_filechooser['text'] = self.config_file if self.config_file is not None else "Choose file..."
-
-    def get_bindir_name(self):
-        dirname = askdirectory(
-            initialdir='~',
-            title="Select Wine binary folder...",
-        )
-        self.custombinpath = dirname if len(dirname) > 0 else None
-        config.CUSTOMBINPATH = self.custombinpath
-        self.bin_filechooser['text'] = self.custombinpath if self.custombinpath is not None else "Choose folder..."
-        self.bin_filechooser.configure(width=f"{len(dirname)}d")
-
     def set_skip_fonts(self, evt=None):
-        self.skip_fonts = 1 - self.fontsvar.get() # invert True/False
+        self.gui.skip_fonts = 1 - self.gui.fontsvar.get() # invert True/False
 
     def set_downloads(self):
         dl_dir = Path(config.MYDOWNLOADS)
         appimage_download = Path(dl_dir / Path(config.WINE64_APPIMAGE_FULL_URL).name)
-        logos_download = Path(dl_dir / f"{self.flproduct}_v{self.logos_release_version}-x64.msi")
+        logos_download = Path(dl_dir / f"{self.flproduct}_v{self.gui.logos_release_version}-x64.msi")
         icon_download = Path(dl_dir / config.LOGOS_ICON_FILENAME)
         self.downloads = [
             ['appimage', config.WINE64_APPIMAGE_FULL_URL, appimage_download,
@@ -280,31 +247,26 @@ class InstallerWindow(InstallerGui):
         config.FLPRODUCTi = config.FLPRODUCT.lower()
         if config.FLPRODUCTi.startswith('logos'):
             config.FLPRODUCTi += '4'
-        config.TARGETVERSION = self.targetversion
-        config.LOGOS_RELEASE_VERSION = self.logos_release_version
-        config.CONFIG_FILE
-        if self.config_file is not None and self.config_file != 'Default':
-            config.CONFIG_FILE = self.config_file
+        config.TARGETVERSION = self.gui.targetversion
+        config.LOGOS_RELEASE_VERSION = self.gui.logos_release_version
         if config.WINEPREFIX is None:
             config.WINEPREFIX = os.path.join(config.APPDIR, "wine64_bottle")
-        if self.custombinpath is not None:
-            config.CUSTOMBINPATH = self.custombinpath
         config.WINE_EXE = self.wine_exe
         if config.WINEBIN_CODE is None:
-            config.WINEBIN_CODE = get_winebin_code_and_desc(config.WINE_EXE)[0]
+            config.WINEBIN_CODE = utils.get_winebin_code_and_desc(config.WINE_EXE)[0]
         if self.winetricksbin.startswith('System') and self.sys_winetricks is not None:
             config.WINETRICKSBIN = self.sys_winetricks[0]
         elif self.winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
-        config.SKIP_FONTS = self.skip_fonts if self.skip_fonts == 1 else 0
+        config.SKIP_FONTS = self.gui.skip_fonts if self.gui.skip_fonts == 1 else 0
         if config.LOGOS_ICON_URL is None:
             config.LOGOS_ICON_URL = f"https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/img/{config.FLPRODUCTi}-128-icon.png"
         if config.LOGOS_ICON_FILENAME is None:
             config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
-        self.okay_button.state(['disabled'])
+        self.gui.okay_button.state(['disabled'])
         # self.messagevar.set('')
-        if checkExistingInstall():
+        if installer.checkExistingInstall():
             self.root.destroy()
             return 1
         self.set_downloads()
@@ -320,36 +282,36 @@ class InstallerWindow(InstallerGui):
 
     def start_download_thread(self, name, url, dest, evt):
         m = f"Downloading {url}"
-        cli_msg(m)
+        msg.cli_msg(m)
         logging.info(m)
-        self.statusvar.set(m)
-        self.progressvar.set(0)
-        self.progress.config(mode='determinate')
+        self.gui.statusvar.set(m)
+        self.gui.progressvar.set(0)
+        self.gui.progress.config(mode='determinate')
         a = (url, dest)
         k = {'app': self, 'evt': evt}
-        th = Thread(target=net_get, name=f"get-{name}", args=a, kwargs=k, daemon=True)
+        th = Thread(target=utils.net_get, name=f"get-{name}", args=a, kwargs=k, daemon=True)
         th.start()
 
     def start_check_thread(self, name, url, dest, evt):
         m = f"Verifying file {dest}..."
-        cli_msg(m)
+        msg.cli_msg(m)
         logging.info(m)
-        self.statusvar.set(m)
-        self.progressvar.set(0)
-        self.progress.config(mode='indeterminate')
-        self.progress.start()
+        self.gui.statusvar.set(m)
+        self.gui.progressvar.set(0)
+        self.gui.progress.config(mode='indeterminate')
+        self.gui.progress.start()
         a = (url, dest)
         k = {'app': self, 'evt': evt}
-        th = Thread(target=verify_downloaded_file, name=f"check-{name}", args=a, kwargs=k, daemon=True)
+        th = Thread(target=utils.verify_downloaded_file, name=f"check-{name}", args=a, kwargs=k, daemon=True)
         th.start()
 
     def start_install_thread(self, evt=None):
         m = "Installing..."
-        cli_msg(m)
-        self.statusvar.set(m)
-        self.progress.config(mode='indeterminate')
-        self.progress.start()
-        th = threading.Thread(target=finish_install, kwargs={'app': self}, daemon=True)
+        msg.cli_msg(m)
+        self.gui.statusvar.set(m)
+        self.gui.progress.config(mode='indeterminate')
+        self.gui.progress.start()
+        th = threading.Thread(target=installer.finish_install, kwargs={'app': self}, daemon=True)
         th.start()
 
     def verify_downloads(self, evt=None):
@@ -402,18 +364,17 @@ class InstallerWindow(InstallerGui):
             self.root.event_generate('<<StartInstall>>')
 
     def update_release_check_progress(self, evt=None):
-        self.progress.stop()
-        self.statusvar.set('')
-        self.progress.config(mode='determinate')
-        self.progressvar.set(0)
+        self.gui.progress.stop()
+        self.gui.statusvar.set('')
+        self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
         r = self.release_q.get()
         if r is not None:
-            self.release_dropdown['values'] = r
-            self.releasevar.set(self.release_dropdown['values'][0])
+            self.gui.release_dropdown['values'] = r
+            self.gui.releasevar.set(self.gui.release_dropdown['values'][0])
             self.set_release()
         else:
-            self.statusvar.set("Failed to get release list. Check connection and try again.")
-
+            self.gui.statusvar.set("Failed to get release list. Check connection and try again.")
 
     def update_file_check_progress(self, evt=None):
         e, r = self.check_q.get()
@@ -426,148 +387,177 @@ class InstallerWindow(InstallerGui):
         elif e == "<<CheckWinetricks>>":
             self.tricks_verified = r
         self.downloads[0][3] = r # "current" download should always be 1st item in self.downloads
-        self.progress.stop()
-        self.statusvar.set('')
-        self.progress.config(mode='determinate')
-        self.progressvar.set(0)
+        self.gui.progress.stop()
+        self.gui.statusvar.set('')
+        self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
 
     def update_download_progress(self, evt=None):
         d = self.get_q.get()
-        self.progressvar.set(int(d))
+        self.gui.progressvar.set(int(d))
 
     def update_install_text(self, evt=None):
         text = ''
         if evt is not None:
             text = self.install_q.get()
-        self.statusvar.set(text)
+        self.gui.statusvar.set(text)
 
     def update_install_progress(self, evt=None):
-        self.progress.stop()
-        self.progress.config(mode='determinate')
-        self.progressvar.set(0)
-        self.statusvar.set('')
-        self.okay_button.config(
+        self.gui.progress.stop()
+        self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
+        self.gui.statusvar.set('')
+        self.gui.okay_button.config(
             text="Exit",
             command=self.on_cancel_released,    
         )
-        self.okay_button.state(['!disabled'])
+        self.gui.okay_button.state(['!disabled'])
+        # self.root.event_generate('<<InstallFinished>>') FIXME: doesn't seem to pass to control panel window
         self.root.destroy()
         return 0
 
-class ControlWindow(ControlGui):
-    def __init__(self, root, **kwargs):
-        super().__init__(**kwargs)
+class ControlWindow():
+    def __init__(self, root, *args, **kwargs):
+        # super().__init__(**kwargs)
 
         # Set root parameters.
         self.root = root
         self.root.title("Faithlife Bible Software Control Panel")
-        self.root.w = 450
-        self.root.h = 350
-        self.root.geometry(f"{self.root.w}x{self.root.h}")
-        self.root.minsize(self.root.w, self.root.h)
-        # self.root.resizable(False, False)
+        # self.root.w = 450
+        # self.root.h = 375
+        # self.root.geometry(f"{self.root.w}x{self.root.h}")
+        # self.root.minsize(self.root.w, self.root.h)
+        self.root.resizable(False, False)
+        self.gui = gui.ControlGui(self.root)
 
-        self.installdir_filechooser.config(text=self.installdir, command=self.get_installdir)
-        self.run_button.config(command=self.run_logos)
-        self.check_button.config(command=self.check_resources)
-        self.check_button.state(['disabled']) # FIXME: needs function
-        self.indexes_button.config(command=self.remove_indexes)
-        self.loggingstatevar.set('Enable')
-        self.logging_button.config(text=self.loggingstatevar.get(), command=self.switch_logging)
-        self.logging_button.state(['disabled'])
+        if installer.app_is_installed():
+            self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
+            self.gui.app_button.config(command=self.run_logos)
+        else:
+            self.gui.app_button.config(command=self.run_installer)
+        self.gui.run_indexing_radio.config(command=self.on_action_radio_clicked)
+        self.gui.remove_library_catalog_radio.config(command=self.on_action_radio_clicked)
+        self.gui.remove_index_files_radio.config(command=self.on_action_radio_clicked)
+        self.gui.actions_button.config(command=self.gui.actioncmd)
+
+        self.gui.loggingstatevar.set('Enable')
+        self.gui.logging_button.config(text=self.gui.loggingstatevar.get(), command=self.switch_logging)
+        self.gui.logging_button.state(['disabled'])
         self.logging_init_event = '<<InitLoggingButton>>'
         self.logging_event = '<<UpdateLoggingButton>>'
         self.logging_q = Queue()
         
-        self.config_button.config(command=self.open_config)
-        self.deps_button.config(command=self.reinstall_deps)
-        self.getwinetricks_button.config(command=self.get_winetricks)
-        self.runwinetricks_button.config(command=self.launch_winetricks)
+        self.gui.config_button.config(command=control.edit_config)
+        self.gui.deps_button.config(command=self.reinstall_deps)
+        self.gui.get_winetricks_button.config(command=self.get_winetricks)
+        self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.message_event = '<<ClearMessage>>'
 
         self.root.bind(self.logging_event, self.update_logging_button)
         self.root.bind(self.logging_init_event, self.initialize_logging_button)
         self.root.bind(self.message_event, self.clear_message)
+        # FIXME: The followig event doesn't seem to be received in this window when
+        #`  generated in the installer window.
+        # self.root.bind('<<InstallFinished>>', self.update_app_button)
+        # self.root.bind('<<CheckInstallProgress>>', self.update_app_button)
 
         # Start function to determine app logging state.
-        t = Thread(target=get_app_logging_state, kwargs={'app': self, 'init': True})
-        t.start()
-        self.messagevar.set('Getting current app logging status...')
-        self.progress.state(['!disabled'])
-        self.progress.start()
+        t = Thread(target=wine.get_app_logging_state, kwargs={'app': self, 'init': True})
+        if installer.app_is_installed():
+            t.start()
+            self.gui.messagevar.set('Getting current app logging status...')
+            self.gui.progress.state(['!disabled'])
+            self.gui.progress.start()
 
-    def check_resources(self, evt=None):
-        # FIXME: needs function
-        pass
-
-    def get_installdir(self, evt=None):
-        dirname = askdirectory(
-            initialdir='~',
-            title="Choose installation directory…"
-        )
-        if len(dirname) > 0:
-            self.installdir = dirname
-        self.installdir_filechooser.config(text=self.installdir)
+    def run_installer(self, evt=None):
+        # self.root.control_win.destroy()
+        classname = "LogosLinuxInstaller"
+        self.new_win = Toplevel(self.root)
+        self.app = InstallerWindow(self.new_win, class_=classname)
 
     def reinstall_deps(self, evt=None):
-        check_dependencies()
+        utils.check_dependencies()
 
     def get_winetricks(self, evt=None):
-        winetricks_status = setWinetricks()
+        winetricks_status = installer.setWinetricks()
         if winetricks_status == 0:
-            self.messagevar.set("Winetricks has been reinstalled.")
+            self.gui.messagevar.set("Winetricks has been reinstalled.")
 
     def launch_winetricks(self, evt=None):
-        self.messagevar.set("Launching Winetricks…")
-        run_winetricks()
+        self.gui.messagevar.set("Launching Winetricks…")
+        wine.run_winetricks()
+
+    def on_action_radio_clicked(self, evt=None):
+        if installer.app_is_installed():
+            self.gui.actions_button.state(['!disabled'])
+            if self.gui.actionsvar.get() == 'run-indexing':
+                self.gui.actioncmd = self.run_indexing
+            elif self.gui.actionsvar.get() == 'remove-library-catalog':
+                self.gui.actioncmd = self.remove_library_catalog
+            elif self.gui.actionsvar.get() == 'remove-index-files':
+                self.gui.actioncmd = self.remove_indexes
+
+    def run_indexing(self, evt=None):
+        pass
+
+    def remove_library_catalog(self, evt=None):
+        pass
 
     def remove_indexes(self, evt=None):
-        self.messagevar.set("Removing indexes…")
-        t = Thread(target=remove_all_index_files, kwargs={'app': self})
+        self.gui.messagevar.set("Removing indexes…")
+        t = Thread(target=control.remove_all_index_files, kwargs={'app': self})
         t.start()
 
     def run_logos(self, evt=None):
-        t = Thread(target=run_logos)
+        t = Thread(target=wine.run_logos)
         t.start()
 
-    def open_config(self, evt=None):
-        open_config_file()
-
     def switch_logging(self, evt=None):
-        prev_state = self.loggingstatevar.get()
+        prev_state = self.gui.loggingstatevar.get()
         new_state = 'Enable' if prev_state == 'Disable' else 'Disable'
         kwargs = {
             'action': new_state.lower(),
             'app': self,
         }
-        self.messagevar.set(f"Switching app logging to '{prev_state}d'...")
-        self.progress.state(['!disabled'])
-        self.progress.start()
-        self.logging_button.state(['disabled'])
-        t = Thread(target=switch_logging, kwargs=kwargs)
+        self.gui.messagevar.set(f"Switching app logging to '{prev_state}d'...")
+        self.gui.progress.state(['!disabled'])
+        self.gui.progress.start()
+        self.gui.logging_button.state(['disabled'])
+        t = Thread(target=wine.switch_logging, kwargs=kwargs)
         t.start()
 
     def initialize_logging_button(self, evt=None):
-        self.messagevar.set('')
-        self.progress.stop()
-        self.progress.state(['disabled'])
+        self.gui.messagevar.set('')
+        self.gui.progress.stop()
+        self.gui.progress.state(['disabled'])
         state = self.reverse_logging_state_value(self.logging_q.get())
-        self.loggingstatevar.set(state[:-1].title())
-        self.logging_button.state(['!disabled'])
+        self.gui.loggingstatevar.set(state[:-1].title())
+        self.gui.logging_button.state(['!disabled'])
 
     def update_logging_button(self, evt=None):
-        self.messagevar.set('')
-        self.progress.stop()
-        self.progress.state(['disabled'])
+        self.gui.messagevar.set('')
+        self.gui.progress.stop()
+        self.gui.progress.state(['disabled'])
         state = self.logging_q.get()
-        self.loggingstatevar.set(state[:-1].title())
-        self.logging_button.state(['!disabled'])
+        self.gui.loggingstatevar.set(state[:-1].title())
+        self.gui.logging_button.state(['!disabled'])
+
+    def update_app_button(self, evt=None):
+        self.gui.app_button.state(['!disabled'])
+        self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
 
     def clear_message(self, evt=None):
-        self.messagevar.set('')
+        self.gui.messagevar.set('')
 
     def reverse_logging_state_value(self, state):
         if state == 'DISABLED':
             return 'ENABLED'
         else:
             return 'DISABLED'
+
+def control_panel_app():
+    utils.set_debug()
+    classname = "LogosLinuxControlPanel"
+    root = Root(className=classname)
+    app = ControlWindow(root, class_=classname)
+    root.mainloop()
