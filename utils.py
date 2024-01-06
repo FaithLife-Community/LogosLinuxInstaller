@@ -813,3 +813,20 @@ def write_progress_bar(percent, screen_width=80):
     l_y = int(l_f * percent / 100) # num. of chars. complete
     l_n  = l_f - l_y               # num. of chars. incomplete
     print(f" [{y*l_y}{n*l_n}] {percent:>3}%", end='\r') # end='\x1b[1K\r' to erase to end of line
+
+def is_appimage(file_path):
+    # Ref:
+    # - https://cgit.freedesktop.org/xdg/shared-mime-info/commit/?id=c643cab25b8a4ea17e73eae5bc318c840f0e3d4b
+    # - https://github.com/AppImage/AppImageSpec/blob/master/draft.md#image-format
+    # Note: 
+    # result is a tuple: (is AppImage: True|False, AppImage type: 1|2|None)
+    result = (False, None)
+    file_path = Path(file_path).expanduser().resolve()
+    with file_path.open('rb') as f:
+        f.seek(1)
+        elf_sig = f.read(3)
+        f.seek(8)
+        ai_sig = f.read(2)
+        f.seek(10)
+        v_sig = f.read(1)
+    return (elf_sig == b'ELF' and ai_sig == b'AI', int.from_bytes(v_sig))

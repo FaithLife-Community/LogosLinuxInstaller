@@ -1,13 +1,17 @@
 import logging
 import os
 import psutil
+import re
+import signal
 import subprocess
 import time
+from pathlib import Path
 
 import config
 from msg import cli_msg
 from msg import logos_error
 from msg import logos_progress
+from utils import is_appimage
 from utils import wait_process_using_dir
 
 
@@ -122,20 +126,20 @@ def wineBinaryVersionCheck(TESTBINARY):
     version_string = subprocess.check_output(cmd, encoding='utf-8').strip()
     try:
         version, release = version_string.split()
-    except ValueError: # "Stable" release isn't noted in version output
+    except ValueError: # neither "Devel" nor "Stable" release is noted in version output
         version = version_string
-        release = '(Stable)'
+        release = get_wine_branch(TESTBINARY)
 
-    ver_major = version.split('.')[0].replace('wine-', '') # remove 'wine-'
+    ver_major = version.split('.')[0].lstrip('wine-') # remove 'wine-'
     ver_minor = version.split('.')[1]
-    release = release.replace('(', '').replace(')', '') # remove parentheses
+    release = release.lstrip('(').rstrip(')').lower() # remove parentheses
 
     try:
         TESTWINEVERSION = [int(ver_major), int(ver_minor), release]
     except ValueError:
         return False, "Couldn't determine wine version."
 
-    if TESTWINEVERSION[2] == 'Stable':
+    if TESTWINEVERSION[2] == 'stable':
         return False, "Can't use Stable release"
     elif TESTWINEVERSION[0] < 7:
         return False, "Version is < 7.0"
@@ -143,7 +147,7 @@ def wineBinaryVersionCheck(TESTBINARY):
         if "Proton" in TESTBINARY or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False):
             if TESTWINEVERSION[1] == 0:
                 return True, "None"
-        elif release != 'Staging':
+        elif release != 'staging':
             return False, "Needs to be Staging release"
         elif TESTWINEVERSION[1] < WINE_MINIMUM[1]:
             reason = f"{'.'.join(TESTWINEVERSION)} is below minimum required, {'.'.join(WINE_MINIMUM)}"
@@ -152,7 +156,7 @@ def wineBinaryVersionCheck(TESTBINARY):
         if TESTWINEVERSION[1] < 1:
             return False, "Version is 8.0"
         elif TESTWINEVERSION[1] < 16:
-            if release != 'Staging':
+            if release != 'staging':
                 return False, "Version < 8.16 needs to be Staging release"
 
     return True, "None"
@@ -315,6 +319,39 @@ def switch_logging(action=None, app=None):
     if app is not None:
         app.logging_q.put(state)
         app.root.event_generate(app.logging_event)
+
+def get_wine_branch(binary):
+    logging.info(f"Determining wine branch of '{binary}'")
+    binary_obj = Path(binary).expanduser().resolve()
+    appimage, appimage_type = is_appimage(binary_obj)
+    if appimage:
+        if appimage_type == 1:
+            logging.error(f"Can't handle AppImage type {str(appimage_type)} yet.")
+        # Mount appimage to inspect files.
+        p = subprocess.Popen([binary_obj, '--appimage-mount'], stdout=subprocess.PIPE, encoding='UTF8')
+        while p.returncode is None:
+            for line in p.stdout:
+                if line.startswith('/tmp'):
+                    tmp_dir = Path(line.rstrip())
+                    for f in tmp_dir.glob('**/lib64/**/mscoree.dll'):
+                        branch = get_mscoree_winebranch(f)
+                        break
+                p.send_signal(signal.SIGINT)
+            p.poll()
+        return branch
+    logging.info(f"'{binary}' resolved to '{binary_obj}'")
+    mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'
+    return get_mscoree_winebranch(mscoree64)
+
+def get_mscoree_winebranch(mscoree_file):
+    try:
+        with mscoree_file.open('rb') as f:
+            for line in f:
+                m = re.search(rb'wine-[a-z]+', line)
+                if m is not None:
+                    return m[0].decode().lstrip('wine-')
+    except FileNotFoundError as e:
+        logging.error(e)
 
 def get_wine_env():
     wine_env = os.environ.copy()
