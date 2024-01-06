@@ -37,28 +37,103 @@ from wine import switch_logging
 
 def parse_command_line():
     parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
-    parser.add_argument('--version', '-v', action='version', version=f'{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}')
-    parser.add_argument('--config', '-c', metavar='CONFIG_FILE', help=f'Use a custom Logos on Linux config file during installation. Default config is at {config.DEFAULT_CONFIG_PATH}.')
-    parser.add_argument('--verbose', '-V', action='store_true', help='Enable verbose mode')
-    parser.add_argument('--skip-fonts', '-F', action='store_true', help='Skip font installations')
-    parser.add_argument('--force-root', '-f', action='store_true', help='Set LOGOS_FORCE_ROOT to true, which permits the root user to use the script.')
-    parser.add_argument('--reinstall-dependencies', '-I', action='store_true', help="Reinstall your distro's dependencies.")
-    parser.add_argument('--debug', '-D', action='store_true', help='Enable Wine debug output.')
-    parser.add_argument('--make-skel', '-k', action='store_true', help='Make a skeleton install only.')
-    parser.add_argument('--custom-binary-path', '-p', metavar='CUSTOMBINPATH', help='Specify a custom wine binary path.')
-    parser.add_argument('--check-resources', '-R', action='store_true', help='Check resources and exit')
-    parser.add_argument('--delete-install-log', '-L', action='store_true', help='Delete the installation log file.')
-    parser.add_argument('--edit-config', '-e', action='store_true', help='Edit configuration file')
-    parser.add_argument('--indexing', '-i', action='store_true', help='Perform indexing')
-    parser.add_argument('--backup', '-b', action='store_true', help='Perform backup')
-    parser.add_argument('--restore', '-r', action='store_true', help='Perform restore')
-    parser.add_argument('--logs', '-l', action='store_true', help='Enable/disable logs')
-    parser.add_argument('--dirlink', '-d', action='store_true', help='Create directory link')
-    parser.add_argument('--shortcut', '-s', action='store_true', help='Create shortcut')
-    parser.add_argument('--passive', '-P', action='store_true', help='Install Faithlife product non-interactively')
-    parser.add_argument('--control-panel', '-C', action='store_true', help='Open Control Panel app')
-    parser.add_argument('--get-winetricks', action='store_true', help='Download or update Winetricks')
-    parser.add_argument('--run-winetricks', action='store_true', help='Download or update Winetricks')
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version=f'{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}',
+    )
+
+    # Define options that affect runtime config.
+    cfg = parser.add_argument_group(title="runtime config options", description="these options set runtime config")
+    cfg.add_argument(
+        '-F', '--skip-fonts', action='store_true',
+        help='skip font installations'
+    )
+    cfg.add_argument(
+        '-V', '--verbose', action='store_true',
+        help='enable verbose mode'
+    )
+    cfg.add_argument(
+        '-D', '--debug', action='store_true',
+        help='enable Wine debug output'
+    )
+    cfg.add_argument(
+        '-c', '--config', metavar='CONFIG_FILE',
+        help=f'use a custom config file during installation [default: {config.DEFAULT_CONFIG_PATH}]'
+    )
+    cfg.add_argument(
+        '-f', '--force-root', action='store_true',
+        help='set LOGOS_FORCE_ROOT to true, which permits the root user to use the script'
+    )
+    cfg.add_argument(
+        '-p', '--custom-binary-path', metavar='CUSTOMBINPATH',
+        help='specify a custom wine binary path'
+    )
+    cfg.add_argument(
+        '-L', '--delete-log', action='store_true',
+        help='delete the log file'
+    )
+    cfg.add_argument(
+        '-P', '--passive', action='store_true',
+        help='run product installer non-interactively'
+    )
+
+    # Define runtime actions (mutually exclusive).
+    grp = parser.add_argument_group(
+        title="subcommands",
+        description="these options run specific subcommands; only 1 at a time is accepted")
+    cmd = grp.add_mutually_exclusive_group()
+    cmd.add_argument(
+        '--control-panel', '-C', action='store_true',
+        help='open Control Panel app'
+    )
+    cmd.add_argument(
+        '--run-indexing', action='store_true',
+        help='perform indexing'
+    )
+    cmd.add_argument(
+        '--reinstall-dependencies', '-I', action='store_true',
+        help="reinstall your distro's dependencies"
+    )
+    cmd.add_argument(
+        '--toggle-app-logging', action='store_true',
+        help='enable/disable app logs'
+    )
+    cmd.add_argument(
+        '--run-winetricks', action='store_true',
+        help='start Winetricks window'
+    )
+    cmd.add_argument(
+        '--get-winetricks', action='store_true',
+        help='download or update Winetricks'
+    )
+    cmd.add_argument(
+        '--edit-config', action='store_true',
+        help='edit configuration file'
+    )
+    cmd.add_argument(
+        '--create-shortcut', action='store_true',
+        help='[re-]create app shortcut',
+    )
+    cmd.add_argument(
+        '--backup', action='store_true',
+        help=argparse.SUPPRESS, # 'Perform backup'
+    )
+    cmd.add_argument(
+        '--restore', action='store_true',
+        help=argparse.SUPPRESS # 'Perform restore'
+    )
+    cmd.add_argument(
+        '--dirlink', action='store_true',
+        help=argparse.SUPPRESS, # 'Create directory link'
+    )
+    cmd.add_argument(
+        '--make-skel', action='store_true',
+        help=argparse.SUPPRESS, # 'Make a skeleton install only.'
+    )
+    cmd.add_argument(
+        '--check-resources', action='store_true',
+        help=argparse.SUPPRESS,  # 'check resources and exit'
+    )
     return parser.parse_args()
 
 def parse_args(args):
