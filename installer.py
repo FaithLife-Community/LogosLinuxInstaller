@@ -12,9 +12,7 @@ from msg import logos_acknowledge_question
 from msg import logos_error
 from msg import logos_warn
 from utils import check_libs
-from utils import checkDependencies
-from utils import checkDependenciesLogos9
-from utils import checkDependenciesLogos10
+from utils import check_dependencies
 from utils import clean_all
 from utils import cli_download
 from utils import curses_menu
@@ -121,22 +119,19 @@ def chooseVersion():
     QUESTION_TEXT = f"Which version of {config.FLPRODUCT} should the script install?"
     if config.TARGETVERSION is None or config.TARGETVERSION == "":
         options = ["10", "9", "Exit"]
-        versionChoice = curses_menu(options, TITLE, QUESTION_TEXT)
-    else:
-        versionChoice = config.TARGETVERSION
+        version_choice = curses_menu(options, TITLE, QUESTION_TEXT)
     logging.info(f"Target version: {config.TARGETVERSION}")
 
-    checkDependencies()
-    if "10" in versionChoice:
-        checkDependenciesLogos10()
+    if "10" in version_choice:
         config.TARGETVERSION = "10"
-    elif "9" in versionChoice:
-        checkDependenciesLogos9()
+    elif "9" in version_choice:
         config.TARGETVERSION = "9"
-    elif versionChoice == "Exit.":
+    elif version_choice == "Exit.":
         sys.exit(0)
     else:
         logos_error("Unknown version. Installation canceled!", "")
+    
+    check_dependencies()
 
 def logos_setup():
     if config.LOGOS64_URL is None or config.LOGOS64_URL == "":

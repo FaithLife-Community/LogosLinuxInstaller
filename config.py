@@ -50,7 +50,6 @@ WINETRICKS_UNATTENDED = os.getenv('WINETRICKS_UNATTENDED')
 ACTION = 'app'
 APPIMAGE_LINK_SELECTION_NAME = "selected_wine.AppImage"
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")
-EXTRA_INFO = "The following packages are usually necessary: winbind cabextract libjpeg8."
 GUI = None
 LOGOS_FORCE_ROOT = False
 LOGOS_ICON_FILENAME = None
@@ -76,7 +75,8 @@ WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 
 OS_NAME = None
 OS_RELEASE = None
-PACKAGE_MANAGER_COMMAND = None
+PACKAGE_MANAGER_COMMAND_INSTALL = None
+PACKAGE_MANAGER_COMMAND_QUERY = None
 PACKAGES = None
 SUPERUSER_COMMAND = None
 

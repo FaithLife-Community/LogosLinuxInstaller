@@ -17,7 +17,7 @@ from msg import cli_msg
 from msg import initialize_logging
 from msg import logos_error
 from msg import update_log_level
-from utils import checkDependencies
+from utils import check_dependencies
 from utils import curses_menu
 from utils import die_if_root
 from utils import die_if_running
@@ -81,7 +81,8 @@ def parse_args(args):
         config.LOGOS_FORCE_ROOT = True
 
     if args.reinstall_dependencies:
-        config.REINSTALL_DEPENDENCIES = True
+        check_dependencies()
+        sys.exit(0)
 
     if args.get_winetricks: 
        setWinetricks()
@@ -229,7 +230,7 @@ def main():
             elif choice == "Edit Config":
                 edit_config()
             elif choice == "Reinstall Dependencies":
-                checkDependencies()
+                check_dependencies()
             elif choice == "Back up Data":
                 backup()
             elif choice == "Restore Data":
@@ -246,7 +247,6 @@ def main():
                 switch_logging()
             else:
                 logos_error("Unknown menu choice.")
-
     sys.exit(0)
 # END FUNCTION DECLARATIONS
 

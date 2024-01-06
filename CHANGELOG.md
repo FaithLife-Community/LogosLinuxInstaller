@@ -1,8 +1,12 @@
 # Changelog
 
+- 4.0.0-alpha.2
+	- Fix #3 [T. H. Wright]
+	- Fix #4 [T. H. Wright]
+	- Fix #6 [N. Marti]
 - 4.0.0-alpha.1
-	- #9 [N. Marti]
- 	- #10 [N. Marti]
+	- Fix #9 [N. Marti]
+ 	- Fix #10 [N. Marti]
   	- Add initial .github/workflows [N. Marti]
 - 4.0.0-alpha
 	- Migrate repository to FaithLife Community organization
