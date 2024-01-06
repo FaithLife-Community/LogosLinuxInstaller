@@ -22,9 +22,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 import config
-from msg import cli_continue_question
-from msg import cli_msg
-from msg import logos_error
+import msg
 
 
 class Props():
@@ -82,7 +80,7 @@ class UrlProps(Props):
             return None
         except KeyboardInterrupt:
             print()
-            logos_error("Interrupted by Ctrl+C")
+            msg.logos_error("Interrupted by Ctrl+C")
         self.headers = r.headers
         return self.headers
 
@@ -143,36 +141,39 @@ def write_config(config_file_path):
             config_file.write('\n')
 
     except IOError as e:
-        logos_error(f"Error writing to config file {config_file_path}: {e}")
+        msg.logos_error(f"Error writing to config file {config_file_path}: {e}")
 
 def die_if_running():
-    PIDF = '/tmp/LogosLinuxInstaller.pid' # FIXME: it's not clear when or how this would get created
-    
-    if os.path.isfile(PIDF):
-        with open(PIDF, 'r') as f:
-            pid = f.read().strip()
-            if cli_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1", ""):
-                os.kill(int(pid), signal.SIGKILL)
+    PIDF = '/tmp/LogosLinuxInstaller.pid'
     
     def remove_pid_file():
         if os.path.exists(PIDF):
             os.remove(PIDF)
+
+    if os.path.isfile(PIDF):
+        with open(PIDF, 'r') as f:
+            pid = f.read().strip()
+            if msg.cli_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1"):
+                os.kill(int(pid), signal.SIGKILL)
     
     atexit.register(remove_pid_file)
     with open(PIDF, 'w') as f:
         f.write(str(os.getpid()))
 
 def die_if_root():
-    if os.getuid() == 0 and not LOGOS_FORCE_ROOT:
-        logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")
+    if os.getuid() == 0 and not config.LOGOS_FORCE_ROOT:
+        msg.logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")
 
 def die(message):
     logging.critical(message)
     sys.exit(1)
 
-def setDebug():
-    config.DEBUG = True
-    config.VERBOSE = True
+def set_verbose():
+    config.LOG_LEVEL = logging.INFO
+    config.WINEDEBUG = ''
+
+def set_debug():
+    config.LOG_LEVEL = logging.DEBUG
     config.WINEDEBUG = ""
 
 def t(command):
@@ -190,7 +191,7 @@ def tl(library):
 
 def getDialog():
     if not os.environ.get('DISPLAY'):
-        logos_error("The installer does not work unless you are running a display")
+        msg.logos_error("The installer does not work unless you are running a display")
 
     DIALOG = os.getenv('DIALOG')
     config.GUI = False
@@ -198,7 +199,7 @@ def getDialog():
     if DIALOG is not None:
         DIALOG = DIALOG.lower()
         if DIALOG not in ['curses', 'tk']:
-            logos_error("Valid values for DIALOG are 'curses' or 'tk'.")
+            msg.logos_error("Valid values for DIALOG are 'curses' or 'tk'.")
         config.DIALOG = DIALOG
     elif sys.__stdin__.isatty():
         config.DIALOG = 'curses'
@@ -301,19 +302,20 @@ def get_runmode():
         return 'script'
 
 def query_packages(packages):
-    missing_packages = [ ]
+    missing_packages = []
     
     for p in packages:
         command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
         if result.returncode != 0:
             missing_packages.append(p)
-
+    logging.info(f"Missing packages: {' '.join(missing_packages)}")
     return missing_packages
 
 def install_packages(packages):
-    command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
-    subprocess.run(command, shell=True, check=True)
+    if packages:
+        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
+        subprocess.run(command, shell=True, check=True)
 
 def have_dep(cmd):
     if shutil.which(cmd) is not None:
@@ -332,7 +334,7 @@ def mkdir_critical(directory):
     try:
         os.mkdir(directory)
     except OSError:
-        logos_error(f"Can't create the {directory} directory")
+        msg.logos_error(f"Can't create the {directory} directory")
 
 def curses_menu(options, title, question_text):
     # Set up the screen
@@ -444,7 +446,7 @@ def curses_menu(options, title, question_text):
 def cli_download(uri, destination):
     message = f"Downloading '{uri}' to '{destination}'"
     logging.info(message)
-    cli_msg(message)
+    msg.cli_msg(message)
     filename = os.path.basename(uri)
 
     # Set target.
@@ -474,7 +476,7 @@ def cli_download(uri, destination):
         print()
     except KeyboardInterrupt:
         print()
-        logos_error('Interrupted with Ctrl+C')
+        msg.logos_error('Interrupted with Ctrl+C')
 
 def set_appimage():
     os.symlink(config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
@@ -518,7 +520,7 @@ def steam_postinstall_dependencies():
     subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
 
 def install_dependencies(packages):
-    missing_packages = [ ]
+    missing_packages = []
     package_list = packages.split()
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
@@ -535,7 +537,7 @@ def install_dependencies(packages):
         if config.OS_NAME == "Steam":
             steam_postinstall_dependencies()
     else:
-        logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_cmd}. Please install your distro's package(s) associated with {missing_cmd} for {config.OS_NAME}.")
+        msg.logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_cmd}. Please install your distro's package(s) associated with {missing_cmd} for {config.OS_NAME}.")
 
 def have_lib(library, ld_library_path):
     roots = ['/usr/lib', '/lib']
@@ -557,10 +559,10 @@ def check_libs(libraries):
         else:
             if config.PACKAGE_MANAGER_COMMAND_INSTALL:
                 message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND_INSTALL}. Proceed?"
-                if cli_continue_question(message, "", ""):
+                if msg.cli_continue_question(message, "", ""):
                     install_packages(config.PACKAGES)
             else:
-                logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")
+                msg.logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")
 
 def check_dependencies():
     if int(config.TARGETVERSION) == 10:
@@ -581,7 +583,7 @@ def file_exists(file_path):
         return False
 
 def getLogosReleases(q=None, app=None):
-    cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")
+    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
 
     response_xml = net_get(url)
@@ -758,9 +760,9 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
     # Log download type.
     if 'Range' in headers.keys():
-        message = f"Continuing download."
+        message = f"Continuing download for {url.path}."
     else:
-        message = f"Starting new download."
+        message = f"Starting new download for {url.path}."
     logging.info(message)
 
     # Initiate download request.
@@ -789,10 +791,10 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                                 # Send progress value to queue param.
                                 q.put(percent)
     except Exception as e:
-        logos_error(e)
+        msg.logos_error(e)
     except KeyboardInterrupt:
         print()
-        logos_error("Killed with Ctrl+C")
+        msg.logos_error("Killed with Ctrl+C")
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
     res = False

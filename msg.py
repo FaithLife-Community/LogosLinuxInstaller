@@ -96,11 +96,9 @@ def logos_error(message, secondary=None):
 
 def cli_question(QUESTION_TEXT):
     while True:
-        # FIXME: By convention, the capitalized y/n letter tends to be the
-        # default if the user just hits <Enter>.
         yn = input(f"{QUESTION_TEXT} [Y/n]: ")
         
-        if yn.lower() == 'y':
+        if yn.lower() == 'y' or yn == '': # defaults to "Yes"
             return True
         elif yn.lower() == 'n':
             return False
