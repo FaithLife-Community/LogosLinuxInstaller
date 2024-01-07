@@ -1,3 +1,4 @@
+[![GitHub All Releases](https://img.shields.io/github/downloads/FaithLife-Community/LogosLinuxInstaller/total.svg)]()
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/f730f74748c348cb9b3ff2fa1654c84b)](https://app.codacy.com/manual/FaithLife-Community/LogosLinuxInstaller?utm_source=github.com&utm_medium=referral&utm_content=FaithLife-Community/LogosLinuxInstaller&utm_campaign=Badge_Grade_Dashboard)
 [![Automation testing](https://img.shields.io/badge/Automation-testing-sucess)](https://github.com/FaithLife-Community/LogosLinuxInstallTests) [![Installer LogosBible](https://img.shields.io/badge/Installer-LogosBible-blue)](https://www.logos.com) [![LastRelease](https://img.shields.io/github/v/release/FaithLife-Community/LogosLinuxInstaller)](https://github.com/FaithLife-Community/LogosLinuxInstaller/releases)
 
