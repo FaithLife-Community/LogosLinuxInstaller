@@ -265,7 +265,7 @@ def main():
         if config.DIALOG == 'tk':
             config.GUI = True
 
-    # Note: DELETE_LOG is an outlier here. It's an action, but it's one that can
+    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that can
     #   be run in conjunction with other actions, so it gets special treatment
     #   here once config is set.
     if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
@@ -280,13 +280,17 @@ def main():
     msg.cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 
     # Check if app is installed.
-    if installer.app_is_installed():
+    if config.ACTION.__name__ == 'remove_install_dir': # doesn't require app to be installed
+        logging.info(f"Running function: {config.ACTION.__name__}")
+        config.ACTION()
+    elif installer.app_is_installed():
         # Run the desired Logos action.
         if config.ACTION is None:
             msg.logos_error("No function given for this subcommand.")
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION() # defaults to run_control_panel()
     else:
+        logging.info(f"Starting Control Panel")
         run_control_panel()
 
 

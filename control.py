@@ -35,6 +35,8 @@ def remove_install_dir():
     if folder.is_dir() and msg.cli_question(f"Delete \"{folder}\" and all its contents?"):
         shutil.rmtree(folder)
         logging.warning(f"Deleted folder and all its contents: {folder}")
+    else:
+        logging.info(f"Folder doesn't exist: {folder}")
 
 def remove_all_index_files(app=None):
     logos_dir = os.path.dirname(config.LOGOS_EXE)
