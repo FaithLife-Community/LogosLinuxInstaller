@@ -257,7 +257,9 @@ def get_os():
 
     # Fallback to platform module
     config.OS_NAME = distro.id() # FIXME: Not working. Returns "Linux".
+    logging.info(f"OS name: {config.OS_NAME}")
     config.OS_RELEASE = distro.version()
+    logging.info(f"OS release: {config.OS_RELEASE}")
     return config.OS_NAME, config.OS_RELEASE
 
 def get_package_manager():
@@ -295,6 +297,13 @@ def get_package_manager():
         config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
     # Add more conditions for other package managers as needed
 
+    # Add logging output.
+    logging.debug(f"{config.SUPERUSER_COMMAND = }")
+    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_INSTALL = }")
+    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_QUERY = }")
+    logging.debug(f"{config.PACKAGES = }")
+    logging.debug(f"{config.L9PACKAGES = }")
+
 def get_runmode():
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         return 'binary'
@@ -306,10 +315,16 @@ def query_packages(packages):
     
     for p in packages:
         command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
+        logging.debug(f"pkg query command: \"{command}\"")
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+        logging.debug(f"pkg query result: {result.returncode}")
         if result.returncode != 0:
             missing_packages.append(p)
-    logging.info(f"Missing packages: {' '.join(missing_packages)}")
+
+    msg = 'None'
+    if missing_packages:
+        msg = f"Missing packages: {' '.join(missing_packages)}"
+    logging.info(f"Missing packages: {msg}")
     return missing_packages
 
 def install_packages(packages):

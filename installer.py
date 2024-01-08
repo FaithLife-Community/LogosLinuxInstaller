@@ -422,17 +422,17 @@ def postInstall(app):
             shutil.copy(sys.executable, launcher_exe)
             create_shortcuts()
 
-            if config.DIALOG == 'tk':
-                # subprocess.Popen(str(launcher_exe))
-                pass
-            elif msg.logos_acknowledge_question(f"An executable has been placed at {launcher_exe}.\nDo you want to run it now?\nNOTE: There may be an error on first execution. You can close the error dialog.", "The Script has finished. Exiting…"):
-                subprocess.Popen([str(launcher_exe)])
-        elif runmode == 'script':
-            if config.DIALOG == 'tk':
-                # subprocess.Popen(sys.argv[0])
-                pass
-            elif msg.logos_acknowledge_question(f"Run {config.FLPRODUCT} now?", "The Script has finished. Exiting…"):
-                subprocess.Popen(sys.argv[0])
+        # NOTE: Can't launch installed app from installer if control panel is 
+        # running in a loop b/c of die_if_running function.
+        #     if config.DIALOG == 'tk':
+        #         subprocess.Popen(str(launcher_exe))
+        #     elif msg.logos_acknowledge_question(f"An executable has been placed at {launcher_exe}.\nDo you want to run it now?\nNOTE: There may be an error on first execution. You can close the error dialog.", "The Script has finished. Exiting…"):
+        #         subprocess.Popen([str(launcher_exe)])
+        # elif runmode == 'script':
+        #     if config.DIALOG == 'tk':
+        #         subprocess.Popen(sys.argv[0])
+        #     elif msg.logos_acknowledge_question(f"Run {config.FLPRODUCT} now?", "The Script has finished. Exiting…"):
+        #         subprocess.Popen(sys.argv[0])
         message = "The Script has finished. Exiting…"
         msg.cli_msg(message)
         logging.info(message)
