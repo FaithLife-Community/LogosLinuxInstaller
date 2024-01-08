@@ -255,25 +255,29 @@ def setWinetricks():
             # Check if local winetricks version is up-to-date; if so, offer to use it or to download; else, download it
             local_winetricks_version = subprocess.check_output(["winetricks", "--version"]).split()[0]
             if str(local_winetricks_version) >= "20220411":
-                backtitle = "Choose Winetricks Menu"
-                title = "Choose Winetricks"
-                question_text = "Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that FLPRODUCT requires on Linux."
-
-                options = ["1: Use local winetricks.", "2: Download winetricks from the Internet"]
-                winetricks_choice = utils.curses_menu(options, title, question_text)
-
-                logging.debug(f"winetricks_choice: {winetricks_choice}")
-                if winetricks_choice.startswith("1"):
+                if config.DIALOG == 'tk':
                     logging.info("Setting winetricks to the local binary…")
                     config.WINETRICKSBIN = local_winetricks_path
-                    return 0
-                elif winetricks_choice.startswith("2"):
-                    downloadWinetricks()
-                    config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
-                    return 0
                 else:
-                    msg.cli_msg("Installation canceled!")
-                    sys.exit(0)
+                    backtitle = "Choose Winetricks Menu"
+                    title = "Choose Winetricks"
+                    question_text = "Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that FLPRODUCT requires on Linux."
+
+                    options = ["1: Use local winetricks.", "2: Download winetricks from the Internet"]
+                    winetricks_choice = utils.curses_menu(options, title, question_text)
+
+                    logging.debug(f"winetricks_choice: {winetricks_choice}")
+                    if winetricks_choice.startswith("1"):
+                        logging.info("Setting winetricks to the local binary…")
+                        config.WINETRICKSBIN = local_winetricks_path
+                        return 0
+                    elif winetricks_choice.startswith("2"):
+                        downloadWinetricks()
+                        config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
+                        return 0
+                    else:
+                        msg.cli_msg("Installation canceled!")
+                        sys.exit(0)
             else:
                 msg.cli_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")
                 downloadWinetricks()
@@ -284,6 +288,7 @@ def setWinetricks():
             downloadWinetricks()
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
             return 0
+    return 0
 
 def getPremadeWineBottle():
     msg.cli_msg("Installing pre-made wineBottle 64bits…")

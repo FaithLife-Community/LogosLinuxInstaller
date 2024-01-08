@@ -468,6 +468,7 @@ class ControlWindow():
         self.gui.deps_button.config(command=self.reinstall_deps)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
+        self.update_run_winetricks_button()
         self.message_event = '<<ClearMessage>>'
 
         self.root.bind(self.logging_event, self.update_logging_button)
@@ -498,7 +499,10 @@ class ControlWindow():
     def get_winetricks(self, evt=None):
         winetricks_status = installer.setWinetricks()
         if winetricks_status == 0:
-            self.gui.messagevar.set("Winetricks has been reinstalled.")
+            self.gui.messagevar.set("Winetricks is installed.")
+        else:
+            self.gui.messagevar.set("")
+        self.update_run_winetricks_button()
 
     def launch_winetricks(self, evt=None):
         self.gui.messagevar.set("Launching Winetricks…")
@@ -562,6 +566,13 @@ class ControlWindow():
     def update_app_button(self, evt=None):
         self.gui.app_button.state(['!disabled'])
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
+
+    def update_run_winetricks_button(self, evt=None):
+        if utils.file_exists(config.WINETRICKSBIN):
+            state = '!disabled'
+        else:
+            state = 'disabled'
+        self.gui.run_winetricks_button.state([state])
 
     def clear_message(self, evt=None):
         self.gui.messagevar.set('')
