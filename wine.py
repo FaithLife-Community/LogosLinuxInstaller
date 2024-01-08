@@ -312,7 +312,7 @@ def switch_logging(action=None, app=None):
 def get_wine_branch(binary):
     logging.info(f"Determining wine branch of '{binary}'")
     binary_obj = Path(binary).expanduser().resolve()
-    appimage, appimage_type = is_appimage(binary_obj)
+    appimage, appimage_type = utils.is_appimage(binary_obj)
     if appimage:
         if appimage_type == 1:
             logging.error(f"Can't handle AppImage type {str(appimage_type)} yet.")
