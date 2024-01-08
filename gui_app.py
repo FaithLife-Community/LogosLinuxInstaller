@@ -32,6 +32,23 @@ class Root(Tk):
         # Set the theme.
         self.style = Style()
         self.style.theme_use('alt')
+
+        # Update color scheme.
+        self.style.configure('TCheckbutton', bordercolor=config.LOGOS_GRAY)
+        self.style.configure('TCombobox', bordercolor=config.LOGOS_GRAY)
+        self.style.configure('TCheckbutton', indicatorcolor=config.LOGOS_GRAY)
+        self.style.configure('TRadiobutton', indicatorcolor=config.LOGOS_GRAY)
+        bg_widgets = ['TCheckbutton', 'TCombobox', 'TFrame', 'TLabel', 'TRadiobutton']
+        fg_widgets = ['TButton', 'TSeparator']
+        for w in bg_widgets:
+            self.style.configure(w, background=config.LOGOS_WHITE)
+        for w in fg_widgets:
+            self.style.configure(w, background=config.LOGOS_GRAY)
+        self.style.configure(
+            'Horizontal.TProgressbar', thickness=5, background=config.LOGOS_BLUE,
+            bordercolor=config.LOGOS_GRAY, troughcolor=config.LOGOS_GRAY
+        )
+
         # Justify to the left [('Button.label', {'sticky': 'w'})]
         self.style.layout(
             "TButton", [(
