@@ -45,7 +45,7 @@ class Root(Tk):
         for w in fg_widgets:
             self.style.configure(w, background=config.LOGOS_GRAY)
         self.style.configure(
-            'Horizontal.TProgressbar', thickness=5, background=config.LOGOS_BLUE,
+            'Horizontal.TProgressbar', thickness=10, background=config.LOGOS_BLUE,
             bordercolor=config.LOGOS_GRAY, troughcolor=config.LOGOS_GRAY
         )
 
