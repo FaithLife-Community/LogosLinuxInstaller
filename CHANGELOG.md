@@ -4,6 +4,8 @@
 	- Fix #3 [T. H. Wright]
 	- Fix #4 [T. H. Wright]
 	- Fix #6 [N. Marti]
+	- Fix #32 [N. Marti]
+	- Fix #37 [N. Marti]
 - 4.0.0-alpha.1
 	- Fix #9 [N. Marti]
  	- Fix #10 [N. Marti]
