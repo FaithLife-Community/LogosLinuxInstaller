@@ -47,6 +47,26 @@ def control_panel_app():
         elif choice == "Restore Data":
             control.restore()
         elif choice == "Set AppImage":
+            #TODO: Allow specifying the AppImage Name
+            appimage_choices = utils.find_appimage_files()
+            appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
+            sai_choice = utils.curses_menu(appimage_choices, "AppImage Updater", "What would you like to do?")
+            if sai_choice == "Return to Main Menu":
+                pass # Do nothing.
+            elif sai_choice == "Input Custom AppImage":
+                appimage_filename = utils.curses_get_user_input(stdscr, "Enter AppImage filename: ")
+                if ".AppImage" in appimage_filename:
+                    appimage_filename_sanitized = appimage_filename.split(".AppImage")[0]
+                    utils.set_appimage_selector(appimage_filename_sanitized)
+                else:
+                    utils.set_appimage_selector(appimage_filename)
+            else:
+                appimage_filename = sai_choice
+                if ".AppImage" in appimage_filename:
+                    appimage_filename_sanitized = appimage_filename.split(".AppImage")[0]
+                    utils.set_appimage_selector(appimage_filename_sanitized)
+                else:
+                    utils.set_appimage_selector(appimage_filename)
             utils.set_appimage()
         elif choice == "Download or Update Winetricks":
             control.get_winetricks()

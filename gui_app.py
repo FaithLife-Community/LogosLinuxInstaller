@@ -24,7 +24,6 @@ import msg
 import utils
 import wine
 
-
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)

@@ -13,7 +13,6 @@ import tui_app
 import utils
 import wine
 
-
 def get_parser():
     parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
     parser.add_argument(
@@ -292,7 +291,6 @@ def main():
     else:
         logging.info(f"Starting Control Panel")
         run_control_panel()
-
 
 if __name__ == '__main__':
     main()
