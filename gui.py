@@ -172,9 +172,7 @@ class ControlGui(Frame):
         # Backup/restore data buttons
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
-        self.backup_button.state(['disabled']) # FIXME: needs function
         self.restore_button = Button(self, text="Restore")
-        self.restore_button.state(['disabled']) # FIXME: needs function
         # Set AppImage button
         self.appimage_label = Label(self, text="Set AppImage")
         self.appimage_button = Button(self, text="Run")
@@ -192,8 +190,8 @@ class ControlGui(Frame):
         self.messagevar = StringVar()
         self.message_label = Label(self, textvariable=self.messagevar)
         # Progress bar
-        # self.progressvar = IntVar(value=0)
-        self.progress = Progressbar(self, mode='indeterminate', orient='horizontal')
+        self.progressvar = IntVar(value=0)
+        self.progress = Progressbar(self, mode='indeterminate', orient='horizontal', variable=self.progressvar)
         self.progress.state(['disabled'])
 
         # Place widgets.
@@ -229,5 +227,5 @@ class ControlGui(Frame):
         self.logging_button.grid(column=1, row=11, sticky='w', pady=2)
 
         s3.grid(column=0, row=12, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(column=0, row=13, columnspan=2, sticky='we', pady=2)
+        self.message_label.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
         self.progress.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)

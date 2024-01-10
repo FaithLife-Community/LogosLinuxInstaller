@@ -67,15 +67,14 @@ def cli_msg(message, end='\n'):
     print(message, end=end)
 
 def logos_progress():
-    if config.DIALOG == 'curses':
-        sys.stdout.write('.')
-        sys.stdout.flush()
-        # i = 0
-        # spinner = "|/-\\"
-        # sys.stdout.write(f"\r{text} {spinner[i]}")
-        # sys.stdout.flush()
-        # i = (i + 1) % len(spinner)
-        # time.sleep(0.1)
+    sys.stdout.write('.')
+    sys.stdout.flush()
+    # i = 0
+    # spinner = "|/-\\"
+    # sys.stdout.write(f"\r{text} {spinner[i]}")
+    # sys.stdout.flush()
+    # i = (i + 1) % len(spinner)
+    # time.sleep(0.1)
     
 def logos_warn(message):
     if config.DIALOG == 'curses':
@@ -90,13 +89,20 @@ def logos_error(message, secondary=None):
     cli_msg(help_message)
 
     if secondary is None or secondary == "":
-        os.remove("/tmp/LogosLinuxInstaller.pid")
+        try:
+            os.remove("/tmp/LogosLinuxInstaller.pid")
+        except FileNotFoundError: # no pid file when testing functions directly
+            pass
         os.kill(os.getpgid(os.getpid()), signal.SIGKILL)
     sys.exit(1)
 
 def cli_question(QUESTION_TEXT):
     while True:
-        yn = input(f"{QUESTION_TEXT} [Y/n]: ")
+        try:
+            yn = input(f"{QUESTION_TEXT} [Y/n]: ")
+        except KeyboardInterrupt:
+            print()
+            logos_error("Cancelled with Ctrl+C")
         
         if yn.lower() == 'y' or yn == '': # defaults to "Yes"
             return True
@@ -115,7 +121,15 @@ def cli_acknowledge_question(QUESTION_TEXT, NO_TEXT):
         return False
     else:
         return True
-        
+
+def cli_ask_filepath(question_text):
+    try:
+        answer = input(f"{question_text} ")
+    except KeyboardInterrupt:
+        print()
+        logos_error("Cancelled with Ctrl+C")
+    return answer.strip('"').strip("'")
+
 def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
     if config.DIALOG == 'curses':
         cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)

@@ -4,15 +4,20 @@ They can be called from CLI, GUI, or TUI.
 
 import glob
 import logging
+import queue
 import os
 import shutil
 import subprocess
 import sys
+import threading
+import time
+from datetime import datetime
 from pathlib import Path
 
 import config
 import installer
 import msg
+import utils
 import wine
 
 
@@ -24,11 +29,171 @@ def delete_log_file_contents():
     with open(config.LOGOS_LOG, 'w') as f:
         f.write('')
 
-def backup():
-    pass
+def backup(app=None):
+    backup_and_restore(mode='backup', app=app)
 
-def restore():
-    pass
+def restore(app=None):
+    backup_and_restore(mode='restore', app=app)
+
+def backup_and_restore(mode='backup', app=None):
+    data_dirs = ['Data', 'Documents', 'Users']
+        # Ensure BACKUPDIR is defined.
+    if config.BACKUPDIR is None:
+        if config.DIALOG == 'tk':
+            pass # config.BACKUPDIR is already set in GUI
+        else:
+            try:
+                config.BACKUPDIR = input("New or existing folder to store backups in: ")
+            except KeyboardInterrupt:
+                print()
+                msg.logos_error("Cancelled with Ctrl+C")
+    config.BACKUPDIR = Path(config.BACKUPDIR).expanduser().resolve()
+    utils.update_config_file(config.CONFIG_FILE, 'BACKUPDIR', str(config.BACKUPDIR))
+
+    # Confirm BACKUPDIR.
+    if config.DIALOG == 'tk':
+        pass # user confirms in GUI
+    else:
+        verb = 'Use' if mode == 'backup' else 'Restore backup from'
+        if not msg.cli_question(f"{verb} existing backups folder \"{config.BACKUPDIR}\"?"):
+            answer = None
+            while answer is None or ( mode == 'restore' and not answer.is_dir() ):
+                answer = msg.cli_ask_filepath("Give backups folder path:")
+                answer = Path(answer).expanduser().resolve()
+                if not answer.is_dir():
+                    msg.cli_msg(f"Not a valid folder path: {answer}")
+            config.BACKUPDIR = answer
+
+    # Set source folders.
+    if mode == 'restore':
+        if config.DIALOG == 'tk':
+            pass
+        else:
+            # Offer to restore the most recent backup.
+            config.RESTOREDIR = utils.get_latest_folder(config.BACKUPDIR)
+            if not msg.cli_question(f"Restore most-recent backup?: {config.RESTOREDIR}"):
+                config.RESTOREDIR = msg.cli_ask_filepath("Path to backup set that you want to restore:")
+        config.RESTOREDIR = Path(config.RESTOREDIR).expanduser().resolve()
+        source_dir_base = config.RESTOREDIR
+    else:
+        source_dir_base = Path(config.LOGOS_EXE).parent
+    src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]
+    logging.debug(f"{src_dirs = }")
+    if not src_dirs:
+        m = "No files to backup"
+        if app is not None:
+            app.message_q.put(m)
+            app.root.event_generate('<<StartIndeterminateProgress>>')
+            app.root.event_generate('<<UpdateMessage>>')
+        logging.warning(m)
+        return
+
+    # Get source transfer size.
+    q = queue.Queue()
+    t = threading.Thread(target=utils.get_folder_group_size, args=[src_dirs, q], daemon=True)
+    m = "Calculating backup size"
+    if app is not None:
+        app.message_q.put(m)
+        app.root.event_generate('<<StartIndeterminateProgress>>')
+        app.root.event_generate('<<UpdateMessage>>')
+    msg.cli_msg(m, end='')
+    t.start()
+    try:
+        while t.is_alive():
+            msg.logos_progress()
+            time.sleep(0.5)
+        print()
+    except KeyboardInterrupt:
+        print()
+        msg.logos_error("Cancelled with Ctrl+C.")
+    t.join()
+    if app is not None:
+        app.root.event_generate('<<StopIndeterminateProgress>>')
+        app.root.event_generate('<<ClearMessage>>')
+    src_size = q.get()
+    if src_size == 0:
+        m = f"Nothing to {mode}!"
+        logging.warning(m)
+        if app is not None:
+            app.message_q.put(m)
+            app.root.event_generate('<<UpdateMessage>>')
+        return
+
+    # Set destination folder.
+    if mode == 'restore':
+        dst_dir = Path(config.LOGOS_EXE).parent
+        # Remove existing data.
+        for d in data_dirs:
+            dst = Path(dst_dir) / d
+            if dst.is_dir():
+                shutil.rmtree(dst)
+    else:
+        timestamp = datetime.today().strftime('%Y%m%dT%H%M%S')
+        current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{timestamp}"
+        dst_dir = Path(config.BACKUPDIR) / current_backup_name
+        dst_dir.mkdir(exist_ok=True, parents=True)
+
+    # Verify disk space.
+    if not utils.enough_disk_space(dst_dir, src_size) and not Path(dst_dir / 'Data').is_dir():
+        m = f"Not enough free disk space for {mode}."
+        if app is not None:
+            app.message_q.put(m)
+            app.root.event_generate('<<UpdateMessage>>')
+            return
+        else:
+            msg.logos_error(m)
+
+    # Verify destination.
+    if config.BACKUPDIR is None:
+        config.BACKUPDIR = Path().home() / 'Logos_on_Linux_backups'
+    backup_dir = Path(config.BACKUPDIR)
+    backup_dir.mkdir(exist_ok=True, parents=True)
+    if not utils.enough_disk_space(backup_dir, src_size):
+        msg.logos_error(f"Not enough free disk space for backup.")
+
+    today = datetime.today().strftime('%Y%m%d')
+    current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{today}"
+    dst_dir = backup_dir / current_backup_name
+
+    # Run backup.
+    try:
+        dst_dir.mkdir()
+    except FileExistsError:
+        msg.logos_error(f"Backup already exists: {dst_dir}")
+
+    # Run file transfer.
+    t = threading.Thread(target=copy_data, args=(src_dirs, dst_dir), daemon=True)
+    if mode == 'restore':
+        m = f"Restoring backup from {str(source_dir_base)}"
+    else:
+        m = f"Backing up to {str(dst_dir)}"
+    logging.info(m)
+    msg.cli_msg(m)
+    if app is not None:
+        app.message_q.put(m)
+        app.root.event_generate('<<UpdateMessage>>')
+    dst_dir_size = utils.get_path_size(dst_dir)
+    t.start()
+    try:
+        while t.is_alive():
+            progress = utils.get_copy_progress(dst_dir, src_size, dest_size_init=dst_dir_size)
+            utils.write_progress_bar(progress)
+            if app is not None:
+                app.progress_q.put(progress)
+                app.root.event_generate('<<UpdateProgress>>')
+            time.sleep(0.5)
+        print()
+    except KeyboardInterrupt:
+        print()
+        msg.logos_error("Cancelled with Ctrl+C.")
+    t.join()
+    if app is not None:
+        app.root.event_generate('<<ClearMessage>>')
+    logging.info(f"Finished. {src_size} bytes copied to {str(dst_dir)}")
+
+def copy_data(src_dirs, dst_dir):
+    for src in src_dirs:
+        shutil.copytree(src, Path(dst_dir) / src.name)
 
 def remove_install_dir():
     folder = Path(config.INSTALLDIR)

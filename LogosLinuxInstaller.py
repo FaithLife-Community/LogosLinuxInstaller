@@ -184,7 +184,7 @@ def parse_args(args, parser):
     if args.install_app:
         config.ACTION = installer.install
     elif args.run_installed_app:
-        config.ACTION = run_logos
+        config.ACTION = wine.run_logos
     elif args.run_indexing:
         wine.run_indexing
     elif args.remove_library_catalog:
@@ -265,6 +265,9 @@ def main():
         if config.DIALOG == 'tk':
             config.GUI = True
 
+    # Log persistent config.
+    utils.log_current_persistent_config()
+
     # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that can
     #   be run in conjunction with other actions, so it gets special treatment
     #   here once config is set.
@@ -283,7 +286,7 @@ def main():
     if config.ACTION.__name__ == 'remove_install_dir': # doesn't require app to be installed
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()
-    elif installer.app_is_installed():
+    elif utils.app_is_installed():
         # Run the desired Logos action.
         if config.ACTION is None:
             msg.logos_error("No function given for this subcommand.")
