@@ -272,9 +272,9 @@ def get_app_logging_state(app=None, init=False):
     if app is not None:
         app.logging_q.put(state)
         if init:
-            app.root.event_generate(app.logging_init_event)
+            app.root.event_generate('<<InitLoggingButton>>')
         else:
-            app.root.event_generate(app.logging_event)
+            app.root.event_generate('<<UpdateLoggingButton>>')
     return state
 
 def switch_logging(action=None, app=None):

@@ -414,7 +414,7 @@ def postInstall(app):
         # Copy executable to config.APPDIR.
         runmode = utils.get_runmode()
         if runmode == 'binary':
-            launcher_exe = Path(f"{config.INSTALLDIR}/LogosLinuxLauncher")
+            launcher_exe = Path(f"{config.INSTALLDIR}/LogosLinuxInstaller")
             if launcher_exe.is_file():
                 logging.debug(f"Removing existing launcher binary.")
                 launcher_exe.unlink()
@@ -516,7 +516,7 @@ def create_shortcuts():
             f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible
 Comment=A Bible Study Library with Built-In Tools
-Exec={config.INSTALLDIR}/LogosLinuxLauncher --run-installed-app
+Exec={config.INSTALLDIR}/LogosLinuxInstaller --run-installed-app
 Icon={logos_icon_path}
 Terminal=false
 Type=Application
@@ -528,7 +528,7 @@ Categories=Education;
             f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible Control Panel
 Comment=Perform various tasks for {config.FLPRODUCT} app
-Exec={config.INSTALLDIR}/LogosLinuxLauncher
+Exec={config.INSTALLDIR}/LogosLinuxInstaller
 Icon={logos_icon_path}
 Terminal=false
 Type=Application
@@ -538,6 +538,3 @@ Categories=Education;
     ]
     for f, c in desktop_files:
         create_desktop_file(f, c)
-
-def app_is_installed():
-    return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)

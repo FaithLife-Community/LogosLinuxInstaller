@@ -294,7 +294,7 @@ class InstallerWindow():
         return 1
 
     def start_verify_downloads_thread(self, evt=None):
-        th = threading.Thread(target=self.verify_downloads, daemon=True)
+        th = Thread(target=self.verify_downloads, daemon=True)
         th.start()
 
     def start_download_thread(self, name, url, dest, evt):
@@ -328,7 +328,7 @@ class InstallerWindow():
         self.gui.statusvar.set(m)
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
-        th = threading.Thread(target=installer.finish_install, kwargs={'app': self}, daemon=True)
+        th = Thread(target=installer.finish_install, kwargs={'app': self}, daemon=True)
         th.start()
 
     def verify_downloads(self, evt=None):
@@ -447,7 +447,7 @@ class ControlWindow():
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
 
-        if installer.app_is_installed():
+        if utils.app_is_installed():
             self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
             self.gui.app_button.config(command=self.run_logos)
         else:
@@ -460,20 +460,25 @@ class ControlWindow():
         self.gui.loggingstatevar.set('Enable')
         self.gui.logging_button.config(text=self.gui.loggingstatevar.get(), command=self.switch_logging)
         self.gui.logging_button.state(['disabled'])
-        self.logging_init_event = '<<InitLoggingButton>>'
-        self.logging_event = '<<UpdateLoggingButton>>'
-        self.logging_q = Queue()
         
         self.gui.config_button.config(command=control.edit_config)
+        self.gui.backup_button.config(command=self.run_backup)
+        self.gui.restore_button.config(command=self.run_restore)
         self.gui.deps_button.config(command=self.reinstall_deps)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.update_run_winetricks_button()
-        self.message_event = '<<ClearMessage>>'
 
-        self.root.bind(self.logging_event, self.update_logging_button)
-        self.root.bind(self.logging_init_event, self.initialize_logging_button)
-        self.root.bind(self.message_event, self.clear_message)
+        self.logging_q = Queue()
+        self.root.bind('<<InitLoggingButton>>', self.initialize_logging_button)
+        self.root.bind('<<UpdateLoggingButton>>', self.update_logging_button)
+        self.message_q = Queue()
+        self.root.bind('<<ClearMessage>>', self.clear_message_text)
+        self.root.bind('<<UpdateMessage>>', self.update_message_text)
+        self.progress_q = Queue()
+        self.root.bind('<<StartIndeterminateProgress>>', self.start_indeterminate_progress)
+        self.root.bind('<<StopIndeterminateProgress>>', self.stop_indeterminate_progress)
+        self.root.bind('<<UpdateProgress>>', self.update_progress)
         # FIXME: The followig event doesn't seem to be received in this window when
         #`  generated in the installer window.
         # self.root.bind('<<InstallFinished>>', self.update_app_button)
@@ -481,7 +486,7 @@ class ControlWindow():
 
         # Start function to determine app logging state.
         t = Thread(target=wine.get_app_logging_state, kwargs={'app': self, 'init': True})
-        if installer.app_is_installed():
+        if utils.app_is_installed():
             t.start()
             self.gui.messagevar.set('Getting current app logging status...')
             self.gui.progress.state(['!disabled'])
@@ -492,6 +497,57 @@ class ControlWindow():
         classname = "LogosLinuxInstaller"
         self.new_win = Toplevel(self.root)
         self.app = InstallerWindow(self.new_win, class_=classname)
+
+    def run_logos(self, evt=None):
+        t = Thread(target=wine.run_logos)
+        t.start()
+
+    def on_action_radio_clicked(self, evt=None):
+        if utils.app_is_installed():
+            self.gui.actions_button.state(['!disabled'])
+            if self.gui.actionsvar.get() == 'run-indexing':
+                self.gui.actioncmd = self.run_indexing
+            elif self.gui.actionsvar.get() == 'remove-library-catalog':
+                self.gui.actioncmd = self.remove_library_catalog
+            elif self.gui.actionsvar.get() == 'remove-index-files':
+                self.gui.actioncmd = self.remove_indexes
+
+    def run_indexing(self, evt=None):
+        t = Thread(target=wine.run_indexing)
+        t.start()
+
+    def remove_library_catalog(self, evt=None):
+        control.remove_library_catalog()
+
+    def remove_indexes(self, evt=None):
+        self.gui.messagevar.set("Removing indexes…")
+        t = Thread(target=control.remove_all_index_files, kwargs={'app': self})
+        t.start()
+
+    def run_backup(self, evt=None):
+        # Get backup folder.
+        if config.BACKUPDIR is None:
+            config.BACKUPDIR = askdirectory(
+                parent=self.root,
+                title=f"Choose folder for {config.FLPRODUCT} backups",
+                initialdir=Path().home(),
+            )
+            if not config.BACKUPDIR: # user cancelled
+                return
+
+        # Prepare progress bar.
+        self.gui.progress.state(['!disabled'])
+        self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
+        # Start backup thread.
+        t = Thread(target=control.backup, args=[self], daemon=True)
+        t.start()
+
+    def run_restore(self, evt=None):
+        # FIXME: Allow user to choose restore source?
+        # Start restore thread.
+        t = Thread(target=control.restore, args=[self], daemon=True)
+        t.start()
 
     def reinstall_deps(self, evt=None):
         utils.check_dependencies()
@@ -507,31 +563,6 @@ class ControlWindow():
     def launch_winetricks(self, evt=None):
         self.gui.messagevar.set("Launching Winetricks…")
         wine.run_winetricks()
-
-    def on_action_radio_clicked(self, evt=None):
-        if installer.app_is_installed():
-            self.gui.actions_button.state(['!disabled'])
-            if self.gui.actionsvar.get() == 'run-indexing':
-                self.gui.actioncmd = self.run_indexing
-            elif self.gui.actionsvar.get() == 'remove-library-catalog':
-                self.gui.actioncmd = self.remove_library_catalog
-            elif self.gui.actionsvar.get() == 'remove-index-files':
-                self.gui.actioncmd = self.remove_indexes
-
-    def run_indexing(self, evt=None):
-        pass
-
-    def remove_library_catalog(self, evt=None):
-        pass
-
-    def remove_indexes(self, evt=None):
-        self.gui.messagevar.set("Removing indexes…")
-        t = Thread(target=control.remove_all_index_files, kwargs={'app': self})
-        t.start()
-
-    def run_logos(self, evt=None):
-        t = Thread(target=wine.run_logos)
-        t.start()
 
     def switch_logging(self, evt=None):
         prev_state = self.gui.loggingstatevar.get()
@@ -574,14 +605,37 @@ class ControlWindow():
             state = 'disabled'
         self.gui.run_winetricks_button.state([state])
 
-    def clear_message(self, evt=None):
-        self.gui.messagevar.set('')
-
     def reverse_logging_state_value(self, state):
         if state == 'DISABLED':
             return 'ENABLED'
         else:
             return 'DISABLED'
+
+    def clear_message_text(self, evt=None):
+        self.gui.messagevar.set('')
+
+    def update_progress(self, evt=None):
+        progress = self.progress_q.get()
+        if not type(progress) is int:
+            return
+        if progress >= 100:
+            self.gui.progressvar.set(0)
+            # self.gui.progress.state(['disabled'])
+        else:
+            self.gui.progressvar.set(progress)
+
+    def update_message_text(self, evt=None):
+        self.gui.messagevar.set(self.message_q.get())
+
+    def start_indeterminate_progress(self, evt=None):
+        self.gui.progress.state(['!disabled'])
+        self.gui.progress.config(mode='indeterminate')
+        self.gui.progress.start()
+
+    def stop_indeterminate_progress(self, evt=None):
+        self.gui.progress.stop()
+        self.gui.progress.state(['!disabled'])
+        self.gui.progress.config(mode='determinate')
 
 def control_panel_app():
     utils.set_debug()

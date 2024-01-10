@@ -143,6 +143,21 @@ def write_config(config_file_path):
     except IOError as e:
         msg.logos_error(f"Error writing to config file {config_file_path}: {e}")
 
+def update_config_file(config_file_path, key, value):
+    config_file_path = Path(config_file_path)
+    with config_file_path.open(mode='r') as f:
+        config_data = json.load(f)
+
+    if config_data.get(key) != value:
+        logging.info(f"Updating {str(config_file_path)} with: {key} = {value}")
+        config_data[key] = value
+        try:
+            with config_file_path.open(mode='w') as f:
+                json.dump(config_data, f, indent=4, sort_keys=True)
+                f.write('\n')
+        except IOError as e:
+            msg.logos_error(f"Error writing to config file {config_file_path}: {e}")
+
 def die_if_running():
     PIDF = '/tmp/LogosLinuxInstaller.pid'
     
@@ -330,6 +345,7 @@ def query_packages(packages):
 def install_packages(packages):
     if packages:
         command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
+        logging.debug(f"install_packages cmd: {command}")
         subprocess.run(command, shell=True, check=True)
 
 def have_dep(cmd):
@@ -871,3 +887,51 @@ def is_appimage(file_path):
         f.seek(10)
         v_sig = f.read(1)
     return (elf_sig == b'ELF' and ai_sig == b'AI', int.from_bytes(v_sig))
+
+def app_is_installed():
+    return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)
+
+def log_current_persistent_config():
+    logging.debug("Current persistent config:")
+    for k in config.persistent_config_keys:
+        logging.debug(f"{k}: {config.__dict__.get(k)}")
+
+def enough_disk_space(dest_dir, bytes_required):
+    free_bytes = shutil.disk_usage(dest_dir).free
+    logging.debug(f"{free_bytes = }; {bytes_required = }")
+    return free_bytes > bytes_required
+
+def get_path_size(file_path):
+    file_path = Path(file_path)
+    if not file_path.exists():
+        path_size = None
+    else:
+        path_size = sum(f.stat().st_size for f in file_path.rglob('*')) + file_path.stat().st_size
+    return path_size
+
+def get_folder_group_size(src_dirs, q):
+    src_size = 0
+    for d in src_dirs:
+        if not d.is_dir():
+            continue
+        src_size += get_path_size(d)
+    q.put(src_size)
+
+def get_copy_progress(dest_path, txfr_size, dest_size_init=0):
+    dest_size_now = get_path_size(dest_path)
+    if dest_size_now is None:
+        dest_size_now = 0
+    size_diff = dest_size_now - dest_size_init
+    progress = round(size_diff / txfr_size * 100)
+    return progress
+
+def get_latest_folder(folder_path):
+    folders = [f for f in Path(folder_path).glob('*')]
+    if not folders:
+        logging.warning(f"No folders found in {folder_path}")
+        return None
+    folders.sort()
+    logging.info(f"Found {len(folders)} backup folders.")
+    latest = folders[-1]
+    logging.info(f"Latest folder: {latest}")
+    return latest
