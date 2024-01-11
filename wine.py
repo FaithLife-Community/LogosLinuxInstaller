@@ -225,7 +225,7 @@ def run_winetricks(cmd=None):
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 def winetricks_install(*args):
-    cmd = ['-v', *args]
+    cmd = [*args]
     msg.cli_msg(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
