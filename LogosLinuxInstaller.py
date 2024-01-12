@@ -88,8 +88,8 @@ def get_parser():
         help='edit configuration file',
     )
     cmd.add_argument(
-        '--reinstall-dependencies', '-I', action='store_true',
-        help="reinstall your distro's dependencies",
+        '--install-dependencies', '-I', action='store_true',
+        help="install your distro's dependencies",
     )
     cmd.add_argument(
         '--backup', action='store_true',
@@ -162,9 +162,6 @@ def parse_args(args, parser):
     if args.force_root:
         config.LOGOS_FORCE_ROOT = True
 
-    if args.reinstall_dependencies:
-        config.REINSTALL_DEPENDENCIES = True
-
     if args.debug:
         utils.set_debug()
 
@@ -193,7 +190,7 @@ def parse_args(args, parser):
         control.remove_all_index_files
     elif args.edit_config:
         config.ACTION = control.edit_config
-    elif args.reinstall_dependencies:
+    elif args.install_dependencies:
         config.ACTION = utils.check_dependencies
     elif args.backup:
         config.ACTION = control.backup

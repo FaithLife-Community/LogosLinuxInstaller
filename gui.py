@@ -166,9 +166,9 @@ class ControlGui(Frame):
         # Edit config button
         self.config_label = Label(self, text="Edit config file")
         self.config_button = Button(self, text="Edit …")
-        # Reinstall deps button
-        self.deps_label = Label(self, text="Reinstall dependencies")
-        self.deps_button = Button(self, text="Reinstall")
+        # Install deps button
+        self.deps_label = Label(self, text="Install dependencies")
+        self.deps_button = Button(self, text="Install")
         # Backup/restore data buttons
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
