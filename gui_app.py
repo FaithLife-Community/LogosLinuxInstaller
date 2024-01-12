@@ -464,7 +464,7 @@ class ControlWindow():
         self.gui.config_button.config(command=control.edit_config)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        self.gui.deps_button.config(command=self.reinstall_deps)
+        self.gui.deps_button.config(command=self.install_deps)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.update_run_winetricks_button()
@@ -549,7 +549,7 @@ class ControlWindow():
         t = Thread(target=control.restore, args=[self], daemon=True)
         t.start()
 
-    def reinstall_deps(self, evt=None):
+    def install_deps(self, evt=None):
         utils.check_dependencies()
 
     def get_winetricks(self, evt=None):
