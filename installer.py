@@ -342,13 +342,13 @@ def installLogos10(app=None):
     with open(reg_file, 'w') as f:
         f.write('''REGEDIT4
 
-[HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides]
+[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
     with open(gdi_file, 'w') as f:
         f.write('''REGEDIT4
 
-[HKEY_CURRENT_USER\\Software\\Wine\\Direct3D]
+[HKEY_CURRENT_USER\Software\Wine\Direct3D]
 "DirectDrawRenderer"="gdi"
 "renderer"="gdi"
 ''')
