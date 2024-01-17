@@ -48,40 +48,6 @@ def wait_on(command):
     except Exception as e:
         logging.critical(f"{e}")
 
-def createWineBinaryList():
-    WineBinPathList = [
-        "/usr/local/bin",
-        os.path.expanduser("~") + "/bin",
-        os.path.expanduser("~") + "/PlayOnLinux/wine/linux-amd64/*/bin",
-        os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",
-        config.CUSTOMBINPATH,
-    ]
-
-    # Temporarily modify PATH for additional WINE64 binaries.
-    for p in WineBinPathList:
-        if p is None:
-            continue
-        if p not in os.environ['PATH'] and os.path.isdir(p):
-            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + p
-
-    # Check each directory in PATH for wine64; add to list
-    binaries = []
-    paths = os.environ["PATH"].split(":")
-    for path in paths:
-        binary_path = os.path.join(path, "wine64")
-        if os.path.exists(binary_path) and os.access(binary_path, os.X_OK):
-            binaries.append(binary_path)
-
-    for binary in binaries[:]:
-        output1, output2 = wineBinaryVersionCheck(binary)
-        if output1 is not None and output1:
-            continue
-        else:
-            binaries.remove(binary)
-            logging.info(f"Removing binary: {binary} because: {output2}")
-    
-    return binaries
-
 def light_wineserver_wait():
     command = [f"{config.WINESERVER_EXE}", "-w"]
     wait_on(command)
@@ -90,7 +56,7 @@ def heavy_wineserver_wait():
     utils.wait_process_using_dir(config.WINEPREFIX)
     wait_on([f"{config.WINESERVER_EXE}", "-w"])
 
-def wineBinaryVersionCheck(TESTBINARY):
+def check_wine_version_and_branch(TESTBINARY):
     # Does not check for Staging. Will not implement: expecting merging of commits in time.
     if config.TARGETVERSION == "10":
         WINE_MINIMUM = [7, 18]
@@ -116,9 +82,13 @@ def wineBinaryVersionCheck(TESTBINARY):
         version = version_string
         release = get_wine_branch(TESTBINARY)
 
-    ver_major = version.split('.')[0].lstrip('wine-') # remove 'wine-'
-    ver_minor = version.split('.')[1]
-    release = release.lstrip('(').rstrip(')').lower() # remove parentheses
+    if release is not None:
+        ver_major = version.split('.')[0].lstrip('wine-') # remove 'wine-'
+        ver_minor = version.split('.')[1]
+        release = release.lstrip('(').rstrip(')').lower() # remove parentheses
+    else:
+        ver_major = 0
+        ver_minor = 0
 
     try:
         TESTWINEVERSION = [int(ver_major), int(ver_minor), release]
@@ -147,6 +117,7 @@ def wineBinaryVersionCheck(TESTBINARY):
 
     return True, "None"
 
+
 def initializeWineBottle(app):
     msg.cli_msg(f"Initializing wine bottle...")
     if app is not None:
@@ -157,6 +128,7 @@ def initializeWineBottle(app):
     run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])
     config.WINEDLLOVERRIDES = ';'.join([o for o in config.WINEDLLOVERRIDES.split(';') if o != 'mscoree='])
     light_wineserver_wait()
+
 
 def wine_reg_install(REG_FILE):
     msg.cli_msg(f"Installing registry file: {REG_FILE}")
@@ -175,6 +147,7 @@ def wine_reg_install(REG_FILE):
         msg.logos_error(f"Failed to install reg file: {REG_FILE}")
     light_wineserver_wait()
 
+
 def install_msi():
     msg.cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
@@ -183,6 +156,7 @@ def install_msi():
         exe_args.append('/passive')
     logging.info(f"Running: {config.WINE_EXE} msiexec {' '.join(exe_args)}")
     run_wine_proc(config.WINE_EXE, exe="msiexec", exe_args=exe_args)
+
 
 def run_wine_proc(winecmd, exe=None, exe_args=list()):
     env = get_wine_env()
@@ -220,9 +194,11 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     except subprocess.CalledProcessError as e:
         logging.error(f"Error 2 running {winecmd} {exe}: {e}")
 
+
 def run_winetricks(cmd=None):
     run_wine_proc(config.WINETRICKSBIN, exe=cmd)
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+
 
 def winetricks_install(*args):
     cmd = [*args]
@@ -231,6 +207,7 @@ def winetricks_install(*args):
     run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     heavy_wineserver_wait()
+
 
 def installFonts():
     msg.cli_msg("Configuring fonts...")
@@ -244,11 +221,13 @@ def installFonts():
 
     winetricks_install('-q', 'settings', 'fontsmooth=rgb')
 
+
 def installD3DCompiler():
     cmd = ['d3dcompiler_47']
     if config.WINETRICKS_UNATTENDED is None:
         cmd.insert(0, '-q')
     winetricks_install(*cmd)
+
 
 def get_registry_value(reg_path, name):
     value = None
@@ -264,6 +243,7 @@ def get_registry_value(reg_path, name):
             break
     return value
 
+
 def get_app_logging_state(app=None, init=False):
     state = 'DISABLED'
     current_value = get_registry_value('HKCU\\Software\\Logos4\\Logging', 'Enabled')
@@ -276,6 +256,7 @@ def get_app_logging_state(app=None, init=False):
         else:
             app.root.event_generate('<<UpdateLoggingButton>>')
     return state
+
 
 def switch_logging(action=None, app=None):
     state_disabled = 'DISABLED'
@@ -309,13 +290,23 @@ def switch_logging(action=None, app=None):
         app.logging_q.put(state)
         app.root.event_generate(app.logging_event)
 
+
+def get_mscoree_winebranch(mscoree_file):
+    try:
+        with mscoree_file.open('rb') as f:
+            for line in f:
+                m = re.search(rb'wine-[a-z]+', line)
+                if m is not None:
+                    return m[0].decode().lstrip('wine-')
+    except FileNotFoundError as e:
+        logging.error(e)
+
+
 def get_wine_branch(binary):
     logging.info(f"Determining wine branch of '{binary}'")
     binary_obj = Path(binary).expanduser().resolve()
-    appimage, appimage_type = utils.is_appimage(binary_obj)
-    if appimage:
-        if appimage_type == 1:
-            logging.error(f"Can't handle AppImage type {str(appimage_type)} yet.")
+    if utils.check_appimage(binary_obj):
+        logging.debug(f"Mounting AppImage: {binary_obj}")
         # Mount appimage to inspect files.
         p = subprocess.Popen([binary_obj, '--appimage-mount'], stdout=subprocess.PIPE, encoding='UTF8')
         while p.returncode is None:
@@ -328,19 +319,12 @@ def get_wine_branch(binary):
                 p.send_signal(signal.SIGINT)
             p.poll()
         return branch
+    else:
+        logging.debug(f"Binary object is not an AppImage.")
     logging.info(f"'{binary}' resolved to '{binary_obj}'")
     mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'
     return get_mscoree_winebranch(mscoree64)
 
-def get_mscoree_winebranch(mscoree_file):
-    try:
-        with mscoree_file.open('rb') as f:
-            for line in f:
-                m = re.search(rb'wine-[a-z]+', line)
-                if m is not None:
-                    return m[0].decode().lstrip('wine-')
-    except FileNotFoundError as e:
-        logging.error(e)
 
 def get_wine_env():
     wine_env = os.environ.copy()
@@ -363,9 +347,11 @@ def get_wine_env():
 
     return wine_env
 
+
 def run_logos():
     run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+
 
 def run_indexing():
     for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):

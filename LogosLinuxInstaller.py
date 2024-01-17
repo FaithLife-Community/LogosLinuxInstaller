@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import logging
 import os
-import sys
 import argparse
 
 import config
@@ -12,7 +11,6 @@ import msg
 import tui_app
 import utils
 import wine
-
 
 def get_parser():
     parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
@@ -106,8 +104,8 @@ def get_parser():
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
-        '--set-appimage', action='store_true',
-        help=argparse.SUPPRESS,
+        '--set-appimage', nargs=1, metavar=('APPIMAGE_FILE_PATH'),
+        help='Update the AppImage symlink. Requires a path.',
     )
     cmd.add_argument(
         '--get-winetricks', action='store_true',
@@ -190,11 +188,11 @@ def parse_args(args, parser):
     elif args.run_installed_app:
         config.ACTION = wine.run_logos
     elif args.run_indexing:
-        wine.run_indexing
+        config.ACTION = wine.run_indexing
     elif args.remove_library_catalog:
-        control.remove_library_catalog
+        config.ACTION = control.remove_library_catalog
     elif args.remove_index_files:
-        control.remove_all_index_files
+        config.ACTION = control.remove_all_index_files
     elif args.edit_config:
         config.ACTION = control.edit_config
     elif args.install_dependencies:
@@ -204,7 +202,12 @@ def parse_args(args, parser):
     elif args.restore:
         config.ACTION = control.restore
     elif args.set_appimage:
-        utils.set_appimage
+        config.APPIMAGE_FILE_PATH = args.set_appimage[0]
+        if not utils.file_exists(config.APPIMAGE_FILE_PATH):
+            raise argparse.ArgumentTypeError(f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist.")
+        if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
+            raise argparse.ArgumentTypeError(f"{config.APPIMAGE_FILE_PATH} is not an AppImage.")
+        config.ACTION = utils.set_appimage_symlink
     elif args.get_winetricks:
         config.ACTION = control.get_winetricks
     elif args.run_winetricks:
@@ -287,9 +290,12 @@ def main():
     msg.cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 
     # Check if app is installed.
-    if config.ACTION.__name__ == 'remove_install_dir': # doesn't require app to be installed
+    if config.ACTION.__name__ == 'remove_install_dir' or config.ACTION.__name__ == 'utils.check_dependencies': # These actions don't require an install
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()
+    elif config.ACTION.__name__ == 'utils.set_appimage_symlink':
+        logging.info(f"Running function: {config.ACTION.__name__}")
+        utils.set_appimage_symlink()
     elif utils.app_is_installed():
         # Run the desired Logos action.
         if config.ACTION is None:
@@ -299,7 +305,6 @@ def main():
     else:
         logging.info(f"Starting Control Panel")
         run_control_panel()
-
 
 if __name__ == '__main__':
     main()

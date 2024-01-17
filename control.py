@@ -236,4 +236,4 @@ def remove_library_catalog():
             logging.error(f"Error removing {file_to_remove}: {e}")
 
 def get_winetricks():
-    installer.setWinetricks()
+    installer.set_winetricks()

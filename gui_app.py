@@ -12,8 +12,7 @@ from threading import Thread
 
 from tkinter import Tk
 from tkinter import Toplevel
-from tkinter.filedialog import askdirectory
-from tkinter.filedialog import askopenfilename
+from tkinter import filedialog as fd
 from tkinter.ttk import Style
 
 import config
@@ -23,7 +22,6 @@ import installer
 import msg
 import utils
 import wine
-
 
 class Root(Tk):
     def __init__(self, *args, **kwargs):
@@ -216,7 +214,7 @@ class InstallerWindow():
         self.gui.progress.config(mode='indeterminate')
         self.release_q = Queue()
         self.release_thread = Thread(
-            target=utils.getLogosReleases,
+            target=utils.get_logos_releases,
             kwargs={'q': self.release_q, 'app': self},
             daemon=True,
         )
@@ -227,7 +225,7 @@ class InstallerWindow():
     def on_wine_check_released(self, evt=None):
         config.LOGOS_RELEASE_VERSION = self.release_version = self.gui.releasevar.get()
         installer.logos_setup()
-        self.gui.wine_dropdown['values'] = utils.getWineBinOptions(wine.createWineBinaryList())
+        self.gui.wine_dropdown['values'] = utils.get_wine_options(utils.find_appimage_files(), utils.find_wine_binary_files())
         self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
         self.set_wine()
 
@@ -239,13 +237,13 @@ class InstallerWindow():
 
     def set_downloads(self):
         dl_dir = Path(config.MYDOWNLOADS)
-        appimage_download = Path(dl_dir / Path(config.WINE64_APPIMAGE_FULL_URL).name)
+        appimage_download = Path(dl_dir / Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL).name)
         logos_download = Path(dl_dir / f"{self.flproduct}_v{self.gui.logos_release_version}-x64.msi")
         icon_download = Path(dl_dir / config.LOGOS_ICON_FILENAME)
         self.downloads = [
-            ['appimage', config.WINE64_APPIMAGE_FULL_URL, appimage_download,
-                self.appimage_verified, '<<GetAppImage>>', '<<CheckAppImage>>',
-            ],
+            ['appimage', config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, appimage_download,
+             self.appimage_verified, '<<GetAppImage>>', '<<CheckAppImage>>',
+             ],
             ['logos', config.LOGOS64_URL, logos_download,
                 self.logos_verified, '<<GetLogos>>', '<<CheckLogos>>',
             ],
@@ -288,7 +286,7 @@ class InstallerWindow():
 
         self.gui.okay_button.state(['disabled'])
         # self.messagevar.set('')
-        if installer.checkExistingInstall():
+        if installer.check_existing_install():
             self.root.destroy()
             return 1
         self.set_downloads()
@@ -532,7 +530,7 @@ class ControlWindow():
     def run_backup(self, evt=None):
         # Get backup folder.
         if config.BACKUPDIR is None:
-            config.BACKUPDIR = askdirectory(
+            config.BACKUPDIR = fd.askdirectory(
                 parent=self.root,
                 title=f"Choose folder for {config.FLPRODUCT} backups",
                 initialdir=Path().home(),
@@ -557,8 +555,23 @@ class ControlWindow():
     def install_deps(self, evt=None):
         utils.check_dependencies()
 
+    def open_file_dialog(self, filetype_name, filetype_extension):
+        file_path = fd.askopenfilename(
+            title=f"Select {filetype_name}",
+            filetypes=[(filetype_name, f"*.{filetype_extension}"), ("All Files", "*.*")],
+        )
+
+        return file_path
+
+    def set_appimage(self, evt=None):
+        appimage_filename = self.open_file_dialog("AppImage", "AppImage")
+        if not appimage_filename:
+            return
+        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        utils.set_appimage_symlink()
+
     def get_winetricks(self, evt=None):
-        winetricks_status = installer.setWinetricks()
+        winetricks_status = installer.set_winetricks()
         if winetricks_status == 0:
             self.gui.messagevar.set("Winetricks is installed.")
         else:

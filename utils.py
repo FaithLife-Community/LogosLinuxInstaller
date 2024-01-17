@@ -5,7 +5,6 @@ import hashlib
 import json
 import logging
 import os
-import platform
 import psutil
 import queue
 import re
@@ -14,15 +13,19 @@ import shutil
 import signal
 import subprocess
 import sys
-import textwrap
 import threading
+import argparse
 
 from base64 import b64encode
 from pathlib import Path
 from xml.etree import ElementTree as ET
+import tkinter as tk
+from tkinter import messagebox
 
 import config
 import msg
+import wine
+import tui
 
 
 class Props():
@@ -32,6 +35,7 @@ class Props():
         self.md5 = None
         if uri is not None:
             self.path = uri
+
 
 class FileProps(Props):
     def __init__(self, f=None):
@@ -59,6 +63,7 @@ class FileProps(Props):
         logging.debug(f"{str(self.path)} MD5: {self.md5}")
         return self.md5
 
+
 class UrlProps(Props):
     def __init__(self, url=None):
         super().__init__(url)
@@ -73,7 +78,7 @@ class UrlProps(Props):
             self.headers = None
         logging.debug(f"Getting headers from {self.path}.")
         try:
-            h = {'Accept-Encoding': 'identity'} # force non-compressed file transfer
+            h = {'Accept-Encoding': 'identity'}  # force non-compressed file transfer
             r = requests.head(self.path, allow_redirects=True, headers=h)
         except Exception as e:
             logging.error(e)
@@ -129,6 +134,7 @@ def set_default_config():
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
 
+
 def write_config(config_file_path):
     logging.info(f"Writing config to {config_file_path}")
     os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
@@ -160,7 +166,7 @@ def update_config_file(config_file_path, key, value):
 
 def die_if_running():
     PIDF = '/tmp/LogosLinuxInstaller.pid'
-    
+
     def remove_pid_file():
         if os.path.exists(PIDF):
             os.remove(PIDF)
@@ -168,28 +174,36 @@ def die_if_running():
     if os.path.isfile(PIDF):
         with open(PIDF, 'r') as f:
             pid = f.read().strip()
-            if msg.cli_continue_question(f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?", "The script is already running. Exiting.", "1"):
+            if msg.cli_continue_question(
+                    f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?",
+                    "The script is already running. Exiting.", "1"):
                 os.kill(int(pid), signal.SIGKILL)
-    
+
     atexit.register(remove_pid_file)
     with open(PIDF, 'w') as f:
         f.write(str(os.getpid()))
 
+
 def die_if_root():
     if os.getuid() == 0 and not config.LOGOS_FORCE_ROOT:
-        msg.logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")
+        msg.logos_error(
+            "Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")
+
 
 def die(message):
     logging.critical(message)
     sys.exit(1)
 
+
 def set_verbose():
     config.LOG_LEVEL = logging.INFO
     config.WINEDEBUG = ''
 
+
 def set_debug():
     config.LOG_LEVEL = logging.DEBUG
     config.WINEDEBUG = ""
+
 
 def t(command):
     if shutil.which(command) is not None:
@@ -197,12 +211,14 @@ def t(command):
     else:
         return False
 
+
 def tl(library):
     try:
         __import__(library)
         return True
     except ImportError:
         return False
+
 
 def getDialog():
     if not os.environ.get('DISPLAY'):
@@ -224,11 +240,12 @@ def getDialog():
     if config.DIALOG == 'tk':
         config.GUI = True
 
+
 def get_os():
     # TODO: Remove if we can verify these are no longer needed commented code.
 
     # Try reading /etc/os-release
-    #try:
+    # try:
     #    with open('/etc/os-release', 'r') as f:
     #        os_release_content = f.read()
     #    match = re.search(r'^ID=(\S+).*?VERSION_ID=(\S+)', os_release_content, re.MULTILINE)
@@ -236,19 +253,19 @@ def get_os():
     #        config.OS_NAME = match.group(1)
     #        config.OS_RELEASE = match.group(2)
     #        return config.OS_NAME, config.OS_RELEASE
-    #except FileNotFoundError:
+    # except FileNotFoundError:
     #    pass
 
     ## Try using lsb_release command
-    #try:
+    # try:
     #    config.OS_NAME = platform.linux_distribution()[0]
     #    config.OS_RELEASE = platform.linux_distribution()[1]
     #    return config.OS_NAME, config.OS_RELEASE
-    #except AttributeError:
+    # except AttributeError:
     #    pass
 
     ## Try reading /etc/lsb-release
-    #try:
+    # try:
     #    with open('/etc/lsb-release', 'r') as f:
     #        lsb_release_content = f.read()
     #    match = re.search(r'^DISTRIB_ID=(\S+).*?DISTRIB_RELEASE=(\S+)', lsb_release_content, re.MULTILINE)
@@ -256,26 +273,27 @@ def get_os():
     #        config.OS_NAME = match.group(1)
     #        config.OS_RELEASE = match.group(2)
     #        return config.OS_NAME, config.OS_RELEASE
-    #except FileNotFoundError:
+    # except FileNotFoundError:
     #    pass
 
     ## Try reading /etc/debian_version
-    #try:
+    # try:
     #    with open('/etc/debian_version', 'r') as f:
     #        config.OS_NAME = 'Debian'
     #        config.OS_RELEASE = f.read().strip()
     #        return config.OS_NAME, config.OS_RELEASE
-    #except FileNotFoundError:
+    # except FileNotFoundError:
     #    pass
 
     # Add more conditions for other distributions as needed
 
     # Fallback to platform module
-    config.OS_NAME = distro.id() # FIXME: Not working. Returns "Linux".
+    config.OS_NAME = distro.id()  # FIXME: Not working. Returns "Linux".
     logging.info(f"OS name: {config.OS_NAME}")
     config.OS_RELEASE = distro.version()
     logging.info(f"OS release: {config.OS_RELEASE}")
     return config.OS_NAME, config.OS_RELEASE
+
 
 def get_package_manager():
     # Check for superuser command
@@ -285,31 +303,31 @@ def get_package_manager():
         config.SUPERUSER_COMMAND = "doas"
 
     # Check for package manager and associated packages
-    if shutil.which('apt') is not None: # debian, ubuntu
+    if shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '" #IDEA: Switch to Python APT library? See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"  # IDEA: Switch to Python APT library? See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996
         config.PACKAGES = "binutils cabextract fuse wget winbind"
-        config.L9PACKAGES= "" # FIXME: Missing Logos 9 Packages
-    elif shutil.which('dnf') is not None: # rhel, fedora
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+    elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"
-        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
-    elif shutil.which('yum') is not None: # rhel, fedora
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+    elif shutil.which('yum') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "yum install -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "yum list installed | grep -E ^" #TODO: Needs testing. Is anyone still using `yum`?
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "yum list installed | grep -E ^"  # TODO: Needs testing. Is anyone still using `yum`?
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
-        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
-    elif shutil.which('pamac') is not None: # manjaro
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+    elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"
-        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
-    elif shutil.which('pacman') is not None: # arch, steamOS
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = 'pacman -Syu --overwrite \* --noconfirm --needed'
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+    elif shutil.which('pacman') is not None:  # arch, steamOS
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q | grep -E ^"
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
-        config.L9PACKAGES = "" # FIXME: Missing Logos 9 Packages
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
     # Add more conditions for other package managers as needed
 
     # Add logging output.
@@ -319,18 +337,20 @@ def get_package_manager():
     logging.debug(f"{config.PACKAGES = }")
     logging.debug(f"{config.L9PACKAGES = }")
 
+
 def get_runmode():
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         return 'binary'
     else:
         return 'script'
 
+
 def query_packages(packages):
     if config.SKIP_DEPENDENCIES:
         return
 
     missing_packages = []
-    
+
     for p in packages:
         command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
         logging.debug(f"pkg query command: \"{command}\"")
@@ -345,6 +365,7 @@ def query_packages(packages):
     logging.info(f"Missing packages: {msg}")
     return missing_packages
 
+
 def install_packages(packages):
     if config.SKIP_DEPENDENCIES:
         return
@@ -354,11 +375,13 @@ def install_packages(packages):
         logging.debug(f"install_packages cmd: {command}")
         subprocess.run(command, shell=True, check=True)
 
+
 def have_dep(cmd):
     if shutil.which(cmd) is not None:
         return True
     else:
         return False
+
 
 def clean_all():
     logging.info("Cleaning all temp files…")
@@ -367,118 +390,27 @@ def clean_all():
     os.system(f"rm -f {config.PRESENT_WORKING_DIRECTORY}/wget-log*")
     logging.info("done")
 
+
 def mkdir_critical(directory):
     try:
         os.mkdir(directory)
     except OSError:
         msg.logos_error(f"Can't create the {directory} directory")
 
-def curses_menu(options, title, question_text):
-    # Set up the screen
-    stdscr = curses.initscr()
-    curses.curs_set(0)
 
-    current_option = 0
-    current_page = 0
-    options_per_page = 5
-    total_pages = (len(options) - 1) // options_per_page + 1
+def get_user_downloads_dir():
+    home = Path.home()
+    xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
+    user_dirs_file = xdg_config / 'user-dirs.dirs'
+    downloads_path = str(home / 'Downloads')
+    if user_dirs_file.is_file():
+        with user_dirs_file.open() as f:
+            for line in f.readlines():
+                if 'DOWNLOAD' in line:
+                    downloads_path = line.rstrip().split('=')[1].replace('$HOME', str(home)).strip('"')
+                    break
+    return downloads_path
 
-    while True:
-        stdscr.clear()
-
-        window_height, window_width = stdscr.getmaxyx()
-        window_y = window_height // 2 - options_per_page // 2
-        window_x = window_width // 2 - max(len(option) for option in options) // 2
-
-        # Wrap the title and question text
-        wrapped_title = textwrap.fill(title, window_width - 4)
-        wrapped_question = textwrap.fill(question_text, window_width - 4)
-
-        # Display the wrapped title text, line by line, centered
-        title_lines = wrapped_title.split('\n')
-        title_start_y = max(0, window_height // 2 - len(title_lines) // 2)
-        for i, line in enumerate(title_lines):
-            if i < window_height:
-                stdscr.addstr(i, 2, line, curses.A_BOLD)
-
-        # Display the wrapped question text, line by line, centered
-        question_lines = wrapped_question.split('\n')
-        question_start_y = title_start_y + len(title_lines) - 4
-        question_width = max(len(line) for line in question_lines)
-        for i, line in enumerate(question_lines):
-            if question_start_y + i < window_height:
-                x = window_width // 2 - question_width // 2
-                stdscr.addstr(question_start_y + i, x, line)
-
-        # Display the options, centered
-        options_start_y = question_start_y + len(question_lines) + 2
-        for i in range(options_per_page):
-            index = current_page * options_per_page + i
-            if index < len(options):
-                option = options[index]
-                if type(option) is list:
-                    winebin_code = option[0]
-                    winebin_path = option[1]
-                    winebin_description = option[2]
-                    option_lines = []
-                    winebin_path_wrapped = textwrap.wrap(f"Binary Path: {winebin_path}", window_width - 4)
-                    option_lines.extend(winebin_path_wrapped)
-                    winebin_desc_wrapped = textwrap.wrap(f"Description: {winebin_description}", window_width - 4)
-                    option_lines.extend(winebin_desc_wrapped)
-                else:
-                    option_lines = textwrap.wrap(option, window_width - 4)
-
-                for j, line in enumerate(option_lines):
-                    y = options_start_y + i + j
-                    x = max(0, window_width // 2 - len(line) // 2)
-                    if y < window_height:
-                        if index == current_option:
-                            stdscr.addstr(y, x, line, curses.A_REVERSE)
-                        else:
-                            stdscr.addstr(y, x, line)
-
-                if type(option) is list:
-                    options_start_y += (len(option_lines))
-
-        # Display pagination information
-        page_info = f"Page {current_page + 1}/{total_pages} | Selected Option: {current_option + 1}/{len(options)}"
-        stdscr.addstr(window_height - 1, 2, page_info, curses.A_BOLD)
-
-        # Refresh the windows
-        stdscr.refresh()
-
-        # Get user input
-        key = stdscr.getch()
-
-        if key == 65: # Up arrow
-            if current_option == current_page * options_per_page and current_page > 0:
-                # Move to the previous page
-                current_page -= 1
-                current_option = min(len(options) - 1, (current_page + 1) * options_per_page - 1)
-            elif current_option == 0:
-                if total_pages == 1:
-                    current_option = len(options) - 1
-                else:
-                    current_page = total_pages - 1
-                    current_option = len(options) - 1
-            else:
-                current_option = max(0, current_option - 1)
-        elif key == 66: # Down arrow
-            if current_option == (current_page + 1) * options_per_page - 1 and current_page < total_pages -1:
-                # Move to the next page
-                current_page += 1
-                current_option = min(len(options) - 1, current_page * options_per_page)
-            elif current_option == len(options) - 1:
-                current_page = 0
-                current_option = 0
-            else:
-                current_option = min(len(options) - 1, current_option + 1)
-        elif key == ord('\n'): # Enter key
-            choice = options[current_option]
-            break
-
-    curses.endwin()
-    return choice
 
 def cli_download(uri, destination):
     message = f"Downloading '{uri}' to '{destination}'"
@@ -502,7 +434,7 @@ def cli_download(uri, destination):
     # Download from uri in thread while showing progress bar.
     cli_queue = queue.Queue()
     args = [uri, target]
-    kwargs = kwargs={'q': cli_queue}
+    kwargs = {'q': cli_queue}
     t = threading.Thread(target=net_get, args=args, kwargs=kwargs, daemon=True)
     t.start()
     try:
@@ -515,13 +447,51 @@ def cli_download(uri, destination):
         print()
         msg.logos_error('Interrupted with Ctrl+C')
 
-def set_appimage():
-    os.symlink(config.WINE64_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
+
+def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
+    DIRS = [
+        config.INSTALLDIR,
+        os.getcwd(),
+        config.MYDOWNLOADS,
+    ]
+    FOUND = 1
+    for i in DIRS:
+        file_path = os.path.join(i, FILE)
+        if os.path.isfile(file_path):
+            logging.info(f"{FILE} exists in {i}. Verifying properties.")
+            if verify_downloaded_file(SOURCEURL, file_path):
+                logging.info(f"{FILE} properties match. Using it…")
+                msg.cli_msg(f"Copying {FILE} into {TARGETDIR}")
+                shutil.copy(os.path.join(i, FILE), TARGETDIR)
+                FOUND = 0
+                break
+            else:
+                logging.info(f"Incomplete file: {file_path}.")
+    if FOUND == 1:
+        file_path = os.path.join(config.MYDOWNLOADS, FILE)
+        cli_download(SOURCEURL, file_path)
+        if verify_downloaded_file(SOURCEURL, file_path):
+            msg.cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
+            shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
+        else:
+            msg.logos_error(f"Bad file size or checksum: {file_path}")
+
+
+def delete_symlink(symlink_path):
+    if os.path.islink(symlink_path):
+        try:
+            # WARNING: Do not use os.unlink.
+            os.remove(symlink_path)
+            logging.info(f"Symlink at {symlink_path} removed successfully.")
+        except OSError as e:
+            logging.error(f"Error removing symlink: {e}")
+            return
+
 
 def make_skel(app_image_filename):
-    config.SET_APPIMAGE_FILENAME = app_image_filename
+    config.SELECTED_APPIMAGE_FILENAME = f"{app_image_filename}"
 
-    logging.info(f"* Making skel64 inside {config.INSTALLDIR}")
+    logging.info(f"* Creating the skeleton for Logos inside {config.INSTALLDIR}")
     os.makedirs(config.APPDIR_BINDIR, exist_ok=True)
 
     # Making the links
@@ -531,7 +501,7 @@ def make_skel(app_image_filename):
     except OSError as e:
         die(f"ERROR: Can't open dir: {config.APPDIR_BINDIR}: {e}")
     if not os.path.islink(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"):
-        os.symlink(config.SET_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
+        os.symlink(config.SELECTED_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
     for name in ["wine", "wine64", "wineserver"]:
         if not os.path.islink(name):
             os.symlink(config.APPIMAGE_LINK_SELECTION_NAME, name)
@@ -542,19 +512,24 @@ def make_skel(app_image_filename):
 
     os.makedirs(f"{config.APPDIR}/wine64_bottle", exist_ok=True)
 
-    logging.info("skel64 done!")
+    logging.info("Finished creating the skeleton.")
+
 
 def steam_preinstall_dependencies():
-        subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "disable"], check=True)
-        subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
-        subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "disable"], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"], check=True)
+
 
 def steam_postinstall_dependencies():
-    subprocess.run([config.SUPERUSER_COMMAND, "sed", '-i', 's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/', '/etc/nsswitch.conf'], check=True)
+    subprocess.run([config.SUPERUSER_COMMAND, "sed", '-i',
+                    's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/', '/etc/nsswitch.conf'],
+                   check=True)
     subprocess.run([config.SUPERUSER_COMMAND, "locale-gen"], check=True)
     subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon"], check=True)
     subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"], check=True)
     subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
+
 
 def install_dependencies(packages):
     missing_packages = []
@@ -574,7 +549,9 @@ def install_dependencies(packages):
         if config.OS_NAME == "Steam":
             steam_postinstall_dependencies()
     else:
-        msg.logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_cmd}. Please install your distro's package(s) associated with {missing_cmd} for {config.OS_NAME}.")
+        msg.logos_error(
+            f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_packages}. Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")
+
 
 def have_lib(library, ld_library_path):
     roots = ['/usr/lib', '/lib']
@@ -586,6 +563,7 @@ def have_lib(library, ld_library_path):
             logging.debug(f"'{library}' found at '{libs[0]}'")
             return True
     return False
+
 
 def check_libs(libraries):
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
@@ -599,7 +577,9 @@ def check_libs(libraries):
                 if msg.cli_continue_question(message, "", ""):
                     install_packages(config.PACKAGES)
             else:
-                msg.logos_error(f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")
+                msg.logos_error(
+                    f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")
+
 
 def check_dependencies():
     if int(config.TARGETVERSION) == 10:
@@ -612,6 +592,7 @@ def check_dependencies():
     else:
         logging.error("TARGETVERSION not found.")
 
+
 def file_exists(file_path):
     if file_path is not None:
         expanded_path = os.path.expanduser(file_path)
@@ -619,7 +600,8 @@ def file_exists(file_path):
     else:
         return False
 
-def getLogosReleases(q=None, app=None):
+
+def get_logos_releases(q=None, app=None):
     msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
 
@@ -644,7 +626,7 @@ def getLogosReleases(q=None, app=None):
     for entry in root.findall('.//ns1:version', namespaces):
         release = entry.text
         releases.append(release)
-        #if len(releases) == 5:
+        # if len(releases) == 5:
         #    break
 
     if q is not None and app is not None:
@@ -653,38 +635,26 @@ def getLogosReleases(q=None, app=None):
     logging.debug(f"Available releases: {', '.join(releases)}")
     return releases
 
-def getWineBinOptions(binaries):
-    WINEBIN_OPTIONS = []
-    
-    # Add AppImage to list
-    if config.TARGETVERSION != "9":
-        if config.DIALOG == "curses":
-            WINEBIN_OPTIONS.append(["AppImage", f'{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}', f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}"])
-        elif config.DIALOG == 'tk':
-            WINEBIN_OPTIONS.append(f"{config.APPDIR_BINDIR}/{config.WINE64_APPIMAGE_FULL_FILENAME}")
-    
-    for binary in binaries:
-        WINEBIN_PATH = binary
-        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(binary)
-
-        # Create wine binary option array
-        if config.DIALOG == "curses":
-            WINEBIN_OPTIONS.append([WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION])
-        elif config.DIALOG == 'tk':
-            WINEBIN_OPTIONS.append(WINEBIN_PATH)
-
-    return sorted(WINEBIN_OPTIONS)
 
 def get_winebin_code_and_desc(binary):
     # Set binary code, description, and path based on path
     codes = {
-        "AppImage": f"AppImage of Wine64 {config.WINE64_APPIMAGE_FULL_VERSION}",
-        "System": "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later. Stable or Devel do not work.",
+        "Recommended": "Use the recommended AppImage",
+        "AppImage": "AppImage of Wine64",
+        "System": "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later, or 8.16-devel or later, and cannot be version 8.0.",
         "Proton": "Install using the Steam Proton fork of WINE.",
         "PlayOnLinux": "Install using a PlayOnLinux WINE64 binary.",
         "Custom": "Use a WINE64 binary from another directory.",
     }
-    if binary.lower().endswith('.appimage'):
+    # TODO: The GUI currently cannot distinguish between the recommended AppImage and another on the system.
+    # We need to add some manner of making this distintion in the GUI, which is why the wine binary codes exist.
+    # Currently the GUI only accept an array with a single element, the binary itself; this will need to be modified to
+    # a two variable array, at the least, even if we hide the wine binary code, but it might be useful to tell the GUI
+    # user that a particular AppImage/binary is recommended.
+    # Below is my best guess for how to do this with the single element array… Does it work?
+    if binary == f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":
+        code = "Recommended"
+    elif binary.lower().endswith('.appimage'):
         code = "AppImage"
     elif "/usr/bin/" in binary:
         code = "System"
@@ -697,18 +667,35 @@ def get_winebin_code_and_desc(binary):
     desc = codes.get(code)
     return code, desc
 
-def get_user_downloads_dir():
-    home = Path.home()
-    xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
-    user_dirs_file = xdg_config / 'user-dirs.dirs'
-    downloads_path = str(home / 'Downloads')
-    if user_dirs_file.is_file():
-        with user_dirs_file.open() as f:
-            for line in f.readlines():
-                if 'DOWNLOAD' in line:
-                    downloads_path = line.rstrip().split('=')[1].replace('$HOME', str(home)).strip('"')
-                    break
-    return downloads_path
+
+def get_wine_options(appimages, binaries):
+    wine_binary_options = []
+
+    # Add AppImages to list
+    if config.TARGETVERSION != "9":
+        if config.DIALOG == "curses":
+            appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages] # [Code, File Path, Description]
+            wine_binary_options.append(
+                ["Recommended", # Code
+                 f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}', # File Path
+                f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"]) # Description
+            wine_binary_options.extend(appimage_entries)
+        elif config.DIALOG == 'tk':
+            wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")
+            wine_binary_options.extend(appimages)
+
+    for binary in binaries:
+        WINEBIN_PATH = binary
+        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(binary)
+
+        # Create wine binary option array
+        if config.DIALOG == "curses":
+            wine_binary_options.append([WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION])
+        elif config.DIALOG == 'tk':
+            wine_binary_options.append(WINEBIN_PATH)
+
+    return sorted(wine_binary_options)
+
 
 def get_system_winetricks():
     try:
@@ -718,6 +705,7 @@ def get_system_winetricks():
         return (path, version)
     except FileNotFoundError:
         return None
+
 
 def get_pids_using_file(file_path, mode=None):
     pids = set()
@@ -733,16 +721,18 @@ def get_pids_using_file(file_path, mode=None):
             pass
     return pids
 
+
 def wait_process_using_dir(directory):
     logging.info(f"* Starting wait_process_using_dir for {directory}…")
 
     # Get pids and wait for them to finish.
     pids = get_pids_using_file(directory)
-    for pid in pids:    
+    for pid in pids:
         logging.info(f"wait_process_using_dir PID: {pid}")
         psutil.wait(pid)
 
     logging.info("* End of wait_process_using_dir.")
+
 
 def wget(uri, target, q=None, app=None, evt=None):
     cmd = ['wget', '-q', '--show-progress', '--progress=dot', '-c', uri, '-O', target]
@@ -758,26 +748,27 @@ def wget(uri, target, q=None, app=None, evt=None):
                     q.put(p)
                     app.root.event_generate(evt)
 
+
 def net_get(url, target=None, app=None, evt=None, q=None):
     # TODO:
     # - Check available disk space before starting download
     logging.debug(f"Download source: {url}")
     logging.debug(f"Download destination: {target}")
-    target = FileProps(target) # sets path and size attribs
-    url = UrlProps(url) # uses requests to set headers, size, md5 attribs
+    target = FileProps(target)  # sets path and size attribs
+    url = UrlProps(url)  # uses requests to set headers, size, md5 attribs
     if url.headers is None:
         logging.critical("Could not get headers.")
         return None
 
     # Initialize variables.
     local_size = 0
-    total_size = url.size # None or int
+    total_size = url.size  # None or int
     logging.debug(f"File size on server: {total_size}")
     percent = None
-    chunk_size = 100*1024 # 100 KB default
+    chunk_size = 100 * 1024  # 100 KB default
     if type(total_size) is int:
-        chunk_size = min([int(total_size/50), 2*1024*1024]) # smaller of 2% of filesize or 2 MB
-    headers = {'Accept-Encoding': 'identity'} # force non-compressed file transfer
+        chunk_size = min([int(total_size / 50), 2 * 1024 * 1024])  # smaller of 2% of filesize or 2 MB
+    headers = {'Accept-Encoding': 'identity'}  # force non-compressed file transfer
     file_mode = 'wb'
 
     # If file exists and URL is resumable, set download Range.
@@ -804,10 +795,10 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
     # Initiate download request.
     try:
-        if target.path is None: # return url content as text
+        if target.path is None:  # return url content as text
             with requests.get(url.path, headers=headers) as r:
                 return r.text
-        else: # download url to target.path
+        else:  # download url to target.path
             with requests.get(url.path, stream=True, headers=headers) as r:
                 with target.path.open(mode=file_mode) as f:
                     if file_mode == 'wb':
@@ -833,6 +824,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
         print()
         msg.logos_error("Killed with Ctrl+C")
 
+
 def verify_downloaded_file(url, file_path, app=None, evt=None):
     res = False
     msg = f"{file_path} is the wrong size."
@@ -849,17 +841,19 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
     app.check_q.put((evt, res))
     app.root.event_generate(evt)
 
+
 def same_md5(url, file_path):
     logging.debug(f"Comparing MD5 of {url} and {file_path}.")
     url_md5 = UrlProps(url).get_md5()
     logging.debug(f"{url_md5 = }")
-    if url_md5 is None: # skip MD5 check if not provided with URL
+    if url_md5 is None:  # skip MD5 check if not provided with URL
         res = True
     else:
         file_md5 = FileProps(file_path).get_md5()
         logging.debug(f"{file_md5 = }")
         res = url_md5 == file_md5
     return res
+
 
 def same_size(url, file_path):
     logging.debug(f"Comparing size of {url} and {file_path}.")
@@ -869,30 +863,15 @@ def same_size(url, file_path):
     res = url_size == file_size
     return res
 
+
 def write_progress_bar(percent, screen_width=80):
     y = '.'
     n = ' '
-    l_f = int(screen_width * 0.75) # progress bar length
-    l_y = int(l_f * percent / 100) # num. of chars. complete
-    l_n  = l_f - l_y               # num. of chars. incomplete
-    print(f" [{y*l_y}{n*l_n}] {percent:>3}%", end='\r') # end='\x1b[1K\r' to erase to end of line
+    l_f = int(screen_width * 0.75)  # progress bar length
+    l_y = int(l_f * percent / 100)  # num. of chars. complete
+    l_n = l_f - l_y  # num. of chars. incomplete
+    print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')  # end='\x1b[1K\r' to erase to end of line
 
-def is_appimage(file_path):
-    # Ref:
-    # - https://cgit.freedesktop.org/xdg/shared-mime-info/commit/?id=c643cab25b8a4ea17e73eae5bc318c840f0e3d4b
-    # - https://github.com/AppImage/AppImageSpec/blob/master/draft.md#image-format
-    # Note: 
-    # result is a tuple: (is AppImage: True|False, AppImage type: 1|2|None)
-    result = (False, None)
-    file_path = Path(file_path).expanduser().resolve()
-    with file_path.open('rb') as f:
-        f.seek(1)
-        elf_sig = f.read(3)
-        f.seek(8)
-        ai_sig = f.read(2)
-        f.seek(10)
-        v_sig = f.read(1)
-    return (elf_sig == b'ELF' and ai_sig == b'AI', int.from_bytes(v_sig))
 
 def app_is_installed():
     return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)
@@ -941,3 +920,183 @@ def get_latest_folder(folder_path):
     latest = folders[-1]
     logging.info(f"Latest folder: {latest}")
     return latest
+
+
+def get_recommended_appimage():
+    wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)
+    appdir_bindir = Path(config.APPDIR_BINDIR)
+    dest_path = appdir_bindir / wine64_appimage_full_filename
+    if dest_path.is_file():
+        return
+    else:
+        logos_reuse_download(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME, config.APPDIR_BINDIR)
+
+
+def is_appimage(file_path):
+    # Ref:
+    # - https://cgit.freedesktop.org/xdg/shared-mime-info/commit/?id=c643cab25b8a4ea17e73eae5bc318c840f0e3d4b
+    # - https://github.com/AppImage/AppImageSpec/blob/master/draft.md#image-format
+    # Note:
+    # result is a tuple: (is AppImage: True|False, AppImage type: 1|2|None)
+    # result = (False, None)
+    expanded_path = Path(file_path).expanduser().resolve()
+    logging.debug(f"Converting path to expanded_path: {expanded_path}")
+    if file_exists(expanded_path):
+        logging.debug(f"{expanded_path} exists!")
+        with file_path.open('rb') as f:
+            f.seek(1)
+            elf_sig = f.read(3)
+            f.seek(8)
+            ai_sig = f.read(2)
+            f.seek(10)
+            v_sig = f.read(1)
+
+        appimage_check = elf_sig == b'ELF' and ai_sig == b'AI'
+        appimage_type = int.from_bytes(v_sig)
+
+        return (appimage_check, appimage_type)
+    else:
+        return (False, None)
+
+
+def check_appimage(file):
+    logging.debug(f"Checking if {file} is a usable AppImage.")
+    if file is None:
+        logging.error(f"check_appimage: received None for file.")
+        return False
+    
+    file_path=Path(file)
+
+    appimage, appimage_type = is_appimage(file_path)
+    if appimage:
+        logging.debug(f"It is an AppImage!")
+        if appimage_type == 1:
+            logging.error(f"{file_path}: Can't handle AppImage version {str(appimage_type)} yet.")
+            return False
+        else:
+            logging.debug(f"It is a usable AppImage!")
+            return True
+    else:
+        logging.debug(f"It is not an AppImage!")
+        return False
+
+
+def find_appimage_files():
+    appimages = []
+    directories = [
+        os.path.expanduser("~") + "/bin",
+        config.APPDIR_BINDIR,
+        get_user_downloads_dir()
+    ]
+    if config.CUSTOMBINPATH is not None:
+        directories.append(config.CUSTOMBINPATH)
+
+    for d in directories:
+        appimage_paths = Path(d).rglob('wine*.appimage', case_sensitive=False)
+        for p in appimage_paths:
+            if p is not None and check_appimage(p):
+                output1, output2 = wine.check_wine_version_and_branch(p)
+                if output1 is not None and output1:
+                    appimages.append(p)
+                else:
+                    logging.info(f"AppImage file {p} not added: {output2}")
+
+    return appimages
+
+
+def find_wine_binary_files():
+    wine_binary_path_list = [
+        "/usr/local/bin",
+        os.path.expanduser("~") + "/bin",
+        os.path.expanduser("~") + "/PlayOnLinux/wine/linux-amd64/*/bin",
+        os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",
+    ]
+
+    if config.CUSTOMBINPATH is not None:
+        wine_binary_path_list.append(config.CUSTOMBINPATH)
+
+    # Temporarily modify PATH for additional WINE64 binaries.
+    for p in wine_binary_path_list:
+        if p is None:
+            continue
+        if p not in os.environ['PATH'] and os.path.isdir(p):
+            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + p
+
+    # Check each directory in PATH for wine64; add to list
+    binaries = []
+    paths = os.environ["PATH"].split(":")
+    for path in paths:
+        binary_path = os.path.join(path, "wine64")
+        if os.path.exists(binary_path) and os.access(binary_path, os.X_OK):
+            binaries.append(binary_path)
+
+    for binary in binaries[:]:
+        output1, output2 = wine.check_wine_version_and_branch(binary)
+        if output1 is not None and output1:
+            continue
+        else:
+            binaries.remove(binary)
+            logging.info(f"Removing binary: {binary} because: {output2}")
+
+    return binaries
+
+
+def set_appimage_symlink():
+    # This function assumes make_skel() has been run once.
+    if config.APPIMAGE_FILE_PATH is None:
+        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
+
+    if config.APPIMAGE_FILE_PATH == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:
+        get_recommended_appimage()
+        selected_appimage_file_path = Path(config.APPDIR_BINDIR) / config.APPIMAGE_FILE_PATH
+    else:
+        selected_appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
+
+    if not check_appimage(selected_appimage_file_path):
+        logging.warning(f"Cannot use {selected_appimage_file_path}.")
+        return
+
+    appimage_filename = os.path.basename(selected_appimage_file_path)
+    appimage_filepath = Path(f"{config.APPDIR_BINDIR}/{appimage_filename}")
+
+    copy_message = f"Should the program copy {selected_appimage_file_path} to the {config.APPDIR_BINDIR} directory?"
+
+    # Determine if user wants their AppImage in the Logos on Linux bin dir.
+    if os.path.exists(appimage_filepath):
+        confirm = False
+    else:
+        if config.DIALOG == "tk":
+            tk_root = tk.Tk()
+            tk_root.withdraw()
+            confirm = messagebox.askquestion("Confirmation", copy_message)
+            tk_root.destroy()
+        elif config.DIALOG == "curses":
+            confirm = tui.confirm("Confirmation", copy_message)
+        else:
+            confirm = msg.cli_question(copy_message)
+    # FIXME: What if user cancels the confirmation dialog?
+
+    appimage_symlink_path = f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"
+    if os.path.lexists(appimage_symlink_path) and not os.path.exists(os.readlink(appimage_symlink_path)):
+        # We must call this separately from the test below as Python does not recognize a broken symlink as existing.
+        # Both tests should cover corner cases.
+        delete_symlink(appimage_symlink_path)
+    elif os.path.exists(appimage_symlink_path):
+        delete_symlink(appimage_symlink_path)
+
+    if confirm is True or confirm == 'yes':
+        logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")
+        shutil.copy(selected_appimage_file_path, f"{config.APPDIR_BINDIR}")
+        os.symlink(appimage_filepath, appimage_symlink_path)
+        config.SELECTED_APPIMAGE_FILENAME = f"{appimage_filename}"
+    # If not, use the selected AppImage's full path for link creation.
+    elif confirm is False or confirm == 'no':
+        logging.debug(f"{appimage_filepath} already exists in {config.APPDIR_BINDIR}. No need to copy.")
+        os.symlink(selected_appimage_file_path, appimage_symlink_path)
+        logging.debug(f"AppImage symlink updated.")
+        config.SELECTED_APPIMAGE_FILENAME = f"{selected_appimage_file_path}"
+        logging.debug(f"Updated config with new AppImage path.")
+    else:
+        logging.error("Error getting user confirmation.")
+
+    write_config(config.CONFIG_FILE)
