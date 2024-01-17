@@ -1,13 +1,31 @@
 import logging
 import sys
+import curses
 
 import config
 import control
+import tui
 import installer
 import msg
 import utils
 import wine
 
+def set_appimage():
+    # TODO: Allow specifying the AppImage File
+    appimages = utils.find_appimage_files()
+    appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]
+    appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
+    sai_choice = tui.menu(appimage_choices, "AppImage Updater", "Which AppImage should be used?")
+    if sai_choice == "Return to Main Menu":
+        pass  # Do nothing.
+    elif sai_choice == "Input Custom AppImage":
+        appimage_filename = tui.get_user_input("Enter AppImage filename: ")
+        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        utils.set_appimage_symlink()
+    else:
+        appimage_filename = sai_choice
+        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        utils.set_appimage_symlink()
 
 def control_panel_app():
     # Run TUI.
@@ -24,7 +42,7 @@ def control_panel_app():
         else:
             options = options_default + options_exit
 
-        choice = utils.curses_menu(options, "Welcome to Logos on Linux", "What would you like to do?")
+        choice = tui.menu(options, "Welcome to Logos on Linux", "What would you like to do?")
 
         if choice is None or choice == "Exit":
             sys.exit(0)
@@ -41,13 +59,13 @@ def control_panel_app():
         elif choice == "Edit Config":
             control.edit_config()
         elif choice == "Install Dependencies":
-            utils.checkDependencies()
+            utils.check_dependencies()
         elif choice == "Back up Data":
             control.backup()
         elif choice == "Restore Data":
             control.restore()
         elif choice == "Set AppImage":
-            utils.set_appimage()
+            set_appimage()
         elif choice == "Download or Update Winetricks":
             control.get_winetricks()
         elif choice == "Run Winetricks":
