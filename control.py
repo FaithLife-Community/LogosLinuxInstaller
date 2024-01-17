@@ -151,10 +151,6 @@ def backup_and_restore(mode='backup', app=None):
     if not utils.enough_disk_space(backup_dir, src_size):
         msg.logos_error(f"Not enough free disk space for backup.")
 
-    today = datetime.today().strftime('%Y%m%d')
-    current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{today}"
-    dst_dir = backup_dir / current_backup_name
-
     # Run backup.
     try:
         dst_dir.mkdir()
