@@ -340,13 +340,13 @@ def installLogos10(app=None):
     reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
     gdi_file = os.path.join(config.WORKDIR, 'renderer_gdi.reg')
     with open(reg_file, 'w') as f:
-        f.write('''REGEDIT4
+        f.write(r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
     with open(gdi_file, 'w') as f:
-        f.write('''REGEDIT4
+        f.write(r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\Direct3D]
 "DirectDrawRenderer"="gdi"
