@@ -28,6 +28,10 @@ def get_parser():
         help='skip font installations',
     )
     cfg.add_argument(
+        '-K', '--skip-dependencies', action='store_true',
+        help='skip dependencies check and installation',
+    )
+    cfg.add_argument(
         '-V', '--verbose', action='store_true',
         help='enable verbose mode',
     )
@@ -158,6 +162,9 @@ def parse_args(args, parser):
 
     if args.skip_fonts:
         config.SKIP_FONTS = True
+
+    if args.skip_dependencies:
+        config.SKIP_DEPENDENCIES = True
 
     if args.force_root:
         config.LOGOS_FORCE_ROOT = True

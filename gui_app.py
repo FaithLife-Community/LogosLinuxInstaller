@@ -106,6 +106,7 @@ class InstallerWindow():
         self.gui.tricks_dropdown.bind('<<WinetricksSelected>>', self.set_winetricks)
         self.set_winetricks()
         self.gui.fonts_checkbox.config(command=self.set_skip_fonts)
+        self.gui.skipdeps_checkbox.config(command=self.set_skip_dependencies)
         self.gui.cancel_button.config(command=self.on_cancel_released)
         self.gui.okay_button.config(command=self.on_okay_released)
 
@@ -233,6 +234,9 @@ class InstallerWindow():
     def set_skip_fonts(self, evt=None):
         self.gui.skip_fonts = 1 - self.gui.fontsvar.get() # invert True/False
 
+    def set_skip_dependencies(self, evt=None):
+        self.gui.skip_dependencies = 1 - self.gui.skipdepsvar.get() # invert True/False
+
     def set_downloads(self):
         dl_dir = Path(config.MYDOWNLOADS)
         appimage_download = Path(dl_dir / Path(config.WINE64_APPIMAGE_FULL_URL).name)
@@ -276,6 +280,7 @@ class InstallerWindow():
         elif self.winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
         config.SKIP_FONTS = self.gui.skip_fonts if self.gui.skip_fonts == 1 else 0
+        config.SKIP_DEPENDENCIES = self.gui.skip_dependencies if self.gui.skip_dependencies == 1 else 0
         if config.LOGOS_ICON_URL is None:
             config.LOGOS_ICON_URL = f"https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/img/{config.FLPRODUCTi}-128-icon.png"
         if config.LOGOS_ICON_FILENAME is None:
