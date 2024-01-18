@@ -326,6 +326,9 @@ def get_runmode():
         return 'script'
 
 def query_packages(packages):
+    if config.SKIP_DEPENDENCIES:
+        return
+
     missing_packages = []
     
     for p in packages:
@@ -343,6 +346,9 @@ def query_packages(packages):
     return missing_packages
 
 def install_packages(packages):
+    if config.SKIP_DEPENDENCIES:
+        return
+
     if packages:
         command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
         logging.debug(f"install_packages cmd: {command}")

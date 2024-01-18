@@ -36,6 +36,9 @@ class InstallerGui(Frame):
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
             self.skip_fonts = 0
+        self.skip_dependencies = config.SKIP_DEPENDENCIES
+        if self.skip_fonts is None:
+            self.skip_fonts = 0
 
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
@@ -90,6 +93,11 @@ class InstallerGui(Frame):
         self.fontsvar = BooleanVar(value=1-self.skip_fonts)
         self.fonts_checkbox = Checkbutton(self, variable=self.fontsvar)
 
+        # Skip Dependencies row.
+        self.skipdeps_label = Label(self, text="Install dependencies: ")
+        self.skipdepsvar = BooleanVar(value=1-self.skip_dependencies)
+        self.skipdeps_checkbox = Checkbutton(self, variable=self.skipdepsvar)
+
         # Cancel/Okay buttons row.
         self.cancel_button = Button(self, text="Cancel")
         self.okay_button = Button(self, text="Install")
@@ -117,6 +125,8 @@ class InstallerGui(Frame):
         self.tricks_dropdown.grid(column=1, row=3, sticky='we', pady=2)
         self.fonts_label.grid(column=0, row=4, sticky='nws', pady=2)
         self.fonts_checkbox.grid(column=1, row=4, sticky='w', pady=2)
+        self.skipdeps_label.grid(column=2, row=4, sticky='nws', pady=2)
+        self.skipdeps_checkbox.grid(column=3, row=4, sticky='w', pady=2)
         self.cancel_button.grid(column=3, row=5, sticky='e', pady=2)
         self.okay_button.grid(column=4, row=5, sticky='e', pady=2)
         # Status area

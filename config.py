@@ -17,6 +17,7 @@ LOGOS_DIR = os.path.dirname(LOGOS_EXE) if LOGOS_EXE is not None else None
 LOGOS_EXECUTABLE = os.getenv('LOGOS_EXECUTABLE')
 LOGS = os.getenv('LOGS')
 SKIP_FONTS = os.getenv('SKIP_FONTS', False)
+SKIP_DEPENDENCIES = os.getenv('SKIP_DEPENDENCIES', False)
 TARGETVERSION = os.getenv('TARGETVERSION')
 WINE_EXE = os.getenv('WINE_EXE')
 WINE64_APPIMAGE_FULL_URL = os.getenv('WINE64_APPIMAGE_FULL_URL', "https://github.com/FaithLife-Community/LogosLinuxInstaller/releases/download/wine-devel-8.19/wine-devel_8.19-x86_64.AppImage")
