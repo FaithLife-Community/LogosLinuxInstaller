@@ -275,8 +275,8 @@ class InstallerWindow():
         config.WINE_EXE = self.wine_exe
         if config.WINEBIN_CODE is None:
             config.WINEBIN_CODE = utils.get_winebin_code_and_desc(config.WINE_EXE)[0]
-        if self.winetricksbin.startswith('System') and self.sys_winetricks is not None:
-            config.WINETRICKSBIN = self.sys_winetricks[0]
+        if self.winetricksbin.startswith('System') and self.gui.sys_winetricks is not None:
+            config.WINETRICKSBIN = self.gui.sys_winetricks[0]
         elif self.winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = os.path.join(config.APPDIR_BINDIR, "winetricks")
         config.SKIP_FONTS = self.gui.skip_fonts if self.gui.skip_fonts == 1 else 0
