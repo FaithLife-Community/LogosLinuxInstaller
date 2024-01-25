@@ -182,7 +182,6 @@ def begin_install(app=None):
 
     if config.WINEBIN_CODE:
         if config.WINEBIN_CODE.startswith("Recommended"):
-            utils.check_libs(["libfuse"])
             logging.info(f"Installing {config.FLPRODUCT} Bible {config.TARGETVERSION} using {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION} AppImage…")
             utils.make_skel(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)
             # exporting PATH to internal use if using AppImage, doing backup too:
@@ -192,7 +191,6 @@ def begin_install(app=None):
             os.chmod(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}", 0o755)
             config.WINE_EXE = f"{config.APPDIR_BINDIR}/wine64"
         elif config.WINEBIN_CODE.startswith("AppImage"):
-            utils.check_libs(["libfuse"])
             logging.info(f"Installing {config.FLPRODUCT} Bible {config.TARGETVERSION} using the selected AppImage…")
             utils.make_skel(config.SELECTED_APPIMAGE_FILENAME)
             os.environ["OLD_PATH"] = os.environ["PATH"]
