@@ -194,6 +194,12 @@ def die(message):
     logging.critical(message)
     sys.exit(1)
 
+def reboot():
+    logging.info("Rebooting system.")
+    command = f"{config.SUPERUSER_COMMAND} reboot now"
+    subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+    sys.exit(0)
+
 
 def set_verbose():
     config.LOG_LEVEL = logging.INFO
@@ -305,29 +311,32 @@ def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"  # IDEA: Switch to Python APT library? See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996
         config.PACKAGES = "binutils cabextract fuse wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-    elif shutil.which('yum') is not None:  # rhel, fedora
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = "yum install -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "yum list installed | grep -E ^"  # TODO: Needs testing. Is anyone still using `yum`?
-        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind cabextract bc libxml2 curl"
-        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES= "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
         config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = r"pacman -R --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q | grep -E ^"
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = "appimagelauncher"
     # Add more conditions for other package managers as needed
 
     # Add logging output.
@@ -345,25 +354,34 @@ def get_runmode():
         return 'script'
 
 
-def query_packages(packages):
+def query_packages(packages, mode="install"):
     if config.SKIP_DEPENDENCIES:
         return
 
     missing_packages = []
+    conflicting_packages = []
 
     for p in packages:
         command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
         logging.debug(f"pkg query command: \"{command}\"")
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
         logging.debug(f"pkg query result: {result.returncode}")
-        if result.returncode != 0:
+        if result.returncode != 0 and mode == "install":
             missing_packages.append(p)
+        elif result.returncode == 0 and mode == "remove":
+            conflicting_packages.append(p)
 
     msg = 'None'
-    if missing_packages:
-        msg = f"Missing packages: {' '.join(missing_packages)}"
-    logging.info(f"Missing packages: {msg}")
-    return missing_packages
+    if mode == "install":
+        if missing_packages:
+            msg = f"Missing packages: {' '.join(missing_packages)}"
+        logging.info(f"Missing packages: {msg}")
+        return missing_packages
+    if mode == "remove":
+        if conflicting_packages:
+            msg = f"Conflicting packages: {' '.join(conflicting_packages)}"
+        logging.info(f"Conflicting packages: {msg}")
+        return conflicting_packages
 
 
 def install_packages(packages):
@@ -373,6 +391,16 @@ def install_packages(packages):
     if packages:
         command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
         logging.debug(f"install_packages cmd: {command}")
+        subprocess.run(command, shell=True, check=True)
+
+
+def remove_packages(packages):
+    if config.SKIP_DEPENDENCIES:
+        return
+
+    if packages:
+        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {' '.join(packages)}"
+        logging.debug(f"remove_packages cmd: {command}")
         subprocess.run(command, shell=True, check=True)
 
 
@@ -531,23 +559,51 @@ def steam_postinstall_dependencies():
     subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
 
 
-def install_dependencies(packages):
+def install_dependencies(packages, badpackages, logos9_packages="None"):
     missing_packages = []
+    conflicting_packages = []
     package_list = packages.split()
+    bad_package_list = badpackages.split()
+    if logos9_packages is not None:
+        package_list.extend(logos9_packages.split())
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
         missing_packages = query_packages(package_list)
+        conflicting_packages = query_packages(bad_package_list, "remove")
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-        message = f"Your {config.OS_NAME} computer may require additional packages. To continue, the script will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"
+        if missing_packages and conflicting_packages:
+            message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}) and will remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"
+        elif missing_packages:
+            message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"
+        elif conflicting_packages:
+            message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"
+        else:
+            logging.debug("No missing or conflicting dependencies found.")
+
+        #TODO: Need to send continue question to user based on DIALOG.
+        # All we do above is create a message that we never send.
+        # Do we need a TK continue question? I see we have a CLI and curses one in msg.py
 
         if config.OS_NAME == "Steam":
             steam_preinstall_dependencies()
 
-        install_packages(missing_packages)
+        check_libs("libfuse") # libfuse: needed for AppImage use. This is the only known needed library.
+
+        if missing_packages:
+            install_packages(missing_packages)
+
+        if conflicting_packages:
+            remove_packages(conflicting_packages) # AppImage Launcher is the only known conflicting package.
+            config.REBOOT_REQUIRED = True
 
         if config.OS_NAME == "Steam":
             steam_postinstall_dependencies()
+
+        if config.REBOOT_REQUIRED:
+            #TODO: Add resumable install functionality to speed up running the program after reboot. See #19.
+            reboot()
+
     else:
         msg.logos_error(
             f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_packages}. Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")
@@ -584,11 +640,10 @@ def check_libs(libraries):
 def check_dependencies():
     if int(config.TARGETVERSION) == 10:
         logging.info("Checking Logos 10 dependencies")
-        install_dependencies(config.PACKAGES)
+        install_dependencies(config.PACKAGES, config.BADPACKAGES)
     elif int(config.TARGETVERSION) == 9:
         logging.info("Checking Logos 9 dependencies")
-        install_dependencies(config.PACKAGES)
-        install_dependencies(config.L9PACKAGES)
+        install_dependencies(config.PACKAGES, config.BADPACKAGES, config.L9PACKAGES)
     else:
         logging.error("TARGETVERSION not found.")
 

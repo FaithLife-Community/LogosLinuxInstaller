@@ -78,13 +78,16 @@ LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dot
 WINETRICKS_DOWNLOADER = "wget"
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
+REBOOT_REQUIRED = None
 
 OS_NAME = None
 OS_RELEASE = None
 PACKAGE_MANAGER_COMMAND_INSTALL = None
+PACKAGE_MANAGER_COMMAND_REMOVE = None
 PACKAGE_MANAGER_COMMAND_QUERY = None
 PACKAGES = None
 L9PACKAGES = None
+BADPACKAGES = None
 SUPERUSER_COMMAND = None
 
 persistent_config_keys = [
