@@ -133,6 +133,7 @@ def set_default_config():
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
+    set_recommended_appimage_config()
 
 
 def write_config(config_file_path):
@@ -559,12 +560,16 @@ def steam_postinstall_dependencies():
     subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
 
 
-def install_dependencies(packages, badpackages, logos9_packages="None"):
+def install_dependencies(packages, badpackages, logos9_packages=None):
     missing_packages = []
     conflicting_packages = []
-    package_list = packages.split()
-    bad_package_list = badpackages.split()
-    if logos9_packages is not None:
+    package_list = []
+    if packages:
+        package_list = packages.split()
+    bad_package_list = []
+    if badpackages:
+        bad_package_list = badpackages.split()
+    if logos9_packages:
         package_list.extend(logos9_packages.split())
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
@@ -588,7 +593,7 @@ def install_dependencies(packages, badpackages, logos9_packages="None"):
         if config.OS_NAME == "Steam":
             steam_preinstall_dependencies()
 
-        check_libs("libfuse") # libfuse: needed for AppImage use. This is the only known needed library.
+        check_libs(["libfuse"]) # libfuse: needed for AppImage use. This is the only known needed library.
 
         if missing_packages:
             install_packages(missing_packages)
@@ -638,14 +643,14 @@ def check_libs(libraries):
 
 
 def check_dependencies():
-    if int(config.TARGETVERSION) == 10:
-        logging.info("Checking Logos 10 dependencies")
+    targetversion = int(config.TARGETVERSION)
+    logging.info(f"Checking Logos {str(targetversion)} dependencies")
+    if targetversion == 10:
         install_dependencies(config.PACKAGES, config.BADPACKAGES)
-    elif int(config.TARGETVERSION) == 9:
-        logging.info("Checking Logos 9 dependencies")
+    elif targetversion == 9:
         install_dependencies(config.PACKAGES, config.BADPACKAGES, config.L9PACKAGES)
     else:
-        logging.error("TARGETVERSION not found.")
+        logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
 
 
 def file_exists(file_path):
@@ -975,6 +980,37 @@ def get_latest_folder(folder_path):
     latest = folders[-1]
     logging.info(f"Latest folder: {latest}")
     return latest
+
+
+def get_latest_release_url(releases_url):
+    release_url = None
+    json_data = json.loads(net_get(releases_url))
+    logging.debug(f"{json_data=}")
+    if json_data is not None:
+        release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
+    else:
+        logging.critical("Could not get latest release URL.")
+    logging.info(f"Release URL: {release_url}")
+    return release_url
+
+
+def set_recommended_appimage_config():
+    releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
+    appimage_url = get_latest_release_url(releases_url)
+    if appimage_url is None:
+        logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
+        return
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
+    config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
+    # Getting version and branch rely on the filename having this format:
+    #   wine-[branch]_[version]-[arch]
+    parts = config.RECOMMENDED_WINE64_APPIMAGE_FILENAME.split('-')
+    branch_version = parts[1]
+    branch, version = branch_version.split('_')
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = f"v{version}-{branch}"
+    config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_VERSION = config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION  # noqa: E501
 
 
 def get_recommended_appimage():
