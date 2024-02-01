@@ -133,6 +133,7 @@ def set_default_config():
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
+    set_recommended_appimage_config()
 
 
 def write_config(config_file_path):
@@ -979,6 +980,22 @@ def get_latest_folder(folder_path):
     latest = folders[-1]
     logging.info(f"Latest folder: {latest}")
     return latest
+
+
+def set_recommended_appimage_config():
+    releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
+    json_data = json.loads(net_get(releases_url))
+    appimage_url = json_data[0].get('assets')[0].get('browser_download_url')
+    logging.info(f"Recommended AppImage URL: {appimage_url}")
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
+    config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
+    parts = config.RECOMMENDED_WINE64_APPIMAGE_FILENAME.split('-')
+    branch_version = parts[1]
+    branch, version = branch_version.split('_')
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = f"v{version}-{branch}"
+    config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_VERSION = config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION  # noqa: E501
 
 
 def get_recommended_appimage():
