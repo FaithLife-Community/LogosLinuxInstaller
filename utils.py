@@ -559,12 +559,16 @@ def steam_postinstall_dependencies():
     subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
 
 
-def install_dependencies(packages, badpackages, logos9_packages="None"):
+def install_dependencies(packages, badpackages, logos9_packages=None):
     missing_packages = []
     conflicting_packages = []
-    package_list = packages.split()
-    bad_package_list = badpackages.split()
-    if logos9_packages is not None:
+    package_list = []
+    if packages:
+        package_list = packages.split()
+    bad_package_list = []
+    if badpackages:
+        bad_package_list = badpackages.split()
+    if logos9_packages:
         package_list.extend(logos9_packages.split())
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
@@ -588,7 +592,7 @@ def install_dependencies(packages, badpackages, logos9_packages="None"):
         if config.OS_NAME == "Steam":
             steam_preinstall_dependencies()
 
-        check_libs("libfuse") # libfuse: needed for AppImage use. This is the only known needed library.
+        check_libs(["libfuse"]) # libfuse: needed for AppImage use. This is the only known needed library.
 
         if missing_packages:
             install_packages(missing_packages)
@@ -638,14 +642,14 @@ def check_libs(libraries):
 
 
 def check_dependencies():
-    if int(config.TARGETVERSION) == 10:
-        logging.info("Checking Logos 10 dependencies")
+    targetversion = int(config.TARGETVERSION)
+    logging.info(f"Checking Logos {str(targetversion)} dependencies")
+    if targetversion == 10:
         install_dependencies(config.PACKAGES, config.BADPACKAGES)
-    elif int(config.TARGETVERSION) == 9:
-        logging.info("Checking Logos 9 dependencies")
+    elif targetversion == 9:
         install_dependencies(config.PACKAGES, config.BADPACKAGES, config.L9PACKAGES)
     else:
-        logging.error("TARGETVERSION not found.")
+        logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
 
 
 def file_exists(file_path):
