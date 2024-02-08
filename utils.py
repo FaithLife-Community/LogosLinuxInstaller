@@ -982,11 +982,24 @@ def get_latest_folder(folder_path):
     return latest
 
 
+def get_latest_release_url(releases_url):
+    appimage_url = None
+    json_data = json.loads(net_get(releases_url))
+    logging.debug(f"{json_data=}")
+    if json_data is not None:
+        appimage_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
+    else:
+        logging.critical("Could not get latest appimage URL.")
+    logging.info(f"Recommended AppImage URL: {appimage_url}")
+    return appimage_url
+
+
 def set_recommended_appimage_config():
     releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
-    json_data = json.loads(net_get(releases_url))
-    appimage_url = json_data[0].get('assets')[0].get('browser_download_url')
-    logging.info(f"Recommended AppImage URL: {appimage_url}")
+    appimage_url = get_latest_release_url(releases_url)
+    if appimage_url is None:
+        logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
+        return
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
     config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
