@@ -1,3 +1,4 @@
+from tkinter import Toplevel
 from tkinter import BooleanVar
 from tkinter import font
 from tkinter import IntVar
@@ -239,3 +240,35 @@ class ControlGui(Frame):
         s3.grid(column=0, row=12, columnspan=3, sticky='we', pady=2)
         self.message_label.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
         self.progress.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
+
+
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_visible = False
+        self.tooltip_window = None
+
+        self.widget.bind("<Enter>", self.show_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+
+    def show_tooltip(self, event=None):
+        if not self.tooltip_visible:
+            x, y, _, _ = self.widget.bbox("insert")
+            x += self.widget.winfo_rootx() + self.widget.winfo_width() // 2 - 200
+            y += self.widget.winfo_rooty() - 25
+
+            self.tooltip_window = Toplevel(self.widget)
+            self.tooltip_window.wm_overrideredirect(True)
+            self.tooltip_window.wm_geometry(f"+{x}+{y}")
+
+            label = Label(self.tooltip_window, text=self.text, justify="left", background="#eeeeee",
+                             relief="solid", padding=4, borderwidth=1, foreground="#000000", wraplength=80)
+            label.pack(ipadx=1)
+
+            self.tooltip_visible = True
+
+    def hide_tooltip(self, event=None):
+        if self.tooltip_visible:
+            self.tooltip_window.destroy()
+            self.tooltip_visible = False
