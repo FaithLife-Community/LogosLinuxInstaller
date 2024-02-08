@@ -465,9 +465,13 @@ class ControlWindow():
         self.gui.logging_button.state(['disabled'])
         
         self.gui.config_button.config(command=control.edit_config)
+        self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        self.gui.deps_button.config(command=self.install_deps)
+        self.gui.appimage_button.config(command=self.set_appimage)
+        if config.WINEBIN_CODE != "AppImage":
+            self.gui.appimage_button.state(['disabled'])
+            gui.ToolTip(self.gui.appimage_button, "This button is disabled. The configured install was not created using an AppImage.")
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.update_run_winetricks_button()
@@ -494,6 +498,7 @@ class ControlWindow():
             self.gui.messagevar.set('Getting current app logging status...')
             self.gui.progress.state(['!disabled'])
             self.gui.progress.start()
+
 
     def run_installer(self, evt=None):
         # self.root.control_win.destroy()

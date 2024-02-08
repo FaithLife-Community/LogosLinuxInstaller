@@ -203,11 +203,14 @@ def parse_args(args, parser):
         config.ACTION = control.restore
     elif args.set_appimage:
         config.APPIMAGE_FILE_PATH = args.set_appimage[0]
-        if not utils.file_exists(config.APPIMAGE_FILE_PATH):
-            raise argparse.ArgumentTypeError(f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist.")
-        if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
-            raise argparse.ArgumentTypeError(f"{config.APPIMAGE_FILE_PATH} is not an AppImage.")
-        config.ACTION = utils.set_appimage_symlink
+        if config.WINEBIN_CODE == "AppImage":
+            if not utils.file_exists(config.APPIMAGE_FILE_PATH):
+                raise argparse.ArgumentTypeError(f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist.")
+            if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
+                raise argparse.ArgumentTypeError(f"{config.APPIMAGE_FILE_PATH} is not an AppImage.")
+            config.ACTION = utils.set_appimage_symlink
+        else:
+            msg.logos_error("The command you requested is disabled. The configured install was not created using an AppImage.")
     elif args.get_winetricks:
         config.ACTION = control.get_winetricks
     elif args.run_winetricks:

@@ -33,11 +33,19 @@ def control_panel_app():
         options_default = ["Install Logos Bible Software"]
         options_exit = ["Exit"]
         if utils.file_exists(config.LOGOS_EXE):
-            options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Install Dependencies", "Back up Data", "Restore Data", "Set AppImage", "Download or Update Winetricks", "Run Winetricks"]
+            options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Install Dependencies", "Back up Data", "Restore Data"]
+            
+            if config.WINEBIN_CODE == "AppImage":
+                options_installed.append("Set AppImage")
+            
+            options_installed.append("Download or Update Winetricks")
+            options_installed.append("Run Winetricks")
+            
             if config.LOGS == "DISABLED":
                 options_installed.append("Enable Logging")
             else:
                 options_installed.append("Disable Logging")
+            
             options = options_default + options_installed + options_exit
         else:
             options = options_default + options_exit
