@@ -1003,6 +1003,8 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
     config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
+    # Getting version and branch rely on the filename having this format:
+    #   wine-[branch]_[version]-[arch]
     parts = config.RECOMMENDED_WINE64_APPIMAGE_FILENAME.split('-')
     branch_version = parts[1]
     branch, version = branch_version.split('_')
