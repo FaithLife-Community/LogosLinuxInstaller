@@ -983,15 +983,15 @@ def get_latest_folder(folder_path):
 
 
 def get_latest_release_url(releases_url):
-    appimage_url = None
+    release_url = None
     json_data = json.loads(net_get(releases_url))
     logging.debug(f"{json_data=}")
     if json_data is not None:
-        appimage_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
+        release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
     else:
-        logging.critical("Could not get latest appimage URL.")
-    logging.info(f"Recommended AppImage URL: {appimage_url}")
-    return appimage_url
+        logging.critical("Could not get latest release URL.")
+    logging.info(f"Release URL: {release_url}")
+    return release_url
 
 
 def set_recommended_appimage_config():
