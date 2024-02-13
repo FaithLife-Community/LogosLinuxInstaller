@@ -33,7 +33,7 @@ jobs:
     - name: Get 1st 7 chars of commit SHA
       id: sha
       run: |
-        sha="$(git log -n 1 issue6 | grep commit | awk '{print $2}')"
+        sha="$(git log -n 1 ${{ inputs.branch }} | grep commit | awk '{print $2}')"
         echo $sha
         echo "sha_short=${sha:0:7}" >> $GITHUB_OUTPUT
 
