@@ -699,11 +699,14 @@ def get_logos_releases(q=None, app=None):
         # if len(releases) == 5:
         #    break
 
-    if q is not None and app is not None:
-        q.put(releases)
-        app.root.event_generate("<<ReleaseCheckProgress>>")
+    filtered_releases = filter_versions(releases, 30, 1)
     logging.debug(f"Available releases: {', '.join(releases)}")
-    return releases
+    logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
+
+    if q is not None and app is not None:
+        q.put(filtered_releases)
+        app.root.event_generate("<<ReleaseCheckProgress>>")
+    return filtered_releases
 
 
 def get_winebin_code_and_desc(binary):
