@@ -1100,6 +1100,9 @@ def find_appimage_files():
     if config.CUSTOMBINPATH is not None:
         directories.append(config.CUSTOMBINPATH)
 
+    if sys.version_info < (3, 12):
+        raise RuntimeError("Python 3.12 or higher is required for .rglob() flag `case-sensitive` ")
+
     for d in directories:
         appimage_paths = Path(d).rglob('wine*.appimage', case_sensitive=False)
         for p in appimage_paths:
