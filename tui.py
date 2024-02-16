@@ -98,21 +98,30 @@ def menu(options, title, question_text):
             if index < len(options):
                 option = options[index]
                 if type(option) is list:
-                    # wine_binary_code = option[0]
-                    wine_binary_path = option[1]
-                    wine_binary_description = option[2]
                     option_lines = []
-                    wine_binary_path_wrapped = textwrap.wrap(
-                        f"Binary Path: {wine_binary_path}", window_width - 4)
-                    option_lines.extend(wine_binary_path_wrapped)
-                    wine_binary_desc_wrapped = textwrap.wrap(
-                        f"Description: {wine_binary_description}", window_width - 4)
-                    option_lines.extend(wine_binary_desc_wrapped)
+                    wine_binary_code = option[0]
+                    if wine_binary_code != "Exit":
+                        wine_binary_path = option[1]
+                        wine_binary_description = option[2]
+                        wine_binary_path_wrapped = textwrap.wrap(
+                            f"Binary Path: {wine_binary_path}", window_width - 4)
+                        option_lines.extend(wine_binary_path_wrapped)
+                        wine_binary_desc_wrapped = textwrap.wrap(
+                            f"Description: {wine_binary_description}", window_width - 4)
+                        option_lines.extend(wine_binary_desc_wrapped)
+                    else:
+                        wine_binary_path = option[1]
+                        wine_binary_description = option[2]
+                        wine_binary_path_wrapped = textwrap.wrap(
+                            f"{wine_binary_path}", window_width - 4)
+                        option_lines.extend(wine_binary_path_wrapped)
+                        wine_binary_desc_wrapped = textwrap.wrap(
+                            f"{wine_binary_description}", window_width - 4)
+                        option_lines.extend(wine_binary_desc_wrapped)
                 else:
                     option_lines = textwrap.wrap(option, window_width - 4)
 
                 for j, line in enumerate(option_lines):
-                    logging.info("Test 11")
                     y = options_start_y + i + j
                     x = max(0, window_width // 2 - len(line) // 2)
                     if y < window_height:

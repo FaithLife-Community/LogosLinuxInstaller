@@ -46,6 +46,7 @@ def choose_product():
     if config.LOGOS_ICON_FILENAME is None:
         config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
+
 def get_logos_release_version():
     TITLE=f"Choose {config.FLPRODUCT} {config.TARGETVERSION} Release"
     QUESTION_TEXT=f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"
@@ -56,7 +57,9 @@ def get_logos_release_version():
         logos_release_version = config.LOGOS_VERSION
 
     logging.info(f"Release version: {logos_release_version}")
-    if logos_release_version is not None:
+    if logos_release_version == "Exit":
+        msg.logos_error("Exiting installation.", "")
+    elif logos_release_version is not None:
         config.LOGOS_RELEASE_VERSION = logos_release_version
     else:
         msg.logos_error("Failed to fetch LOGOS_RELEASE_VERSION.")
@@ -76,7 +79,7 @@ def choose_version():
     elif "9" in version_choice:
         config.TARGETVERSION = "9"
     elif version_choice == "Exit.":
-        sys.exit(0)
+        msg.logos_error("Exiting installation.", "")
     else:
         msg.logos_error("Unknown version. Installation canceled!", "")
     utils.check_dependencies()
@@ -118,12 +121,7 @@ def choose_install_method():
 
     if config.WINE_EXE is None:
         logging.info("Creating binary list.")
-        appimages = utils.find_appimage_files()
-        logging.debug(f"appimages: {', '.join(map(str, appimages))}")
-        binaries = utils.find_wine_binary_files()
-        logging.debug(f"binaries: {', '.join(map(str, binaries))}")
-        WINEBIN_OPTIONS = utils.get_wine_options(appimages, binaries)
-        print(WINEBIN_OPTIONS)
+        WINEBIN_OPTIONS = utils.get_wine_options(utils.find_appimage_files(), utils.find_wine_binary_files())
 
         BACKTITLE="Choose Wine Binary Menu"
         TITLE="Choose Wine Binary"
@@ -134,6 +132,8 @@ def choose_install_method():
         config.WINE_EXE = installationChoice[1]
         if config.WINEBIN_CODE == "Recommended" or config.WINEBIN_CODE == "AppImage":
             config.SELECTED_APPIMAGE_FILENAME = installationChoice[1]
+        elif config.WINEBIN_CODE == "Exit":
+            msg.logos_error("Exiting installation.", "")
 
         logging.info(f"WINEBIN_CODE: {config.WINEBIN_CODE}; WINE_EXE: {config.WINE_EXE}")
     variables = {

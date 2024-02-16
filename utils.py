@@ -18,6 +18,7 @@ import argparse
 
 from base64 import b64encode
 from pathlib import Path
+from typing import List, Union
 from xml.etree import ElementTree as ET
 import tkinter as tk
 from tkinter import messagebox
@@ -661,6 +662,15 @@ def file_exists(file_path):
         return False
 
 
+def check_logos_release_version(version, threshold, check_version_part):
+    version_parts = list(map(int, version.split('.')))
+    return version_parts[check_version_part - 1] < threshold
+
+
+def filter_versions(versions, threshold, check_version_part):
+    return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]
+
+
 def get_logos_releases(q=None, app=None):
     msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
@@ -728,7 +738,7 @@ def get_winebin_code_and_desc(binary):
     return code, desc
 
 
-def get_wine_options(appimages, binaries):
+def get_wine_options(appimages, binaries) -> Union[List[List[str]], List[str]]:
     wine_binary_options = []
 
     # Add AppImages to list
@@ -744,6 +754,8 @@ def get_wine_options(appimages, binaries):
             wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")
             wine_binary_options.extend(appimages)
 
+    sorted_binaries = sorted(set(binaries))
+
     for binary in binaries:
         WINEBIN_PATH = binary
         WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(binary)
@@ -754,7 +766,10 @@ def get_wine_options(appimages, binaries):
         elif config.DIALOG == 'tk':
             wine_binary_options.append(WINEBIN_PATH)
 
-    return sorted(wine_binary_options)
+    if config.DIALOG == "curses":
+        wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
+
+    return wine_binary_options
 
 
 def get_system_winetricks():
@@ -1088,7 +1103,7 @@ def find_appimage_files():
             if p is not None and check_appimage(p):
                 output1, output2 = wine.check_wine_version_and_branch(p)
                 if output1 is not None and output1:
-                    appimages.append(p)
+                    appimages.append(str(p))
                 else:
                     logging.info(f"AppImage file {p} not added: {output2}")
 
