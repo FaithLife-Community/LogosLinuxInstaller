@@ -94,7 +94,7 @@ built using 3.12 and might have errors if run with other versions.
 # install build dependencies; e.g. for debian-based systems:
 $ apt install build-essential tcl-dev tk-dev libreadline-dev
 # install & build python 3.12
-$ $ wget 'https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz'
+$ wget 'https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz'
 $ tar xf Python-3.12.1.tar.xz
 $ cd Python-3.12.1
 Python-3.12.1$ ./configure --prefix=/opt --enable-shared
@@ -117,7 +117,7 @@ LogosLinuxInstaller$
 Use the following guide or the provided script at `scripts/ensure-venv.sh` to set
 up a virtual environment for running and/or building locally.
 ```
-LogosLinuxInstaller$ /opt/bin/python3.12 -m venv env # create a virtual env folder called "env" using python3.12's path
+LogosLinuxInstaller$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 -m venv env # create a virtual env folder called "env" using python3.12's path
 LogosLinuxInstaller$ echo "LD_LIBRARY_PATH=/opt/lib" >> env/bin/activate # tell python where to find libs
 LogosLinuxInstaller$ echo "export LD_LIBRARY_PATH" >> env/bin/activate
 LogosLinuxInstaller$ source env/bin/activate # activate the env
