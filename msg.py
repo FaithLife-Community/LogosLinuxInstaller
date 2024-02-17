@@ -81,7 +81,7 @@ def logos_warn(message):
         cli_msg(message)
 
 def logos_error(message, secondary=None):
-    WIKI_LINK = "https://github.com/ferion11/LogosLinuxInstaller/wiki"
+    WIKI_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki"
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"
