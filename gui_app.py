@@ -280,7 +280,7 @@ class InstallerWindow():
         config.SKIP_FONTS = self.gui.skip_fonts if self.gui.skip_fonts == 1 else 0
         config.SKIP_DEPENDENCIES = self.gui.skip_dependencies if self.gui.skip_dependencies == 1 else 0
         if config.LOGOS_ICON_URL is None:
-            config.LOGOS_ICON_URL = f"https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/img/{config.FLPRODUCTi}-128-icon.png"
+            config.LOGOS_ICON_URL = f"https://raw.githubusercontent.com/FaithLife-Community/LogosLinuxInstaller/master/img/{config.FLPRODUCTi}-128-icon.png"
         if config.LOGOS_ICON_FILENAME is None:
             config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
