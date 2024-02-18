@@ -503,7 +503,7 @@ class ControlWindow():
     def run_installer(self, evt=None):
         # self.root.control_win.destroy()
         classname = "LogosLinuxInstaller"
-        self.new_win = Toplevel(self.root)
+        self.new_win = Toplevel()
         self.app = InstallerWindow(self.new_win, class_=classname)
 
     def run_logos(self, evt=None):
