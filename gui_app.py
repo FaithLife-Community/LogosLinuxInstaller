@@ -70,6 +70,13 @@ class Root(Tk):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
+        # Set panel icon.
+        repo_dir = Path(__file__).parent
+        self.icon = repo_dir / 'img' / 'logos4-128-icon.png'
+        self.pi = PhotoImage(file=f'{self.icon}')
+        self.iconphoto(False, self.pi)
+
+
 class InstallerWindow():
     def __init__(self, root, **kwargs):
         # super().__init__(**kwargs)
