@@ -86,7 +86,10 @@ def logos_error(message, secondary=None):
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"
     logging.critical(message)
-    cli_msg(help_message)
+    if secondary != "info":
+        cli_msg(help_message)
+    else:
+        cli_msg(message)
 
     if secondary is None or secondary == "":
         try:

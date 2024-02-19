@@ -34,8 +34,19 @@ def control_panel_app():
         options_exit = ["Exit"]
         if utils.file_exists(config.LOGOS_EXE):
             options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Install Dependencies", "Back up Data", "Restore Data"]
-            
-            if config.WINEBIN_CODE == "AppImage":
+
+            if config.WINEBIN_CODE == "AppImage" or config.WINEBIN_CODE == "Recommended":
+                logging.debug("Checking if the AppImage needs updated.")
+                status, error_message = utils.compare_recommended_appimage_version()
+                if status == 0:
+                    options_installed.append("Update to Latest AppImage")
+                elif status == 1:
+                    logging.warning("The AppImage is already set to the latest recommended.")
+                elif status == 2:
+                    logging.warning("The AppImage version is newer than the latest recommended.")
+                else:
+                    logging.error(f"{error_message}")
+
                 options_installed.append("Set AppImage")
             
             options_installed.append("Download or Update Winetricks")
@@ -72,6 +83,8 @@ def control_panel_app():
             control.backup()
         elif choice == "Restore Data":
             control.restore()
+        elif choice == "Update to Latest AppImage":
+            utils.update_to_latest_recommended_appimage()
         elif choice == "Set AppImage":
             set_appimage()
         elif choice == "Download or Update Winetricks":

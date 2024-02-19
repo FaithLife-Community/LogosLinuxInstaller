@@ -12,6 +12,7 @@ import tui_app
 import utils
 import wine
 
+
 def get_parser():
     parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
     parser.add_argument(
@@ -78,7 +79,7 @@ def get_parser():
     )
     cmd.add_argument(
         '--remove-library-catalog', action='store_true',
-        #help='remove library catalog database file'
+        # help='remove library catalog database file'
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
@@ -95,13 +96,17 @@ def get_parser():
     )
     cmd.add_argument(
         '--backup', action='store_true',
-        #help='perform backup',
+        # help='perform backup',
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
         '--restore', action='store_true',
-        #help='perform restore',
+        # help='perform restore',
         help=argparse.SUPPRESS,
+    )
+    cmd.add_argument(
+        '--update-latest-appimage', '-U', action='store_true',
+        help='Update the to the latest AppImage.',
     )
     cmd.add_argument(
         '--set-appimage', nargs=1, metavar=('APPIMAGE_FILE_PATH'),
@@ -129,20 +134,21 @@ def get_parser():
     )
     cmd.add_argument(
         '--dirlink', action='store_true',
-        #help='create directory link',
+        # help='create directory link',
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
         '--make-skel', action='store_true',
-        #help='make a skeleton install only',
+        # help='make a skeleton install only',
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
         '--check-resources', action='store_true',
-        #help='check resources'
+        # help='check resources'
         help=argparse.SUPPRESS,
     )
     return parser
+
 
 def parse_args(args, parser):
     if args.config:
@@ -183,46 +189,46 @@ def parse_args(args, parser):
         config.PASSIVE = True
 
     # Set ACTION function.
-    if args.install_app:
-        config.ACTION = installer.install
-    elif args.run_installed_app:
-        config.ACTION = wine.run_logos
-    elif args.run_indexing:
-        config.ACTION = wine.run_indexing
-    elif args.remove_library_catalog:
-        config.ACTION = control.remove_library_catalog
-    elif args.remove_index_files:
-        config.ACTION = control.remove_all_index_files
-    elif args.edit_config:
-        config.ACTION = control.edit_config
-    elif args.install_dependencies:
-        config.ACTION = utils.check_dependencies
-    elif args.backup:
-        config.ACTION = control.backup
-    elif args.restore:
-        config.ACTION = control.restore
-    elif args.set_appimage:
-        config.APPIMAGE_FILE_PATH = args.set_appimage[0]
-        if config.WINEBIN_CODE == "AppImage":
-            if not utils.file_exists(config.APPIMAGE_FILE_PATH):
-                raise argparse.ArgumentTypeError(f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist.")
-            if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
-                raise argparse.ArgumentTypeError(f"{config.APPIMAGE_FILE_PATH} is not an AppImage.")
-            config.ACTION = utils.set_appimage_symlink
-        else:
-            msg.logos_error("The command you requested is disabled. The configured install was not created using an AppImage.")
-    elif args.get_winetricks:
-        config.ACTION = control.get_winetricks
-    elif args.run_winetricks:
-        config.ACTION = wine.run_winetricks
-    elif args.toggle_app_logging:
-        config.ACTION = wine.switch_logging
-    elif args.create_shortcuts:
-        config.ACTION = installer.create_shortcuts
-    elif args.remove_install_dir:
-        config.ACTION = control.remove_install_dir
-    else: # default function if app is installed
+    actions = {
+        'install_app': installer.install,
+        'run_installed_app': wine.run_logos,
+        'run_indexing': wine.run_indexing,
+        'remove_library_catalog': control.remove_library_catalog,
+        'remove_index_files': control.remove_all_index_files,
+        'edit_config': control.edit_config,
+        'install_dependencies': utils.check_dependencies,
+        'backup': control.backup,
+        'restore': control.restore,
+        'update_latest_appimage': utils.update_to_latest_recommended_appimage,
+        'set_appimage': utils.set_appimage_symlink,
+        'get_winetricks': control.get_winetricks,
+        'run_winetricks': wine.run_winetricks,
+        'toggle_app_logging': wine.switch_logging,
+        'create_shortcuts': installer.create_shortcuts,
+        'remove_install_dir': control.remove_install_dir,
+    }
+
+    config.ACTION = None
+    for arg, action in actions.items():
+        if getattr(args, arg):
+            if arg == "update_latest_appimage" or arg == "set_appimage":
+                logging.debug("Running an AppImage command.")
+                if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":
+                    config.ACTION = "disabled"
+                    logging.debug("AppImage commands not added since WINEBIN_CODE != (AppImage|Recommended)")
+                    break
+            if arg == "set_appimage":
+                config.APPIMAGE_FILE_PATH = getattr(args, arg)[0]
+                if not utils.file_exists(config.APPIMAGE_FILE_PATH):
+                    raise argparse.ArgumentTypeError(
+                        f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist.")
+                if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
+                    raise argparse.ArgumentTypeError(f"{config.APPIMAGE_FILE_PATH} is not an AppImage.")
+            config.ACTION = action
+            break
+    if config.ACTION is None:
         config.ACTION = run_control_panel
+
 
 def run_control_panel():
     logging.info(f"Using DIALOG: {config.DIALOG}")
@@ -231,9 +237,10 @@ def run_control_panel():
     else:
         tui_app.control_panel_app()
 
+
 def main():
     parser = get_parser()
-    cli_args = parser.parse_args() # parsing early lets '--help' run immediately
+    cli_args = parser.parse_args()  # parsing early lets '--help' run immediately
 
     ### Set runtime config.
     # Initialize logging.
@@ -293,21 +300,22 @@ def main():
     msg.cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
 
     # Check if app is installed.
-    if config.ACTION.__name__ == 'remove_install_dir' or config.ACTION.__name__ == 'utils.check_dependencies': # These actions don't require an install
+    install_not_required = [ 'remove_install_dir', 'utils.check_dependencies', 'update_to_latest_recommended_appimage', 'set_appimage_symlink' ]
+    if config.ACTION == "disabled":
+        msg.logos_error("That option is disabled.", "info")
+    elif config.ACTION.__name__ in install_not_required:  # These actions don't require an install
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()
-    elif config.ACTION.__name__ == 'utils.set_appimage_symlink':
-        logging.info(f"Running function: {config.ACTION.__name__}")
-        utils.set_appimage_symlink()
     elif utils.app_is_installed():
         # Run the desired Logos action.
         if config.ACTION is None:
             msg.logos_error("No function given for this subcommand.")
         logging.info(f"Running function: {config.ACTION.__name__}")
-        config.ACTION() # defaults to run_control_panel()
+        config.ACTION()  # defaults to run_control_panel()
     else:
         logging.info(f"Starting Control Panel")
         run_control_panel()
+
 
 if __name__ == '__main__':
     main()

@@ -456,10 +456,20 @@ class ControlWindow():
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        self.gui.appimage_button.config(command=self.set_appimage)
-        if config.WINEBIN_CODE != "AppImage":
-            self.gui.appimage_button.state(['disabled'])
-            gui.ToolTip(self.gui.appimage_button, "This button is disabled. The configured install was not created using an AppImage.")
+        self.gui.update_appimage_button.config(command=self.set_update_to_latest_appimage)
+        self.gui.set_appimage_button.config(command=self.set_appimage)
+        if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":
+            self.gui.update_appimage_button.state(['disabled'])
+            gui.ToolTip(self.gui.update_appimage_button, "This button is disabled. The configured install was not created using an AppImage.")
+            self.gui.set_appimage_button.state(['disabled'])
+            gui.ToolTip(self.gui.set_appimage_button, "This button is disabled. The configured install was not created using an AppImage.")
+        status, _ = utils.compare_recommended_appimage_version()
+        if status == 1:
+            self.gui.update_appimage_button.state(['disabled'])
+            gui.ToolTip(self.gui.update_appimage_button, "This button is disabled. The AppImage is already set to the latest recommended.")
+        elif status == 2:
+            self.gui.update_appimage_button.state(['disabled'])
+            gui.ToolTip(self.gui.update_appimage_button, "This button is disabled. The AppImage version is newer than the latest recommended.")
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.update_run_winetricks_button()
@@ -555,6 +565,10 @@ class ControlWindow():
         )
 
         return file_path
+
+    def set_update_to_latest_appimage(self, evt=None):
+        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
+        utils.set_appimage_symlink()
 
     def set_appimage(self, evt=None):
         appimage_filename = self.open_file_dialog("AppImage", "AppImage")

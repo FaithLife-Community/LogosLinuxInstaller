@@ -1,5 +1,4 @@
 import atexit
-import curses
 import distro
 import hashlib
 import json
@@ -14,7 +13,7 @@ import signal
 import subprocess
 import sys
 import threading
-import argparse
+from urllib.parse import urlparse
 
 from base64 import b64encode
 from pathlib import Path
@@ -833,6 +832,8 @@ def net_get(url, target=None, app=None, evt=None, q=None):
     logging.debug(f"Download source: {url}")
     logging.debug(f"Download destination: {target}")
     target = FileProps(target)  # sets path and size attribs
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc  # Gets the requested domain
     url = UrlProps(url)  # uses requests to set headers, size, md5 attribs
     if url.headers is None:
         logging.critical("Could not get headers.")
@@ -875,6 +876,20 @@ def net_get(url, target=None, app=None, evt=None, q=None):
     try:
         if target.path is None:  # return url content as text
             with requests.get(url.path, headers=headers) as r:
+                if callable(r):
+                    logging.error("Failed to retrieve data from the URL.")
+                    return None
+
+                try:
+                    r.raise_for_status()
+                except requests.exceptions.HTTPError as e:
+                    if domain == "github.com":
+                        if e.response.status_code == 403 or e.response.status_code == 429:
+                            logging.error("GitHub API rate limit exceeded. Please wait before trying again.")
+                    else:
+                        logging.error(f"HTTP error occurred: {e.response.status_code}")
+                    return None
+
                 return r.text
         else:  # download url to target.path
             with requests.get(url.path, stream=True, headers=headers) as r:
@@ -896,6 +911,9 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                             elif q is not None:
                                 # Send progress value to queue param.
                                 q.put(percent)
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error occurred during HTTP request: {e}")
+        return None, r  # Return None values to indicate an error condition
     except Exception as e:
         msg.logos_error(e)
     except KeyboardInterrupt:
@@ -1001,13 +1019,24 @@ def get_latest_folder(folder_path):
 
 
 def get_latest_release_url(releases_url):
-    release_url = None
-    json_data = json.loads(net_get(releases_url))
-    logging.debug(f"{json_data=}")
+    data = net_get(releases_url)
+
+    try:
+        json_data = json.loads(data)
+        logging.debug(f"{json_data=}")
+    except json.JSONDecodeError as e:
+        logging.error(f"Error decoding JSON response: {e}")
+        return None
+
+    if not isinstance(json_data, list) or len(json_data) == 0:
+        logging.error("Invalid or empty JSON response.")
+        return None
+
     if json_data is not None:
         release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
     else:
         logging.critical("Could not get latest release URL.")
+
     logging.info(f"Release URL: {release_url}")
     return release_url
 
@@ -1019,6 +1048,7 @@ def set_recommended_appimage_config():
         logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
         return
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
     config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
     # Getting version and branch rely on the filename having this format:
@@ -1027,8 +1057,8 @@ def set_recommended_appimage_config():
     branch_version = parts[1]
     branch, version = branch_version.split('_')
     config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = f"v{version}-{branch}"
-    config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
-    config.RECOMMENDED_WINE64_APPIMAGE_VERSION = config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION  # noqa: E501
+    config.RECOMMENDED_WINE64_APPIMAGE_VERSION = f"{version}"
+    config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
 def get_recommended_appimage():
@@ -1039,6 +1069,31 @@ def get_recommended_appimage():
         return
     else:
         logos_reuse_download(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME, config.APPDIR_BINDIR)
+
+
+def compare_recommended_appimage_version():
+    wine_release = []
+    if config.WINE_EXE is not None:
+        wine_release, error_message = wine.get_wine_release(config.WINE_EXE)
+        if wine_release is not None and wine_release is not False:
+            current_version = f"{str(wine_release[0])}" + "." + f"{str(wine_release[1])}"
+            logging.debug(f"Current wine release: {current_version}")
+            set_recommended_appimage_config()
+
+            if config.RECOMMENDED_WINE64_APPIMAGE_VERSION is not None and config.RECOMMENDED_WINE64_APPIMAGE_VERSION is not False:
+                logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")
+                if current_version < config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
+                    return 0, "yes"  # Current release is older than recommended
+                if current_version == config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
+                    return 1, "uptodate"  # Current release is latest
+                if current_version > config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
+                    return 2, "no"  # Installed version is custom
+            else:
+                return False, f"Error 1: {error_message}"
+        else:
+            return False, f"Error 0: {error_message}"
+    else:
+        return False, "config.WINE_EXE is not set."
 
 
 def is_appimage(file_path):
@@ -1212,3 +1267,8 @@ def set_appimage_symlink():
         logging.error("Error getting user confirmation.")
 
     write_config(config.CONFIG_FILE)
+
+
+def update_to_latest_recommended_appimage():
+    config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
+    set_appimage_symlink()

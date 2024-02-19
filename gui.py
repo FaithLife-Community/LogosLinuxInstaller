@@ -66,7 +66,7 @@ class InstallerGui(Frame):
         self.release_dropdown.state(['readonly'])
         self.release_dropdown['values'] = [] if self.logos_release_version is None else [self.logos_release_version]
         # release check button
-        self.release_check_button = Button(self, text="Get Release list")
+        self.release_check_button = Button(self, text="Get Release List")
         self.release_check_button.state(['disabled'])
 
         # Wine row.
@@ -75,7 +75,7 @@ class InstallerGui(Frame):
         self.wine_dropdown = Combobox(self, textvariable=self.winevar)
         self.wine_dropdown.state(['readonly'])
         self.wine_dropdown['values'] = []
-        self.wine_check_button = Button(self, text="Get exe list")
+        self.wine_check_button = Button(self, text="Get EXE List")
         self.wine_check_button.state(['disabled'])
 
         # Winetricks row.
@@ -90,12 +90,12 @@ class InstallerGui(Frame):
         self.tricksvar.set(self.tricks_dropdown['values'][0])
 
         # Fonts row.
-        self.fonts_label = Label(self, text="Install fonts: ")
+        self.fonts_label = Label(self, text="Install Fonts: ")
         self.fontsvar = BooleanVar(value=1-self.skip_fonts)
         self.fonts_checkbox = Checkbutton(self, variable=self.fontsvar)
 
         # Skip Dependencies row.
-        self.skipdeps_label = Label(self, text="Install dependencies: ")
+        self.skipdeps_label = Label(self, text="Install Dependencies: ")
         self.skipdepsvar = BooleanVar(value=1-self.skip_dependencies)
         self.skipdeps_checkbox = Checkbutton(self, variable=self.skipdepsvar)
 
@@ -184,9 +184,11 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        # Set AppImage button
-        self.appimage_label = Label(self, text="Set AppImage")
-        self.appimage_button = Button(self, text="Run")
+        # AppImage buttons
+        self.update_appimage_label = Label(self, text="Update to Latest AppImage")
+        self.update_appimage_button = Button(self, text="Run")
+        self.set_appimage_label = Label(self, text="Set AppImage")
+        self.set_appimage_button = Button(self, text="Run")
         # Run winetricks
         self.winetricks_label = Label(self, text="Winetricks")
         self.run_winetricks_button = Button(self, text="Run")
@@ -227,19 +229,22 @@ class ControlGui(Frame):
         self.backup_button.grid(column=1, row=8, sticky='w', pady=2)
         self.restore_button.grid(column=2, row=8, sticky='w', pady=2)
 
-        self.appimage_label.grid(column=0, row=9, sticky='w', pady=2)
-        self.appimage_button.grid(column=1, row=9, sticky='w', pady=2)
+        self.update_appimage_label.grid(column=0, row=9, sticky='w', pady=2)
+        self.update_appimage_button.grid(column=1, row=9, sticky='w', pady=2)
 
-        self.winetricks_label.grid(column=0, row=10, sticky='w', pady=2)
-        self.run_winetricks_button.grid(column=1, row=10, sticky='w', pady=2)
-        self.get_winetricks_button.grid(column=2, row=10, sticky='w', pady=2)
+        self.set_appimage_label.grid(column=0, row=10, sticky='w', pady=2)
+        self.set_appimage_button.grid(column=1, row=10, sticky='w', pady=2)
 
-        self.logging_label.grid(column=0, row=11, sticky='w', pady=2)
-        self.logging_button.grid(column=1, row=11, sticky='w', pady=2)
+        self.winetricks_label.grid(column=0, row=11, sticky='w', pady=2)
+        self.run_winetricks_button.grid(column=1, row=11, sticky='w', pady=2)
+        self.get_winetricks_button.grid(column=2, row=11, sticky='w', pady=2)
 
-        s3.grid(column=0, row=12, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
-        self.progress.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
+        self.logging_label.grid(column=0, row=12, sticky='w', pady=2)
+        self.logging_button.grid(column=1, row=12, sticky='w', pady=2)
+
+        s3.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
+        self.message_label.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
+        self.progress.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)
 
 
 class ToolTip:
@@ -263,7 +268,7 @@ class ToolTip:
             self.tooltip_window.wm_geometry(f"+{x}+{y}")
 
             label = Label(self.tooltip_window, text=self.text, justify="left", background="#eeeeee",
-                             relief="solid", padding=4, borderwidth=1, foreground="#000000", wraplength=80)
+                             relief="solid", padding=4, borderwidth=1, foreground="#000000", wraplength=192)
             label.pack(ipadx=1)
 
             self.tooltip_visible = True
