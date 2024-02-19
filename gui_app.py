@@ -10,6 +10,7 @@ from pathlib import Path
 from queue import Queue
 from threading import Thread
 
+from tkinter import PhotoImage
 from tkinter import Tk
 from tkinter import Toplevel
 from tkinter import filedialog as fd
