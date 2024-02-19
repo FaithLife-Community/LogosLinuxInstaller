@@ -32,6 +32,7 @@ def wait_on(command):
         # Start the process in the background
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         msg.cli_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
+        time.sleep(1.0)
         while process.poll() is None:
             msg.logos_progress()
             time.sleep(0.5)
@@ -48,13 +49,55 @@ def wait_on(command):
     except Exception as e:
         logging.critical(f"{e}")
 
+
 def light_wineserver_wait():
     command = [f"{config.WINESERVER_EXE}", "-w"]
     wait_on(command)
 
+
 def heavy_wineserver_wait():
     utils.wait_process_using_dir(config.WINEPREFIX)
     wait_on([f"{config.WINESERVER_EXE}", "-w"])
+
+
+def get_wine_release(binary):
+    cmd = [binary, "--version"]
+    try:
+        version_string = subprocess.check_output(cmd, encoding='utf-8').strip()
+        logging.debug(f"Version string: {str(version_string)}")
+        try:
+            version, release = version_string.split()
+        except ValueError: # neither "Devel" nor "Stable" release is noted in version output
+            version = version_string
+            release = get_wine_branch(binary)
+
+        logging.debug(f"Wine branch of {binary}: {release}")
+
+        if release is not None:
+            ver_major = version.split('.')[0].lstrip('wine-') # remove 'wine-'
+            ver_minor = version.split('.')[1]
+            release = release.lstrip('(').rstrip(')').lower() # remove parentheses
+        else:
+            ver_major = 0
+            ver_minor = 0
+
+        wine_release = [int(ver_major), int(ver_minor), release]
+        logging.debug(f"Wine release of {binary}: {str(wine_release)}")
+
+        if ver_major == 0:
+            return False, "Couldn't determine wine version."
+        else:
+            return wine_release, "yes"
+
+    except subprocess.CalledProcessError as e:
+        return False, f"Error running command: {e}"
+
+    except ValueError as e:
+        return False, f"Error parsing version: {e}"
+
+    except Exception as e:
+        return False, f"Error: {e}"
+
 
 def check_wine_version_and_branch(TESTBINARY):
     # Does not check for Staging. Will not implement: expecting merging of commits in time.
@@ -74,46 +117,31 @@ def check_wine_version_and_branch(TESTBINARY):
         reason = "Binary is not executable."
         return False, reason
 
-    cmd = [TESTBINARY, "--version"]
-    version_string = subprocess.check_output(cmd, encoding='utf-8').strip()
-    try:
-        version, release = version_string.split()
-    except ValueError: # neither "Devel" nor "Stable" release is noted in version output
-        version = version_string
-        release = get_wine_branch(TESTBINARY)
+    wine_release = []
+    wine_release, error_message = get_wine_release(TESTBINARY)
 
-    if release is not None:
-        ver_major = version.split('.')[0].lstrip('wine-') # remove 'wine-'
-        ver_minor = version.split('.')[1]
-        release = release.lstrip('(').rstrip(')').lower() # remove parentheses
+    if wine_release is not False and error_message is not None:
+        if wine_release[2] == 'stable':
+            return False, "Can't use Stable release"
+        elif wine_release[0] < 7:
+            return False, "Version is < 7.0"
+        elif wine_release[0] < 8:
+            if "Proton" in TESTBINARY or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False):
+                if wine_release[1] == 0:
+                    return True, "None"
+            elif wine_release[2] != 'staging':
+                return False, "Needs to be Staging release"
+            elif wine_release[1] < WINE_MINIMUM[1]:
+                reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(WINE_MINIMUM)}"
+                return False, reason
+        elif wine_release[0] < 9:
+            if wine_release[1] < 1:
+                return False, "Version is 8.0"
+            elif wine_release[1] < 16:
+                if wine_release[2] != 'staging':
+                    return False, "Version < 8.16 needs to be Staging release"
     else:
-        ver_major = 0
-        ver_minor = 0
-
-    try:
-        TESTWINEVERSION = [int(ver_major), int(ver_minor), release]
-    except ValueError:
-        return False, "Couldn't determine wine version."
-
-    if TESTWINEVERSION[2] == 'stable':
-        return False, "Can't use Stable release"
-    elif TESTWINEVERSION[0] < 7:
-        return False, "Version is < 7.0"
-    elif TESTWINEVERSION[0] < 8:
-        if "Proton" in TESTBINARY or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False):
-            if TESTWINEVERSION[1] == 0:
-                return True, "None"
-        elif release != 'staging':
-            return False, "Needs to be Staging release"
-        elif TESTWINEVERSION[1] < WINE_MINIMUM[1]:
-            reason = f"{'.'.join(TESTWINEVERSION)} is below minimum required, {'.'.join(WINE_MINIMUM)}"
-            return False, reason
-    elif TESTWINEVERSION[0] < 9:
-        if TESTWINEVERSION[1] < 1:
-            return False, "Version is 8.0"
-        elif TESTWINEVERSION[1] < 16:
-            if release != 'staging':
-                return False, "Version < 8.16 needs to be Staging release"
+        return False, error_message
 
     return True, "None"
 

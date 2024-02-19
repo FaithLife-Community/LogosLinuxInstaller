@@ -61,7 +61,7 @@ def menu(options, title, question_text):
 
     current_option = 0
     current_page = 0
-    options_per_page = 5
+    options_per_page = 8
     total_pages = (len(options) - 1) // options_per_page + 1
 
     while True:
