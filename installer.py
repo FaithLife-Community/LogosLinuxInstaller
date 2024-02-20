@@ -42,7 +42,8 @@ def choose_product():
 
     # Set icon variables.
     if config.LOGOS_ICON_URL is None:
-        config.LOGOS_ICON_URL = "https://raw.githubusercontent.com/ferion11/LogosLinuxInstaller/master/img/" + config.FLPRODUCTi + "-128-icon.png"
+        app_dir = Path(__file__).parent
+        config.LOGOS_ICON_URL = app_dir / 'img' / f"{config.FLPRODUCTi}-128-icon.png"
     if config.LOGOS_ICON_FILENAME is None:
         config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
@@ -507,16 +508,16 @@ def create_desktop_file(name, contents):
 def create_shortcuts():
     # Set icon variables.
     if config.LOGOS_ICON_URL is None:
-        config.LOGOS_ICON_URL = "https://raw.githubusercontent.com/FaithLife-Community/LogosLinuxInstaller/master/img/" + config.FLPRODUCTi + "-128-icon.png"
+        app_dir = Path(__file__).parent
+        config.LOGOS_ICON_URL = app_dir / 'img' / f"{config.FLPRODUCTi}-128-icon.png"
     if config.LOGOS_ICON_FILENAME is None:
         config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
     logos_icon_path = os.path.join(config.APPDIR, config.LOGOS_ICON_FILENAME)
-    logos_icon_downloaded = os.path.join(config.MYDOWNLOADS, config.LOGOS_ICON_FILENAME)
 
     if not os.path.isfile(logos_icon_path):
         os.makedirs(config.APPDIR, exist_ok=True)
-        utils.logos_reuse_download(config.LOGOS_ICON_URL, config.LOGOS_ICON_FILENAME, config.APPDIR)
+        shutil.copy(f"{config.LOGOS_ICON_URL}", logos_icon_path)
     else:
         logging.info(f"Icon found at {logos_icon_path}.")
 

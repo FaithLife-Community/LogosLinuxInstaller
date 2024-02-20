@@ -72,23 +72,17 @@ class Root(Tk):
         self.rowconfigure(0, weight=1)
 
         # Set panel icon.
-        repo_dir = Path(__file__).parent
-        self.icon = repo_dir / 'img' / 'logos4-128-icon.png'
+        app_dir = Path(__file__).parent
+        self.icon = app_dir / 'img' / 'logos4-128-icon.png'
         self.pi = PhotoImage(file=f'{self.icon}')
         self.iconphoto(False, self.pi)
 
 
 class InstallerWindow():
     def __init__(self, root, **kwargs):
-        # super().__init__(**kwargs)
-
         # Set root parameters.
         self.root = root
         self.root.title("Faithlife Bible Software Installer")
-        # self.root.w = 675
-        # self.root.h = 200
-        # self.root.geometry(f"{self.root.w}x{self.root.h}")
-        # self.root.minsize(self.root.w, self.root.h)
         self.root.resizable(False, False)
         self.gui = gui.InstallerGui(self.root)
 
@@ -98,7 +92,6 @@ class InstallerWindow():
         # Set other variables to be used later.
         self.appimage_verified = None
         self.logos_verified = None
-        self.icon_verified = None
         self.tricks_verified = None
         self.set_product()
 
@@ -132,7 +125,6 @@ class InstallerWindow():
         check_events = [
             "<<CheckAppImage>>",
             "<<CheckLogos>>",
-            "<<CheckIcon>>",
         ]
         for evt in check_events:
             self.root.bind(evt, self.update_file_check_progress)
@@ -247,7 +239,6 @@ class InstallerWindow():
         dl_dir = Path(config.MYDOWNLOADS)
         appimage_download = Path(dl_dir / Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL).name)
         logos_download = Path(dl_dir / f"{self.flproduct}_v{self.gui.logos_release_version}-x64.msi")
-        icon_download = Path(dl_dir / config.LOGOS_ICON_FILENAME)
         self.downloads = [
             ['appimage', config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, appimage_download,
              self.appimage_verified, '<<GetAppImage>>', '<<CheckAppImage>>',
@@ -255,9 +246,6 @@ class InstallerWindow():
             ['logos', config.LOGOS64_URL, logos_download,
                 self.logos_verified, '<<GetLogos>>', '<<CheckLogos>>',
             ],
-            ['icon', config.LOGOS_ICON_URL, icon_download,
-                self.icon_verified, '<<GetIcon>>', '<<CheckIcon>>',
-            ]
         ]
         if self.winetricksbin.startswith('Download'):
             tricks_url = config.WINETRICKS_URL
@@ -288,7 +276,8 @@ class InstallerWindow():
         config.SKIP_FONTS = self.gui.skip_fonts if self.gui.skip_fonts == 1 else 0
         config.SKIP_DEPENDENCIES = self.gui.skip_dependencies if self.gui.skip_dependencies == 1 else 0
         if config.LOGOS_ICON_URL is None:
-            config.LOGOS_ICON_URL = f"https://raw.githubusercontent.com/FaithLife-Community/LogosLinuxInstaller/master/img/{config.FLPRODUCTi}-128-icon.png"
+            app_dir = Path(__file__).parent
+            config.LOGOS_ICON_URL = app_dir / 'img' / f"{config.FLPRODUCTi}-128-icon.png"
         if config.LOGOS_ICON_FILENAME is None:
             config.LOGOS_ICON_FILENAME = os.path.basename(config.LOGOS_ICON_URL)
 
@@ -298,6 +287,8 @@ class InstallerWindow():
             self.root.destroy()
             return 1
         self.set_downloads()
+        # Update desktop panel icon.
+        self.root.icon = config.LOGOS_ICON_URL
         self.root.event_generate("<<VerifyDownloads>>")
 
     def on_cancel_released(self, evt=None):
@@ -353,7 +344,6 @@ class InstallerWindow():
                 elif t.name == f"get-{name}":
                     dl_thread = t
 
-            # self.after(100)
             if not dest.is_file() and dl_thread is None: # no file; no thread started
                 logging.info("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
@@ -371,8 +361,6 @@ class InstallerWindow():
                     self.appimage_verified = None
                 elif name == 'logos':
                     self.logos_verified = None
-                elif name == 'icon':
-                    self.icon_verified = None
                 logging.info("Starting download thread.")
                 self.start_download_thread(name, url, dest, dl_evt)
                 continue
@@ -410,8 +398,6 @@ class InstallerWindow():
             self.appimage_verified = r
         elif e == "<<CheckLogos>>":
             self.logos_verified = r
-        elif e == "<<CheckIcon>>":
-            self.icon_verified = r
         elif e == "<<CheckWinetricks>>":
             self.tricks_verified = r
         self.downloads[0][3] = r # "current" download should always be 1st item in self.downloads
@@ -446,15 +432,9 @@ class InstallerWindow():
 
 class ControlWindow():
     def __init__(self, root, *args, **kwargs):
-        # super().__init__(**kwargs)
-
         # Set root parameters.
         self.root = root
         self.root.title("Faithlife Bible Software Control Panel")
-        # self.root.w = 450
-        # self.root.h = 375
-        # self.root.geometry(f"{self.root.w}x{self.root.h}")
-        # self.root.minsize(self.root.w, self.root.h)
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
 
@@ -509,10 +489,10 @@ class ControlWindow():
 
 
     def run_installer(self, evt=None):
-        # self.root.control_win.destroy()
         classname = "LogosLinuxInstaller"
         self.new_win = Toplevel()
         self.app = InstallerWindow(self.new_win, class_=classname)
+        self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
         t = Thread(target=wine.run_logos)
