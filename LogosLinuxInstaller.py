@@ -276,7 +276,7 @@ def main():
 
     # Set DIALOG and GUI variables.
     if config.DIALOG is None:
-        utils.getDialog()
+        utils.get_dialog()
     else:
         config.DIALOG = config.DIALOG.lower()
         if config.DIALOG == 'tk':
@@ -297,7 +297,10 @@ def main():
     utils.die_if_root()
 
     # Print terminal banner
-    msg.cli_msg(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
+    logging.info(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
+    logging.debug(f"Installer log file: {config.LOGOS_LOG}")
+
+    utils.self_update()
 
     # Check if app is installed.
     install_not_required = [ 'remove_install_dir', 'utils.check_dependencies', 'update_to_latest_recommended_appimage', 'set_appimage_symlink' ]
