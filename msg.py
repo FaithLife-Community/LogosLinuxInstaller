@@ -53,7 +53,6 @@ def initialize_logging(stderr_log_level):
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=handlers,
     )
-    cli_msg(f"Installer log file: {config.LOGOS_LOG}")
 
 def update_log_level(new_level):
     # Update logging level from config.
@@ -85,8 +84,8 @@ def logos_error(message, secondary=None):
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"
-    logging.critical(message)
     if secondary != "info":
+        logging.critical(message)
         cli_msg(help_message)
     else:
         cli_msg(message)

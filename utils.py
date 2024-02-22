@@ -14,6 +14,7 @@ import subprocess
 import sys
 import threading
 from urllib.parse import urlparse
+from datetime import datetime, timedelta
 
 from base64 import b64encode
 from pathlib import Path
@@ -133,7 +134,6 @@ def set_default_config():
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
-    set_recommended_appimage_config()
 
 
 def write_config(config_file_path):
@@ -227,7 +227,7 @@ def tl(library):
         return False
 
 
-def getDialog():
+def get_dialog():
     if not os.environ.get('DISPLAY'):
         msg.logos_error("The installer does not work unless you are running a display")
 
@@ -1061,6 +1061,29 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
+def self_update():
+    # We limit the number of times set_recommended_appimage_config is run in order to avoid GitHub API limits.
+    # This sets the check to once every 12 hours.
+    # TODO: Add a flag to force a check which bypasses the once/12-hr limit.
+    now = datetime.now().replace(microsecond=0)
+    if config.LAST_UPDATED is not None:
+        check_again = datetime.strptime(config.LAST_UPDATED.strip(), '%Y-%m-%dT%H:%M:%S')
+        check_again += timedelta(hours=12)
+    else:
+        check_again = now
+
+    if now >= check_again:
+        logging.debug("Running self-update.")
+
+        set_recommended_appimage_config()
+        # TODO: Add LogosLinuxInstaller self-update function here.
+
+        config.LAST_UPDATED = now.isoformat()
+        write_config(config.CONFIG_FILE)
+    else:
+        logging.debug("Skipping self-update.")
+
+
 def get_recommended_appimage():
     wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)
     appdir_bindir = Path(config.APPDIR_BINDIR)
@@ -1078,7 +1101,6 @@ def compare_recommended_appimage_version():
         if wine_release is not None and wine_release is not False:
             current_version = f"{str(wine_release[0])}" + "." + f"{str(wine_release[1])}"
             logging.debug(f"Current wine release: {current_version}")
-            set_recommended_appimage_config()
 
             if config.RECOMMENDED_WINE64_APPIMAGE_VERSION is not None and config.RECOMMENDED_WINE64_APPIMAGE_VERSION is not False:
                 logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")
@@ -1271,4 +1293,10 @@ def set_appimage_symlink():
 
 def update_to_latest_recommended_appimage():
     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
-    set_appimage_symlink()
+    status, _ = compare_recommended_appimage_version()
+    if status == 0:
+        set_appimage_symlink()
+    elif status == 1:
+        logging.debug("The AppImage is already set to the latest recommended.")
+    elif status == 2:
+        logging.debug("The AppImage version is newer than the latest recommended.")
