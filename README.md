@@ -130,11 +130,13 @@ Python 3.12.1
 
 ## Install Guide
 
-[WIP] For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
+For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
 
 NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
 
 If you want to install your distro's dependencies outside of the script, please see the following.
+
+NOTE: The following section is WIP.
 
 ## Debian and Ubuntu
 
