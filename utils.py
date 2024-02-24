@@ -507,14 +507,13 @@ def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
 
 
 def delete_symlink(symlink_path):
-    if os.path.islink(symlink_path):
+    symlink_path = Path(symlink_path)
+    if symlink_path.is_symlink():
         try:
-            # WARNING: Do not use os.unlink.
-            os.remove(symlink_path)
+            symlink_path.unlink()
             logging.info(f"Symlink at {symlink_path} removed successfully.")
-        except OSError as e:
+        except Exception as e:
             logging.error(f"Error removing symlink: {e}")
-            return
 
 
 def make_skel(app_image_filename):
@@ -1265,13 +1264,8 @@ def set_appimage_symlink():
             confirm = msg.cli_question(copy_message)
     # FIXME: What if user cancels the confirmation dialog?
 
-    appimage_symlink_path = f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"
-    if os.path.lexists(appimage_symlink_path) and not os.path.exists(os.readlink(appimage_symlink_path)):
-        # We must call this separately from the test below as Python does not recognize a broken symlink as existing.
-        # Both tests should cover corner cases.
-        delete_symlink(appimage_symlink_path)
-    elif os.path.exists(appimage_symlink_path):
-        delete_symlink(appimage_symlink_path)
+    appimage_symlink_path = Path(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
+    delete_symlink(appimage_symlink_path)
 
     if confirm is True or confirm == 'yes':
         logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")
