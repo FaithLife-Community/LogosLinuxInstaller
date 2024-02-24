@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import List, Union
 from xml.etree import ElementTree as ET
 import tkinter as tk
-from tkinter import messagebox
 
 import config
 import msg
@@ -1098,23 +1097,35 @@ def compare_recommended_appimage_version():
     if config.WINE_EXE is not None:
         wine_release, error_message = wine.get_wine_release(config.WINE_EXE)
         if wine_release is not None and wine_release is not False:
-            current_version = f"{str(wine_release[0])}" + "." + f"{str(wine_release[1])}"
+            current_version = '.'.join([str(n) for n in wine_release[:2]])
             logging.debug(f"Current wine release: {current_version}")
 
-            if config.RECOMMENDED_WINE64_APPIMAGE_VERSION is not None and config.RECOMMENDED_WINE64_APPIMAGE_VERSION is not False:
-                logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")
-                if current_version < config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
-                    return 0, "yes"  # Current release is older than recommended
-                if current_version == config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
-                    return 1, "uptodate"  # Current release is latest
-                if current_version > config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
-                    return 2, "no"  # Installed version is custom
+            if config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
+                logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")  # noqa: E501
+                if current_version < config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
+                    # Current release is older than recommended.
+                    status = 0
+                    message = "yes"
+                elif current_version == config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
+                    # Current release is latest.
+                    status = 1
+                    message = "uptodate"
+                elif current_version > config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
+                    # Installed version is custom
+                    status = 2
+                    message = "no"
             else:
-                return False, f"Error 1: {error_message}"
+                status = False
+                message = f"Error 1: {error_message}"
         else:
-            return False, f"Error 0: {error_message}"
+            status = False
+            message = f"Error 0: {error_message}"
     else:
-        return False, "config.WINE_EXE is not set."
+        status = False
+        message = "config.WINE_EXE is not set."
+
+    logging.debug(f"{status=}; {message=}")
+    return status, message
 
 
 def is_appimage(file_path):
@@ -1229,14 +1240,15 @@ def find_wine_binary_files():
     return binaries
 
 
-def set_appimage_symlink():
+def set_appimage_symlink(app=None):
     # This function assumes make_skel() has been run once.
     if config.APPIMAGE_FILE_PATH is None:
-        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
+        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
 
-    if config.APPIMAGE_FILE_PATH == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:
+    logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
+    if config.APPIMAGE_FILE_PATH == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
         get_recommended_appimage()
-        selected_appimage_file_path = Path(config.APPDIR_BINDIR) / config.APPIMAGE_FILE_PATH
+        selected_appimage_file_path = Path(config.APPDIR_BINDIR) / config.APPIMAGE_FILE_PATH  # noqa: E501
     else:
         selected_appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
 
@@ -1244,19 +1256,25 @@ def set_appimage_symlink():
         logging.warning(f"Cannot use {selected_appimage_file_path}.")
         return
 
-    appimage_filename = os.path.basename(selected_appimage_file_path)
+    appimage_filename = selected_appimage_file_path.name
     appimage_filepath = Path(f"{config.APPDIR_BINDIR}/{appimage_filename}")
 
-    copy_message = f"Should the program copy {selected_appimage_file_path} to the {config.APPDIR_BINDIR} directory?"
+    copy_message = (
+        f"Should the program copy {selected_appimage_file_path} to the"
+        f" {config.APPDIR_BINDIR} directory?"
+    )
 
     # Determine if user wants their AppImage in the Logos on Linux bin dir.
-    if os.path.exists(appimage_filepath):
+    if appimage_filepath.exists():
         confirm = False
     else:
         if config.DIALOG == "tk":
+            # TODO: With the GUI this runs in a thread. It's not clear if the
+            # messagebox will work correctly. It may need to be triggered from
+            # here with an event and then opened from the main thread.
             tk_root = tk.Tk()
             tk_root.withdraw()
-            confirm = messagebox.askquestion("Confirmation", copy_message)
+            confirm = tk.messagebox.askquestion("Confirmation", copy_message)
             tk_root.destroy()
         elif config.DIALOG == "curses":
             confirm = tui.confirm("Confirmation", copy_message)
@@ -1267,30 +1285,35 @@ def set_appimage_symlink():
     appimage_symlink_path = Path(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
     delete_symlink(appimage_symlink_path)
 
+    # FIXME: confirm is always False b/c appimage_filepath always exists b/c
+    # it's copied in place via logos_reuse_download function above in
+    # get_recommended_appimage.
     if confirm is True or confirm == 'yes':
-        logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")
+        logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")  # noqa: E501
         shutil.copy(selected_appimage_file_path, f"{config.APPDIR_BINDIR}")
         os.symlink(appimage_filepath, appimage_symlink_path)
         config.SELECTED_APPIMAGE_FILENAME = f"{appimage_filename}"
     # If not, use the selected AppImage's full path for link creation.
     elif confirm is False or confirm == 'no':
-        logging.debug(f"{appimage_filepath} already exists in {config.APPDIR_BINDIR}. No need to copy.")
+        logging.debug(f"{appimage_filepath} already exists in {config.APPDIR_BINDIR}. No need to copy.")  # noqa: E501
         os.symlink(selected_appimage_file_path, appimage_symlink_path)
-        logging.debug(f"AppImage symlink updated.")
+        logging.debug("AppImage symlink updated.")
         config.SELECTED_APPIMAGE_FILENAME = f"{selected_appimage_file_path}"
-        logging.debug(f"Updated config with new AppImage path.")
+        logging.debug("Updated config with new AppImage path.")
     else:
         logging.error("Error getting user confirmation.")
 
     write_config(config.CONFIG_FILE)
+    if app:
+        app.root.event_generate("<<UpdateLatestAppImageButton>>")
 
 
 def update_to_latest_recommended_appimage():
-    config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
+    config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
     status, _ = compare_recommended_appimage_version()
     if status == 0:
         set_appimage_symlink()
     elif status == 1:
         logging.debug("The AppImage is already set to the latest recommended.")
     elif status == 2:
-        logging.debug("The AppImage version is newer than the latest recommended.")
+        logging.debug("The AppImage version is newer than the latest recommended.")  # noqa: E501

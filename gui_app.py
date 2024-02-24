@@ -456,20 +456,22 @@ class ControlWindow():
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        self.gui.update_appimage_button.config(command=self.set_update_to_latest_appimage)
-        self.gui.set_appimage_button.config(command=self.set_appimage)
-        if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":
-            self.gui.update_appimage_button.state(['disabled'])
-            gui.ToolTip(self.gui.update_appimage_button, "This button is disabled. The configured install was not created using an AppImage.")
+        self.gui.latest_appimage_button.config(
+            command=self.set_update_to_latest_appimage
+        )
+        if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
+            self.gui.latest_appimage_button.state(['disabled'])
+            gui.ToolTip(
+                self.gui.latest_appimage_button,
+                "This button is disabled. The configured install was not created using an AppImage."  # noqa: E501
+            )
             self.gui.set_appimage_button.state(['disabled'])
-            gui.ToolTip(self.gui.set_appimage_button, "This button is disabled. The configured install was not created using an AppImage.")
-        status, _ = utils.compare_recommended_appimage_version()
-        if status == 1:
-            self.gui.update_appimage_button.state(['disabled'])
-            gui.ToolTip(self.gui.update_appimage_button, "This button is disabled. The AppImage is already set to the latest recommended.")
-        elif status == 2:
-            self.gui.update_appimage_button.state(['disabled'])
-            gui.ToolTip(self.gui.update_appimage_button, "This button is disabled. The AppImage version is newer than the latest recommended.")
+            gui.ToolTip(
+                self.gui.set_appimage_button,
+                "This button is disabled. The configured install was not created using an AppImage."  # noqa: E501
+            )
+        self.update_latest_appimage_button()
+        self.gui.set_appimage_button.config(command=self.set_appimage)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.update_run_winetricks_button()
@@ -481,22 +483,33 @@ class ControlWindow():
         self.root.bind('<<ClearMessage>>', self.clear_message_text)
         self.root.bind('<<UpdateMessage>>', self.update_message_text)
         self.progress_q = Queue()
-        self.root.bind('<<StartIndeterminateProgress>>', self.start_indeterminate_progress)
-        self.root.bind('<<StopIndeterminateProgress>>', self.stop_indeterminate_progress)
-        self.root.bind('<<UpdateProgress>>', self.update_progress)
-        # FIXME: The followig event doesn't seem to be received in this window when
-        #`  generated in the installer window.
+        self.root.bind(
+            '<<StartIndeterminateProgress>>',
+            self.start_indeterminate_progress
+        )
+        self.root.bind(
+            '<<StopIndeterminateProgress>>',
+            self.stop_indeterminate_progress
+        )
+        self.root.bind(
+            '<<UpdateProgress>>',
+            self.update_progress
+        )
+        self.root.bind(
+            "<<UpdateLatestAppImageButton>>",
+            self.update_latest_appimage_button
+        )
+        # FIXME: The followig event doesn't seem to be received in this window
+        # when generated in the installer window.
         # self.root.bind('<<InstallFinished>>', self.update_app_button)
         # self.root.bind('<<CheckInstallProgress>>', self.update_app_button)
 
         # Start function to determine app logging state.
-        t = Thread(target=wine.get_app_logging_state, kwargs={'app': self, 'init': True})
         if utils.app_is_installed():
+            t = Thread(target=wine.get_app_logging_state, kwargs={'app': self, 'init': True})
             t.start()
             self.gui.messagevar.set('Getting current app logging status...')
-            self.gui.progress.state(['!disabled'])
-            self.gui.progress.start()
-
+            self.start_indeterminate_progress()
 
     def run_installer(self, evt=None):
         classname = "LogosLinuxInstaller"
@@ -567,15 +580,27 @@ class ControlWindow():
         return file_path
 
     def set_update_to_latest_appimage(self, evt=None):
-        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME
-        utils.set_appimage_symlink()
+        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+        self.start_indeterminate_progress()
+        self.gui.messagevar.set("Updating to latest AppImage...")
+        t = Thread(
+            target=utils.set_appimage_symlink,
+            kwargs={'app': self},
+            daemon=True,
+        )
+        t.start()
 
     def set_appimage(self, evt=None):
         appimage_filename = self.open_file_dialog("AppImage", "AppImage")
         if not appimage_filename:
             return
         config.SELECTED_APPIMAGE_FILENAME = appimage_filename
-        utils.set_appimage_symlink()
+        t = Thread(
+            target=utils.set_appimage_symlink,
+            kwargs={'app': self},
+            daemon=True,
+        )
+        t.start()
 
     def get_winetricks(self, evt=None):
         winetricks_status = installer.set_winetricks()
@@ -623,6 +648,23 @@ class ControlWindow():
         self.gui.app_button.state(['!disabled'])
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
 
+    def update_latest_appimage_button(self, evt=None):
+        status, reason = utils.compare_recommended_appimage_version()
+        msg = None
+        if status == 0:
+            state = '!disabled'
+        elif status == 1:
+            state = 'disabled'
+            msg = "This button is disabled. The AppImage is already set to the latest recommended."
+        elif status == 2:
+            state = 'disabled'
+            msg = "This button is disabled. The AppImage version is newer than the latest recommended."
+        if msg:
+            gui.ToolTip(self.gui.latest_appimage_button, msg)
+        self.clear_message_text()
+        self.stop_indeterminate_progress()
+        self.gui.latest_appimage_button.state([state])
+
     def update_run_winetricks_button(self, evt=None):
         if utils.file_exists(config.WINETRICKSBIN):
             state = '!disabled'
@@ -659,8 +701,9 @@ class ControlWindow():
 
     def stop_indeterminate_progress(self, evt=None):
         self.gui.progress.stop()
-        self.gui.progress.state(['!disabled'])
+        self.gui.progress.state(['disabled'])
         self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
 
 def control_panel_app():
     utils.set_debug()

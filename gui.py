@@ -185,8 +185,8 @@ class ControlGui(Frame):
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
         # AppImage buttons
-        self.update_appimage_label = Label(self, text="Update to Latest AppImage")
-        self.update_appimage_button = Button(self, text="Run")
+        self.latest_appimage_label = Label(self, text="Update to Latest AppImage")
+        self.latest_appimage_button = Button(self, text="Run")
         self.set_appimage_label = Label(self, text="Set AppImage")
         self.set_appimage_button = Button(self, text="Run")
         # Run winetricks
@@ -229,8 +229,8 @@ class ControlGui(Frame):
         self.backup_button.grid(column=1, row=8, sticky='w', pady=2)
         self.restore_button.grid(column=2, row=8, sticky='w', pady=2)
 
-        self.update_appimage_label.grid(column=0, row=9, sticky='w', pady=2)
-        self.update_appimage_button.grid(column=1, row=9, sticky='w', pady=2)
+        self.latest_appimage_label.grid(column=0, row=9, sticky='w', pady=2)
+        self.latest_appimage_button.grid(column=1, row=9, sticky='w', pady=2)
 
         self.set_appimage_label.grid(column=0, row=10, sticky='w', pady=2)
         self.set_appimage_button.grid(column=1, row=10, sticky='w', pady=2)
