@@ -1,5 +1,10 @@
 # Changelog
 
+- 4.0.0-alpha.3
+	- Fix #5 [T. H. Wright, N. Marti]
+	- Fix #49 [T. H. Wright]
+	- Fix #55 [T. H. Wright]
+	- General code clean up
 - 4.0.0-alpha.2
 	- Fix #3 [T. H. Wright]
 	- Fix #4 [T. H. Wright]
