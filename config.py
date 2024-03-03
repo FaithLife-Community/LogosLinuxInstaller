@@ -39,8 +39,8 @@ CUSTOMBINPATH = os.getenv('CUSTOMBINPATH')
 DEBUG = os.getenv('DEBUG', False)
 DELETE_LOG = os.getenv('DELETE_INSTALL_LOG', False)
 DIALOG = os.getenv('DIALOG')
-LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
-LOGOS_LOG = os.getenv('LOGOS_LOG', os.path.expanduser("~/.local/state/Logos_on_Linux/Logos_on_Linux.log"))
+LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
+LOGOS_LOG = os.getenv('LOGOS_LOG', os.path.expanduser("~/.local/state/Logos_on_Linux/Logos_on_Linux.log"))  # noqa: E501
 LOGOS_VERSION = os.getenv('LOGOS_VERSION')
 LOGOS64_MSI = os.getenv('LOGOS64_MSI')
 LOGOS64_URL = os.getenv('LOGOS64_URL')
@@ -55,7 +55,7 @@ WINETRICKS_UNATTENDED = os.getenv('WINETRICKS_UNATTENDED')
 ACTION = 'app'
 APPIMAGE_LINK_SELECTION_NAME = "selected_wine.AppImage"
 APPIMAGE_FILE_PATH = None
-DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")
+DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")  # noqa: E501
 GUI = None
 LOGOS_FORCE_ROOT = False
 LOGOS_ICON_FILENAME = None
@@ -74,9 +74,9 @@ LOGOS_GRAY = '#E7E7E7'
 LOGOS_WHITE = '#FCFCFC'
 VERBUM_PATH = None
 LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
-LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"
+LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"  # noqa: E501
 WINETRICKS_DOWNLOADER = "wget"
-WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"
+WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 REBOOT_REQUIRED = None
 
@@ -93,12 +93,15 @@ SUPERUSER_COMMAND = None
 persistent_config_keys = [
     "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "INSTALLDIR", "APPDIR",
     "APPDIR_BINDIR", "WINETRICKSBIN", "WINEPREFIX", "WINEBIN_CODE", "WINE_EXE",
-    "WINESERVER_EXE", "APPIMAGE_FILENAME", "WINECMD_ENCODING", "SELECTED_APPIMAGE_FILENAME",
-    "LOGOS_EXECUTABLE", "LOGOS_EXE", "LOGOS_DIR", "LOGS", "BACKUPDIR",
-    "RECOMMENDED_WINE64_APPIMAGE_FULL_URL", "RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME",
-    "RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION", "RECOMMENDED_WINE64_APPIMAGE_VERSION", "RECOMMENDED_WINE64_APPIMAGE_BRANCH",
-    "LAST_UPDATED"
+    "WINESERVER_EXE", "APPIMAGE_FILENAME", "WINECMD_ENCODING",
+    "SELECTED_APPIMAGE_FILENAME", "LOGOS_EXECUTABLE", "LOGOS_EXE", "LOGOS_DIR",
+    "LOGS", "BACKUPDIR", "RECOMMENDED_WINE64_APPIMAGE_FULL_URL",
+    "RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME",
+    "RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION",
+    "RECOMMENDED_WINE64_APPIMAGE_VERSION",
+    "RECOMMENDED_WINE64_APPIMAGE_BRANCH", "LAST_UPDATED",
 ]
+
 
 def get_config_file_dict(config_file_path):
     config_dict = {}
@@ -111,14 +114,14 @@ def get_config_file_dict(config_file_path):
                 config_dict[key] = value
             return config_dict
         except TypeError as e:
-            logging.error(f"Error opening Config file.")
+            logging.error("Error opening Config file.")
             logging.error(e)
             return None
         except FileNotFoundError:
             logging.info(f"No config file not found at {config_file_path}")
             return config_dict
         except json.JSONDecodeError as e:
-            logging.error(f"Config file could not be read.")
+            logging.error("Config file could not be read.")
             logging.error(e)
             return None
     elif config_file_path.endswith('.conf'):
@@ -127,18 +130,19 @@ def get_config_file_dict(config_file_path):
         with open(config_file_path, 'r') as config_file:
             for line in config_file:
                 line = line.strip()
-                if len(line) == 0: # skip blank lines
+                if len(line) == 0:  # skip blank lines
                     continue
-                if line[0] == '#': # skip commented lines
+                if line[0] == '#':  # skip commented lines
                     continue
                 parts = line.split('=')
                 if len(parts) == 2:
-                    value = parts[1].strip('"').strip("'") # remove quotes
-                    vparts = value.split('#') # get rid of potential comment after value
+                    value = parts[1].strip('"').strip("'")  # remove quotes
+                    vparts = value.split('#')  # get rid of potential comment
                     if len(vparts) > 1:
                         value = vparts[0].strip().strip('"').strip("'")
                     config_dict[parts[0]] = value
         return config_dict
+
 
 def set_config_env(config_file_path):
     config_dict = get_config_file_dict(config_file_path)
@@ -148,6 +152,7 @@ def set_config_env(config_file_path):
     logging.info(f"Setting {len(config_dict)} variables from config file.")
     for key, value in config_dict.items():
         globals()[key] = value
+
 
 def get_env_config():
     for var in globals().keys():
