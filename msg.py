@@ -3,6 +3,8 @@ import os
 import signal
 import sys
 
+from pathlib import Path
+
 import config
 
 
@@ -33,6 +35,11 @@ def initialize_logging(stderr_log_level):
         DEBUG       10      detailed, dev-level information
         NOTSET      0       all events are handled
     '''
+
+    # Ensure log file parent folders exist.
+    log_parent = Path(config.LOGOS_LOG).parent
+    if not log_parent.is_dir():
+        log_parent.mkdir(parents=True)
 
     # Define logging handlers.
     file_h = logging.FileHandler(config.LOGOS_LOG, encoding='UTF8')
