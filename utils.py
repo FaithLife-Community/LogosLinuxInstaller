@@ -78,14 +78,18 @@ class UrlProps(Props):
             self.headers = None
         logging.debug(f"Getting headers from {self.path}.")
         try:
-            h = {'Accept-Encoding': 'identity'}  # force non-compressed file transfer
+            h = {'Accept-Encoding': 'identity'}  # force non-compressed txfr
             r = requests.head(self.path, allow_redirects=True, headers=h)
+        except requests.exceptions.ConnectionError:
+            logging.critical("Failed to connect to the server.")
+            return None
         except Exception as e:
             logging.error(e)
             return None
         except KeyboardInterrupt:
             print()
             msg.logos_error("Interrupted by Ctrl+C")
+            return None
         self.headers = r.headers
         return self.headers
 
@@ -1018,23 +1022,22 @@ def get_latest_folder(folder_path):
 
 def get_latest_release_url(releases_url):
     data = net_get(releases_url)
+    if data:
+        try:
+            json_data = json.loads(data)
+            logging.debug(f"{json_data=}")
+        except json.JSONDecodeError as e:
+            logging.error(f"Error decoding JSON response: {e}")
+            return None
 
-    try:
-        json_data = json.loads(data)
-        logging.debug(f"{json_data=}")
-    except json.JSONDecodeError as e:
-        logging.error(f"Error decoding JSON response: {e}")
-        return None
-
-    if not isinstance(json_data, list) or len(json_data) == 0:
-        logging.error("Invalid or empty JSON response.")
-        return None
-
-    if json_data is not None:
-        release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
+        if not isinstance(json_data, list) or len(json_data) == 0:
+            logging.error("Invalid or empty JSON response.")
+            return None
     else:
         logging.critical("Could not get latest release URL.")
+        return None
 
+    release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
     logging.info(f"Release URL: {release_url}")
     return release_url
 
