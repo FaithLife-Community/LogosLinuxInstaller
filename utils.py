@@ -677,9 +677,11 @@ def get_logos_releases(q=None, app=None):
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
 
     response_xml = net_get(url)
-    if response_xml is None and None not in [q, app]:
-        q.put(None)
-        app.root.event_generate("<<ReleaseCheckProgress>>")
+    # if response_xml is None and None not in [q, app]:
+    if response_xml is None:
+        if None not in [q, app]:
+            q.put(None)
+            app.root.event_generate("<<ReleaseCheckProgress>>")
         return None
 
     # Parse XML
