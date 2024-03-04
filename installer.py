@@ -53,6 +53,8 @@ def get_logos_release_version():
     QUESTION_TEXT = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"
     if config.LOGOS_VERSION is None:
         releases = utils.get_logos_releases()
+        if releases is None:
+            msg.logos_error("Failed to fetch LOGOS_RELEASE_VERSION.")
         releases.append("Exit")
         logos_release_version = tui.menu(releases, TITLE, QUESTION_TEXT)
     else:
