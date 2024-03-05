@@ -84,12 +84,13 @@ class Root(Tk):
 
 
 class InstallerWindow():
-    def __init__(self, root, **kwargs):
+    def __init__(self, new_win, root, **kwargs):
         # Set root parameters.
+        self.win = new_win
         self.root = root
-        self.root.title("Faithlife Bible Software Installer")
-        self.root.resizable(False, False)
-        self.gui = gui.InstallerGui(self.root)
+        self.win.title("Faithlife Bible Software Installer")
+        self.win.resizable(False, False)
+        self.gui = gui.InstallerGui(self.win)
 
         # Initialize variables from ENV.
         self.wine_exe = config.WINE_EXE
@@ -345,7 +346,8 @@ class InstallerWindow():
         self.gui.okay_button.state(['disabled'])
         # self.messagevar.set('')
         if installer.check_existing_install():
-            self.root.destroy()
+            logging.debug(f"Install exists: {installer.check_existing_install()}")  # noqa: E501
+            self.win.destroy()
             return 1
         self.set_downloads()
         # Update desktop panel icon.
@@ -353,7 +355,7 @@ class InstallerWindow():
         self.root.event_generate("<<VerifyDownloads>>")
 
     def on_cancel_released(self, evt=None):
-        self.root.destroy()
+        self.win.destroy()
         return 1
 
     def start_verify_downloads_thread(self, evt=None):
@@ -509,9 +511,8 @@ class InstallerWindow():
             command=self.on_cancel_released,
         )
         self.gui.okay_button.state(['!disabled'])
-        # FIXME: doesn't seem to pass to control panel window:
-        # self.root.event_generate('<<InstallFinished>>')
-        self.root.destroy()
+        self.root.event_generate('<<InstallFinished>>')
+        self.win.destroy()
         return 0
 
 
@@ -523,11 +524,7 @@ class ControlWindow():
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
 
-        if utils.app_is_installed():
-            self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
-            self.gui.app_button.config(command=self.run_logos)
-        else:
-            self.gui.app_button.config(command=self.run_installer)
+        self.configure_app_button()
         self.gui.run_indexing_radio.config(
             command=self.on_action_radio_clicked
         )
@@ -593,9 +590,7 @@ class ControlWindow():
             "<<UpdateLatestAppImageButton>>",
             self.update_latest_appimage_button
         )
-        # FIXME: The followig event doesn't seem to be received in this window
-        # when generated in the installer window.
-        # self.root.bind('<<InstallFinished>>', self.update_app_button)
+        self.root.bind('<<InstallFinished>>', self.update_app_button)
         # self.root.bind('<<CheckInstallProgress>>', self.update_app_button)
 
         # Start function to determine app logging state.
@@ -608,10 +603,17 @@ class ControlWindow():
             self.gui.messagevar.set('Getting current app logging status...')
             self.start_indeterminate_progress()
 
+    def configure_app_button(self, evt=None):
+        if utils.app_is_installed():
+            self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
+            self.gui.app_button.config(command=self.run_logos)
+        else:
+            self.gui.app_button.config(command=self.run_installer)
+
     def run_installer(self, evt=None):
         classname = "LogosLinuxInstaller"
         self.new_win = Toplevel()
-        self.app = InstallerWindow(self.new_win, class_=classname)
+        InstallerWindow(self.new_win, self.root, class_=classname)
         self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
@@ -749,6 +751,7 @@ class ControlWindow():
     def update_app_button(self, evt=None):
         self.gui.app_button.state(['!disabled'])
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
+        self.configure_app_button()
 
     def update_latest_appimage_button(self, evt=None):
         status, reason = utils.compare_recommended_appimage_version()
