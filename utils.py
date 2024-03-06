@@ -313,7 +313,13 @@ def get_package_manager():
         config.SUPERUSER_COMMAND = "doas"
 
     # Check for package manager and associated packages
-    if shutil.which('apt') is not None:  # debian, ubuntu
+    if config.OS_NAME == 'nixos':
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ""
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ""
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ""
+        config.PACKAGES = ""
+        config.BADPACKAGES = ""
+    elif shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"  # IDEA: Switch to Python APT library? See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996
