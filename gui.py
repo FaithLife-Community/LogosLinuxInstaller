@@ -32,7 +32,7 @@ class InstallerGui(Frame):
         self.winetricksbin = config.WINETRICKSBIN
         if self.winetricksbin is None:
             self.sys_winetricks = utils.get_system_winetricks()
-            if self.sys_winetricks is not None and self.sys_winetricks[1] >= 20220411:
+            if self.sys_winetricks is not None and self.sys_winetricks[1] >= 20220411:  # noqa: E501
                 self.winetricksbin = f'System (v{self.sys_winetricks[1]})'
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
@@ -44,7 +44,7 @@ class InstallerGui(Frame):
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
         # product drop-down menu
-        self.productvar = StringVar()
+        self.productvar = StringVar(value='Choose product...')
         self.product_dropdown = Combobox(self, textvariable=self.productvar)
         self.product_dropdown.state(['readonly'])
         self.product_dropdown['values'] = ('Logos', 'Verbum')
@@ -52,19 +52,24 @@ class InstallerGui(Frame):
             self.product_dropdown.set(self.flproduct)
         # version drop-down menu
         self.versionvar = StringVar()
-        self.version_dropdown = Combobox(self, width=5, textvariable=self.versionvar)
+        self.version_dropdown = Combobox(
+            self,
+            width=5,
+            textvariable=self.versionvar
+        )
         self.version_dropdown.state(['readonly'])
         self.version_dropdown['values'] = ('9', '10')
+        self.versionvar.set(self.version_dropdown['values'][1])
         if self.targetversion in self.version_dropdown['values']:
             self.version_dropdown.set(self.targetversion)
 
         # Release row.
         self.release_label = Label(self, text="Release: ")
         # release drop-down menu
-        self.releasevar = StringVar()
+        self.releasevar = StringVar(value='Choose release...')
         self.release_dropdown = Combobox(self, textvariable=self.releasevar)
         self.release_dropdown.state(['readonly'])
-        self.release_dropdown['values'] = [] if self.logos_release_version is None else [self.logos_release_version]
+        self.release_dropdown['values'] = [] if self.logos_release_version is None else [self.logos_release_version]  # noqa: E501
         # release check button
         self.release_check_button = Button(self, text="Get Release List")
         self.release_check_button.state(['disabled'])
@@ -120,7 +125,13 @@ class InstallerGui(Frame):
         self.release_dropdown.grid(column=1, row=1, sticky='w', pady=2)
         self.release_check_button.grid(column=2, row=1, sticky='w', pady=2)
         self.wine_label.grid(column=0, row=2, sticky='w', pady=2)
-        self.wine_dropdown.grid(column=1, row=2, columnspan=3, sticky='we', pady=2)
+        self.wine_dropdown.grid(
+            column=1,
+            row=2,
+            columnspan=3,
+            sticky='we',
+            pady=2
+        )
         self.wine_check_button.grid(column=4, row=2, sticky='e', pady=2)
         self.tricks_label.grid(column=0, row=3, sticky='w', pady=2)
         self.tricks_dropdown.grid(column=1, row=3, sticky='we', pady=2)
@@ -132,8 +143,15 @@ class InstallerGui(Frame):
         self.okay_button.grid(column=4, row=5, sticky='e', pady=2)
         # Status area
         s1.grid(column=0, row=6, columnspan=5, sticky='we')
-        self.status_label.grid(column=0, row=7, columnspan=5, sticky='w', pady=2)
+        self.status_label.grid(
+            column=0,
+            row=7,
+            columnspan=5,
+            sticky='w',
+            pady=2
+        )
         self.progress.grid(column=0, row=8, columnspan=5, sticky='we', pady=2)
+
 
 class ControlGui(Frame):
     def __init__(self, root, *args, **kwargs):
@@ -152,8 +170,9 @@ class ControlGui(Frame):
         # Run/install app button
         self.app_buttonvar = StringVar()
         self.app_buttonvar.set("Install")
-        self.app_label = Label(self, text="FaithLife app") # FIXME: use app name if installed
-        self.app_button = Button(self, textvariable=self.app_buttonvar) # or Install
+        # FIXME: use app name if installed
+        self.app_label = Label(self, text="FaithLife app")
+        self.app_button = Button(self, textvariable=self.app_buttonvar)
 
         # Installed app actions
         # -> Run indexing, Remove library catalog, Remove all index files
@@ -161,14 +180,23 @@ class ControlGui(Frame):
         self.actionsvar = StringVar()
         self.actioncmd = None
         self.actions_label = Label(self, text="App actions: ")
-        self.run_indexing_radio = Radiobutton(self,
-            text="Run indexing", variable=self.actionsvar, value='run-indexing',
+        self.run_indexing_radio = Radiobutton(
+            self,
+            text="Run indexing",
+            variable=self.actionsvar,
+            value='run-indexing'
         )
-        self.remove_library_catalog_radio = Radiobutton(self,
-            text="Remove library catalog", variable=self.actionsvar, value='remove-library-catalog',
+        self.remove_library_catalog_radio = Radiobutton(
+            self,
+            text="Remove library catalog",
+            variable=self.actionsvar,
+            value='remove-library-catalog'
         )
-        self.remove_index_files_radio = Radiobutton(self,
-            text="Remove all index files", variable=self.actionsvar, value='remove-index-files',
+        self.remove_index_files_radio = Radiobutton(
+            self,
+            text="Remove all index files",
+            variable=self.actionsvar,
+            value='remove-index-files'
         )
         self.actions_button = Button(self, text="Run action")
         self.actions_button.state(['disabled'])
@@ -185,7 +213,10 @@ class ControlGui(Frame):
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
         # AppImage buttons
-        self.latest_appimage_label = Label(self, text="Update to Latest AppImage")
+        self.latest_appimage_label = Label(
+            self,
+            text="Update to Latest AppImage"
+        )
         self.latest_appimage_button = Button(self, text="Run")
         self.set_appimage_label = Label(self, text="Set AppImage")
         self.set_appimage_button = Button(self, text="Run")
@@ -204,7 +235,12 @@ class ControlGui(Frame):
         self.message_label = Label(self, textvariable=self.messagevar)
         # Progress bar
         self.progressvar = IntVar(value=0)
-        self.progress = Progressbar(self, mode='indeterminate', orient='horizontal', variable=self.progressvar)
+        self.progress = Progressbar(
+            self,
+            mode='indeterminate',
+            orient='horizontal',
+            variable=self.progressvar
+        )
         self.progress.state(['disabled'])
 
         # Place widgets.
@@ -214,11 +250,29 @@ class ControlGui(Frame):
         s1.grid(column=0, row=1, columnspan=3, sticky='we')
         self.actions_label.grid(column=0, row=2, sticky='e', padx=20, pady=2)
         self.actions_button.grid(column=0, row=4, sticky='e', padx=20, pady=2)
-        self.run_indexing_radio.grid(column=1, row=2, sticky='w', pady=2, columnspan=2)
-        self.remove_library_catalog_radio.grid(column=1, row=3, sticky='w', pady=2, columnspan=2)
-        self.remove_index_files_radio.grid(column=1, row=4, sticky='w', pady=2, columnspan=2)
+        self.run_indexing_radio.grid(
+            column=1,
+            row=2,
+            sticky='w',
+            pady=2,
+            columnspan=2
+        )
+        self.remove_library_catalog_radio.grid(
+            column=1,
+            row=3,
+            sticky='w',
+            pady=2,
+            columnspan=2
+        )
+        self.remove_index_files_radio.grid(
+            column=1,
+            row=4,
+            sticky='w',
+            pady=2,
+            columnspan=2
+        )
         s2.grid(column=0, row=5, columnspan=3, sticky='we')
-        
+
         self.config_label.grid(column=0, row=6, sticky='w', pady=2)
         self.config_button.grid(column=1, row=6, sticky='w', pady=2)
 
@@ -243,7 +297,13 @@ class ControlGui(Frame):
         self.logging_button.grid(column=1, row=12, sticky='w', pady=2)
 
         s3.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
+        self.message_label.grid(
+            column=0,
+            row=14,
+            columnspan=3,
+            sticky='we',
+            pady=2
+        )
         self.progress.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)
 
 
@@ -260,15 +320,24 @@ class ToolTip:
     def show_tooltip(self, event=None):
         if not self.tooltip_visible:
             x, y, _, _ = self.widget.bbox("insert")
-            x += self.widget.winfo_rootx() + self.widget.winfo_width() // 2 - 200
+            x += self.widget.winfo_rootx() + self.widget.winfo_width() // 2 - 200  # noqa: E501
             y += self.widget.winfo_rooty() - 25
 
             self.tooltip_window = Toplevel(self.widget)
             self.tooltip_window.wm_overrideredirect(True)
             self.tooltip_window.wm_geometry(f"+{x}+{y}")
 
-            label = Label(self.tooltip_window, text=self.text, justify="left", background="#eeeeee",
-                             relief="solid", padding=4, borderwidth=1, foreground="#000000", wraplength=192)
+            label = Label(
+                self.tooltip_window,
+                text=self.text,
+                justify="left",
+                background="#eeeeee",
+                relief="solid",
+                padding=4,
+                borderwidth=1,
+                foreground="#000000",
+                wraplength=192
+            )
             label.pack(ipadx=1)
 
             self.tooltip_visible = True

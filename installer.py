@@ -88,38 +88,59 @@ def choose_version():
 
 
 def logos_setup():
+    # Sets the following config:
+    #   - config.APPDIR
+    #   - config.APPDIR_BINDIR
+    #   - config.INSTALLDIR
+    #   - config.LOGOS_VERSION
+    #   - config.LOGOS64_MSI
+    #   - config.LOGOS64_URL
+    # Depends on the following config being set:
+    #   - config.FLPRODUCT
+    #   - config.LOGOS_RELEASE_VERSION
+    #   - config.TARGETVERSION
+    #   - config.VERBUM_PATH
+
+    # Ensure required input config is set.
+    logos_setup_input_vars = {
+        'FLPRODUCT': config.FLPRODUCT,
+        'LOGOS_RELEASE_VERSION': config.LOGOS_RELEASE_VERSION,
+        'TARGETVERSION': config.TARGETVERSION,
+        'VERBUM_PATH': config.VERBUM_PATH
+    }
+    for k, v in logos_setup_input_vars.items():
+        if not v:
+            # This check is for someone who runs an install from a config file.
+            error_msg = (f"{k} not set in config file.")
+            if k == 'FLPRODUCT':
+                error_msg += " Please update your config to specify either 'Logos' or 'Verbum'."  # noqa: E501
+            msg.logos_error(error_msg)
+
+    # Set LOGOS_VERSION.
+    config.LOGOS_VERSION = config.LOGOS_RELEASE_VERSION
+    # Set LOGOS64_MSI and LOGOS64_URL.
     if config.LOGOS64_URL is None or config.LOGOS64_URL == "":
         config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{config.TARGETVERSION}{config.VERBUM_PATH}Installer/{config.LOGOS_RELEASE_VERSION}/{config.FLPRODUCT}-x64.msi"  # noqa: E501
-
-    if config.FLPRODUCT == "Logos":
-        config.LOGOS_VERSION = config.LOGOS64_URL.split('/')[5]
-    elif config.FLPRODUCT == "Verbum":
-        config.LOGOS_VERSION = config.LOGOS64_URL.split('/')[6]
-    else:
-        # This check is for someone who runs an install from a config file.
-        msg.logos_error(
-            "FLPRODUCT not set in config. Please update your config to specify either 'Logos' or 'Verbum'.",  # noqa: E501
-            "",
-        )
-
     config.LOGOS64_MSI = os.path.basename(config.LOGOS64_URL)
-
+    # Set INSTALLDIR, APPDIR, and APPDIR_BINDIR.
     if config.INSTALLDIR is None:
         config.INSTALLDIR = f"{os.getenv('HOME')}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
     if config.APPDIR is None:
         config.APPDIR = f"{config.INSTALLDIR}/data"
     if config.APPDIR_BINDIR is None:
         config.APPDIR_BINDIR = f"{config.APPDIR}/bin"
-    variables = {
-        'config.FLPRODUCT': config.FLPRODUCT,
-        'config.FLPRODUCTi': config.FLPRODUCTi,
-        'config.LOGOS_VERSION': config.LOGOS_VERSION,
-        'config.INSTALLDIR': config.INSTALLDIR,
-        'config.APPDIR': config.APPDIR,
-        'config.APPDIR_BINDIR': config.APPDIR_BINDIR,
+
+    # Show logos_setup output config in debug output.
+    logos_setup_output_vars = {
+        'LOGOS_VERSION': config.LOGOS_VERSION,
+        'LOGOS64_MSI': config.LOGOS64_MSI,
+        'LOGOS64_URL': config.LOGOS64_URL,
+        'INSTALLDIR': config.INSTALLDIR,
+        'APPDIR': config.APPDIR,
+        'APPDIR_BINDIR': config.APPDIR_BINDIR,
     }
-    for k, v in variables.items():
-        logging.debug(f"{k}: {v}")
+    for k, v in logos_setup_output_vars.items():
+        logging.debug(f"confg.{k}: {v}")
 
 
 def choose_install_method():
