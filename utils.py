@@ -672,15 +672,15 @@ def filter_versions(versions, threshold, check_version_part):
     return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]
 
 
-def get_logos_releases(q=None, app=None):
-    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")
-    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
+def get_logos_releases(app=None):
+    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")  # noqa: E501
+    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
 
     response_xml = net_get(url)
     # if response_xml is None and None not in [q, app]:
     if response_xml is None:
-        if None not in [q, app]:
-            q.put(None)
+        if app:
+            app.release_q.put(None)
             app.root.event_generate("<<ReleaseCheckProgress>>")
         return None
 
@@ -706,8 +706,8 @@ def get_logos_releases(q=None, app=None):
     logging.debug(f"Available releases: {', '.join(releases)}")
     logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
-    if q is not None and app is not None:
-        q.put(filtered_releases)
+    if app:
+        app.release_q.put(filtered_releases)
         app.root.event_generate("<<ReleaseCheckProgress>>")
     return filtered_releases
 
