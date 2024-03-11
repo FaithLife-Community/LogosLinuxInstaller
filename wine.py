@@ -146,11 +146,11 @@ def check_wine_version_and_branch(TESTBINARY):
     return True, "None"
 
 
-def initializeWineBottle(app):
+def initializeWineBottle(app=None):
     msg.cli_msg(f"Initializing wine bottle...")
-    if app is not None:
-        app.install_q.put("Initializing wine bottle...")
-        app.root.event_generate("<<UpdateInstallText>>")
+    # if app is not None:
+    #     # app.install_q.put("Initializing wine bottle...")
+    #     # app.root.event_generate("<<UpdateInstallText>>")
 
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree=" # avoid wine-mono window
     run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])
@@ -179,7 +179,7 @@ def wine_reg_install(REG_FILE):
 def install_msi():
     msg.cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
-    exe_args = ["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"]
+    exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
         exe_args.append('/passive')
     logging.info(f"Running: {config.WINE_EXE} msiexec {' '.join(exe_args)}")
@@ -217,10 +217,10 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
         returncode = process.wait()
 
         if returncode != 0:
-            logging.error(f"Error 1 running {winecmd} {exe}: {process.returncode}")
+            logging.error(f"Error running '{' '.join(command)}': {process.returncode}")
 
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error 2 running {winecmd} {exe}: {e}")
+        logging.error(f"Exception running '{' '.join(command)}': {e}")
 
 
 def run_winetricks(cmd=None):
@@ -356,12 +356,22 @@ def get_wine_branch(binary):
 
 def get_wine_env():
     wine_env = os.environ.copy()
-    wine_env['WINE'] = config.WINE_EXE # used by winetricks
-    wine_env['WINE_EXE'] = config.WINE_EXE
-    wine_env['WINEDEBUG'] = config.WINEDEBUG
-    wine_env['WINEDLLOVERRIDES'] = config.WINEDLLOVERRIDES
-    wine_env['WINELOADER'] = config.WINE_EXE
-    wine_env['WINEPREFIX'] = config.WINEPREFIX
+    winepath = Path(config.WINE_EXE)
+    if winepath.name != 'wine64':  # AppImage
+        # Winetricks commands can fail if 'wine64' is not explicitly defined.
+        # https://github.com/Winetricks/winetricks/issues/2084#issuecomment-1639259359
+        winepath = winepath.parent / 'wine64'
+    wine_env_defaults = {
+        'WINE': str(winepath),
+        'WINE_EXE': config.WINE_EXE,
+        'WINEDEBUG': config.WINEDEBUG,
+        'WINEDLLOVERRIDES': config.WINEDLLOVERRIDES,
+        'WINELOADER': str(winepath),
+        'WINEPREFIX': config.WINEPREFIX,
+        'WINETRICKS_SUPER_QUIET': '',
+    }
+    for k, v in wine_env_defaults.items():
+        wine_env[k] = v
     if config.LOG_LEVEL > logging.INFO:
         wine_env['WINETRICKS_SUPER_QUIET'] = "1"
 
@@ -370,8 +380,9 @@ def get_wine_env():
     if cfg is not None:
         for key, value in cfg.items():
             if value is None:
-                continue # or value = ''?
-            wine_env[key] = value
+                continue  # or value = ''?
+            if key in wine_env_defaults.keys():
+                wine_env[key] = value
 
     return wine_env
 

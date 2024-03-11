@@ -15,10 +15,11 @@ from datetime import datetime
 from pathlib import Path
 
 import config
-import installer
+# import installer
 import msg
+import tui
 import utils
-import wine
+# import wine
 
 
 def edit_config():
@@ -235,5 +236,70 @@ def remove_library_catalog():
         except OSError as e:
             logging.error(f"Error removing {file_to_remove}: {e}")
 
-def get_winetricks():
-    installer.set_winetricks()
+
+def set_winetricks():
+    msg.cli_msg("Preparing winetricks…")
+    # Check if local winetricks version available; else, download it
+    if config.WINETRICKSBIN is None or not os.access(config.WINETRICKSBIN, os.X_OK):  # noqa: E501
+        local_winetricks_path = shutil.which('winetricks')
+        if local_winetricks_path is not None:
+            # Check if local winetricks version is up-to-date; if so, offer to
+            # use it or to download; else, download it.
+            local_winetricks_version = subprocess.check_output(["winetricks", "--version"]).split()[0]  # noqa: E501
+            if str(local_winetricks_version) >= "20220411":
+                if config.DIALOG == 'tk':
+                    logging.info("Setting winetricks to the local binary…")
+                    config.WINETRICKSBIN = local_winetricks_path
+                else:
+                    title = "Choose Winetricks"
+                    question_text = "Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that FLPRODUCT requires on Linux."  # noqa: E501
+
+                    options = [
+                        "1: Use local winetricks.",
+                        "2: Download winetricks from the Internet"
+                    ]
+                    winetricks_choice = tui.menu(options, title, question_text)
+
+                    logging.debug(f"winetricks_choice: {winetricks_choice}")
+                    if winetricks_choice.startswith("1"):
+                        logging.info("Setting winetricks to the local binary…")
+                        config.WINETRICKSBIN = local_winetricks_path
+                        return 0
+                    elif winetricks_choice.startswith("2"):
+                        download_winetricks()
+                        config.WINETRICKSBIN = os.path.join(
+                            config.APPDIR_BINDIR,
+                            "winetricks"
+                        )
+                        return 0
+                    else:
+                        msg.cli_msg("Installation canceled!")
+                        sys.exit(0)
+            else:
+                msg.cli_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")  # noqa: E501
+                download_winetricks()
+                config.WINETRICKSBIN = os.path.join(
+                    config.APPDIR_BINDIR,
+                    "winetricks"
+                )
+                return 0
+        else:
+            msg.cli_msg("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
+            download_winetricks()
+            config.WINETRICKSBIN = os.path.join(
+                config.APPDIR_BINDIR,
+                "winetricks"
+            )
+            return 0
+    return 0
+
+
+def download_winetricks():
+    msg.cli_msg("Downloading winetricks…")
+    appdir_bindir = f"{config.INSTALLDIR}/data/bin"
+    utils.logos_reuse_download(
+        config.WINETRICKS_URL,
+        "winetricks",
+        appdir_bindir
+    )
+    os.chmod(f"{appdir_bindir}/winetricks", 0o755)
