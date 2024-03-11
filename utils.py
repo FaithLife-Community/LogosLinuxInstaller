@@ -2,6 +2,7 @@ import atexit
 import stat
 
 import distro
+import glob
 import hashlib
 import json
 import logging
@@ -141,13 +142,26 @@ def set_default_config():
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
+    if config.INSTALLDIR:
+        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
+
+
+def set_runtime_config():
+    # Set runtime variables that are dependent on ones from config file.
+    if config.INSTALLDIR and not config.WINEPREFIX:
+        config.WINEPREFIX = f"{config.INSTALLDIR}/data/wine64_bottle"
+    if config.WINE_EXE and not config.WINESERVER_EXE:
+        bin_dir = Path(config.WINE_EXE).parent
+        config.WINESERVER_EXE = str(bin_dir / 'wineserver')
+    if config.FLPRODUCT and config.WINEPREFIX and not config.LOGOS_EXE:
+        config.LOGOS_EXE = find_installed_product()
 
 
 def write_config(config_file_path):
     logging.info(f"Writing config to {config_file_path}")
     os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
 
-    config_data = {key: config.__dict__.get(key) for key in config.persistent_config_keys}
+    config_data = {key: config.__dict__.get(key) for key in config.core_config_keys}
 
     try:
         with open(config_file_path, 'w') as config_file:
@@ -553,33 +567,6 @@ def delete_symlink(symlink_path):
             logging.error(f"Error removing symlink: {e}")
 
 
-def make_skel(app_image_filename):
-    config.SELECTED_APPIMAGE_FILENAME = f"{app_image_filename}"
-
-    logging.info(f"* Creating the skeleton for Logos inside {config.INSTALLDIR}")
-    os.makedirs(config.APPDIR_BINDIR, exist_ok=True)
-
-    # Making the links
-    current_dir = os.getcwd()
-    try:
-        os.chdir(config.APPDIR_BINDIR)
-    except OSError as e:
-        die(f"ERROR: Can't open dir: {config.APPDIR_BINDIR}: {e}")
-    if not os.path.islink(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}"):
-        os.symlink(config.SELECTED_APPIMAGE_FILENAME, f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")
-    for name in ["wine", "wine64", "wineserver"]:
-        if not os.path.islink(name):
-            os.symlink(config.APPIMAGE_LINK_SELECTION_NAME, name)
-    try:
-        os.chdir(current_dir)
-    except OSError as e:
-        die("ERROR: Can't go back to previous dir!: {e}")
-
-    os.makedirs(f"{config.APPDIR}/wine64_bottle", exist_ok=True)
-
-    logging.info("Finished creating the skeleton.")
-
-
 def steam_preinstall_dependencies():
     subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "disable"], check=True)
     subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
@@ -710,15 +697,29 @@ def filter_versions(versions, threshold, check_version_part):
 
 
 def get_logos_releases(app=None):
-    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}...")  # noqa: E501
-    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
+    # Use already-downloaded list if requested again.
+    downloaded_releases = None
+    if config.TARGETVERSION == '9' and config.LOGOS9_RELEASES:
+        downloaded_releases = config.LOGOS9_RELEASES
+    elif config.TARGETVERSION == '10' and config.LOGOS10_RELEASES:
+        downloaded_releases = config.LOGOS10_RELEASES
+    if downloaded_releases:
+        logging.debug(f"Using already-downloaded list of v{config.TARGETVERSION} releases")  # noqa: E501
+        if app:
+            app.releases_q.put(downloaded_releases)
+            app.root.event_generate(app.release_evt)
+        return downloaded_releases
+
+    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")
+    # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
+    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
 
     response_xml = net_get(url)
     # if response_xml is None and None not in [q, app]:
     if response_xml is None:
         if app:
-            app.release_q.put(None)
-            app.root.event_generate("<<ReleaseCheckProgress>>")
+            app.releases_q.put(None)
+            app.root.event_generate(app.release_evt)
         return None
 
     # Parse XML
@@ -744,8 +745,8 @@ def get_logos_releases(app=None):
     logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
     if app:
-        app.release_q.put(filtered_releases)
-        app.root.event_generate("<<ReleaseCheckProgress>>")
+        app.releases_q.put(filtered_releases)
+        app.root.event_generate(app.release_evt)
     return filtered_releases
 
 
@@ -778,51 +779,75 @@ def get_winebin_code_and_desc(binary):
     else:
         code = "Custom"
     desc = codes.get(code)
+    logging.debug(f"{binary} code & desc: {code}; {desc}")
     return code, desc
 
 
-def get_wine_options(appimages, binaries) -> Union[List[List[str]], List[str]]:
+def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], List[str]]:  # noqa: E501
+    logging.debug(f"{appimages=}")
+    logging.debug(f"{binaries=}")
     wine_binary_options = []
 
     # Add AppImages to list
     if config.TARGETVERSION != "9":
-        if config.DIALOG == "curses":
-            appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages] # [Code, File Path, Description]
-            wine_binary_options.append(
-                ["Recommended", # Code
-                 f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}', # File Path
-                f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"]) # Description
-            wine_binary_options.extend(appimage_entries)
-        elif config.DIALOG == 'tk':
+        if config.DIALOG == 'tk':
             wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")
             wine_binary_options.extend(appimages)
+        else:
+            appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # [Code, File Path, Description]
+            wine_binary_options.append([
+                "Recommended",  # Code
+                f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # File Path
+                f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # Description
+            ])
+            wine_binary_options.extend(appimage_entries)
 
-    sorted_binaries = sorted(set(binaries))
+    sorted_binaries = sorted(list(set(binaries)))
+    logging.debug(f"{sorted_binaries=}")
 
-    for binary in binaries:
-        WINEBIN_PATH = binary
-        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(binary)
+    for WINEBIN_PATH in sorted_binaries:
+        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(WINEBIN_PATH)
 
         # Create wine binary option array
-        if config.DIALOG == "curses":
-            wine_binary_options.append([WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION])
-        elif config.DIALOG == 'tk':
+        if config.DIALOG == 'tk':
             wine_binary_options.append(WINEBIN_PATH)
+        else:
+            wine_binary_options.append([WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION])
 
-    if config.DIALOG == "curses":
+    if config.DIALOG != 'tk':
         wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
 
+    logging.debug(f"{wine_binary_options=}")
+    if app:
+        app.wines_q.put(wine_binary_options)
+        app.root.event_generate(app.wine_evt)
     return wine_binary_options
 
 
-def get_system_winetricks():
-    try:
-        p = subprocess.run(['winetricks', '--version'], capture_output=True, text=True)
-        version = int(p.stdout.rstrip()[:8])
-        path = shutil.which('winetricks')
-        return (path, version)
-    except FileNotFoundError:
-        return None
+# def get_system_winetricks():
+#     try:
+#         p = subprocess.run(['winetricks', '--version'], capture_output=True, text=True)
+#         version = int(p.stdout.rstrip()[:8])
+#         path = shutil.which('winetricks')
+#         return (path, version)
+#     except FileNotFoundError:
+#         return None
+
+
+def get_winetricks_options():
+    local_winetricks_path = shutil.which('winetricks')
+    winetricks_options = ['Download']
+    if local_winetricks_path is not None:
+        # Check if local winetricks version is up-to-date.
+        cmd = ["winetricks", "--version"]
+        local_winetricks_version = subprocess.check_output(cmd).split()[0]
+        if str(local_winetricks_version) >= "20220411":
+            winetricks_options.insert(0, local_winetricks_path)
+        else:
+            logging.info("Local winetricks is too old.")
+    else:
+        logging.info("Local winetricks not found.")
+    return winetricks_options
 
 
 def get_pids_using_file(file_path, mode=None):
@@ -868,11 +893,15 @@ def wget(uri, target, q=None, app=None, evt=None):
 
 
 def net_get(url, target=None, app=None, evt=None, q=None):
+
     # TODO:
     # - Check available disk space before starting download
     logging.debug(f"Download source: {url}")
     logging.debug(f"Download destination: {target}")
     target = FileProps(target)  # sets path and size attribs
+    if app and target.path:
+        app.status_q.put(f"Downloading {target.path.name}…")  # noqa: E501
+        app.root.event_generate('<<UpdateStatus>>')
     parsed_url = urlparse(url)
     domain = parsed_url.netloc  # Gets the requested domain
     url = UrlProps(url)  # uses requests to set headers, size, md5 attribs
@@ -904,7 +933,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
             else:
                 headers['Range'] = f'bytes={local_size}-'
 
-    logging.debug(f"{chunk_size = }; {file_mode = }; {headers = }")
+    logging.debug(f"{chunk_size=}; {file_mode=}; {headers=}")
 
     # Log download type.
     if 'Range' in headers.keys():
@@ -954,7 +983,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                                 q.put(percent)
     except requests.exceptions.RequestException as e:
         logging.error(f"Error occurred during HTTP request: {e}")
-        return None, r  # Return None values to indicate an error condition
+        return None  # Return None values to indicate an error condition
     except Exception as e:
         msg.logos_error(e)
     except KeyboardInterrupt:
@@ -963,6 +992,10 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
+    if app:
+        app.root.event_generate('<<StartIndeterminateProgress>>')
+        app.status_q.put(f"Verifying {file_path}…")
+        app.root.event_generate('<<UpdateStatus>>')
     res = False
     msg = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
@@ -973,10 +1006,10 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
             msg = f"{file_path} is verified."
             res = True
     logging.info(msg)
-    if None in [app, evt]:
-        return res
-    app.check_q.put((evt, res))
-    app.root.event_generate(evt)
+    if app and evt:
+        app.check_q.put((evt, res))
+        app.root.event_generate(evt)
+    return res
 
 
 def same_md5(url, file_path):
@@ -1013,9 +1046,22 @@ def write_progress_bar(percent, screen_width=80):
 def app_is_installed():
     return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)
 
+
+def find_installed_product():
+    if config.FLPRODUCT and config.WINEPREFIX:
+        exes = []
+        for e in glob.glob(
+            f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe",
+            recursive=True
+        ):
+            if 'Pending' not in e:
+                exes.append(e)
+        return exes[0] if exes else None
+
+
 def log_current_persistent_config():
     logging.debug("Current persistent config:")
-    for k in config.persistent_config_keys:
+    for k in config.core_config_keys:
         logging.debug(f"{k}: {config.__dict__.get(k)}")
 
 def enough_disk_space(dest_dir, bytes_required):
@@ -1109,14 +1155,14 @@ def set_logoslinuxinstaller_latest_release_config():
 
 def set_recommended_appimage_config():
     releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
-    json_data = get_latest_release_data(releases_url)
-    appimage_url = get_latest_release_url(json_data)
-    if appimage_url is None:
-        logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
-        return
-    config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
-    config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
-    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
+    if not config.RECOMMENDED_WINE64_APPIMAGE_URL:
+        json_data = get_latest_release_data(releases_url)
+        appimage_url = get_latest_release_url(json_data)
+        if appimage_url is None:
+            logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
+            return
+        config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(config.RECOMMENDED_WINE64_APPIMAGE_URL)  # noqa: E501
     config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
     # Getting version and branch rely on the filename having this format:
     #   wine-[branch]_[version]-[arch]
@@ -1155,12 +1201,15 @@ def check_for_updates():
 
 def get_recommended_appimage():
     wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)
-    appdir_bindir = Path(config.APPDIR_BINDIR)
-    dest_path = appdir_bindir / wine64_appimage_full_filename
+    dest_path = Path(config.APPDIR_BINDIR) / wine64_appimage_full_filename
     if dest_path.is_file():
         return
     else:
-        logos_reuse_download(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME, config.APPDIR_BINDIR)
+        logos_reuse_download(
+            config.RECOMMENDED_WINE64_APPIMAGE_URL,
+            config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME,
+            config.APPDIR_BINDIR
+        )
 
 
 def compare_logos_linux_installer_version():
@@ -1272,7 +1321,7 @@ def check_appimage(file):
     if file is None:
         logging.error(f"check_appimage: received None for file.")
         return False
-    
+
     file_path=Path(file)
 
     appimage, appimage_type = is_appimage(file_path)
@@ -1289,12 +1338,12 @@ def check_appimage(file):
         return False
 
 
-def find_appimage_files():
+def find_appimage_files(app=None):
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",
         config.APPDIR_BINDIR,
-        get_user_downloads_dir()
+        config.MYDOWNLOADS
     ]
     if config.CUSTOMBINPATH is not None:
         directories.append(config.CUSTOMBINPATH)
@@ -1311,6 +1360,10 @@ def find_appimage_files():
                     appimages.append(str(p))
                 else:
                     logging.info(f"AppImage file {p} not added: {output2}")
+
+    if app:
+        app.appimage_q.put(appimages)
+        app.root.event_generate(app.appimage_evt)
 
     return appimages
 
@@ -1354,22 +1407,20 @@ def find_wine_binary_files():
 
 def set_appimage_symlink(app=None):
     # This function assumes make_skel() has been run once.
-    if config.APPIMAGE_FILE_PATH is None:
-        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+    # if config.APPIMAGE_FILE_PATH is None:
+    #     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
 
-    logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
-    if config.APPIMAGE_FILE_PATH == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
-        get_recommended_appimage()
-        selected_appimage_file_path = Path(config.APPDIR_BINDIR) / config.APPIMAGE_FILE_PATH  # noqa: E501
-    else:
-        selected_appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
+    # logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
+    # if config.APPIMAGE_FILE_PATH == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
+    #     get_recommended_appimage()
+    #     selected_appimage_file_path = Path(config.APPDIR_BINDIR) / config.APPIMAGE_FILE_PATH  # noqa: E501
+    # else:
+    #     selected_appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
+    selected_appimage_file_path = Path(config.SELECTED_APPIMAGE_FILENAME)
 
     if not check_appimage(selected_appimage_file_path):
         logging.warning(f"Cannot use {selected_appimage_file_path}.")
         return
-
-    appimage_filename = selected_appimage_file_path.name
-    appimage_filepath = Path(f"{config.APPDIR_BINDIR}/{appimage_filename}")
 
     copy_message = (
         f"Should the program copy {selected_appimage_file_path} to the"
@@ -1377,7 +1428,7 @@ def set_appimage_symlink(app=None):
     )
 
     # Determine if user wants their AppImage in the Logos on Linux bin dir.
-    if appimage_filepath.exists():
+    if selected_appimage_file_path.exists():
         confirm = False
     else:
         if config.DIALOG == "tk":
@@ -1388,10 +1439,8 @@ def set_appimage_symlink(app=None):
             tk_root.withdraw()
             confirm = tk.messagebox.askquestion("Confirmation", copy_message)
             tk_root.destroy()
-        elif config.DIALOG == "curses":
-            confirm = tui.confirm("Confirmation", copy_message)
         else:
-            confirm = msg.cli_question(copy_message)
+            confirm = tui.confirm("Confirmation", copy_message)
     # FIXME: What if user cancels the confirmation dialog?
 
     appimage_symlink_path = Path(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
@@ -1400,14 +1449,15 @@ def set_appimage_symlink(app=None):
     # FIXME: confirm is always False b/c appimage_filepath always exists b/c
     # it's copied in place via logos_reuse_download function above in
     # get_recommended_appimage.
+    appimage_filename = selected_appimage_file_path.name
     if confirm is True or confirm == 'yes':
         logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")  # noqa: E501
         shutil.copy(selected_appimage_file_path, f"{config.APPDIR_BINDIR}")
-        os.symlink(appimage_filepath, appimage_symlink_path)
+        os.symlink(selected_appimage_file_path, appimage_symlink_path)
         config.SELECTED_APPIMAGE_FILENAME = f"{appimage_filename}"
     # If not, use the selected AppImage's full path for link creation.
     elif confirm is False or confirm == 'no':
-        logging.debug(f"{appimage_filepath} already exists in {config.APPDIR_BINDIR}. No need to copy.")  # noqa: E501
+        logging.debug(f"{selected_appimage_file_path} already exists in {config.APPDIR_BINDIR}. No need to copy.")  # noqa: E501
         os.symlink(selected_appimage_file_path, appimage_symlink_path)
         logging.debug("AppImage symlink updated.")
         config.SELECTED_APPIMAGE_FILENAME = f"{selected_appimage_file_path}"
@@ -1442,3 +1492,17 @@ def update_to_latest_recommended_appimage():
         logging.debug("The AppImage is already set to the latest recommended.")
     elif status == 2:
         logging.debug("The AppImage version is newer than the latest recommended.")  # noqa: E501
+
+
+def get_downloaded_file_path(filename):
+    dirs = [
+        config.MYDOWNLOADS,
+        Path.home(),
+        Path.cwd(),
+    ]
+    for d in dirs:
+        file_path = Path(d) / filename
+        if file_path.is_file():
+            logging.info(f"'{filename}' exists in {str(d)}.")
+            return str(file_path)
+    logging.debug(f"File not found: {filename}")
