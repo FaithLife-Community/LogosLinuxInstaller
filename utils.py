@@ -645,8 +645,11 @@ def check_libs(libraries):
 
 
 def check_dependencies():
-    targetversion = int(config.TARGETVERSION)
-    logging.info(f"Checking Logos {str(targetversion)} dependencies")
+    if config.TARGETVERSION:
+        targetversion = int(config.TARGETVERSION)
+    else:
+        targetversion = 10
+    logging.info(f"Checking Logos {str(targetversion)} dependencies…")
     if targetversion == 10:
         install_dependencies(config.PACKAGES, config.BADPACKAGES)
     elif targetversion == 9:
