@@ -73,6 +73,7 @@ def update_log_level(new_level):
 
 def cli_msg(message, end='\n'):
     '''Prints message to stdout regardless of log level.'''
+    logging.debug(message)
     print(message, end=end)
 
 

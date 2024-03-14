@@ -266,6 +266,7 @@ def main():
 
     # Update config based on environment variables.
     config.get_env_config()
+    utils.set_runtime_config()
     # Update terminal log level if set in environment and changed from current level.
     if config.VERBOSE:
         config.LOG_LEVEL = logging.VERBOSE

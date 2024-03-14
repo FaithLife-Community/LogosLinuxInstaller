@@ -26,7 +26,6 @@ Install steps:
   - run MSI installer
 '''
 
-import glob
 import logging
 import os
 import re
@@ -43,7 +42,11 @@ import wine
 
 
 def ensure_product_choice(app=None):
-    logging.debug('Ensure product_choice ->')
+    config.INSTALL_STEPS_COUNT += 1
+    config.INSTALL_STEP += 1
+    text = "Ensuring product choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.FLPRODUCT')
     logging.debug('- config.FLPRODUCTi')
     logging.debug('- config.VERBUM_PATH')
@@ -78,9 +81,14 @@ def ensure_product_choice(app=None):
 
 
 def ensure_version_choice(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_product_choice(app=app)
-    logging.debug('Ensure version choice ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring version choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.TARGETVERSION')
+
     if not config.TARGETVERSION:
         TITLE = "Choose Product Version"
         QUESTION_TEXT = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
@@ -99,8 +107,12 @@ def ensure_version_choice(app=None):
 
 
 def ensure_install_dirs(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_version_choice(app=app)
-    logging.debug('Ensure installation directories ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring installation directories…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.INSTALLDIR')
     logging.debug('- config.WINEPREFIX')
     logging.debug('- data/bin')
@@ -123,9 +135,14 @@ def ensure_install_dirs(app=None):
 
 
 def ensure_release_choice(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_install_dirs(app=app)
-    logging.debug('Ensure release choice ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring release choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.LOGOS_RELEASE_VERSION')
+
     if not config.LOGOS_RELEASE_VERSION:
         TITLE = f"Choose {config.FLPRODUCT} {config.TARGETVERSION} Release"
         QUESTION_TEXT = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
@@ -144,41 +161,55 @@ def ensure_release_choice(app=None):
     logging.debug(f"> {config.LOGOS_RELEASE_VERSION=}")
 
 
-def ensure_wine_executable_choice(app=None):
+def ensure_wine_choice(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_release_choice(app=app)
-    logging.debug('Ensure wine executable choice ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring wine executable choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.SELECTED_APPIMAGE_FILENAME')
     logging.debug('- config.WINE_EXE')
     logging.debug('- config.WINEBIN_CODE')
 
     if config.WINE_EXE is None:
+        # Set relevant config based on up-to-date details from URL.
+        utils.set_recommended_appimage_config()
+
         logging.info("Creating binary list.")
         TITLE = "Choose Wine Binary"
-        QUESTION_TEXT = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.LOGOS_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"  # temp
+        QUESTION_TEXT = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.LOGOS_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
         WINEBIN_OPTIONS = utils.get_wine_options(
             utils.find_appimage_files(),
             utils.find_wine_binary_files()
         )
-        del config.APPDIR_BINDIR
 
         installation_choice = tui.menu(WINEBIN_OPTIONS, TITLE, QUESTION_TEXT)
         config.WINEBIN_CODE = installation_choice[0]
         config.WINE_EXE = installation_choice[1]
-        if config.WINEBIN_CODE in ("Recommended", "AppImage"):
-            config.SELECTED_APPIMAGE_FILENAME = installation_choice[1]
-        elif config.WINEBIN_CODE == "Exit":
+        if config.WINEBIN_CODE == "Exit":
             msg.logos_error("Exiting installation.", "")
+
+    # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
+    if config.WINE_EXE.lower().endswith('.appimage'):
+        config.SELECTED_APPIMAGE_FILENAME = config.WINE_EXE
+    if not config.WINEBIN_CODE:
+        config.WINEBIN_CODE = utils.get_winebin_code_and_desc(config.WINE_EXE)[0]  # noqa: E501
 
     logging.debug(f"> {config.SELECTED_APPIMAGE_FILENAME=}")
     logging.debug(f"> {config.WINEBIN_CODE=}")
     logging.debug(f"> {config.WINE_EXE=}")
 
 
-def ensure_winetricks_exectuable_choice(app=None):
-    ensure_wine_executable_choice(app=app)
-    logging.debug('Ensure winetricks executable choice ->')
+def ensure_winetricks_choice(app=None):
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_wine_choice(app=app)
+    config.INSTALL_STEP += 1
+    text = "Ensuring winetricks executable choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.WINETRICKSBIN')
+
     # Check if local winetricks version available; else, download it.
     if config.WINETRICKSBIN is None:
         msg.cli_msg("Preparing winetricks…")
@@ -186,6 +217,7 @@ def ensure_winetricks_exectuable_choice(app=None):
         if local_winetricks_path is not None:
             # Check if local winetricks version is up-to-date; if so, offer to
             # use it or to download; else, download it.
+            msg.cli_msg(f"Checking {local_winetricks_path} version…")
             cmd = ["winetricks", "--version"]
             local_winetricks_version = subprocess.check_output(cmd).split()[0]
             if str(local_winetricks_version) >= "20220411":
@@ -220,31 +252,41 @@ def ensure_winetricks_exectuable_choice(app=None):
 
 
 def ensure_install_fonts_choice(app=None):
-    ensure_winetricks_exectuable_choice(app=app)
-    logging.debug('Ensure install fonts choice ->')
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_winetricks_choice(app=app)
+    config.INSTALL_STEP += 1
+    text = "Ensuring install fonts choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.SKIP_FONTS')
+
     logging.debug(f"> {config.SKIP_FONTS=}")
 
 
 def ensure_check_sys_deps_choice(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_install_fonts_choice(app=app)
-    logging.debug('Ensure check system dependencies choice ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring check system dependencies choice…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.SKIP_DEPENDENCIES')
+
     logging.debug(f"> {config.SKIP_DEPENDENCIES=}")
 
 
-def ensure_install_config(app=None):
+def ensure_installation_config(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_check_sys_deps_choice(app=app)
-    logging.debug('Ensure installation config ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring installation config is set…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.LOGOS_ICON_URL')
     logging.debug('- config.LOGOS_ICON_FILENAME')
     logging.debug('- config.LOGOS_VERSION')
     logging.debug('- config.LOGOS64_MSI')
     logging.debug('- config.LOGOS64_URL')
-    # logging.debug('- config.MYDOWNLOADS')
-
-    # FIXME: Set MYDOWNLOADS folder.
-    # config.MYDOWNLOADS = utils.get_user_downloads_dir()
 
     # Set icon variables.
     if config.LOGOS_ICON_URL is None:
@@ -268,9 +310,15 @@ def ensure_install_config(app=None):
 
 
 def ensure_sys_deps(app=None):
-    ensure_install_config(app=app)
-    logging.debug('Ensure system dependencies')
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_installation_config(app=app)
+    config.INSTALL_STEP += 1
+    text = "Ensuring system dependencies are met…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
+
     if not config.SKIP_DEPENDENCIES:
+        utils.get_package_manager()
         utils.check_dependencies()
         logging.debug("> Done.")
     else:
@@ -278,8 +326,12 @@ def ensure_sys_deps(app=None):
 
 
 def ensure_wine_executables(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_sys_deps(app=app)
-    logging.debug('Ensure wine executables->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring wine executables are available…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- config.WINESERVER_EXE')
     logging.debug('- wine')
     logging.debug('- wine64')
@@ -289,29 +341,36 @@ def ensure_wine_executables(app=None):
     os.environ['PATH'] = f"{config.INSTALLDIR}/data/bin:{os.getenv('PATH')}"
 
     # Ensure AppImage symlink.
-    appimage_link = Path(f"{config.INSTALLDIR}/data/bin/selected_wine.AppImage")  # noqa: E501
+    appimage_link = Path(f"{config.INSTALLDIR}/data/bin/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
     if not os.access(config.WINE_EXE, os.X_OK):
-        if config.WINEBIN_CODE.startswith("Recommended"):
-            appimage_filename = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+        # if config.WINEBIN_CODE.startswith("Recommended"):
+        #     appimage_filename = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+        #     utils.set_appimage_symlink()
+        #     os.chmod(f"{config.APPDIR_BINDIR}/{appimage_filename}", 0o755)
+        # elif config.WINEBIN_CODE.startswith("AppImage"):
+        #     appimage_filename = config.SELECTED_APPIMAGE_FILENAME
+        #     utils.set_appimage_symlink()
+        #     os.chmod(f"{config.APPDIR_BINDIR}/{appimage_filename}", 0o755)
+        if config.WINEBIN_CODE in ['AppImage', 'Recommended']:
+            appimage_filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
+            if not config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:
+                utils.set_recommended_appimage_config()
+            utils.get_recommended_appimage()
             utils.set_appimage_symlink()
-            os.chmod(f"{config.APPDIR_BINDIR}/{appimage_filename}", 0o755)
-        elif config.WINEBIN_CODE.startswith("AppImage"):
-            appimage_filename = config.SELECTED_APPIMAGE_FILENAME
-            utils.set_appimage_symlink()
-            os.chmod(f"{config.APPDIR_BINDIR}/{appimage_filename}", 0o755)
+            os.chmod(f"{config.INSTALLDIR}/data/bin/{appimage_filename}", 0o755)  # noqa: E501
         elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:  # noqa: E501
             appimage_filename = "none.AppImage"
         else:
             msg.logos_error("WINEBIN_CODE error. Installation canceled!")
 
         appimage_link.unlink(missing_ok=True)  # remove & replace
-        appimage_link.symlink_to(f"{config.INSTALLDIR}/data/bin/{appimage_filename}")  # noqa: E501
+        appimage_link.symlink_to(f"./{appimage_filename}")  # noqa: E501
 
     # Ensure wine executables symlinks.
     for name in ["wine", "wine64", "wineserver"]:
         p = Path(f"{config.INSTALLDIR}/data/bin/{name}")
         p.unlink(missing_ok=True)
-        p.symlink_to(appimage_link)
+        p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
 
     # Set WINESERVER_EXE.
     config.WINESERVER_EXE = f"{config.INSTALLDIR}/data/bin/wineserver"
@@ -323,8 +382,13 @@ def ensure_wine_executables(app=None):
 
 
 def ensure_winetricks_executable(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_wine_executables(app=app)
-    logging.debug('Ensure winetricks executable')
+    config.INSTALL_STEP += 1
+    text = "Ensuring winetricks executable is available…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
+
     if not os.access(config.WINETRICKSBIN, os.X_OK):
         Path(config.WINETRICKSBIN).unlink(missing_ok=True)
         # The choice of System winetricks was made previously. Here we are only
@@ -337,14 +401,19 @@ def ensure_winetricks_executable(app=None):
 
 
 def ensure_product_installer(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_winetricks_executable(app=app)
-    logging.debug('Ensure product installer is downloaded')
+    config.INSTALL_STEP += 1
+    text = "Ensuring product installer is downloaded…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
+
     # This VAR is used to verify the downloaded MSI is latest
     config.LOGOS_EXECUTABLE = f"{config.FLPRODUCT}_v{config.LOGOS_VERSION}-x64.msi"  # noqa: E501
     installer = Path(f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}")
     if not installer.is_file():
         # Getting {FLPRODUCT} Bible.
-        logging.info(f"Installing {config.FLPRODUCT}Bible 64bits…")
+        msg.cli_msg(f"Ensuring {config.FLPRODUCT}Bible 64bits is available…")
         utils.logos_reuse_download(
             config.LOGOS64_URL,
             config.LOGOS_EXECUTABLE,
@@ -354,17 +423,26 @@ def ensure_product_installer(app=None):
 
 
 def ensure_wineprefix_init(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_product_installer(app=app)
-    logging.debug('Ensure wineprefix is initialized')
+    config.INSTALL_STEP += 1
+    text = "Ensuring wineprefix is initialized…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
+
     init_file = Path(f"{config.WINEPREFIX}/system.reg")
     if not init_file.is_file():
-        wine.initializeWineBottle
+        wine.initializeWineBottle()
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 
 def ensure_winetricks_applied(app=None):
+    config.INSTALL_STEPS_COUNT += 1
     ensure_wineprefix_init(app=app)
-    logging.debug('Ensure winetricks & other settings have been applied ->')
+    config.INSTALL_STEP += 1
+    text = "Ensuring winetricks & other settings are applied…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
     logging.debug('- disable winemenubuilder')
     logging.debug('- settings renderer=gdi')
     logging.debug('- corefonts')
@@ -374,7 +452,7 @@ def ensure_winetricks_applied(app=None):
 
     usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
     sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-    if not usr_reg.exists() or not grep(r'"winemenubuilder.exe"=""', usr_reg):  # noqa: E501
+    if not grep(r'"winemenubuilder.exe"=""', usr_reg):
         reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
         with open(reg_file, 'w') as f:
             f.write(r'''REGEDIT4
@@ -384,15 +462,13 @@ def ensure_winetricks_applied(app=None):
 ''')
         wine.wine_reg_install(reg_file)
 
-    if not usr_reg.exists() or not grep(r'"renderer"="gdi"', usr_reg):
+    if not grep(r'"renderer"="gdi"', usr_reg):
         wine.winetricks_install("-q", "settings", "renderer=gdi")
 
-    if not config.SKIP_FONTS and (
-        not usr_reg.exists() or not grep(r'"Tahoma', usr_reg)
-    ):
+    if not config.SKIP_FONTS and not grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
         wine.installFonts()
 
-    if not usr_reg.exists() or not grep(r'"\*d3dcompiler_47"="native"', usr_reg):  # noqa: E501
+    if not grep(r'"\*d3dcompiler_47"="native"', usr_reg):  # noqa: E501
         wine.installD3DCompiler()
 
     if not grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
@@ -404,14 +480,17 @@ def ensure_winetricks_applied(app=None):
 
 
 def ensure_product_installed(app=None):
-    testing_setup()
+    config.INSTALL_STEPS_COUNT += 1
     ensure_winetricks_applied(app=app)
-    logging.debug('Ensure product is installed')
-    if not find_installed_product():
-        config.APPDIR = f"{config.INSTALLDIR}/data"  # temp
+    config.INSTALL_STEP += 1
+    text = "Ensuring product is installed…"
+    m = get_message_str(text)
+    msg.cli_msg(m)
+
+    if not utils.find_installed_product():
         wine.install_msi()
-        del config.APPDIR
-    logging.debug(f"> Product path: {find_installed_product()}")
+        config.LOGOS_EXE = utils.find_installed_product()
+    logging.debug(f"> Product path: {config.LOGOS_EXE}")
 
 
 def grep(regexp, filepath):
@@ -428,18 +507,28 @@ def grep(regexp, filepath):
     return found
 
 
-def find_installed_product():
-    exes = []
-    for e in glob.glob(
-        f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe",
-        recursive=True
-    ):
-        if 'Pending' not in e:
-            exes.append(e)
-    return exes[0] if exes else None
+def get_progress_pct(current, total):
+    return round(current * 100 / total)
 
 
-def testing_setup():
-    config.CONFIG_FILE = '/home/nate/.config/Logos_on_Linux/alt_installer_test.json'  # noqa: E501
-    config.set_config_env(config.CONFIG_FILE)
+def get_progress_str(percent):
+    length = 20
+    part_done = round(percent * length / 100)
+    part_left = length - part_done
+    return f"Installer: [{'*' * part_done}{'-' * part_left}]"
+
+
+def get_message_str(text):
+    pct = get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+    return f"{get_progress_str(pct)} {text}"
+
+
+def setup():
+    # config.set_config_env(config.CONFIG_FILE)
     config.DIALOG = 'curses'
+    config.FLPRODUCT = 'Logos'
+    config.TARGETVERSION = '10'
+    config.LOGOS_RELEASE_VERSION = '29.1.0.0022'
+    config.WINE_EXE = '/home/nate/LogosBible10/data/bin/wine-devel_8.19-x86_64.AppImage'  # noqa: E501
+    config.WINETRICKSBIN = '/usr/bin/winetricks'
+    config.CONFIG_FILE = '/home/nate/.config/Logos_on_Linux/alt_installer_test.json'  # noqa: E501
