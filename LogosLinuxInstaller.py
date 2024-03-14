@@ -303,7 +303,7 @@ def main():
     utils.self_update()
 
     # Check if app is installed.
-    install_not_required = [ 'remove_install_dir', 'utils.check_dependencies', 'update_to_latest_recommended_appimage', 'set_appimage_symlink' ]
+    install_not_required = [ 'remove_install_dir', 'check_dependencies', 'update_to_latest_recommended_appimage', 'set_appimage_symlink' ]
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")
     elif config.ACTION.__name__ in install_not_required:  # These actions don't require an install
