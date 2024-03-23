@@ -301,6 +301,9 @@ def ensure_install_dirs(app=None):
     wine_dir.mkdir(parents=True, exist_ok=True)
     logging.debug(f"> {wine_dir} exists: {wine_dir.is_dir()}")
 
+    if config.DIALOG == 'tk' and app:
+        send_gui_task(app, 'INSTALLING')
+
 
 def ensure_sys_deps(app=None):
     config.INSTALL_STEPS_COUNT += 1
@@ -712,6 +715,7 @@ Categories=Education;
 
 def update_install_feedback(text, app=None):
     percent = get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+    logging.debug(f"Install step {config.INSTALL_STEP} of {config.INSTALL_STEPS_COUNT}")  # noqa: E501
     msg.status(text, app=app)
     msg.progress(percent, app=app)
 

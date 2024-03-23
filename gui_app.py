@@ -294,6 +294,8 @@ class InstallerWindow():
         elif task == 'INSTALL':
             self.gui.statusvar.set('Ready to install!')
             self.gui.progressvar.set(0)
+        elif task == 'INSTALLING':
+            self.set_input_widgets_state('disabled')
         elif task == 'DONE':
             self.update_install_progress()
 
@@ -442,7 +444,6 @@ class InstallerWindow():
         logging.debug(f"> {config.SKIP_DEPENDENCIES=}")
 
     def on_okay_released(self, evt=None):
-        self.gui.okay_button.state(['disabled'])
         # Update desktop panel icon.
         self.root.icon = config.LOGOS_ICON_URL
         self.start_install_thread()
