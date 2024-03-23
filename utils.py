@@ -1,4 +1,6 @@
 import atexit
+import stat
+
 import distro
 import hashlib
 import json
@@ -10,6 +12,7 @@ import re
 import requests
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import threading
@@ -17,6 +20,7 @@ from urllib.parse import urlparse
 from datetime import datetime, timedelta
 
 from base64 import b64encode
+from packaging import version
 from pathlib import Path
 from typing import List, Union
 from xml.etree import ElementTree as ET
@@ -478,6 +482,16 @@ def cli_download(uri, destination):
     except KeyboardInterrupt:
         print()
         msg.logos_error('Interrupted with Ctrl+C')
+
+
+def overwrite(source_dir, file_name, target_dir):
+    source_path = Path.joinpath(source_dir, file_name)
+    target_path = Path.joinpath(target_dir, file_name)
+
+    if os.path.exists(target_path):
+        os.remove(target_path)
+
+    shutil.copy(source_path, target_dir)
 
 
 def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
@@ -1047,6 +1061,42 @@ def get_latest_release_url(releases_url):
     return release_url
 
 
+def get_latest_release_version_tag_name(releases_url):
+    data = net_get(releases_url)
+    if data:
+        try:
+            json_data = json.loads(data)
+            logging.debug(f"{json_data=}")
+        except json.JSONDecodeError as e:
+            logging.error(f"Error decoding JSON response: {e}")
+            return None
+
+        if not isinstance(json_data, list) or len(json_data) == 0:
+            logging.error("Invalid or empty JSON response.")
+            return None
+    else:
+        logging.critical("Could not get latest release URL.")
+        return None
+
+    release_tag_name = json_data[0].get('tag_name')  # noqa: E501
+    logging.info(f"Release URL Tag Name: {release_tag_name}")
+    return release_tag_name
+
+
+def set_logoslinuxinstaller_latest_release_config():
+    releases_url = "https://api.github.com/repos/FaithLife-Community/LogosLinuxInstaller/releases"  # noqa: E501
+    logoslinuxinstaller_url = get_latest_release_url(releases_url)
+    logoslinuxinstaller_tag_name = get_latest_release_version_tag_name(releases_url)
+    if logoslinuxinstaller_url is None:
+        logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
+        return
+    config.LOGOS_LATEST_VERSION_URL = logoslinuxinstaller_url
+    config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url) #noqa: #501
+    # Getting version relies on the filename having this format:
+    #   vXXXX
+    config.LLI_LATEST_VERSION = logoslinuxinstaller_tag_name.lstrip('v')
+
+
 def set_recommended_appimage_config():
     releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
     appimage_url = get_latest_release_url(releases_url)
@@ -1067,12 +1117,14 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
-def self_update():
+def check_for_updates():
     # We limit the number of times set_recommended_appimage_config is run in order to avoid GitHub API limits.
     # This sets the check to once every 12 hours.
-    # TODO: Add a flag to force a check which bypasses the once/12-hr limit.
+
     now = datetime.now().replace(microsecond=0)
-    if config.LAST_UPDATED is not None:
+    if config.CHECK_UPDATES:
+        check_again = now
+    elif config.LAST_UPDATED is not None:
         check_again = datetime.strptime(config.LAST_UPDATED.strip(), '%Y-%m-%dT%H:%M:%S')
         check_again += timedelta(hours=12)
     else:
@@ -1081,8 +1133,8 @@ def self_update():
     if now >= check_again:
         logging.debug("Running self-update.")
 
+        set_logoslinuxinstaller_latest_release_config()
         set_recommended_appimage_config()
-        # TODO: Add LogosLinuxInstaller self-update function here.
 
         config.LAST_UPDATED = now.isoformat()
         write_config(config.CONFIG_FILE)
@@ -1098,6 +1150,28 @@ def get_recommended_appimage():
         return
     else:
         logos_reuse_download(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME, config.APPDIR_BINDIR)
+
+
+def compare_logos_linux_installer_version():
+    if config.LLI_CURRENT_VERSION is not None and config.LLI_LATEST_VERSION is not None:
+        if version.parse(config.LLI_CURRENT_VERSION) < version.parse(config.LLI_LATEST_VERSION):
+            # Current release is older than recommended.
+            status = 0
+            message = "yes"
+        elif version.parse(config.LLI_CURRENT_VERSION) == version.parse(config.LLI_CURRENT_VERSION):
+            # Current release is latest.
+            status = 1
+            message = "uptodate"
+        elif version.parse(config.LLI_CURRENT_VERSION) > version.parse(config.LLI_LATEST_VERSION):
+            # Installed version is custom.
+            status = 2
+            message = "no"
+    else:
+        status = False
+        message = "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set."
+
+    logging.debug(f"{status=}; {message=}")
+    return status, message
 
 
 def compare_recommended_appimage_version():
@@ -1124,16 +1198,29 @@ def compare_recommended_appimage_version():
                     message = "no"
             else:
                 status = False
-                message = f"Error 1: {error_message}"
+                message = f"Error: {error_message}"
         else:
             status = False
-            message = f"Error 0: {error_message}"
+            message = f"Error: {error_message}"
     else:
         status = False
         message = "config.WINE_EXE is not set."
 
     logging.debug(f"{status=}; {message=}")
     return status, message
+
+
+def update_lli_release():
+    lli_file_path = sys.argv[0]
+    logging.debug(f"Converting LLI binary's path to expanded_path: {lli_file_path}")
+    cli_download(config.LOGOS_LATEST_VERSION_URL, config.MYDOWNLOADS)
+    if verify_downloaded_file(config.LOGOS_LATEST_VERSION_URL, lli_file_path):
+        logging.debug(f"Updating Logos Linux Installer to latest version by ovewriting: {lli_file_path}")
+        overwrite(config.MYDOWNLOADS, "LogosLinuxInstaller", lli_file_path)
+        # Set mode bits to 755.
+        Path(lli_file_path).chmod(Path(lli_file_path).stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    else:
+        msg.logos_error(f"Bad file size or checksum: {Path.joinpath(config.MYDOWNLOADS, 'LogosLinuxInstaller')}")
 
 
 def is_appimage(file_path):
@@ -1314,6 +1401,17 @@ def set_appimage_symlink(app=None):
     write_config(config.CONFIG_FILE)
     if app:
         app.root.event_generate("<<UpdateLatestAppImageButton>>")
+
+
+def update_to_latest_lli_release():
+    status, _ = compare_logos_linux_installer_version()
+
+    if status == 0:
+        update_lli_release()
+    elif status == 1:
+        logging.debug(f"{config.LLI_TITLE} is already at the latest version.")
+    elif status == 2:
+        logging.debug(f"{config.LLI_TITLE} is at a newer version than the latest.") # noqa: 501
 
 
 def update_to_latest_recommended_appimage():
