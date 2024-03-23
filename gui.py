@@ -13,7 +13,6 @@ from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
 import config
-import utils
 
 
 class InstallerGui(Frame):
@@ -129,13 +128,7 @@ class InstallerGui(Frame):
         self.release_dropdown.grid(column=1, row=1, sticky='w', pady=2)
         self.release_check_button.grid(column=2, row=1, sticky='w', pady=2)
         self.wine_label.grid(column=0, row=2, sticky='w', pady=2)
-        self.wine_dropdown.grid(
-            column=1,
-            row=2,
-            columnspan=3,
-            sticky='we',
-            pady=2
-        )
+        self.wine_dropdown.grid(column=1, row=2, columnspan=3, sticky='we', pady=2)  # noqa: E501
         self.wine_check_button.grid(column=4, row=2, sticky='e', pady=2)
         self.tricks_label.grid(column=0, row=3, sticky='w', pady=2)
         self.tricks_dropdown.grid(column=1, row=3, sticky='we', pady=2)
@@ -147,13 +140,7 @@ class InstallerGui(Frame):
         self.okay_button.grid(column=4, row=5, sticky='e', pady=2)
         # Status area
         s1.grid(column=0, row=6, columnspan=5, sticky='we')
-        self.status_label.grid(
-            column=0,
-            row=7,
-            columnspan=5,
-            sticky='w',
-            pady=2
-        )
+        self.status_label.grid(column=0, row=7, columnspan=5, sticky='w', pady=2)  # noqa: E501
         self.progress.grid(column=0, row=8, columnspan=5, sticky='we', pady=2)
 
 
@@ -174,7 +161,6 @@ class ControlGui(Frame):
         # Run/install app button
         self.app_buttonvar = StringVar()
         self.app_buttonvar.set("Install")
-        # FIXME: use app name if installed
         self.app_label = Label(self, text="FaithLife app")
         self.app_button = Button(self, textvariable=self.app_buttonvar)
 
@@ -188,19 +174,19 @@ class ControlGui(Frame):
             self,
             text="Run indexing",
             variable=self.actionsvar,
-            value='run-indexing'
+            value='run-indexing',
         )
         self.remove_library_catalog_radio = Radiobutton(
             self,
             text="Remove library catalog",
             variable=self.actionsvar,
-            value='remove-library-catalog'
+            value='remove-library-catalog',
         )
         self.remove_index_files_radio = Radiobutton(
             self,
             text="Remove all index files",
             variable=self.actionsvar,
-            value='remove-index-files'
+            value='remove-index-files',
         )
         self.actions_button = Button(self, text="Run action")
         self.actions_button.state(['disabled'])
@@ -254,27 +240,9 @@ class ControlGui(Frame):
         s1.grid(column=0, row=1, columnspan=3, sticky='we')
         self.actions_label.grid(column=0, row=2, sticky='e', padx=20, pady=2)
         self.actions_button.grid(column=0, row=4, sticky='e', padx=20, pady=2)
-        self.run_indexing_radio.grid(
-            column=1,
-            row=2,
-            sticky='w',
-            pady=2,
-            columnspan=2
-        )
-        self.remove_library_catalog_radio.grid(
-            column=1,
-            row=3,
-            sticky='w',
-            pady=2,
-            columnspan=2
-        )
-        self.remove_index_files_radio.grid(
-            column=1,
-            row=4,
-            sticky='w',
-            pady=2,
-            columnspan=2
-        )
+        self.run_indexing_radio.grid(column=1, row=2, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        self.remove_library_catalog_radio.grid(column=1, row=3, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        self.remove_index_files_radio.grid(column=1, row=4, sticky='w', pady=2, columnspan=2)  # noqa: E501
         s2.grid(column=0, row=5, columnspan=3, sticky='we')
 
         self.config_label.grid(column=0, row=6, sticky='w', pady=2)
@@ -301,13 +269,7 @@ class ControlGui(Frame):
         self.logging_button.grid(column=1, row=12, sticky='w', pady=2)
 
         s3.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(
-            column=0,
-            row=14,
-            columnspan=3,
-            sticky='we',
-            pady=2
-        )
+        self.message_label.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)  # noqa: E501
         self.progress.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)
 
 
