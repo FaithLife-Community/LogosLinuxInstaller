@@ -614,6 +614,7 @@ class ControlWindow():
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
+        self.gui.update_lli_button.config(command=self.update_to_latest_lli_release_button())
         self.gui.latest_appimage_button.config(
             command=self.set_update_to_latest_appimage
         )
@@ -750,10 +751,11 @@ class ControlWindow():
         )
         return file_path
 
+
     def set_update_to_latest_appimage(self, evt=None):
         config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
         self.start_indeterminate_progress()
-        self.gui.messagevar.set("Updating to latest AppImage...")
+        self.gui.messagevar.set("Updating to latest AppImage…")
         t = Thread(
             target=utils.set_appimage_symlink,
             kwargs={'app': self},
@@ -819,6 +821,23 @@ class ControlWindow():
         self.gui.app_button.state(['!disabled'])
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
         self.configure_app_button()
+
+    def update_to_latest_lli_release_button(self, evt=None):
+        status, reason = utils.compare_logos_linux_installer_version()
+        msg = None
+        if status == 0:
+            state = '!disabled'
+        elif status == 1:
+            state = 'disabled'
+            msg = "This button is disabled. Logos Linux Installer is up-to-date."
+        elif status == 2:
+            state = 'disabled'
+            msg = "This button is disabled. Logos Linux Installer is newer than the latest release."
+        if msg:
+            gui.ToolTip(self.gui.update_lli_button, msg)
+        self.clear_message_text()
+        self.stop_indeterminate_progress()
+        self.gui.latest_appimage_button.state([state])
 
     def update_latest_appimage_button(self, evt=None):
         status, reason = utils.compare_recommended_appimage_version()

@@ -30,16 +30,31 @@ def set_appimage():
 def control_panel_app():
     # Run TUI.
     while True:
+        options_first = []
         options_default = ["Install Logos Bible Software"]
+        options_main = [f"Install Dependencies", "Download or Update Winetricks", "Run Winetricks"]
+        options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog",
+                              "Remove All Index Files", "Edit Config", "Back up Data",
+                              "Restore Data"]
         options_exit = ["Exit"]
         if utils.file_exists(config.LOGOS_EXE):
-            options_installed = [f"Run {config.FLPRODUCT}", "Run Indexing", "Remove Library Catalog", "Remove All Index Files", "Edit Config", "Install Dependencies", "Back up Data", "Restore Data"]
+            if config.LLI_LATEST_VERSION:
+                logging.debug("Checking if Logos Linux Installers needs updated.")
+                status, error_message = utils.compare_logos_linux_installer_version()
+                if status == 0:
+                    options_first.append("Update Logos Linux Installer")
+                elif status == 1:
+                    logging.warning("Logos Linux Installer is up-to-date.")
+                elif status == 2:
+                    logging.warning("Logos Linux Installer is newer than the latest release.")
+                else:
+                    logging.error(f"{error_message}")
 
             if config.WINEBIN_CODE == "AppImage" or config.WINEBIN_CODE == "Recommended":
                 logging.debug("Checking if the AppImage needs updated.")
                 status, error_message = utils.compare_recommended_appimage_version()
                 if status == 0:
-                    options_installed.append("Update to Latest AppImage")
+                    options_main.insert(0, "Update to Latest AppImage")
                 elif status == 1:
                     logging.warning("The AppImage is already set to the latest recommended.")
                 elif status == 2:
@@ -47,19 +62,16 @@ def control_panel_app():
                 else:
                     logging.error(f"{error_message}")
 
-                options_installed.append("Set AppImage")
-            
-            options_installed.append("Download or Update Winetricks")
-            options_installed.append("Run Winetricks")
+                options_main.insert(1, "Set AppImage")
             
             if config.LOGS == "DISABLED":
                 options_installed.append("Enable Logging")
             else:
                 options_installed.append("Disable Logging")
             
-            options = options_default + options_installed + options_exit
+            options = options_first + options_installed + options_main + options_default + options_exit
         else:
-            options = options_default + options_exit
+            options = options_first + options_default + options_main + options_exit
 
         choice = tui.menu(options, "Welcome to Logos on Linux", "What would you like to do?")
 
@@ -67,6 +79,8 @@ def control_panel_app():
             sys.exit(0)
         elif choice.startswith("Install"):
             installer.install()
+        elif choice.startswith("Update Logos Linux Installer"):
+            utils.update_to_latest_lli_release()
         elif choice == f"Run {config.FLPRODUCT}":
             wine.run_logos()
         elif choice == "Run Indexing":
