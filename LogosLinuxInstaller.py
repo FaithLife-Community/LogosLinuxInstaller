@@ -17,7 +17,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
     parser.add_argument(
         '-v', '--version', action='version',
-        version=f'{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}',
+        version=f'{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}',
     )
 
     # Define options that affect runtime config.
@@ -25,6 +25,10 @@ def get_parser():
     cfg.add_argument(
         '-F', '--skip-fonts', action='store_true',
         help='skip font installations',
+    )
+    cfg.add_argument(
+        '-a', '--check-for-updates', action='store_true',
+        help='force a check for updates'
     )
     cfg.add_argument(
         '-K', '--skip-dependencies', action='store_true',
@@ -105,6 +109,10 @@ def get_parser():
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
+        '--update-self', '-u', action='store_true',
+        help='Update Logos Linux Installer to the latest release.',
+    )
+    cmd.add_argument(
         '--update-latest-appimage', '-U', action='store_true',
         help='Update the to the latest AppImage.',
     )
@@ -167,6 +175,9 @@ def parse_args(args, parser):
     if args.skip_fonts:
         config.SKIP_FONTS = True
 
+    if args.check_for_updates:
+        config.CHECK_UPDATES = True
+
     if args.skip_dependencies:
         config.SKIP_DEPENDENCIES = True
 
@@ -199,6 +210,7 @@ def parse_args(args, parser):
         'install_dependencies': utils.check_dependencies,
         'backup': control.backup,
         'restore': control.restore,
+        'update_self': utils.update_to_latest_lli_release,
         'update_latest_appimage': utils.update_to_latest_recommended_appimage,
         'set_appimage': utils.set_appimage_symlink,
         'get_winetricks': control.get_winetricks,
@@ -297,13 +309,14 @@ def main():
     utils.die_if_root()
 
     # Print terminal banner
-    logging.info(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
+    logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")
     logging.debug(f"Installer log file: {config.LOGOS_LOG}")
 
-    utils.self_update()
+    utils.check_for_updates()
 
     # Check if app is installed.
-    install_not_required = [ 'remove_install_dir', 'check_dependencies', 'update_to_latest_recommended_appimage', 'set_appimage_symlink' ]
+    install_not_required = ['remove_install_dir', 'check_dependencies',  'update_to_latest_lli_release',
+                            'update_to_latest_recommended_appimage', 'set_appimage_symlink']
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")
     elif config.ACTION.__name__ in install_not_required:  # These actions don't require an install

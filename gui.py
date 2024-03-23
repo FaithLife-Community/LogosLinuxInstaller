@@ -212,6 +212,8 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
+        self.update_lli_label = Label(self, text="Update Logos Linux Installer")
+        self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(
             self,
@@ -283,28 +285,31 @@ class ControlGui(Frame):
         self.backup_button.grid(column=1, row=8, sticky='w', pady=2)
         self.restore_button.grid(column=2, row=8, sticky='w', pady=2)
 
-        self.latest_appimage_label.grid(column=0, row=9, sticky='w', pady=2)
-        self.latest_appimage_button.grid(column=1, row=9, sticky='w', pady=2)
+        self.update_lli_label.grid(column=0, row=9, sticky='w', pady=2)
+        self.update_lli_button.grid(column=1, row=9, sticky='w', pady=2)
 
-        self.set_appimage_label.grid(column=0, row=10, sticky='w', pady=2)
-        self.set_appimage_button.grid(column=1, row=10, sticky='w', pady=2)
+        self.latest_appimage_label.grid(column=0, row=10, sticky='w', pady=2)
+        self.latest_appimage_button.grid(column=1, row=10, sticky='w', pady=2)
 
-        self.winetricks_label.grid(column=0, row=11, sticky='w', pady=2)
-        self.run_winetricks_button.grid(column=1, row=11, sticky='w', pady=2)
-        self.get_winetricks_button.grid(column=2, row=11, sticky='w', pady=2)
+        self.set_appimage_label.grid(column=0, row=11, sticky='w', pady=2)
+        self.set_appimage_button.grid(column=1, row=11, sticky='w', pady=2)
 
-        self.logging_label.grid(column=0, row=12, sticky='w', pady=2)
-        self.logging_button.grid(column=1, row=12, sticky='w', pady=2)
+        self.winetricks_label.grid(column=0, row=12, sticky='w', pady=2)
+        self.run_winetricks_button.grid(column=1, row=12, sticky='w', pady=2)
+        self.get_winetricks_button.grid(column=2, row=12, sticky='w', pady=2)
 
-        s3.grid(column=0, row=13, columnspan=3, sticky='we', pady=2)
+        self.logging_label.grid(column=0, row=13, sticky='w', pady=2)
+        self.logging_button.grid(column=1, row=13, sticky='w', pady=2)
+
+        s3.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
         self.message_label.grid(
             column=0,
-            row=14,
+            row=15,
             columnspan=3,
             sticky='we',
             pady=2
         )
-        self.progress.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)
+        self.progress.grid(column=0, row=16, columnspan=3, sticky='we', pady=2)
 
 
 class ToolTip:
