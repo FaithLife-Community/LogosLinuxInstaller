@@ -148,9 +148,9 @@ def check_wine_version_and_branch(TESTBINARY):
 
 def initializeWineBottle(app=None):
     msg.cli_msg(f"Initializing wine bottle...")
-    if app is not None:
-        app.install_q.put("Initializing wine bottle...")
-        app.root.event_generate("<<UpdateInstallText>>")
+    # if app is not None:
+    #     # app.install_q.put("Initializing wine bottle...")
+    #     # app.root.event_generate("<<UpdateInstallText>>")
 
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree=" # avoid wine-mono window
     run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])

@@ -29,11 +29,8 @@ class InstallerGui(Frame):
         self.targetversion = config.TARGETVERSION
         self.logos_release_version = config.LOGOS_RELEASE_VERSION
         self.default_config_path = config.DEFAULT_CONFIG_PATH
+        self.wine_exe = config.WINE_EXE
         self.winetricksbin = config.WINETRICKSBIN
-        if self.winetricksbin is None:
-            self.sys_winetricks = utils.get_system_winetricks()
-            if self.sys_winetricks is not None and self.sys_winetricks[1] >= 20220411:  # noqa: E501
-                self.winetricksbin = f'System (v{self.sys_winetricks[1]})'
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
             self.skip_fonts = 0
@@ -69,7 +66,11 @@ class InstallerGui(Frame):
         self.releasevar = StringVar(value='Choose release...')
         self.release_dropdown = Combobox(self, textvariable=self.releasevar)
         self.release_dropdown.state(['readonly'])
-        self.release_dropdown['values'] = [] if self.logos_release_version is None else [self.logos_release_version]  # noqa: E501
+        self.release_dropdown['values'] = []
+        if self.logos_release_version:
+            self.release_dropdown['values'] = [self.logos_release_version]
+            self.releasevar.set(self.logos_release_version)
+
         # release check button
         self.release_check_button = Button(self, text="Get Release List")
         self.release_check_button.state(['disabled'])
@@ -80,6 +81,9 @@ class InstallerGui(Frame):
         self.wine_dropdown = Combobox(self, textvariable=self.winevar)
         self.wine_dropdown.state(['readonly'])
         self.wine_dropdown['values'] = []
+        if self.wine_exe:
+            self.wine_dropdown['values'] = [self.wine_exe]
+            self.winevar.set(self.wine_exe)
         self.wine_check_button = Button(self, text="Get EXE List")
         self.wine_check_button.state(['disabled'])
 
@@ -89,7 +93,7 @@ class InstallerGui(Frame):
         self.tricks_dropdown = Combobox(self, textvariable=self.tricksvar)
         self.tricks_dropdown.state(['readonly'])
         values = ['Download']
-        if self.winetricksbin is not None:
+        if self.winetricksbin:
             values.insert(0, self.winetricksbin)
         self.tricks_dropdown['values'] = values
         self.tricksvar.set(self.tricks_dropdown['values'][0])

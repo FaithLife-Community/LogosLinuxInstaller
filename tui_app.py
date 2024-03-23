@@ -5,7 +5,8 @@ import curses
 import config
 import control
 import tui
-import installer
+# import installer
+import alt_installer as installer
 import msg
 import utils
 import wine
@@ -66,7 +67,7 @@ def control_panel_app():
         if choice is None or choice == "Exit":
             sys.exit(0)
         elif choice.startswith("Install"):
-            installer.install()
+            installer.ensure_launcher_shortcuts()
         elif choice == f"Run {config.FLPRODUCT}":
             wine.run_logos()
         elif choice == "Run Indexing":

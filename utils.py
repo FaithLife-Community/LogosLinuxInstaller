@@ -687,16 +687,30 @@ def filter_versions(versions, threshold, check_version_part):
     return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]
 
 
-def get_logos_releases(q=None, app=None):
-    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
-    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
+def get_logos_releases(app=None):
+    # Use already-downloaded list if requested again.
+    downloaded_releases = None
+    if config.TARGETVERSION == '9' and config.LOGOS9_RELEASES:
+        downloaded_releases = config.LOGOS9_RELEASES
+    elif config.TARGETVERSION == '10' and config.LOGOS10_RELEASES:
+        downloaded_releases = config.LOGOS10_RELEASES
+    if downloaded_releases:
+        logging.debug(f"Using already-downloaded list of v{config.TARGETVERSION} releases")  # noqa: E501
+        if app:
+            app.releases_q.put(downloaded_releases)
+            app.root.event_generate(app.release_sig)
+        return downloaded_releases
+
+    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")
+    # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
+    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
 
     response_xml = net_get(url)
     # if response_xml is None and None not in [q, app]:
     if response_xml is None:
         if app:
-            app.release_q.put(None)
-            app.root.event_generate("<<ReleaseCheckProgress>>")
+            app.releases_q.put(None)
+            app.root.event_generate(app.release_sig)
         return None
 
     # Parse XML
@@ -721,8 +735,8 @@ def get_logos_releases(q=None, app=None):
     logging.debug(f"Available releases: {', '.join(releases)}")
     logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
-    if app:
-        app.release_q.put(filtered_releases)
+    if q is not None and app is not None:
+        q.put(filtered_releases)
         app.root.event_generate("<<ReleaseCheckProgress>>")
     return filtered_releases
 
@@ -760,7 +774,7 @@ def get_winebin_code_and_desc(binary):
     return code, desc
 
 
-def get_wine_options(appimages, binaries) -> Union[List[List[str]], List[str]]:
+def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], List[str]]:  # noqa: E501
     logging.debug(f"{appimages=}")
     logging.debug(f"{binaries=}")
     wine_binary_options = []
@@ -795,17 +809,36 @@ def get_wine_options(appimages, binaries) -> Union[List[List[str]], List[str]]:
         wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
 
     logging.debug(f"{wine_binary_options=}")
+    if app:
+        app.wines_q.put(wine_binary_options)
+        app.root.event_generate(app.wine_sig)
     return wine_binary_options
 
 
-def get_system_winetricks():
-    try:
-        p = subprocess.run(['winetricks', '--version'], capture_output=True, text=True)
-        version = int(p.stdout.rstrip()[:8])
-        path = shutil.which('winetricks')
-        return (path, version)
-    except FileNotFoundError:
-        return None
+# def get_system_winetricks():
+#     try:
+#         p = subprocess.run(['winetricks', '--version'], capture_output=True, text=True)
+#         version = int(p.stdout.rstrip()[:8])
+#         path = shutil.which('winetricks')
+#         return (path, version)
+#     except FileNotFoundError:
+#         return None
+
+
+def get_winetricks_options():
+    local_winetricks_path = shutil.which('winetricks')
+    winetricks_options = ['Download']
+    if local_winetricks_path is not None:
+        # Check if local winetricks version is up-to-date.
+        cmd = ["winetricks", "--version"]
+        local_winetricks_version = subprocess.check_output(cmd).split()[0]
+        if str(local_winetricks_version) >= "20220411":
+            winetricks_options.insert(0, local_winetricks_path)
+        else:
+            logging.info("Local winetricks is too old.")
+    else:
+        logging.info("Local winetricks not found.")
+    return winetricks_options
 
 
 def get_pids_using_file(file_path, mode=None):
@@ -851,11 +884,15 @@ def wget(uri, target, q=None, app=None, evt=None):
 
 
 def net_get(url, target=None, app=None, evt=None, q=None):
+
     # TODO:
     # - Check available disk space before starting download
     logging.debug(f"Download source: {url}")
     logging.debug(f"Download destination: {target}")
     target = FileProps(target)  # sets path and size attribs
+    if app and target.path:
+        app.status_q.put(f"Downloading {target.path.name}…")  # noqa: E501
+        app.root.event_generate('<<UpdateStatus>>')
     parsed_url = urlparse(url)
     domain = parsed_url.netloc  # Gets the requested domain
     url = UrlProps(url)  # uses requests to set headers, size, md5 attribs
@@ -887,7 +924,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
             else:
                 headers['Range'] = f'bytes={local_size}-'
 
-    logging.debug(f"{chunk_size = }; {file_mode = }; {headers = }")
+    logging.debug(f"{chunk_size=}; {file_mode=}; {headers=}")
 
     # Log download type.
     if 'Range' in headers.keys():
@@ -937,7 +974,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                                 q.put(percent)
     except requests.exceptions.RequestException as e:
         logging.error(f"Error occurred during HTTP request: {e}")
-        return None, r  # Return None values to indicate an error condition
+        return None  # Return None values to indicate an error condition
     except Exception as e:
         msg.logos_error(e)
     except KeyboardInterrupt:
@@ -946,6 +983,10 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
+    if app:
+        app.root.event_generate('<<StartIndeterminateProgress>>')
+        app.status_q.put(f"Verifying {file_path}…")
+        app.root.event_generate('<<UpdateStatus>>')
     res = False
     msg = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
@@ -956,10 +997,10 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
             msg = f"{file_path} is verified."
             res = True
     logging.info(msg)
-    if None in [app, evt]:
-        return res
-    app.check_q.put((evt, res))
-    app.root.event_generate(evt)
+    if app and evt:
+        app.check_q.put((evt, res))
+        app.root.event_generate(evt)
+    return res
 
 
 def same_md5(url, file_path):
@@ -998,14 +1039,15 @@ def app_is_installed():
 
 
 def find_installed_product():
-    exes = []
-    for e in glob.glob(
-        f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe",
-        recursive=True
-    ):
-        if 'Pending' not in e:
-            exes.append(e)
-    return exes[0] if exes else None
+    if config.FLPRODUCT and config.WINEPREFIX:
+        exes = []
+        for e in glob.glob(
+            f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe",
+            recursive=True
+        ):
+            if 'Pending' not in e:
+                exes.append(e)
+        return exes[0] if exes else None
 
 
 def log_current_persistent_config():
@@ -1079,13 +1121,13 @@ def get_latest_release_url(releases_url):
 
 def set_recommended_appimage_config():
     releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
-    appimage_url = get_latest_release_url(releases_url)
-    if appimage_url is None:
-        logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
-        return
-    config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL = appimage_url
-    config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
-    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(appimage_url)  # noqa: E501
+    if not config.RECOMMENDED_WINE64_APPIMAGE_URL:
+        appimage_url = get_latest_release_url(releases_url)
+        if appimage_url is None:
+            logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
+            return
+        config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
+    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(config.RECOMMENDED_WINE64_APPIMAGE_URL)  # noqa: E501
     config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
     # Getting version and branch rely on the filename having this format:
     #   wine-[branch]_[version]-[arch]
@@ -1127,7 +1169,7 @@ def get_recommended_appimage():
     if dest_path.is_file():
         return
     else:
-        logos_reuse_download(config.RECOMMENDED_WINE64_APPIMAGE_FULL_URL, config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME, appdir_bindir)
+        logos_reuse_download(config.RECOMMENDED_WINE64_APPIMAGE_URL, config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME, appdir_bindir)
 
 
 def compare_recommended_appimage_version():
@@ -1198,7 +1240,7 @@ def check_appimage(file):
     if file is None:
         logging.error(f"check_appimage: received None for file.")
         return False
-    
+
     file_path=Path(file)
 
     appimage, appimage_type = is_appimage(file_path)
@@ -1215,7 +1257,7 @@ def check_appimage(file):
         return False
 
 
-def find_appimage_files():
+def find_appimage_files(app=None):
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",
@@ -1237,6 +1279,10 @@ def find_appimage_files():
                     appimages.append(str(p))
                 else:
                     logging.info(f"AppImage file {p} not added: {output2}")
+
+    if app:
+        app.appimage_q.put(appimages)
+        app.root.event_generate(app.appimage_evt)
 
     return appimages
 
@@ -1353,3 +1399,17 @@ def update_to_latest_recommended_appimage():
         logging.debug("The AppImage is already set to the latest recommended.")
     elif status == 2:
         logging.debug("The AppImage version is newer than the latest recommended.")  # noqa: E501
+
+
+def get_downloaded_file_path(filename):
+    dirs = [
+        config.MYDOWNLOADS,
+        Path.home(),
+        Path.cwd(),
+    ]
+    for d in dirs:
+        file_path = Path(d) / filename
+        if file_path.is_file():
+            logging.info(f"'{filename}' exists in {str(d)}.")
+            return str(file_path)
+    logging.debug(f"File not found: {filename}")
