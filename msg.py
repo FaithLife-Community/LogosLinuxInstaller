@@ -158,3 +158,30 @@ def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
 def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):
     if config.DIALOG == 'curses':
         return cli_acknowledge_question(QUESTION_TEXT, NO_TEXT)
+
+
+def get_progress_str(percent):
+    length = 40
+    part_done = round(percent * length / 100)
+    part_left = length - part_done
+    return f"[{'*' * part_done}{'-' * part_left}]"
+
+
+def progress(percent, app=None):
+    """Updates progressbar values for TUI and GUI."""
+    logging.debug(f"Progress: {percent}%")
+    if config.DIALOG == 'tk' and app:
+        app.progress_q.put(percent)
+        app.root.event_generate('<<UpdateProgress>>')
+    else:
+        cli_msg(get_progress_str(percent))  # provisional
+
+
+def status(text, app=None):
+    """Handles status messages for both TUI and GUI."""
+    logging.debug(f"Status: {text}")
+    if config.DIALOG == 'tk' and app:
+        app.status_q.put(text)
+        app.root.event_generate('<<UpdateStatus>>')
+    else:
+        cli_msg(text)  # provisional
