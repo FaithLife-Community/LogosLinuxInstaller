@@ -300,6 +300,8 @@ class InstallerWindow():
             self.update_install_progress()
 
     def set_product(self, evt=None):
+        if self.gui.productvar.get()[0] == 'C':  # ignore default text
+            return
         self.gui.flproduct = self.gui.productvar.get()
         self.gui.product_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
@@ -332,9 +334,9 @@ class InstallerWindow():
         # self.gui.releasevar.set('')
         self.gui.release_dropdown['values'] = []
         # Setup queue, signal, thread.
-        self.release_sig = "<<ReleaseCheckProgress>>"
+        self.release_evt = "<<ReleaseCheckProgress>>"
         self.root.bind(
-            self.release_sig,
+            self.release_evt,
             self.update_release_check_progress
         )
         self.release_thread = Thread(
@@ -350,10 +352,9 @@ class InstallerWindow():
         self.release_thread.start()
 
     def set_release(self, evt=None):
-        if self.gui.releasevar.get()[0] != 'C':  # ignore default text
-            self.gui.logos_release_version = self.gui.releasevar.get()
-        if self.gui.logos_release_version:
-            config.LOGOS_RELEASE_VERSION = self.gui.logos_release_version
+        if self.gui.releasevar.get()[0] == 'C':  # ignore default text
+            return
+        self.gui.logos_release_version = self.gui.releasevar.get()
         self.gui.release_dropdown.selection_clear()
         if evt:  # manual override
             config.LOGOS_RELEASE_VERSION = None
@@ -387,9 +388,9 @@ class InstallerWindow():
             return
         # Setup queue, signal, thread.
         self.wines_q = Queue()
-        self.wine_sig = "<<WineCheckProgress>>"
+        self.wine_evt = "<<WineCheckProgress>>"
         self.root.bind(
-            self.wine_sig,
+            self.wine_evt,
             self.update_wine_check_progress
         )
         self.wine_thread = Thread(
@@ -481,10 +482,7 @@ class InstallerWindow():
             self.gui.release_dropdown['values'] = self.releases_q.get()
             self.gui.releasevar.set(self.gui.release_dropdown['values'][0])
             self.set_release()
-            self.synchronize_config()
-            self.verify_buttons()
         else:
-            self.gui.release_check_button.state(['!disabled'])
             self.gui.statusvar.set("Failed to get release list. Check connection and try again.")  # noqa: E501
 
     def update_find_appimage_progress(self, evt=None):

@@ -40,7 +40,7 @@ class InstallerGui(Frame):
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
         # product drop-down menu
-        self.productvar = StringVar(value='Choose product...')
+        self.productvar = StringVar(value='Choose product…')
         self.product_dropdown = Combobox(self, textvariable=self.productvar)
         self.product_dropdown.state(['readonly'])
         self.product_dropdown['values'] = ('Logos', 'Verbum')
@@ -62,7 +62,7 @@ class InstallerGui(Frame):
         # Release row.
         self.release_label = Label(self, text="Release: ")
         # release drop-down menu
-        self.releasevar = StringVar(value='Choose release...')
+        self.releasevar = StringVar(value='Choose release…')
         self.release_dropdown = Combobox(self, textvariable=self.releasevar)
         self.release_dropdown.state(['readonly'])
         self.release_dropdown['values'] = []

@@ -698,7 +698,7 @@ def get_logos_releases(app=None):
         logging.debug(f"Using already-downloaded list of v{config.TARGETVERSION} releases")  # noqa: E501
         if app:
             app.releases_q.put(downloaded_releases)
-            app.root.event_generate(app.release_sig)
+            app.root.event_generate(app.release_evt)
         return downloaded_releases
 
     msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")
@@ -710,7 +710,7 @@ def get_logos_releases(app=None):
     if response_xml is None:
         if app:
             app.releases_q.put(None)
-            app.root.event_generate(app.release_sig)
+            app.root.event_generate(app.release_evt)
         return None
 
     # Parse XML
@@ -735,9 +735,9 @@ def get_logos_releases(app=None):
     logging.debug(f"Available releases: {', '.join(releases)}")
     logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
-    if q is not None and app is not None:
-        q.put(filtered_releases)
-        app.root.event_generate("<<ReleaseCheckProgress>>")
+    if app:
+        app.releases_q.put(filtered_releases)
+        app.root.event_generate(app.release_evt)
     return filtered_releases
 
 
@@ -811,7 +811,7 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
     logging.debug(f"{wine_binary_options=}")
     if app:
         app.wines_q.put(wine_binary_options)
-        app.root.event_generate(app.wine_sig)
+        app.root.event_generate(app.wine_evt)
     return wine_binary_options
 
 
