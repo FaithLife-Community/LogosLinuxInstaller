@@ -305,7 +305,9 @@ def main():
 
     ### Run desired action (requested function, defaulting to installer)
     # Run safety checks.
-    utils.die_if_running()
+    # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI self-update when updating LLI as it asks
+    # for a confirmation in the CLI. Disabled until it can be fixed. Avoid running multiple instances of the program.
+    # utils.die_if_running()
     utils.die_if_root()
 
     # Print terminal banner
@@ -315,7 +317,7 @@ def main():
     utils.check_for_updates()
 
     # Check if app is installed.
-    install_not_required = ['remove_install_dir', 'check_dependencies',  'update_to_latest_lli_release',
+    install_not_required = ['remove_install_dir', 'check_dependencies',  'update_latest_lli_release',
                             'update_to_latest_recommended_appimage', 'set_appimage_symlink']
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")

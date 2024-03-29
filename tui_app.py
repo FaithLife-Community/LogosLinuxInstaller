@@ -10,6 +10,7 @@ import msg
 import utils
 import wine
 
+
 def set_appimage():
     # TODO: Allow specifying the AppImage File
     appimages = utils.find_appimage_files()
@@ -26,6 +27,7 @@ def set_appimage():
         appimage_filename = sai_choice
         config.SELECTED_APPIMAGE_FILENAME = appimage_filename
         utils.set_appimage_symlink()
+
 
 def control_panel_app():
     # Run TUI.
