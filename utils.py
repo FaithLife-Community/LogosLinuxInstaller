@@ -182,9 +182,21 @@ def die_if_running():
     if os.path.isfile(PIDF):
         with open(PIDF, 'r') as f:
             pid = f.read().strip()
-            if msg.cli_continue_question(
-                    f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?",
-                    "The script is already running. Exiting.", "1"):
+            message = f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?"
+            if config.DIALOG == "tk":
+                # TODO: With the GUI this runs in a thread. It's not clear if the
+                # messagebox will work correctly. It may need to be triggered from
+                # here with an event and then opened from the main thread.
+                tk_root = tk.Tk()
+                tk_root.withdraw()
+                confirm = tk.messagebox.askquestion("Confirmation", message)
+                tk_root.destroy()
+            elif config.DIALOG == "curses":
+                confirm = tui.confirm("Confirmation", message)
+            else:
+                confirm = msg.cli_question(message)
+
+            if confirm:
                 os.kill(int(pid), signal.SIGKILL)
 
     atexit.register(remove_pid_file)
@@ -211,10 +223,11 @@ def reboot():
 
 
 def restart_lli():
-    logging.debug("Restarting Logos Linux Installer.")
-    args = [sys.executable]
-    subprocess.Popen(args)
-    sys.exit()
+    if config.DIALOG != tk:
+        logging.debug("Restarting Logos Linux Installer.")
+        args = [sys.executable]
+        subprocess.Popen(args)
+        sys.exit()
 
 
 def set_verbose():

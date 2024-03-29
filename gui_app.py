@@ -5,6 +5,8 @@
 
 import logging
 import os
+import sys
+import subprocess
 import threading
 from pathlib import Path
 from queue import Queue
@@ -614,9 +616,9 @@ class ControlWindow():
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        self.gui.update_lli_button.config(command=self.update_to_latest_lli_release_button())
+        self.gui.update_lli_button.config(command=self.update_to_latest_lli_release)
         self.gui.latest_appimage_button.config(
-            command=self.set_update_to_latest_appimage
+            command=self.update_to_latest_appimage
         )
         if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
             self.gui.latest_appimage_button.state(['disabled'])
@@ -629,6 +631,7 @@ class ControlWindow():
                 self.gui.set_appimage_button,
                 "This button is disabled. The configured install was not created using an AppImage."  # noqa: E501
             )
+        self.update_latest_lli_release_button()
         self.update_latest_appimage_button()
         self.gui.set_appimage_button.config(command=self.set_appimage)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
@@ -751,8 +754,26 @@ class ControlWindow():
         )
         return file_path
 
+    def update_to_latest_lli_release(self, evt=None):
+        self.start_indeterminate_progress()
+        self.gui.messagevar.set("Updating to latest Logos Linux Installer version…")
+        t = Thread(
+            target=utils.update_to_latest_lli_release,
+            daemon=True,
+        )
+        t.start()
+        logging.debug("Finished updating Logos Linux Installer version.")
+        t.join()
 
-    def set_update_to_latest_appimage(self, evt=None):
+        logging.debug("Restarting Logos Linux Installer.")
+        if self.root is not None:
+            self.root.destroy()
+
+        args = [sys.executable]
+        subprocess.Popen(args)
+        sys.exit()
+
+    def update_to_latest_appimage(self, evt=None):
         config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
         self.start_indeterminate_progress()
         self.gui.messagevar.set("Updating to latest AppImage…")
@@ -822,7 +843,7 @@ class ControlWindow():
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
         self.configure_app_button()
 
-    def update_to_latest_lli_release_button(self, evt=None):
+    def update_latest_lli_release_button(self, evt=None):
         status, reason = utils.compare_logos_linux_installer_version()
         msg = None
         if status == 0:
@@ -837,7 +858,7 @@ class ControlWindow():
             gui.ToolTip(self.gui.update_lli_button, msg)
         self.clear_message_text()
         self.stop_indeterminate_progress()
-        self.gui.latest_appimage_button.state([state])
+        self.gui.update_lli_button.state([state])
 
     def update_latest_appimage_button(self, evt=None):
         status, reason = utils.compare_recommended_appimage_version()
