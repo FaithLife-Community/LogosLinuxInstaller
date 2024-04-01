@@ -240,6 +240,7 @@ def parse_args(args, parser):
             break
     if config.ACTION is None:
         config.ACTION = run_control_panel
+    logging.debug(f"{config.ACTION=}")
 
 
 def run_control_panel():
@@ -317,7 +318,7 @@ def main():
     utils.check_for_updates()
 
     # Check if app is installed.
-    install_not_required = ['remove_install_dir', 'check_dependencies',  'update_latest_lli_release',
+    install_not_required = ['remove_install_dir', 'check_dependencies',  'update_to_latest_lli_release',
                             'update_to_latest_recommended_appimage', 'set_appimage_symlink']
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")
