@@ -1423,7 +1423,9 @@ def set_appimage_symlink(app=None):
 def update_to_latest_lli_release():
     status, _ = compare_logos_linux_installer_version()
 
-    if status == 0:
+    if get_runmode() != 'binary':
+        logging.error("Can't update LogosLinuxInstaller when run as a script.")
+    elif status == 0:
         update_lli_binary()
     elif status == 1:
         logging.debug(f"{config.LLI_TITLE} is already at the latest version.")
