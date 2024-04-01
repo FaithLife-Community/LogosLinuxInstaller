@@ -92,12 +92,12 @@ or the script provided in `scripts/ensure-python.sh`. This is because the app is
 built using 3.12 and might have errors if run with other versions.
 ```
 # install build dependencies; e.g. for debian-based systems:
-$ apt install build-essential tcl-dev tk-dev libreadline-dev
+$ apt install build-essential tcl-dev tk-dev libreadline-dev libsqlite3-dev
 # install & build python 3.12
 $ wget 'https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz'
 $ tar xf Python-3.12.1.tar.xz
 $ cd Python-3.12.1
-Python-3.12.1$ ./configure --prefix=/opt --enable-shared
+Python-3.12.1$ ./configure --prefix=/opt --enable-shared --enable-loadable-sqlite-extensions
 Python-3.12.1$ make
 Python-3.12.1$ sudo make install
 Python-3.12.1$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 --version
