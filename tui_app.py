@@ -40,7 +40,7 @@ def control_panel_app():
                               "Restore Data"]
         options_exit = ["Exit"]
         if utils.file_exists(config.LOGOS_EXE):
-            if config.LLI_LATEST_VERSION:
+            if config.LLI_LATEST_VERSION and utils.get_runmode() == 'binary':
                 logging.debug("Checking if Logos Linux Installers needs updated.")
                 status, error_message = utils.compare_logos_linux_installer_version()
                 if status == 0:
