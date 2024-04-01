@@ -176,4 +176,4 @@ def menu(options, title, question_text):
 
         return choice
 
-    curses.wrapper(_menu)
+    return curses.wrapper(_menu)
