@@ -5,8 +5,6 @@
 
 import logging
 import os
-import sys
-import subprocess
 import threading
 from pathlib import Path
 from queue import Queue
@@ -616,7 +614,9 @@ class ControlWindow():
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        self.gui.update_lli_button.config(command=self.update_to_latest_lli_release)
+        self.gui.update_lli_button.config(
+            command=self.update_to_latest_lli_release
+        )
         self.gui.latest_appimage_button.config(
             command=self.update_to_latest_appimage
         )
@@ -756,22 +756,11 @@ class ControlWindow():
 
     def update_to_latest_lli_release(self, evt=None):
         self.start_indeterminate_progress()
-        self.gui.messagevar.set("Updating to latest Logos Linux Installer version…")
+        self.gui.messagevar.set("Updating to latest Logos Linux Installer version…")  # noqa: E501
         t = Thread(
             target=utils.update_to_latest_lli_release,
-            daemon=True,
         )
         t.start()
-        logging.debug("Finished updating Logos Linux Installer version.")
-        t.join()
-
-        logging.debug("Restarting Logos Linux Installer.")
-        if self.root is not None:
-            self.root.destroy()
-
-        args = [sys.executable]
-        subprocess.Popen(args)
-        sys.exit()
 
     def update_to_latest_appimage(self, evt=None):
         config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
@@ -850,10 +839,10 @@ class ControlWindow():
             state = '!disabled'
         elif status == 1:
             state = 'disabled'
-            msg = "This button is disabled. Logos Linux Installer is up-to-date."
+            msg = "This button is disabled. Logos Linux Installer is up-to-date."  # noqa: E501
         elif status == 2:
             state = 'disabled'
-            msg = "This button is disabled. Logos Linux Installer is newer than the latest release."
+            msg = "This button is disabled. Logos Linux Installer is newer than the latest release."  # noqa: E501
         if msg:
             gui.ToolTip(self.gui.update_lli_button, msg)
         self.clear_message_text()

@@ -223,11 +223,12 @@ def reboot():
 
 
 def restart_lli():
-    if config.DIALOG != tk:
-        logging.debug("Restarting Logos Linux Installer.")
-        args = [sys.executable]
-        subprocess.Popen(args)
-        sys.exit()
+    logging.debug("Restarting Logos Linux Installer.")
+    pidfile = Path('/tmp/LogosLinuxInstaller.pid')
+    if pidfile.is_file():
+        pidfile.unlink()
+    os.execv(sys.executable, [sys.executable])
+    sys.exit()
 
 
 def set_verbose():
@@ -1164,6 +1165,7 @@ def get_recommended_appimage():
 
 def compare_logos_linux_installer_version():
     if config.LLI_CURRENT_VERSION is not None and config.LLI_LATEST_VERSION is not None:
+        logging.debug(f"{config.LLI_CURRENT_VERSION=}; {config.LLI_LATEST_VERSION=}")
         if version.parse(config.LLI_CURRENT_VERSION) < version.parse(config.LLI_LATEST_VERSION):
             # Current release is older than recommended.
             status = 0
@@ -1235,8 +1237,7 @@ def update_lli_binary():
 
     os.chmod(sys.argv[0], os.stat(sys.argv[0]).st_mode | 0o111)
     logging.debug("Successfully updated Logos Linux Installer.")
-    if config.DIALOG == "curses":
-        restart_lli()
+    restart_lli()
 
 
 def is_appimage(file_path):
