@@ -1170,7 +1170,7 @@ def compare_logos_linux_installer_version():
             # Current release is older than recommended.
             status = 0
             message = "yes"
-        elif version.parse(config.LLI_CURRENT_VERSION) == version.parse(config.LLI_CURRENT_VERSION):
+        elif version.parse(config.LLI_CURRENT_VERSION) == version.parse(config.LLI_LATEST_VERSION):
             # Current release is latest.
             status = 1
             message = "uptodate"
