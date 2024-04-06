@@ -208,7 +208,7 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
         with process.stdout:
             for line in iter(process.stdout.readline, b''):
                 if winecmd.endswith('winetricks'):
-                    logging.debug(line.decode().rstrip())
+                    logging.debug(line.decode('cp437').rstrip())
                 else:
                     try:
                         logging.info(line.decode().rstrip())
