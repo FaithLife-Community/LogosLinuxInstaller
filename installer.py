@@ -325,7 +325,7 @@ def ensure_appimage_download(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_sys_deps(app=app)
     config.INSTALL_STEP += 1
-    if not config.WINE_EXE.lower().endswith('appimage'):
+    if config.TARGETVERSION != '9' and not config.WINE_EXE.lower().endswith('appimage'):  # noqa: E501
         return
     update_install_feedback(
         "Ensuring wine AppImage is downloaded…",
@@ -336,56 +336,20 @@ def ensure_appimage_download(app=None):
     downloaded_file = utils.get_downloaded_file_path(filename)
     if not downloaded_file:
         downloaded_file = Path(f"{config.MYDOWNLOADS}/{filename}")
-        utils.net_get(
-            config.RECOMMENDED_WINE64_APPIMAGE_URL,
-            target=downloaded_file,
-            app=app,
-            evt='<<GetAppImage>>'
-        )
-    logging.debug(f"> File exists?: {downloaded_file}: {Path(downloaded_file).is_file()}")  # noqa: E501
-
-
-def ensure_appimage_filecheck(app=None):
-    config.INSTALL_STEPS_COUNT += 1
-    ensure_appimage_download(app=app)
-    config.INSTALL_STEP += 1
-    if not config.WINE_EXE.lower().endswith('appimage'):
-        return
-    update_install_feedback(
-        "Verifying wine AppImage file…",
-        app=app
-    )
-
-    filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
-    downloaded_file = utils.get_downloaded_file_path(filename)
-    verified = utils.verify_downloaded_file(
+    utils.logos_reuse_download(
         config.RECOMMENDED_WINE64_APPIMAGE_URL,
-        downloaded_file,
+        filename,
+        config.MYDOWNLOADS,
         app=app,
-        evt='<<CheckAppImage>>'
+        chk_evt='<<CheckAppImage>>',
+        prg_evt='<<GetAppImage>>'
     )
-    if not verified:
-        # Try download 1 more time.
-        utils.net_get(
-            config.RECOMMENDED_WINE64_APPIMAGE_URL,
-            target=downloaded_file,
-            app=app,
-            evt='<<GetAppImage>>'
-        )
-        verified = utils.verify_downloaded_file(
-            config.RECOMMENDED_WINE64_APPIMAGE_URL,
-            downloaded_file,
-            app=app,
-            evt='<<CheckAppImage>>'
-        )
-        if not verified:
-            msg.logos_error(f"File verification failed: {downloaded_file}")
-    logging.debug(f"File is verified?: {downloaded_file}: {verified}")
+    logging.debug(f"> File exists?: {downloaded_file}: {Path(downloaded_file).is_file()}")  # noqa: E501
 
 
 def ensure_wine_executables(app=None):
     config.INSTALL_STEPS_COUNT += 1
-    ensure_appimage_filecheck(app=app)
+    ensure_appimage_download(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback(
         "Ensuring wine executables are available…",
@@ -400,14 +364,14 @@ def ensure_wine_executables(app=None):
     appdir_bindir = Path(config.APPDIR_BINDIR)
     os.environ['PATH'] = f"{config.APPDIR_BINDIR}:{os.getenv('PATH')}"
 
-    # Ensure AppImage symlink.
     if not os.access(config.WINE_EXE, os.X_OK):
+        # Ensure AppImage symlink.
         appimage_link = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
         appimage_file = Path(config.SELECTED_APPIMAGE_FILENAME)
         appimage_filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
         if config.WINEBIN_CODE in ['AppImage', 'Recommended']:
             # Ensure appimage is copied to appdir_bindir.
-            downloaded_file = utils.get_downloaded_file_path(appimage_filename)
+            downloaded_file = utils.get_downloaded_file_path(appimage_filename)  # noqa: E501
             if not appimage_file.is_file():
                 msg.cli_msg(f"Copying: {downloaded_file} into: {str(appdir_bindir)}")  # noqa: E501
                 shutil.copy(downloaded_file, str(appdir_bindir))
@@ -451,28 +415,49 @@ def ensure_winetricks_executable(app=None):
         # The choice of System winetricks was made previously. Here we are only
         # concerned about whether or not the downloaded winetricks is usable.
         msg.cli_msg("Downloading winetricks from the Internet…")
-        utils.net_get(
-            config.WINETRICKS_URL,
-            target=tricksbin,
-            app=app,
-            evt='<<GetWinetricks>>'
+        utils.install_winetricks(
+            tricksbin.parent,
+            app=app
         )
-        verified = utils.verify_downloaded_file(
-            config.WINETRICKS_URL,
-            tricksbin,
-            app=app,
-            evt='<<CheckWinetricks>>'
-        )
-        if not verified:
-            msg.logos_error(f"File verification failed: {tricksbin}")
-        os.chmod(f"{tricksbin}", 0o755)
     logging.debug(f"> {config.WINETRICKSBIN} is executable?: {os.access(config.WINETRICKSBIN, os.X_OK)}")  # noqa: E501
     return 0
 
 
-def ensure_product_installer_download(app=None):
+def ensure_premade_winebottle_download(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_winetricks_executable(app=app)
+    config.INSTALL_STEP += 1
+    if config.TARGETVERSION != '9':
+        return
+    update_install_feedback(
+        f"Ensuring {config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME} bottle is downloaded…",  # noqa: E501
+        app=app
+    )
+
+    downloaded_file = utils.get_downloaded_file_path(config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
+    if not downloaded_file:
+        downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
+    utils.logos_reuse_download(
+        config.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
+        config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
+        config.MYDOWNLOADS,
+        chk_evt='<<CheckBottle>>',
+        prg_evt='<<GetBottle>>'
+    )
+    # Install bottle.
+    bottle = Path(f"{config.INSTALLDIR}/data/wine64_bottle")
+    if not bottle.is_dir():
+        utils.install_premade_wine_bottle(
+            config.MYDOWNLOADS,
+            f"{config.INSTALLDIR}/data"
+        )
+
+    logging.debug(f"> '{downloaded_file}' exists?: {Path(downloaded_file).is_file()}")  # noqa: E501
+
+
+def ensure_product_installer_download(app=None):
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_premade_winebottle_download(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback(
         f"Ensuring {config.FLPRODUCT} installer is downloaded…",
@@ -483,66 +468,36 @@ def ensure_product_installer_download(app=None):
     downloaded_file = utils.get_downloaded_file_path(config.LOGOS_EXECUTABLE)
     if not downloaded_file:
         downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
-        utils.net_get(
-            config.LOGOS64_URL,
-            target=downloaded_file,
-            app=app,
-            evt='<<GetLogos>>'
-        )
-    logging.debug(f"> '{downloaded_file}' exists?: {Path(downloaded_file).is_file()}")  # noqa: E501
-
-
-def ensure_product_installer_filecheck(app=None):
-    config.INSTALL_STEPS_COUNT += 1
-    ensure_product_installer_download(app=app)
-    config.INSTALL_STEP += 1
-    update_install_feedback(
-        f"Verifying {config.LOGOS_EXECUTABLE} file…",
-        app=app
-    )
-
-    # Ensure file integrity.
-    filename = config.LOGOS_EXECUTABLE
-    downloaded_file = utils.get_downloaded_file_path(filename)
-    verified = utils.verify_downloaded_file(
+    utils.logos_reuse_download(
         config.LOGOS64_URL,
-        downloaded_file,
-        app=app,
-        evt='<<CheckLogos>>'
+        config.LOGOS_EXECUTABLE,
+        config.MYDOWNLOADS,
+        chk_evt='<<CheckLogos>>',
+        prg_evt='<<GetLogos>>'
     )
-    if not verified:
-        # Try download 1 more time.
-        utils.net_get(
-            config.LOGOS64_URL,
-            target=downloaded_file,
-            app=app,
-            evt='<<GetLogos>>'
-        )
-        verified = utils.verify_downloaded_file(
-            config.LOGOS64_URL,
-            downloaded_file,
-            app=app,
-            evt='<<CheckLogos>>'
-        )
-        if not verified:
-            msg.logos_error(f"File verification  failed: {downloaded_file}")
     # Copy file into INSTALLDIR.
     installer = Path(f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}")
     if not installer.is_file():
         shutil.copy(downloaded_file, installer.parent)
 
-    logging.debug(f"> '{str(installer)}' exists?: {installer.is_file()}")
+    logging.debug(f"> '{downloaded_file}' exists?: {Path(downloaded_file).is_file()}")  # noqa: E501
 
 
 def ensure_wineprefix_init(app=None):
     config.INSTALL_STEPS_COUNT += 1
-    ensure_product_installer_filecheck(app=app)
+    ensure_product_installer_download(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Ensuring wineprefix is initialized…", app=app)
 
     init_file = Path(f"{config.WINEPREFIX}/system.reg")
     if not init_file.is_file():
-        wine.initializeWineBottle()
+        if config.TARGETVERSION == '9':
+            utils.install_premade_wine_bottle(
+                config.MYDOWNLOADS,
+                f"{config.INSTALLDIR}/data",
+            )
+        else:
+            wine.initializeWineBottle()
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 
@@ -577,14 +532,25 @@ def ensure_winetricks_applied(app=None):
     if not config.SKIP_FONTS and not grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
         wine.installFonts()
 
-    if not grep(r'"\*d3dcompiler_47"="native"', usr_reg):  # noqa: E501
+    if not grep(r'"\*d3dcompiler_47"="native"', usr_reg):
         wine.installD3DCompiler()
 
     if not grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
+        args = ["settings", "win10"]
         if not config.WINETRICKS_UNATTENDED:
-            wine.winetricks_install("-q", "settings", "win10")
-        else:
-            wine.winetricks_install("settings", "win10")
+            args.insert(0, "-q")
+        wine.winetricks_install(*args)
+
+    if config.TARGETVERSION == '9':
+        msg.cli_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
+        exe_args = [
+            'add',
+            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
+            "/v", "Version",
+            "/t", "REG_SZ",
+            "/d", "vista", "/f",
+            ]
+        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
     logging.debug("> Done.")
 
 
