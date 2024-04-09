@@ -9,14 +9,13 @@ import logging
 import os
 import psutil
 import queue
-import re
 import requests
 import shutil
 import signal
-import stat
 import subprocess
 import sys
 import threading
+import zipfile
 from urllib.parse import urlparse
 from datetime import datetime, timedelta
 
@@ -142,8 +141,6 @@ def set_default_config():
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
-    if config.INSTALLDIR:
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
 
 
 def set_runtime_config():
@@ -488,7 +485,6 @@ def cli_download(uri, destination):
     message = f"Downloading '{uri}' to '{destination}'"
     logging.info(message)
     msg.cli_msg(message)
-    filename = os.path.basename(uri)
 
     # Set target.
     if destination != destination.rstrip('/'):
@@ -505,8 +501,8 @@ def cli_download(uri, destination):
 
     # Download from uri in thread while showing progress bar.
     cli_queue = queue.Queue()
-    args = [uri, target]
-    kwargs = {'q': cli_queue}
+    args = [uri]
+    kwargs = {'q': cli_queue, 'target': target}
     t = threading.Thread(target=net_get, args=args, kwargs=kwargs, daemon=True)
     t.start()
     try:
@@ -520,7 +516,14 @@ def cli_download(uri, destination):
         msg.logos_error('Interrupted with Ctrl+C')
 
 
-def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
+def logos_reuse_download(
+    SOURCEURL,
+    FILE,
+    TARGETDIR,
+    app=None,
+    chk_evt=None,
+    prg_evt=None
+):
     DIRS = [
         config.INSTALLDIR,
         os.getcwd(),
@@ -533,7 +536,12 @@ def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
             file_path = Path(i) / FILE
             if os.path.isfile(file_path):
                 logging.info(f"{FILE} exists in {i}. Verifying properties.")
-                if verify_downloaded_file(SOURCEURL, file_path):
+                if verify_downloaded_file(
+                    SOURCEURL,
+                    file_path,
+                    app=app,
+                    evt=chk_evt
+                ):
                     logging.info(f"{FILE} properties match. Using it…")
                     msg.cli_msg(f"Copying {FILE} into {TARGETDIR}")
                     try:
@@ -546,8 +554,21 @@ def logos_reuse_download(SOURCEURL, FILE, TARGETDIR):
                     logging.info(f"Incomplete file: {file_path}.")
     if FOUND == 1:
         file_path = os.path.join(config.MYDOWNLOADS, FILE)
-        cli_download(SOURCEURL, file_path)
-        if verify_downloaded_file(SOURCEURL, file_path):
+        if config.DIALOG == 'tk' and app:
+            net_get(
+                SOURCEURL,
+                target=file_path,
+                app=app,
+                evt=prg_evt
+            )
+        else:
+            cli_download(SOURCEURL, file_path)
+        if verify_downloaded_file(
+            SOURCEURL,
+            file_path,
+            app=app,
+            evt=chk_evt
+        ):
             msg.cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
             try:
                 shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
@@ -789,18 +810,17 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
     wine_binary_options = []
 
     # Add AppImages to list
-    if config.TARGETVERSION != "9":
-        if config.DIALOG == 'tk':
-            wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")
-            wine_binary_options.extend(appimages)
-        else:
-            appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # [Code, File Path, Description]
-            wine_binary_options.append([
-                "Recommended",  # Code
-                f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # File Path
-                f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # Description
+    if config.DIALOG == 'tk':
+        wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")
+        wine_binary_options.extend(appimages)
+    else:
+        appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # [Code, File Path, Description]
+        wine_binary_options.append([
+            "Recommended",  # Code
+            f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # File Path
+            f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # Description
             ])
-            wine_binary_options.extend(appimage_entries)
+        wine_binary_options.extend(appimage_entries)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
@@ -824,16 +844,6 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
     return wine_binary_options
 
 
-# def get_system_winetricks():
-#     try:
-#         p = subprocess.run(['winetricks', '--version'], capture_output=True, text=True)
-#         version = int(p.stdout.rstrip()[:8])
-#         path = shutil.which('winetricks')
-#         return (path, version)
-#     except FileNotFoundError:
-#         return None
-
-
 def get_winetricks_options():
     local_winetricks_path = shutil.which('winetricks')
     winetricks_options = ['Download']
@@ -848,6 +858,34 @@ def get_winetricks_options():
     else:
         logging.info("Local winetricks not found.")
     return winetricks_options
+
+
+def install_winetricks(
+    installdir,
+    app=None,
+    version=config.WINETRICKS_VERSION,
+):
+    msg.cli_msg(f"Installing winetricks v{version}…")
+    base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags/"  # noqa: E501
+    zip_name = f"{version}.zip"
+    logos_reuse_download(
+        f"{base_url}/{version}",
+        zip_name,
+        config.MYDOWNLOADS,
+        app=app,
+        chk_evt='<<CheckWinetricks>>',
+        prg_evt='<<GetWinetricks>>'
+    )
+    wtzip = f"{config.MYDOWNLOADS}/{zip_name}"
+    with zipfile.ZipFile(wtzip) as z:
+        for zi in z.infolist():
+            if zi.is_dir():
+                continue
+            zi.filename = Path(zi.filename).name
+            if zi.filename == 'winetricks':
+                z.extract(zi, path=installdir)
+                break
+    os.chmod(f"{installdir}/winetricks", 0o755)
 
 
 def get_pids_using_file(file_path, mode=None):
@@ -875,21 +913,6 @@ def wait_process_using_dir(directory):
         psutil.wait(pid)
 
     logging.info("* End of wait_process_using_dir.")
-
-
-def wget(uri, target, q=None, app=None, evt=None):
-    cmd = ['wget', '-q', '--show-progress', '--progress=dot', '-c', uri, '-O', target]
-    with subprocess.Popen(cmd, stderr=subprocess.PIPE, encoding='UTF8') as proc:
-        while True:
-            line = proc.stderr.readline()
-            if not line:
-                break
-            m = re.search(r'[0-9]+%', line)
-            if m is not None:
-                p = m[0].rstrip('%')
-                if None not in [q, app, evt]:
-                    q.put(p)
-                    app.root.event_generate(evt)
 
 
 def net_get(url, target=None, app=None, evt=None, q=None):
@@ -1028,6 +1051,8 @@ def same_md5(url, file_path):
 def same_size(url, file_path):
     logging.debug(f"Comparing size of {url} and {file_path}.")
     url_size = UrlProps(url).size
+    if not url_size:
+        return True
     file_size = FileProps(file_path).size
     logging.debug(f"{url_size = } B; {file_size = } B")
     res = url_size == file_size
@@ -1126,14 +1151,18 @@ def get_latest_release_data(releases_url):
 
 
 def get_latest_release_url(json_data):
-    release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
-    logging.info(f"Release URL: {release_url}")
+    release_url = None
+    if json_data:
+        release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
+        logging.info(f"Release URL: {release_url}")
     return release_url
 
 
 def get_latest_release_version_tag_name(json_data):
-    release_tag_name = json_data[0].get('tag_name')  # noqa: E501
-    logging.info(f"Release URL Tag Name: {release_tag_name}")
+    release_tag_name = None
+    if json_data:
+        release_tag_name = json_data[0].get('tag_name')  # noqa: E501
+        logging.info(f"Release URL Tag Name: {release_tag_name}")
     return release_tag_name
 
 
@@ -1210,6 +1239,14 @@ def get_recommended_appimage():
             config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME,
             config.APPDIR_BINDIR
         )
+
+
+def install_premade_wine_bottle(srcdir, appdir):
+    msg.cli_msg(f"Extracting: '{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
+    shutil.unpack_archive(
+        f"{srcdir}/{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
+        appdir
+    )
 
 
 def compare_logos_linux_installer_version():

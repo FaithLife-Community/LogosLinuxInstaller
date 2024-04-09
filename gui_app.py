@@ -608,9 +608,9 @@ class ControlWindow():
         self.logging_q = Queue()
         self.root.bind('<<InitLoggingButton>>', self.initialize_logging_button)
         self.root.bind('<<UpdateLoggingButton>>', self.update_logging_button)
-        self.message_q = Queue()
-        self.root.bind('<<ClearMessage>>', self.clear_message_text)
-        self.root.bind('<<UpdateMessage>>', self.update_message_text)
+        self.status_q = Queue()
+        self.root.bind('<<ClearStatus>>', self.clear_status_text)
+        self.root.bind('<<UpdateStatus>>', self.update_status_text)
         self.progress_q = Queue()
         self.root.bind(
             '<<StartIndeterminateProgress>>',
@@ -642,10 +642,10 @@ class ControlWindow():
             self.start_indeterminate_progress()
 
     def configure_app_button(self, evt=None):
-        # if utils.app_is_installed():
         if utils.find_installed_product():
             self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
             self.gui.app_button.config(command=self.run_logos)
+            self.gui.get_winetricks_button.state(['!disabled'])
         else:
             self.gui.app_button.config(command=self.run_installer)
 
@@ -800,6 +800,7 @@ class ControlWindow():
         self.gui.app_button.state(['!disabled'])
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
         self.configure_app_button()
+        self.update_run_winetricks_button()
 
     def update_latest_lli_release_button(self, evt=None):
         status, reason = utils.compare_logos_linux_installer_version()
@@ -817,7 +818,7 @@ class ControlWindow():
             msg = "This button is disabled. Logos Linux Installer is newer than the latest release."  # noqa: E501
         if msg:
             gui.ToolTip(self.gui.update_lli_button, msg)
-        self.clear_message_text()
+        self.clear_status_text()
         self.stop_indeterminate_progress()
         self.gui.update_lli_button.state([state])
 
@@ -834,7 +835,7 @@ class ControlWindow():
             msg = "This button is disabled. The AppImage version is newer than the latest recommended."  # noqa: E501
         if msg:
             gui.ToolTip(self.gui.latest_appimage_button, msg)
-        self.clear_message_text()
+        self.clear_status_text()
         self.stop_indeterminate_progress()
         self.gui.latest_appimage_button.state([state])
 
@@ -851,7 +852,7 @@ class ControlWindow():
         else:
             return 'DISABLED'
 
-    def clear_message_text(self, evt=None):
+    def clear_status_text(self, evt=None):
         self.gui.messagevar.set('')
 
     def update_progress(self, evt=None):
@@ -868,8 +869,8 @@ class ControlWindow():
         else:
             self.gui.progressvar.set(progress)
 
-    def update_message_text(self, evt=None):
-        self.gui.messagevar.set(self.message_q.get())
+    def update_status_text(self, evt=None):
+        self.gui.messagevar.set(self.status_q.get())
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])

@@ -83,9 +83,9 @@ def backup_and_restore(mode='backup', app=None):
     if not src_dirs:
         m = "No files to backup"
         if app is not None:
-            app.message_q.put(m)
+            app.status_q.put(m)
             app.root.event_generate('<<StartIndeterminateProgress>>')
-            app.root.event_generate('<<UpdateMessage>>')
+            app.root.event_generate('<<UpdateStatus>>')
         logging.warning(m)
         return
 
@@ -94,9 +94,9 @@ def backup_and_restore(mode='backup', app=None):
     t = threading.Thread(target=utils.get_folder_group_size, args=[src_dirs, q], daemon=True)
     m = "Calculating backup size"
     if app is not None:
-        app.message_q.put(m)
+        app.status_q.put(m)
         app.root.event_generate('<<StartIndeterminateProgress>>')
-        app.root.event_generate('<<UpdateMessage>>')
+        app.root.event_generate('<<UpdateStatus>>')
     msg.cli_msg(m, end='')
     t.start()
     try:
@@ -110,14 +110,14 @@ def backup_and_restore(mode='backup', app=None):
     t.join()
     if app is not None:
         app.root.event_generate('<<StopIndeterminateProgress>>')
-        app.root.event_generate('<<ClearMessage>>')
+        app.root.event_generate('<<ClearStatus>>')
     src_size = q.get()
     if src_size == 0:
         m = f"Nothing to {mode}!"
         logging.warning(m)
         if app is not None:
-            app.message_q.put(m)
-            app.root.event_generate('<<UpdateMessage>>')
+            app.status_q.put(m)
+            app.root.event_generate('<<UpdateStatus>>')
         return
 
     # Set destination folder.
@@ -138,8 +138,8 @@ def backup_and_restore(mode='backup', app=None):
     if not utils.enough_disk_space(dst_dir, src_size) and not Path(dst_dir / 'Data').is_dir():
         m = f"Not enough free disk space for {mode}."
         if app is not None:
-            app.message_q.put(m)
-            app.root.event_generate('<<UpdateMessage>>')
+            app.status_q.put(m)
+            app.root.event_generate('<<UpdateStatus>>')
             return
         else:
             msg.logos_error(m)
@@ -167,8 +167,8 @@ def backup_and_restore(mode='backup', app=None):
     logging.info(m)
     msg.cli_msg(m)
     if app is not None:
-        app.message_q.put(m)
-        app.root.event_generate('<<UpdateMessage>>')
+        app.status_q.put(m)
+        app.root.event_generate('<<UpdateStatus>>')
     dst_dir_size = utils.get_path_size(dst_dir)
     t.start()
     try:
@@ -185,7 +185,7 @@ def backup_and_restore(mode='backup', app=None):
         msg.logos_error("Cancelled with Ctrl+C.")
     t.join()
     if app is not None:
-        app.root.event_generate('<<ClearMessage>>')
+        app.root.event_generate('<<ClearStatus>>')
     logging.info(f"Finished. {src_size} bytes copied to {str(dst_dir)}")
 
 def copy_data(src_dirs, dst_dir):
@@ -239,6 +239,8 @@ def remove_library_catalog():
 
 def set_winetricks():
     msg.cli_msg("Preparing winetricks…")
+    if not config.APPDIR_BINDIR:
+        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
     # Check if local winetricks version available; else, download it
     if config.WINETRICKSBIN is None or not os.access(config.WINETRICKSBIN, os.X_OK):  # noqa: E501
         local_winetricks_path = shutil.which('winetricks')
@@ -266,7 +268,8 @@ def set_winetricks():
                         config.WINETRICKSBIN = local_winetricks_path
                         return 0
                     elif winetricks_choice.startswith("2"):
-                        download_winetricks()
+                        # download_winetricks()
+                        utils.install_winetricks(config.APPDIR_BINDIR)
                         config.WINETRICKSBIN = os.path.join(
                             config.APPDIR_BINDIR,
                             "winetricks"
@@ -277,7 +280,8 @@ def set_winetricks():
                         sys.exit(0)
             else:
                 msg.cli_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")  # noqa: E501
-                download_winetricks()
+                # download_winetricks()
+                utils.install_winetricks(config.APPDIR_BINDIR)
                 config.WINETRICKSBIN = os.path.join(
                     config.APPDIR_BINDIR,
                     "winetricks"
@@ -285,7 +289,8 @@ def set_winetricks():
                 return 0
         else:
             msg.cli_msg("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
-            download_winetricks()
+            # download_winetricks()
+            utils.install_winetricks(config.APPDIR_BINDIR)
             config.WINETRICKSBIN = os.path.join(
                 config.APPDIR_BINDIR,
                 "winetricks"

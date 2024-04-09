@@ -202,7 +202,7 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        self.update_lli_label = Label(self, text="Update Logos Linux Installer")
+        self.update_lli_label = Label(self, text="Update Logos Linux Installer")  # noqa: E501
         self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(
@@ -215,7 +215,9 @@ class ControlGui(Frame):
         # Run winetricks
         self.winetricks_label = Label(self, text="Winetricks")
         self.run_winetricks_button = Button(self, text="Run")
+        self.run_winetricks_button.state(['disabled'])
         self.get_winetricks_button = Button(self, text="Download/Update")
+        self.get_winetricks_button.state(['disabled'])
         # App logging toggle
         self.loggingstatevar = StringVar(value='Enable')
         self.logging_label = Label(self, text="Toggle app logging")
@@ -239,13 +241,13 @@ class ControlGui(Frame):
         self.app_label.grid(column=0, row=0, sticky='w', pady=2)
         self.app_button.grid(column=1, row=0, sticky='w', pady=2)
 
-        s1.grid(column=0, row=1, columnspan=3, sticky='we')
+        s1.grid(column=0, row=1, columnspan=3, sticky='we', pady=2)
         self.actions_label.grid(column=0, row=2, sticky='e', padx=20, pady=2)
         self.actions_button.grid(column=0, row=4, sticky='e', padx=20, pady=2)
         self.run_indexing_radio.grid(column=1, row=2, sticky='w', pady=2, columnspan=2)  # noqa: E501
         self.remove_library_catalog_radio.grid(column=1, row=3, sticky='w', pady=2, columnspan=2)  # noqa: E501
         self.remove_index_files_radio.grid(column=1, row=4, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        s2.grid(column=0, row=5, columnspan=3, sticky='we')
+        s2.grid(column=0, row=5, columnspan=3, sticky='we', pady=2)
 
         self.config_label.grid(column=0, row=6, sticky='w', pady=2)
         self.config_button.grid(column=1, row=6, sticky='w', pady=2)
@@ -274,7 +276,7 @@ class ControlGui(Frame):
         self.logging_button.grid(column=1, row=13, sticky='w', pady=2)
 
         s3.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        self.message_label.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)  # noqa: E501
         self.progress.grid(column=0, row=16, columnspan=3, sticky='we', pady=2)
 
 

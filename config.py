@@ -91,6 +91,7 @@ RECOMMENDED_WINE64_APPIMAGE_BRANCH = None
 SUPERUSER_COMMAND = None
 VERBUM_PATH = None
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
+WINETRICKS_VERSION = '20220411'
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 
 
@@ -143,6 +144,10 @@ def set_config_env(config_file_path):
     logging.info(f"Setting {len(config_dict)} variables from config file.")
     for key, value in config_dict.items():
         globals()[key] = value
+    installdir = config_dict.get('INSTALLDIR')
+    if installdir:
+        global APPDIR_BINDIR
+        APPDIR_BINDIR = f"{installdir}/data/bin"
 
 
 def get_env_config():
