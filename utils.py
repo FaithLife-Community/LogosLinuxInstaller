@@ -1,5 +1,4 @@
 import atexit
-import stat
 
 import distro
 import glob
@@ -105,8 +104,8 @@ class UrlProps(Props):
         content_length = self.headers.get('Content-Length')
         content_encoding = self.headers.get('Content-Encoding')
         if content_encoding is not None:
-            logging.critical(f"The server requires receiving the file compressed as '{content_encoding}'.")
-        logging.debug(f"{content_length = }")
+            logging.critical(f"The server requires receiving the file compressed as '{content_encoding}'.")  # noqa: E501
+        logging.debug(f"{content_length=}")
         if content_length is not None:
             self.size = int(content_length)
         return self.size
@@ -121,12 +120,12 @@ class UrlProps(Props):
             if content_md5 is not None:
                 # Convert from hex to base64
                 content_md5_hex = content_md5.strip('"').strip("'")
-                content_md5 = b64encode(bytes.fromhex(content_md5_hex)).decode()
+                content_md5 = b64encode(bytes.fromhex(content_md5_hex)).decode()  # noqa: E501
         else:
             content_md5 = self.headers.get('Content-MD5')
         if content_md5 is not None:
             content_md5 = content_md5.strip('"').strip("'")
-        logging.debug(f"{content_md5 = }")
+        logging.debug(f"{content_md5=}")
         if content_md5 is not None:
             self.md5 = content_md5
         return self.md5
@@ -158,7 +157,7 @@ def write_config(config_file_path):
     logging.info(f"Writing config to {config_file_path}")
     os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
 
-    config_data = {key: config.__dict__.get(key) for key in config.core_config_keys}
+    config_data = {key: config.__dict__.get(key) for key in config.core_config_keys}  # noqa: E501
 
     try:
         with open(config_file_path, 'w') as config_file:
@@ -166,7 +165,8 @@ def write_config(config_file_path):
             config_file.write('\n')
 
     except IOError as e:
-        msg.logos_error(f"Error writing to config file {config_file_path}: {e}")
+        msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
+
 
 def update_config_file(config_file_path, key, value):
     config_file_path = Path(config_file_path)
@@ -181,7 +181,8 @@ def update_config_file(config_file_path, key, value):
                 json.dump(config_data, f, indent=4, sort_keys=True)
                 f.write('\n')
         except IOError as e:
-            msg.logos_error(f"Error writing to config file {config_file_path}: {e}")
+            msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
+
 
 def die_if_running():
     PIDF = '/tmp/LogosLinuxInstaller.pid'
@@ -193,11 +194,12 @@ def die_if_running():
     if os.path.isfile(PIDF):
         with open(PIDF, 'r') as f:
             pid = f.read().strip()
-            message = f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?"
+            message = f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?"  # noqa: E501
             if config.DIALOG == "tk":
-                # TODO: With the GUI this runs in a thread. It's not clear if the
-                # messagebox will work correctly. It may need to be triggered from
-                # here with an event and then opened from the main thread.
+                # TODO: With the GUI this runs in a thread. It's not clear if
+                # the messagebox will work correctly. It may need to be
+                # triggered from here with an event and then opened from the
+                # main thread.
                 tk_root = tk.Tk()
                 tk_root.withdraw()
                 confirm = tk.messagebox.askquestion("Confirmation", message)
@@ -217,8 +219,7 @@ def die_if_running():
 
 def die_if_root():
     if os.getuid() == 0 and not config.LOGOS_FORCE_ROOT:
-        msg.logos_error(
-            "Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")
+        msg.logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")  # noqa: E501
 
 
 def die(message):
@@ -229,7 +230,13 @@ def die(message):
 def reboot():
     logging.info("Rebooting system.")
     command = f"{config.SUPERUSER_COMMAND} reboot now"
-    subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+    subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+        text=True
+    )
     sys.exit(0)
 
 
@@ -269,7 +276,7 @@ def tl(library):
 
 def get_dialog():
     if not os.environ.get('DISPLAY'):
-        msg.logos_error("The installer does not work unless you are running a display")
+        msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
 
     DIALOG = os.getenv('DIALOG')
     config.GUI = False
@@ -295,7 +302,10 @@ def get_os():
     # try:
     #    with open('/etc/os-release', 'r') as f:
     #        os_release_content = f.read()
-    #    match = re.search(r'^ID=(\S+).*?VERSION_ID=(\S+)', os_release_content, re.MULTILINE)
+    #    match = re.search(
+    #        r'^ID=(\S+).*?VERSION_ID=(\S+)',
+    #        os_release_content, re.MULTILINE
+    #    )
     #    if match:
     #        config.OS_NAME = match.group(1)
     #        config.OS_RELEASE = match.group(2)
@@ -303,7 +313,7 @@ def get_os():
     # except FileNotFoundError:
     #    pass
 
-    ## Try using lsb_release command
+    # Try using lsb_release command
     # try:
     #    config.OS_NAME = platform.linux_distribution()[0]
     #    config.OS_RELEASE = platform.linux_distribution()[1]
@@ -311,11 +321,15 @@ def get_os():
     # except AttributeError:
     #    pass
 
-    ## Try reading /etc/lsb-release
+    # Try reading /etc/lsb-release
     # try:
     #    with open('/etc/lsb-release', 'r') as f:
     #        lsb_release_content = f.read()
-    #    match = re.search(r'^DISTRIB_ID=(\S+).*?DISTRIB_RELEASE=(\S+)', lsb_release_content, re.MULTILINE)
+    #    match = re.search(
+    #        r'^DISTRIB_ID=(\S+).*?DISTRIB_RELEASE=(\S+)',
+    #        lsb_release_content,
+    #        re.MULTILINE
+    #    )
     #    if match:
     #        config.OS_NAME = match.group(1)
     #        config.OS_RELEASE = match.group(2)
@@ -323,7 +337,7 @@ def get_os():
     # except FileNotFoundError:
     #    pass
 
-    ## Try reading /etc/debian_version
+    # Try reading /etc/debian_version
     # try:
     #    with open('/etc/debian_version', 'r') as f:
     #        config.OS_NAME = 'Debian'
@@ -353,7 +367,9 @@ def get_package_manager():
     if shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"  # IDEA: Switch to Python APT library? See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996
+        # IDEA: Switch to Python APT library?
+        # See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"
         config.PACKAGES = "binutils cabextract fuse wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
@@ -361,31 +377,31 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
-        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"
+        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
-        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES= "appimagelauncher"
+        config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = r"pacman -R --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q | grep -E ^"
-        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     # Add more conditions for other package managers as needed
 
     # Add logging output.
-    logging.debug(f"{config.SUPERUSER_COMMAND = }")
-    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_INSTALL = }")
-    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_QUERY = }")
-    logging.debug(f"{config.PACKAGES = }")
-    logging.debug(f"{config.L9PACKAGES = }")
+    logging.debug(f"{config.SUPERUSER_COMMAND=}")
+    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_INSTALL=}")
+    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_QUERY=}")
+    logging.debug(f"{config.PACKAGES=}")
+    logging.debug(f"{config.L9PACKAGES=}")
 
 
 def get_runmode():
@@ -405,7 +421,13 @@ def query_packages(packages, mode="install"):
     for p in packages:
         command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
         logging.debug(f"pkg query command: \"{command}\"")
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            text=True
+        )
         logging.debug(f"pkg query result: {result.returncode}")
         if result.returncode != 0 and mode == "install":
             missing_packages.append(p)
@@ -430,7 +452,7 @@ def install_packages(packages):
         return
 
     if packages:
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"
+        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
         logging.debug(f"install_packages cmd: {command}")
         subprocess.run(command, shell=True, check=True)
 
@@ -440,7 +462,7 @@ def remove_packages(packages):
         return
 
     if packages:
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {' '.join(packages)}"
+        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {' '.join(packages)}"  # noqa: E501
         logging.debug(f"remove_packages cmd: {command}")
         subprocess.run(command, shell=True, check=True)
 
@@ -476,7 +498,10 @@ def get_user_downloads_dir():
         with user_dirs_file.open() as f:
             for line in f.readlines():
                 if 'DOWNLOAD' in line:
-                    downloads_path = line.rstrip().split('=')[1].replace('$HOME', str(home)).strip('"')
+                    downloads_path = line.rstrip().split('=')[1].replace(
+                        '$HOME',
+                        str(home)
+                    ).strip('"')
                     break
     return downloads_path
 
@@ -589,19 +614,52 @@ def delete_symlink(symlink_path):
 
 
 def steam_preinstall_dependencies():
-    subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "disable"], check=True)
-    subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--init"], check=True)
-    subprocess.run([config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"], check=True)
+    subprocess.run(
+        [config.SUPERUSER_COMMAND, "steamos-readonly", "disable"],
+        check=True
+    )
+    subprocess.run(
+        [config.SUPERUSER_COMMAND, "pacman-key", "--init"],
+        check=True
+    )
+    subprocess.run(
+        [config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"],
+        check=True
+    )
 
 
 def steam_postinstall_dependencies():
-    subprocess.run([config.SUPERUSER_COMMAND, "sed", '-i',
-                    's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/', '/etc/nsswitch.conf'],
-                   check=True)
-    subprocess.run([config.SUPERUSER_COMMAND, "locale-gen"], check=True)
-    subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon"], check=True)
-    subprocess.run([config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"], check=True)
-    subprocess.run([config.SUPERUSER_COMMAND, "steamos-readonly", "enable"], check=True)
+    subprocess.run(
+        [
+            config.SUPERUSER_COMMAND,
+            "sed", '-i',
+            's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
+            '/etc/nsswitch.conf'
+        ],
+        check=True
+    )
+    subprocess.run(
+        [config.SUPERUSER_COMMAND, "locale-gen"],
+        check=True
+    )
+    subprocess.run(
+        [
+            config.SUPERUSER_COMMAND,
+            "systemctl",
+            "enable",
+            "--now",
+            "avahi-daemon"
+        ],
+        check=True
+    )
+    subprocess.run(
+        [config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"],
+        check=True
+    )
+    subprocess.run(
+        [config.SUPERUSER_COMMAND, "steamos-readonly", "enable"],
+        check=True
+    )
 
 
 def install_dependencies(packages, badpackages, logos9_packages=None):
@@ -622,40 +680,47 @@ def install_dependencies(packages, badpackages, logos9_packages=None):
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if missing_packages and conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}) and will remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"
+            message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}) and will remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"  # noqa: E501
+            logging.critical(message)
         elif missing_packages:
-            message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"
+            message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"  # noqa: E501
+            logging.critical(message)
         elif conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"
+            message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"  # noqa: E501
+            logging.critical(message)
         else:
             logging.debug("No missing or conflicting dependencies found.")
 
-        #TODO: Need to send continue question to user based on DIALOG.
+        # TODO: Need to send continue question to user based on DIALOG.
         # All we do above is create a message that we never send.
-        # Do we need a TK continue question? I see we have a CLI and curses one in msg.py
+        # Do we need a TK continue question? I see we have a CLI and curses one
+        # in msg.py
 
         if config.OS_NAME == "Steam":
             steam_preinstall_dependencies()
 
-        check_libs(["libfuse"]) # libfuse: needed for AppImage use. This is the only known needed library.
+        # libfuse: for AppImage use. This is the only known needed library.
+        check_libs(["libfuse"])
 
         if missing_packages:
             install_packages(missing_packages)
 
         if conflicting_packages:
-            remove_packages(conflicting_packages) # AppImage Launcher is the only known conflicting package.
+            # AppImage Launcher is the only known conflicting package.
+            remove_packages(conflicting_packages)
             config.REBOOT_REQUIRED = True
 
         if config.OS_NAME == "Steam":
             steam_postinstall_dependencies()
 
         if config.REBOOT_REQUIRED:
-            #TODO: Add resumable install functionality to speed up running the program after reboot. See #19.
+            # TODO: Add resumable install functionality to speed up running the
+            # program after reboot. See #19.
             reboot()
 
     else:
         msg.logos_error(
-            f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_packages}. Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")
+            f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_packages}. Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")  # noqa: E501
 
 
 def have_lib(library, ld_library_path):
@@ -663,7 +728,7 @@ def have_lib(library, ld_library_path):
     if ld_library_path is not None:
         roots = [*ld_library_path.split(':'), *roots]
     for root in roots:
-        libs = [l for l in Path(root).rglob(f"{library}*")]
+        libs = [lib for lib in Path(root).rglob(f"{library}*")]
         if len(libs) > 0:
             logging.debug(f"'{library}' found at '{libs[0]}'")
             return True
@@ -678,12 +743,12 @@ def check_libs(libraries):
             logging.info(f"* {library} is installed!")
         else:
             if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-                message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND_INSTALL}. Proceed?"
+                message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND_INSTALL}. Proceed?"  # noqa: E501
                 if msg.cli_continue_question(message, "", ""):
                     install_packages(config.PACKAGES)
             else:
                 msg.logos_error(
-                    f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")
+                    f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")  # noqa: E501
 
 
 def check_dependencies():
@@ -695,7 +760,11 @@ def check_dependencies():
     if targetversion == 10:
         install_dependencies(config.PACKAGES, config.BADPACKAGES)
     elif targetversion == 9:
-        install_dependencies(config.PACKAGES, config.BADPACKAGES, config.L9PACKAGES)
+        install_dependencies(
+            config.PACKAGES,
+            config.BADPACKAGES,
+            config.L9PACKAGES
+        )
     else:
         logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
 
@@ -714,7 +783,7 @@ def check_logos_release_version(version, threshold, check_version_part):
 
 
 def filter_versions(versions, threshold, check_version_part):
-    return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]
+    return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]  # noqa: E501
 
 
 def get_logos_releases(app=None):
@@ -731,9 +800,9 @@ def get_logos_releases(app=None):
             app.root.event_generate(app.release_evt)
         return downloaded_releases
 
-    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")
+    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
-    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"
+    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
 
     response_xml = net_get(url)
     # if response_xml is None and None not in [q, app]:
@@ -776,18 +845,21 @@ def get_winebin_code_and_desc(binary):
     codes = {
         "Recommended": "Use the recommended AppImage",
         "AppImage": "AppImage of Wine64",
-        "System": "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later, or 8.16-devel or later, and cannot be version 8.0.",
+        "System": "Use the system binary (i.e., /usr/bin/wine64). WINE must be 7.18-staging or later, or 8.16-devel or later, and cannot be version 8.0.",  # noqa: E501
         "Proton": "Install using the Steam Proton fork of WINE.",
         "PlayOnLinux": "Install using a PlayOnLinux WINE64 binary.",
         "Custom": "Use a WINE64 binary from another directory.",
     }
-    # TODO: The GUI currently cannot distinguish between the recommended AppImage and another on the system.
-    # We need to add some manner of making this distintion in the GUI, which is why the wine binary codes exist.
-    # Currently the GUI only accept an array with a single element, the binary itself; this will need to be modified to
-    # a two variable array, at the least, even if we hide the wine binary code, but it might be useful to tell the GUI
-    # user that a particular AppImage/binary is recommended.
-    # Below is my best guess for how to do this with the single element array… Does it work?
-    if binary == f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":
+    # TODO: The GUI currently cannot distinguish between the recommended
+    # AppImage and another on the system. We need to add some manner of making
+    # this distinction in the GUI, which is why the wine binary codes exist.
+    # Currently the GUI only accept an array with a single element, the binary
+    # itself; this will need to be modified to a two variable array, at the
+    # least, even if we hide the wine binary code, but it might be useful to
+    # tell the GUI user that a particular AppImage/binary is recommended.
+    # Below is my best guess for how to do this with the single element array…
+    # Does it work?
+    if binary == f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":  # noqa: E501
         code = "Recommended"
     elif binary.lower().endswith('.appimage'):
         code = "AppImage"
@@ -811,14 +883,14 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
 
     # Add AppImages to list
     if config.DIALOG == 'tk':
-        wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")
+        wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
         wine_binary_options.extend(appimages)
     else:
-        appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # [Code, File Path, Description]
+        appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
         wine_binary_options.append([
             "Recommended",  # Code
-            f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # File Path
-            f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # Description
+            f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # noqa: E501
+            f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # noqa: E501
             ])
         wine_binary_options.extend(appimage_entries)
 
@@ -826,13 +898,15 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
     logging.debug(f"{sorted_binaries=}")
 
     for WINEBIN_PATH in sorted_binaries:
-        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(WINEBIN_PATH)
+        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(WINEBIN_PATH)  # noqa: E501
 
         # Create wine binary option array
         if config.DIALOG == 'tk':
             wine_binary_options.append(WINEBIN_PATH)
         else:
-            wine_binary_options.append([WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION])
+            wine_binary_options.append(
+                [WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION]
+            )
 
     if config.DIALOG != 'tk':
         wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
@@ -941,8 +1015,10 @@ def net_get(url, target=None, app=None, evt=None, q=None):
     percent = None
     chunk_size = 100 * 1024  # 100 KB default
     if type(total_size) is int:
-        chunk_size = min([int(total_size / 50), 2 * 1024 * 1024])  # smaller of 2% of filesize or 2 MB
-    headers = {'Accept-Encoding': 'identity'}  # force non-compressed file transfer
+        # Use smaller of 2% of filesize or 2 MB for chunk_size.
+        chunk_size = min([int(total_size / 50), 2 * 1024 * 1024])
+    # Force non-compressed file transfer for accurate progress tracking.
+    headers = {'Accept-Encoding': 'identity'}
     file_mode = 'wb'
 
     # If file exists and URL is resumable, set download Range.
@@ -951,7 +1027,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
         local_size = target.get_size()
         logging.info(f"Current downloaded size in bytes: {local_size}")
         if url.headers.get('Accept-Ranges') == 'bytes':
-            logging.debug(f"Server accepts byte range; attempting to resume download.")
+            logging.debug("Server accepts byte range; attempting to resume download.")  # noqa: E501
             file_mode = 'ab'
             if type(url.size) is int:
                 headers['Range'] = f'bytes={local_size}-{total_size}'
@@ -979,10 +1055,13 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                     r.raise_for_status()
                 except requests.exceptions.HTTPError as e:
                     if domain == "github.com":
-                        if e.response.status_code == 403 or e.response.status_code == 429:
-                            logging.error("GitHub API rate limit exceeded. Please wait before trying again.")
+                        if (
+                            e.response.status_code == 403
+                            or e.response.status_code == 429
+                        ):
+                            logging.error("GitHub API rate limit exceeded. Please wait before trying again.")  # noqa: E501
                     else:
-                        logging.error(f"HTTP error occurred: {e.response.status_code}")
+                        logging.error(f"HTTP error occurred: {e.response.status_code}")  # noqa: E501
                     return None
 
                 return r.text
@@ -993,7 +1072,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                         mode_text = 'Writing'
                     else:
                         mode_text = 'Appending'
-                    logging.debug(f"{mode_text} data to file {str(target.path)}.")
+                    logging.debug(f"{mode_text} data to file {target.path}.")
                     for chunk in r.iter_content(chunk_size=chunk_size):
                         f.write(chunk)
                         local_size = target.get_size()
@@ -1040,12 +1119,12 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
 def same_md5(url, file_path):
     logging.debug(f"Comparing MD5 of {url} and {file_path}.")
     url_md5 = UrlProps(url).get_md5()
-    logging.debug(f"{url_md5 = }")
+    logging.debug(f"{url_md5=}")
     if url_md5 is None:  # skip MD5 check if not provided with URL
         res = True
     else:
         file_md5 = FileProps(file_path).get_md5()
-        logging.debug(f"{file_md5 = }")
+        logging.debug(f"{file_md5=}")
         res = url_md5 == file_md5
     return res
 
@@ -1056,7 +1135,7 @@ def same_size(url, file_path):
     if not url_size:
         return True
     file_size = FileProps(file_path).size
-    logging.debug(f"{url_size = } B; {file_size = } B")
+    logging.debug(f"{url_size=} B; {file_size=} B")
     res = url_size == file_size
     return res
 
@@ -1067,11 +1146,11 @@ def write_progress_bar(percent, screen_width=80):
     l_f = int(screen_width * 0.75)  # progress bar length
     l_y = int(l_f * percent / 100)  # num. of chars. complete
     l_n = l_f - l_y  # num. of chars. incomplete
-    print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')  # end='\x1b[1K\r' to erase to end of line
+    print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
 
 
 def app_is_installed():
-    return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)
+    return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)  # noqa: E501
 
 
 def find_installed_product():
@@ -1091,18 +1170,21 @@ def log_current_persistent_config():
     for k in config.core_config_keys:
         logging.debug(f"{k}: {config.__dict__.get(k)}")
 
+
 def enough_disk_space(dest_dir, bytes_required):
     free_bytes = shutil.disk_usage(dest_dir).free
-    logging.debug(f"{free_bytes = }; {bytes_required = }")
+    logging.debug(f"{free_bytes=}; {bytes_required=}")
     return free_bytes > bytes_required
+
 
 def get_path_size(file_path):
     file_path = Path(file_path)
     if not file_path.exists():
         path_size = None
     else:
-        path_size = sum(f.stat().st_size for f in file_path.rglob('*')) + file_path.stat().st_size
+        path_size = sum(f.stat().st_size for f in file_path.rglob('*')) + file_path.stat().st_size  # noqa: E501
     return path_size
+
 
 def get_folder_group_size(src_dirs, q):
     src_size = 0
@@ -1112,6 +1194,7 @@ def get_folder_group_size(src_dirs, q):
         src_size += get_path_size(d)
     q.put(src_size)
 
+
 def get_copy_progress(dest_path, txfr_size, dest_size_init=0):
     dest_size_now = get_path_size(dest_path)
     if dest_size_now is None:
@@ -1119,6 +1202,7 @@ def get_copy_progress(dest_path, txfr_size, dest_size_init=0):
     size_diff = dest_size_now - dest_size_init
     progress = round(size_diff / txfr_size * 100)
     return progress
+
 
 def get_latest_folder(folder_path):
     folders = [f for f in Path(folder_path).glob('*')]
@@ -1172,14 +1256,14 @@ def set_logoslinuxinstaller_latest_release_config():
     releases_url = "https://api.github.com/repos/FaithLife-Community/LogosLinuxInstaller/releases"  # noqa: E501
     json_data = get_latest_release_data(releases_url)
     logoslinuxinstaller_url = get_latest_release_url(json_data)
-    logoslinuxinstaller_tag_name = get_latest_release_version_tag_name(json_data)
+    logoslinuxinstaller_tag_name = get_latest_release_version_tag_name(json_data)  # noqa: E501
     if logoslinuxinstaller_url is None:
         logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
         return
     config.LOGOS_LATEST_VERSION_URL = logoslinuxinstaller_url
-    config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url) #noqa: #501
-    # Getting version relies on the the tag_name field in the JSON data. This is already parsed down to vX.X.X.
-    # Therefore we must strip the v.
+    config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
+    # Getting version relies on the the tag_name field in the JSON data. This
+    # is already parsed down to vX.X.X. Therefore we must strip the v.
     config.LLI_LATEST_VERSION = logoslinuxinstaller_tag_name.lstrip('v')
     logging.info(f"{config.LLI_LATEST_VERSION}")
 
@@ -1206,14 +1290,18 @@ def set_recommended_appimage_config():
 
 
 def check_for_updates():
-    # We limit the number of times set_recommended_appimage_config is run in order to avoid GitHub API limits.
-    # This sets the check to once every 12 hours.
+    # We limit the number of times set_recommended_appimage_config is run in
+    # order to avoid GitHub API limits. This sets the check to once every 12
+    # hours.
 
     now = datetime.now().replace(microsecond=0)
     if config.CHECK_UPDATES:
         check_again = now
     elif config.LAST_UPDATED is not None:
-        check_again = datetime.strptime(config.LAST_UPDATED.strip(), '%Y-%m-%dT%H:%M:%S')
+        check_again = datetime.strptime(
+            config.LAST_UPDATED.strip(),
+            '%Y-%m-%dT%H:%M:%S'
+        )
         check_again += timedelta(hours=12)
     else:
         check_again = now
@@ -1231,7 +1319,7 @@ def check_for_updates():
 
 
 def get_recommended_appimage():
-    wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)
+    wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)  # noqa: E501
     dest_path = Path(config.APPDIR_BINDIR) / wine64_appimage_full_filename
     if dest_path.is_file():
         return
@@ -1252,23 +1340,35 @@ def install_premade_wine_bottle(srcdir, appdir):
 
 
 def compare_logos_linux_installer_version():
-    if config.LLI_CURRENT_VERSION is not None and config.LLI_LATEST_VERSION is not None:
-        logging.debug(f"{config.LLI_CURRENT_VERSION=}; {config.LLI_LATEST_VERSION=}")
-        if version.parse(config.LLI_CURRENT_VERSION) < version.parse(config.LLI_LATEST_VERSION):
+    if (
+        config.LLI_CURRENT_VERSION is not None
+        and config.LLI_LATEST_VERSION is not None
+    ):
+        logging.debug(f"{config.LLI_CURRENT_VERSION=}; {config.LLI_LATEST_VERSION=}")  # noqa: E501
+        if (
+            version.parse(config.LLI_CURRENT_VERSION)
+            < version.parse(config.LLI_LATEST_VERSION)
+        ):
             # Current release is older than recommended.
             status = 0
             message = "yes"
-        elif version.parse(config.LLI_CURRENT_VERSION) == version.parse(config.LLI_LATEST_VERSION):
+        elif (
+            version.parse(config.LLI_CURRENT_VERSION)
+            == version.parse(config.LLI_LATEST_VERSION)
+        ):
             # Current release is latest.
             status = 1
             message = "uptodate"
-        elif version.parse(config.LLI_CURRENT_VERSION) > version.parse(config.LLI_LATEST_VERSION):
+        elif (
+            version.parse(config.LLI_CURRENT_VERSION)
+            > version.parse(config.LLI_LATEST_VERSION)
+        ):
             # Installed version is custom.
             status = 2
             message = "no"
     else:
         status = False
-        message = "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set."
+        message = "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set."  # noqa: E501
 
     logging.debug(f"{status=}; {message=}")
     return status, message
@@ -1314,8 +1414,12 @@ def update_lli_binary():
     lli_file_path = os.path.realpath(sys.argv[0])
     lli_download_path = Path(config.MYDOWNLOADS) / "LogosLinuxInstaller"
     temp_path = Path(config.MYDOWNLOADS) / "LogosLinuxInstaller.tmp"
-    logging.debug(f"Updating Logos Linux Installer to latest version by overwriting: {lli_file_path}")
-    logos_reuse_download(config.LOGOS_LATEST_VERSION_URL, "LogosLinuxInstaller", config.MYDOWNLOADS)
+    logging.debug(f"Updating Logos Linux Installer to latest version by overwriting: {lli_file_path}")  # noqa: E501
+    logos_reuse_download(
+        config.LOGOS_LATEST_VERSION_URL,
+        "LogosLinuxInstaller",
+        config.MYDOWNLOADS
+    )
     shutil.copy(lli_download_path, temp_path)
     try:
         shutil.move(temp_path, lli_file_path)
@@ -1330,8 +1434,8 @@ def update_lli_binary():
 
 def is_appimage(file_path):
     # Ref:
-    # - https://cgit.freedesktop.org/xdg/shared-mime-info/commit/?id=c643cab25b8a4ea17e73eae5bc318c840f0e3d4b
-    # - https://github.com/AppImage/AppImageSpec/blob/master/draft.md#image-format
+    # - https://cgit.freedesktop.org/xdg/shared-mime-info/commit/?id=c643cab25b8a4ea17e73eae5bc318c840f0e3d4b  # noqa: E501
+    # - https://github.com/AppImage/AppImageSpec/blob/master/draft.md#image-format  # noqa: E501
     # Note:
     # result is a tuple: (is AppImage: True|False, AppImage type: 1|2|None)
     # result = (False, None)
@@ -1355,25 +1459,25 @@ def is_appimage(file_path):
         return (False, None)
 
 
-def check_appimage(file):
-    logging.debug(f"Checking if {file} is a usable AppImage.")
-    if file is None:
-        logging.error(f"check_appimage: received None for file.")
+def check_appimage(filestr):
+    logging.debug(f"Checking if {filestr} is a usable AppImage.")
+    if filestr is None:
+        logging.error("check_appimage: received None for file.")
         return False
 
-    file_path=Path(file)
+    file_path = Path(filestr)
 
     appimage, appimage_type = is_appimage(file_path)
     if appimage:
-        logging.debug(f"It is an AppImage!")
+        logging.debug("It is an AppImage!")
         if appimage_type == 1:
-            logging.error(f"{file_path}: Can't handle AppImage version {str(appimage_type)} yet.")
+            logging.error(f"{file_path}: Can't handle AppImage version {str(appimage_type)} yet.")  # noqa: E501
             return False
         else:
-            logging.debug(f"It is a usable AppImage!")
+            logging.debug("It is a usable AppImage!")
             return True
     else:
-        logging.debug(f"It is not an AppImage!")
+        logging.debug("It is not an AppImage!")
         return False
 
 
@@ -1388,7 +1492,7 @@ def find_appimage_files(app=None):
         directories.append(config.CUSTOMBINPATH)
 
     if sys.version_info < (3, 12):
-        raise RuntimeError("Python 3.12 or higher is required for .rglob() flag `case-sensitive` ")
+        raise RuntimeError("Python 3.12 or higher is required for .rglob() flag `case-sensitive` ")  # noqa: E501
 
     for d in directories:
         appimage_paths = Path(d).rglob('wine*.appimage', case_sensitive=False)
@@ -1412,7 +1516,7 @@ def find_wine_binary_files():
         "/usr/local/bin",
         os.path.expanduser("~") + "/bin",
         os.path.expanduser("~") + "/PlayOnLinux/wine/linux-amd64/*/bin",
-        os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",
+        os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",  # noqa: E501
     ]
 
     if config.CUSTOMBINPATH is not None:

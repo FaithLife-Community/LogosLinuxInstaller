@@ -114,7 +114,6 @@ class InstallerGui(Frame):
 
         # Status area.
         s1 = Separator(self, orient='horizontal')
-        self.messagevar = StringVar()
         self.statusvar = StringVar()
         self.status_label = Label(self, textvariable=self.statusvar)
         self.progressvar = IntVar()
@@ -225,8 +224,8 @@ class ControlGui(Frame):
         # Separator
         s3 = Separator(self, orient='horizontal')
         # Status message label
-        self.messagevar = StringVar()
-        self.message_label = Label(self, textvariable=self.messagevar)
+        self.statusvar = StringVar()
+        self.message_label = Label(self, textvariable=self.statusvar)
         # Progress bar
         self.progressvar = IntVar(value=0)
         self.progress = Progressbar(
