@@ -866,7 +866,7 @@ def install_winetricks(
     version=config.WINETRICKS_VERSION,
 ):
     msg.cli_msg(f"Installing winetricks v{version}…")
-    base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags/"  # noqa: E501
+    base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
     zip_name = f"{version}.zip"
     logos_reuse_download(
         f"{base_url}/{version}",
@@ -877,6 +877,7 @@ def install_winetricks(
         prg_evt='<<GetWinetricks>>'
     )
     wtzip = f"{config.MYDOWNLOADS}/{zip_name}"
+    logging.debug(f"Extracting winetricks script into {installdir}…")
     with zipfile.ZipFile(wtzip) as z:
         for zi in z.infolist():
             if zi.is_dir():
@@ -886,6 +887,7 @@ def install_winetricks(
                 z.extract(zi, path=installdir)
                 break
     os.chmod(f"{installdir}/winetricks", 0o755)
+    logging.debug("Winetricks installed.")
 
 
 def get_pids_using_file(file_path, mode=None):

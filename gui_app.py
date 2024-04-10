@@ -764,7 +764,13 @@ class ControlWindow():
 
     def launch_winetricks(self, evt=None):
         self.gui.messagevar.set("Launching Winetricks…")
-        wine.run_winetricks()
+        # Start winetricks in thread.
+        t1 = Thread(target=wine.run_winetricks)
+        t1.start()
+        # Start thread to clear status after delay.
+        args = [12000, self.root.event_generate, '<<ClearStatus>>']
+        t2 = Thread(target=self.root.after, args=args, daemon=True)
+        t2.start()
 
     def switch_logging(self, evt=None):
         prev_state = self.gui.loggingstatevar.get()
