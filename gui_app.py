@@ -161,6 +161,7 @@ class InstallerWindow():
         check_events = [
             "<<CheckAppImage>>",
             "<<CheckLogos>>",
+            "<<CheckWinetricks>>",
         ]
         for evt in check_events:
             self.root.bind(evt, self.update_file_check_progress)
@@ -629,7 +630,22 @@ class ControlWindow():
             self.update_latest_appimage_button
         )
         self.root.bind('<<InstallFinished>>', self.update_app_button)
-        # self.root.bind('<<CheckInstallProgress>>', self.update_app_button)
+        self.get_q = Queue()
+        download_events = [
+            "<<GetAppImage>>",
+            "<<GetLogos>>",
+            "<<GetWinetricks>>",
+        ]
+        for evt in download_events:
+            self.root.bind(evt, self.update_download_progress)
+        self.check_q = Queue()
+        check_events = [
+            "<<CheckAppImage>>",
+            "<<CheckLogos>>",
+            "<<CheckWinetricks>>",
+        ]
+        for evt in check_events:
+            self.root.bind(evt, self.update_file_check_progress)
 
         # Start function to determine app logging state.
         if utils.app_is_installed():
@@ -638,7 +654,7 @@ class ControlWindow():
                 kwargs={'app': self, 'init': True}
             )
             t.start()
-            self.gui.messagevar.set('Getting current app logging status…')
+            self.gui.statusvar.set('Getting current app logging status…')
             self.start_indeterminate_progress()
 
     def configure_app_button(self, evt=None):
@@ -677,7 +693,7 @@ class ControlWindow():
         control.remove_library_catalog()
 
     def remove_indexes(self, evt=None):
-        self.gui.messagevar.set("Removing indexes…")
+        self.gui.statusvar.set("Removing indexes…")
         t = Thread(
             target=control.remove_all_index_files,
             kwargs={'app': self}
@@ -724,7 +740,7 @@ class ControlWindow():
 
     def update_to_latest_lli_release(self, evt=None):
         self.start_indeterminate_progress()
-        self.gui.messagevar.set("Updating to latest Logos Linux Installer version…")  # noqa: E501
+        self.gui.statusvar.set("Updating to latest Logos Linux Installer version…")  # noqa: E501
         t = Thread(
             target=utils.update_to_latest_lli_release,
         )
@@ -733,7 +749,7 @@ class ControlWindow():
     def update_to_latest_appimage(self, evt=None):
         config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
         self.start_indeterminate_progress()
-        self.gui.messagevar.set("Updating to latest AppImage…")
+        self.gui.statusvar.set("Updating to latest AppImage…")
         t = Thread(
             target=utils.set_appimage_symlink,
             kwargs={'app': self},
@@ -754,16 +770,18 @@ class ControlWindow():
         t.start()
 
     def get_winetricks(self, evt=None):
-        # winetricks_status = installer.set_winetricks()
-        winetricks_status = installer.ensure_winetricks_executable(app=self)
-        if winetricks_status == 0:
-            self.gui.messagevar.set("Winetricks is installed.")
-        else:
-            self.gui.messagevar.set("")
+        self.gui.statusvar.set("Installing Winetricks…")
+        t1 = Thread(
+            target=utils.install_winetricks,
+            args=[config.APPDIR_BINDIR],
+            kwargs={'app': self},
+            daemon=True,
+        )
+        t1.start()
         self.update_run_winetricks_button()
 
     def launch_winetricks(self, evt=None):
-        self.gui.messagevar.set("Launching Winetricks…")
+        self.gui.statusvar.set("Launching Winetricks…")
         # Start winetricks in thread.
         t1 = Thread(target=wine.run_winetricks)
         t1.start()
@@ -779,7 +797,7 @@ class ControlWindow():
             'action': new_state.lower(),
             'app': self,
         }
-        self.gui.messagevar.set(f"Switching app logging to '{prev_state}d'…")
+        self.gui.statusvar.set(f"Switching app logging to '{prev_state}d'…")
         self.gui.progress.state(['!disabled'])
         self.gui.progress.start()
         self.gui.logging_button.state(['disabled'])
@@ -787,7 +805,7 @@ class ControlWindow():
         t.start()
 
     def initialize_logging_button(self, evt=None):
-        self.gui.messagevar.set('')
+        self.gui.statusvar.set('')
         self.gui.progress.stop()
         self.gui.progress.state(['disabled'])
         state = self.reverse_logging_state_value(self.logging_q.get())
@@ -795,7 +813,7 @@ class ControlWindow():
         self.gui.logging_button.state(['!disabled'])
 
     def update_logging_button(self, evt=None):
-        self.gui.messagevar.set('')
+        self.gui.statusvar.set('')
         self.gui.progress.stop()
         self.gui.progress.state(['disabled'])
         state = self.logging_q.get()
@@ -859,7 +877,25 @@ class ControlWindow():
             return 'DISABLED'
 
     def clear_status_text(self, evt=None):
-        self.gui.messagevar.set('')
+        self.gui.statusvar.set('')
+
+    def update_file_check_progress(self, evt=None):
+        e, r = self.check_q.get()
+        if e == "<<CheckAppImage>>":
+            self.appimage_verified = r
+        elif e == "<<CheckLogos>>":
+            self.logos_verified = r
+        elif e == "<<CheckWinetricks>>":
+            self.tricks_verified = r
+
+        self.gui.progress.stop()
+        self.gui.statusvar.set('')
+        self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
+
+    def update_download_progress(self, evt=None):
+        d = self.get_q.get()
+        self.gui.progressvar.set(int(d))
 
     def update_progress(self, evt=None):
         if self.config_thread.is_alive():
@@ -876,7 +912,7 @@ class ControlWindow():
             self.gui.progressvar.set(progress)
 
     def update_status_text(self, evt=None):
-        self.gui.messagevar.set(self.status_q.get())
+        self.gui.statusvar.set(self.status_q.get())
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])
