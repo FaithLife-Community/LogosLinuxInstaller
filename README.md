@@ -143,7 +143,7 @@ NOTE: The following section is WIP.
 ### Install Dependencies
 
 ```
-sudo apt install mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc 
+sudo apt install coreutils patch lsof wget findutils sed grep gawk winbind cabextract x11-apps bc binutils
 ```
 
 If using wine from a repo, you must install wine staging. Run:
