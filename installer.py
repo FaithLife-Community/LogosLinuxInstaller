@@ -1,4 +1,3 @@
-import glob
 import logging
 import os
 import shutil
@@ -175,6 +174,13 @@ def choose_install_method():
         logging.debug(f"{k}: {v}")
 
 
+def one_of_files_exists(path, names):
+    for _, _, files in os.walk(path):
+        if set(files) & set(names):
+            return True
+    return False
+
+
 def check_existing_install(app=None):
     message = "Checking for existing installation..."
     msg.cli_msg(message)
@@ -188,7 +194,7 @@ def check_existing_install(app=None):
         logging.info(f"INSTALLDIR: {config.INSTALLDIR}")
         drive_c = f"{config.WINEPREFIX}/drive_c"
         names = ['Logos.exe', 'Verbum.exe']
-        if os.path.isdir(drive_c) and any(glob.glob(f"{drive_c}/**/{n}", recursive=True) for n in names):  # noqa: E501
+        if os.path.isdir(drive_c) and one_of_files_exists(drive_c, names):  # noqa: E501
             msg.logos_error(
                 f"An install was found at {config.INSTALLDIR}. Please remove/rename it or use another location by setting the INSTALLDIR variable.")  # noqa: E501
             return True
@@ -549,7 +555,11 @@ def finish_install(app=None):
     utils.clean_all()
 
     # Find and set LOGOS_EXE.
-    exes = [e for e in glob.glob(f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe", recursive=True) if 'Pending' not in e]  # noqa: E501
+    exes = []
+    name = f"{config.FLPRODUCT}.exe"
+    for root, _, files in os.walk(f"{config.WINEPREFIX}/drive_c/"):
+        if name in files and 'Pending' not in root:
+            exes.append(os.path.join(root, name))
     if len(exes) < 1:
         msg.logos_error("Logos was not installed.")
     config.LOGOS_EXE = exes[0]
