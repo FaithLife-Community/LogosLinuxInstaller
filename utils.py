@@ -1,7 +1,5 @@
 import atexit
-
 import distro
-import glob
 import hashlib
 import json
 import logging
@@ -14,16 +12,15 @@ import signal
 import subprocess
 import sys
 import threading
+import tkinter as tk
 import zipfile
-from urllib.parse import urlparse
-from datetime import datetime, timedelta
-
 from base64 import b64encode
+from datetime import datetime, timedelta
 from packaging import version
 from pathlib import Path
 from typing import List, Union
+from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
-import tkinter as tk
 
 import config
 import msg
@@ -1155,14 +1152,14 @@ def app_is_installed():
 
 def find_installed_product():
     if config.FLPRODUCT and config.WINEPREFIX:
-        exes = []
-        for e in glob.glob(
-            f"{config.WINEPREFIX}/drive_c/**/{config.FLPRODUCT}.exe",
-            recursive=True
-        ):
-            if 'Pending' not in e:
-                exes.append(e)
-        return exes[0] if exes else None
+        drive_c = Path(f"{config.WINEPREFIX}/drive_c/")
+        name = config.FLPRODUCT
+        exe = None
+        for root, _, files in drive_c.walk(follow_symlinks=False):
+            if root.name == name and f"{name}.exe" in files:
+                exe = root / f"{name}.exe"
+                break
+        return exe
 
 
 def log_current_persistent_config():
