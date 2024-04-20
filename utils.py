@@ -394,7 +394,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
-        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "wget sed grep gawk cabextract samba"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
