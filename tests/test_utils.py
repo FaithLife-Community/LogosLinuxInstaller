@@ -94,7 +94,7 @@ class TestUtils(unittest.TestCase):
 
 class TestUtilsConfigFile(unittest.TestCase):
     def setUp(self):
-        self.cfg = Path('test/data/subdir/test_config.json')
+        self.cfg = Path('tests/data/subdir/test_config.json')
 
     def test_update_config_file(self):
         utils.write_config(str(self.cfg))
