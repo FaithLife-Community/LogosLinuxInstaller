@@ -1,4 +1,5 @@
 import json
+import tempfile
 import shutil
 import unittest
 from pathlib import Path
@@ -40,8 +41,32 @@ class TestUtils(unittest.TestCase):
         status, _ = utils.compare_logos_linux_installer_version()
         self.assertEqual(0, status)
 
+    def test_delete_symlink_exists(self):
+        target = Path(__file__).parent / 'data' / 'config.json'
+        new_symlink = Path('symlink')
+        if new_symlink.is_symlink():
+            new_symlink.unlink()
+        new_symlink.symlink_to(target)
+        if new_symlink.is_symlink():
+            utils.delete_symlink(new_symlink)
+            self.assertFalse(new_symlink.is_symlink())
+
+    def test_delete_symlink_notexists(self):
+        new_symlink = Path('symlink')
+        utils.delete_symlink(new_symlink)
+        self.assertFalse(new_symlink.is_symlink())
+
+    def test_enough_disk_space_false(self):
+        self.assertFalse(utils.enough_disk_space(Path.home(), 1024**6))
+
+    def test_enough_disk_space_true(self):
+        self.assertTrue(utils.enough_disk_space(Path.home(), 1))
+
     def test_file_exists_false(self):
         self.assertFalse(utils.file_exists('~/NotGonnaFindIt.exe'))
+
+    def test_file_exists_none(self):
+        self.assertFalse(utils.file_exists(None))
 
     def test_file_exists_true(self):
         self.assertTrue(utils.file_exists('~/.bashrc'))
@@ -51,6 +76,23 @@ class TestUtils(unittest.TestCase):
         valvers = ['1.0', '1.1', '1.2', '1.3',]
         filvers = utils.filter_versions(allvers, 4, 2)
         self.assertEqual(valvers, filvers)
+
+    def test_get_downloaded_file_path_found(self):
+        config.MYDOWNLOADS = '~/Downloads'
+        p = Path(utils.get_downloaded_file_path('README.md'))
+        self.assertEqual(p.parent.name, 'LogosLinuxInstaller')
+
+    def test_get_downloaded_file_path_notfound(self):
+        config.MYDOWNLOADS = '~/Downloads'
+        self.assertIsNone(utils.get_downloaded_file_path('NothingToFind.exe'))
+
+    def test_get_pids_using_file(self):
+        with tempfile.TemporaryFile() as tf:
+            pids = utils.get_pids_using_file(tf)
+        self.assertTrue(isinstance(pids, set))
+
+    def test_get_runmode(self):
+        self.assertEqual('script', utils.get_runmode())
 
     def test_get_wine_options(self):
         config.DIALOG = 'curses'
