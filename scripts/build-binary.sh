@@ -10,7 +10,7 @@ if ! python -c 'import PyInstaller' >/dev/null 2>&1; then
     exit 1
 fi
 if ! python -m coverage run -m unittest -b; then
-    echo "Error: Must past unittests before building"
+    echo "Error: Must pass unittests before building"
     echo "Run 'python -m coverage run -m unittest -b -v' to see which test is failing"
     exit 1
 fi
