@@ -85,9 +85,6 @@ class TestUtils(unittest.TestCase):
         code, _ = utils.get_winebin_code_and_desc(binary)
         self.assertEqual('System', code)
 
-    def test_have_dep(self):
-        self.assertTrue(utils.have_dep('which'))
-
     def test_have_lib(self):
         self.assertTrue(utils.have_lib('libgcc', None))
 

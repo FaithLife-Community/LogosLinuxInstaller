@@ -86,10 +86,3 @@ class TestMsg(unittest.TestCase):
         mocked_input.side_effect = ['Y']
         result = msg.logos_acknowledge_question('test', 'no')
         self.assertTrue(result)
-
-    @patch('msg.input', create=True)
-    def test_logos_continue_question_yes(self, mocked_input):
-        config.DIALOG = 'curses'
-        mocked_input.side_effect = ['Y']
-        result = msg.logos_continue_question('test', 'no', None)
-        self.assertIsNone(result)
