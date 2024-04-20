@@ -36,6 +36,7 @@ fi
 
 # Enter src code dir.
 if [[ -d "$srcdir" ]]; then
+    # shellcheck disable=SC2164
     cd "Python-${python_ver}"
 else
     echo "Error: Folder not found: $srcdir"
