@@ -1,5 +1,9 @@
 # Changelog
 
+- 40.0.0-alpha.5
+	- Fix #19 [N. Marti]
+	- Fix #64 [N. Marti]
+	- Fix #77 [N. Marti]
 - 4.0.0-alpha.4
 	- Fix #46 [T. H. Wright, N. Marti]
 	- Fix networking issues [N. Marti]
