@@ -150,11 +150,6 @@ def cli_ask_filepath(question_text):
     return answer.strip('"').strip("'")
 
 
-def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
-    if config.DIALOG == 'curses':
-        cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)
-
-
 def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):
     if config.DIALOG == 'curses':
         return cli_acknowledge_question(QUESTION_TEXT, NO_TEXT)

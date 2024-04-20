@@ -466,26 +466,12 @@ def remove_packages(packages):
         subprocess.run(command, shell=True, check=True)
 
 
-def have_dep(cmd):
-    if shutil.which(cmd) is not None:
-        return True
-    else:
-        return False
-
-
 def clean_all():
     logging.info("Cleaning all temp files…")
     os.system("rm -fr /tmp/LBS.*")
     os.system(f"rm -fr {config.WORKDIR}")
     os.system(f"rm -f {config.PRESENT_WORKING_DIRECTORY}/wget-log*")
     logging.info("done")
-
-
-def mkdir_critical(directory):
-    try:
-        os.mkdir(directory)
-    except OSError:
-        msg.logos_error(f"Can't create the {directory} directory")
 
 
 def get_user_downloads_dir():
