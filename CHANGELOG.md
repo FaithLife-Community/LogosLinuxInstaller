@@ -1,6 +1,8 @@
 # Changelog
 
-- 40.0.0-alpha.5
+- 4.0.0-alpha.6
+	- Hotfix to get correct LOGOS_EXE value after installation [N. Marti]
+- 4.0.0-alpha.5
 	- Fix #19 [N. Marti]
 	- Fix #64 [N. Marti]
 	- Fix #77 [N. Marti]
