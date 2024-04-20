@@ -57,7 +57,7 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_create_shortcuts(self):
         self.mock_parse_args.return_value.create_shortcuts = True
         LLI.parse_args(self.mock_parse_args.return_value, self.parser)
-        self.assertEqual('create_shortcuts', config.ACTION.__name__)
+        self.assertEqual('ensure_launcher_shortcuts', config.ACTION.__name__)
 
     def test_parse_args_edit_config(self):
         self.mock_parse_args.return_value.edit_config = True
@@ -67,7 +67,7 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_install_app(self):
         self.mock_parse_args.return_value.install_app = True
         LLI.parse_args(self.mock_parse_args.return_value, self.parser)
-        self.assertEqual('install', config.ACTION.__name__)
+        self.assertEqual('ensure_launcher_shortcuts', config.ACTION.__name__)
 
     def test_parse_args_install_dependencies(self):
         self.mock_parse_args.return_value.install_dependencies = True
