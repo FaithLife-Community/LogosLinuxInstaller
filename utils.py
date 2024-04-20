@@ -1157,7 +1157,7 @@ def find_installed_product():
         exe = None
         for root, _, files in drive_c.walk(follow_symlinks=False):
             if root.name == name and f"{name}.exe" in files:
-                exe = root / f"{name}.exe"
+                exe = str(root / f"{name}.exe")
                 break
         return exe
 
