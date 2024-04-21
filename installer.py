@@ -341,8 +341,6 @@ def ensure_appimage_download(app=None):
         filename,
         config.MYDOWNLOADS,
         app=app,
-        chk_evt='<<CheckAppImage>>',
-        prg_evt='<<GetAppImage>>'
     )
     logging.debug(f"> File exists?: {downloaded_file}: {Path(downloaded_file).is_file()}")  # noqa: E501
 
@@ -441,8 +439,7 @@ def ensure_premade_winebottle_download(app=None):
         config.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
         config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
         config.MYDOWNLOADS,
-        chk_evt='<<CheckBottle>>',
-        prg_evt='<<GetBottle>>'
+        app=app,
     )
     # Install bottle.
     bottle = Path(f"{config.INSTALLDIR}/data/wine64_bottle")
@@ -472,8 +469,7 @@ def ensure_product_installer_download(app=None):
         config.LOGOS64_URL,
         config.LOGOS_EXECUTABLE,
         config.MYDOWNLOADS,
-        chk_evt='<<CheckLogos>>',
-        prg_evt='<<GetLogos>>'
+        app=app,
     )
     # Copy file into INSTALLDIR.
     installer = Path(f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}")
