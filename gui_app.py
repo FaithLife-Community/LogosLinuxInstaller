@@ -96,9 +96,9 @@ class InstallerWindow():
         self.wine_thread = None
         self.winetricksbin = None
         self.appimages = None
-        self.appimage_verified = None
-        self.logos_verified = None
-        self.tricks_verified = None
+        # self.appimage_verified = None
+        # self.logos_verified = None
+        # self.tricks_verified = None
 
         # Set widget callbacks and event bindings.
         self.gui.product_dropdown.bind(
@@ -150,21 +150,10 @@ class InstallerWindow():
             self.update_wine_check_progress
         )
         self.get_q = Queue()
-        download_events = [
-            "<<GetAppImage>>",
-            "<<GetLogos>>",
-            "<<GetWinetricks>>",
-        ]
-        for evt in download_events:
-            self.root.bind(evt, self.update_download_progress)
-        self.check_q = Queue()
-        check_events = [
-            "<<CheckAppImage>>",
-            "<<CheckLogos>>",
-            "<<CheckWinetricks>>",
-        ]
-        for evt in check_events:
-            self.root.bind(evt, self.update_file_check_progress)
+        self.get_evt = "<<GetFile>>"
+        self.root.bind(self.get_evt, self.update_download_progress)
+        self.check_evt = "<<CheckFile>>"
+        self.root.bind(self.check_evt, self.update_file_check_progress)
         self.status_q = Queue()
         self.root.bind(
             "<<UpdateStatus>>",
@@ -501,14 +490,6 @@ class InstallerWindow():
         self.gui.wine_check_button.state(['!disabled'])
 
     def update_file_check_progress(self, evt=None):
-        e, r = self.check_q.get()
-        if e == "<<CheckAppImage>>":
-            self.appimage_verified = r
-        elif e == "<<CheckLogos>>":
-            self.logos_verified = r
-        elif e == "<<CheckWinetricks>>":
-            self.tricks_verified = r
-
         self.gui.progress.stop()
         self.gui.statusvar.set('')
         self.gui.progress.config(mode='determinate')
@@ -631,21 +612,10 @@ class ControlWindow():
         )
         self.root.bind('<<InstallFinished>>', self.update_app_button)
         self.get_q = Queue()
-        download_events = [
-            "<<GetAppImage>>",
-            "<<GetLogos>>",
-            "<<GetWinetricks>>",
-        ]
-        for evt in download_events:
-            self.root.bind(evt, self.update_download_progress)
-        self.check_q = Queue()
-        check_events = [
-            "<<CheckAppImage>>",
-            "<<CheckLogos>>",
-            "<<CheckWinetricks>>",
-        ]
-        for evt in check_events:
-            self.root.bind(evt, self.update_file_check_progress)
+        self.get_evt = "<<GetFile>>"
+        self.root.bind(self.get_evt, self.update_download_progress)
+        self.check_evt = "<<CheckFile>>"
+        self.root.bind(self.check_evt, self.update_file_check_progress)
 
         # Start function to determine app logging state.
         if utils.app_is_installed():
@@ -743,6 +713,8 @@ class ControlWindow():
         self.gui.statusvar.set("Updating to latest Logos Linux Installer version…")  # noqa: E501
         t = Thread(
             target=utils.update_to_latest_lli_release,
+            kwargs={'app': self},
+            daemon=True,
         )
         t.start()
 
@@ -880,14 +852,6 @@ class ControlWindow():
         self.gui.statusvar.set('')
 
     def update_file_check_progress(self, evt=None):
-        e, r = self.check_q.get()
-        if e == "<<CheckAppImage>>":
-            self.appimage_verified = r
-        elif e == "<<CheckLogos>>":
-            self.logos_verified = r
-        elif e == "<<CheckWinetricks>>":
-            self.tricks_verified = r
-
         self.gui.progress.stop()
         self.gui.statusvar.set('')
         self.gui.progress.config(mode='determinate')

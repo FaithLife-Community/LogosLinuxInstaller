@@ -6,9 +6,11 @@ import logging
 import os
 import psutil
 import queue
+import re
 import requests
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import threading
@@ -543,8 +545,6 @@ def logos_reuse_download(
     FILE,
     TARGETDIR,
     app=None,
-    chk_evt=None,
-    prg_evt=None
 ):
     DIRS = [
         config.INSTALLDIR,
@@ -562,7 +562,6 @@ def logos_reuse_download(
                     SOURCEURL,
                     file_path,
                     app=app,
-                    evt=chk_evt
                 ):
                     logging.info(f"{FILE} properties match. Using it…")
                     msg.cli_msg(f"Copying {FILE} into {TARGETDIR}")
@@ -581,7 +580,6 @@ def logos_reuse_download(
                 SOURCEURL,
                 target=file_path,
                 app=app,
-                evt=prg_evt
             )
         else:
             cli_download(SOURCEURL, file_path)
@@ -589,7 +587,6 @@ def logos_reuse_download(
             SOURCEURL,
             file_path,
             app=app,
-            evt=chk_evt
         ):
             msg.cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
             try:
@@ -944,8 +941,6 @@ def install_winetricks(
         zip_name,
         config.MYDOWNLOADS,
         app=app,
-        chk_evt='<<CheckWinetricks>>',
-        prg_evt='<<GetWinetricks>>'
     )
     wtzip = f"{config.MYDOWNLOADS}/{zip_name}"
     logging.debug(f"Extracting winetricks script into {installdir}…")
@@ -1075,9 +1070,12 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                         local_size = target.get_size()
                         if type(total_size) is int:
                             percent = round(local_size / total_size * 100)
-                            if None not in [app, evt]:
+                            # if None not in [app, evt]:
+                            if app:
                                 # Send progress value to tk window.
                                 app.get_q.put(percent)
+                                if not evt:
+                                    evt = app.get_evt
                                 app.root.event_generate(evt)
                             elif q is not None:
                                 # Send progress value to queue param.
@@ -1107,8 +1105,9 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
             msg = f"{file_path} is verified."
             res = True
     logging.info(msg)
-    if app and evt:
-        app.check_q.put((evt, res))
+    if app:
+        if not evt:
+            evt = app.check_evt
         app.root.event_generate(evt)
     return res
 
@@ -1407,15 +1406,26 @@ def compare_recommended_appimage_version():
     return status, message
 
 
-def update_lli_binary():
+def update_lli_binary(app=None):
     lli_file_path = os.path.realpath(sys.argv[0])
     lli_download_path = Path(config.MYDOWNLOADS) / "LogosLinuxInstaller"
     temp_path = Path(config.MYDOWNLOADS) / "LogosLinuxInstaller.tmp"
     logging.debug(f"Updating Logos Linux Installer to latest version by overwriting: {lli_file_path}")  # noqa: E501
+
+    # Remove existing downloaded file if different version.
+    if lli_download_path.is_file():
+        logging.info("Checking if existing LLI binary is latest version.")
+        lli_download_ver = get_lli_release_version(lli_download_path)
+        if not lli_download_ver or lli_download_ver != config.LLI_LATEST_VERSION:  # noqa: E501
+            logging.info(f"Removing \"{lli_download_path}\", version: {lli_download_ver}")  # noqa: E501
+            # Remove incompatible file.
+            lli_download_path.unlink()
+
     logos_reuse_download(
         config.LOGOS_LATEST_VERSION_URL,
         "LogosLinuxInstaller",
-        config.MYDOWNLOADS
+        config.MYDOWNLOADS,
+        app=app,
     )
     shutil.copy(lli_download_path, temp_path)
     try:
@@ -1427,6 +1437,20 @@ def update_lli_binary():
     os.chmod(sys.argv[0], os.stat(sys.argv[0]).st_mode | 0o111)
     logging.debug("Successfully updated Logos Linux Installer.")
     restart_lli()
+
+
+def get_lli_release_version(lli_binary):
+    lli_version = None
+    # Ensure user-executable by adding 0o001.
+    st = lli_binary.stat()
+    os.chmod(lli_binary, mode=st.st_mode | stat.S_IXUSR)
+    # Get version number.
+    cmd = [lli_binary, '--version']
+    vstr = subprocess.check_output(cmd, text=True)
+    m = re.search(r'\d+\.\d+\.\d+(-[a-z]+\.\d+)?', vstr)
+    if m:
+        lli_version = m[0]
+    return lli_version
 
 
 def is_appimage(file_path):
@@ -1610,13 +1634,13 @@ def set_appimage_symlink(app=None):
         app.root.event_generate("<<UpdateLatestAppImageButton>>")
 
 
-def update_to_latest_lli_release():
+def update_to_latest_lli_release(app=None):
     status, _ = compare_logos_linux_installer_version()
 
     if get_runmode() != 'binary':
         logging.error("Can't update LogosLinuxInstaller when run as a script.")
     elif status == 0:
-        update_lli_binary()
+        update_lli_binary(app=app)
     elif status == 1:
         logging.debug(f"{config.LLI_TITLE} is already at the latest version.")
     elif status == 2:
