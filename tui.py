@@ -80,12 +80,9 @@ def _menu(stdscr, options, title, question_text):
 
     current_option = 0
     current_page = 0
-    options_per_page = 8
-    total_pages = (len(options) - 1) // options_per_page + 1
 
     while True:
         stdscr.clear()
-
         window_height, window_width = stdscr.getmaxyx()
 
         # Wrap the title and question text
@@ -110,6 +107,8 @@ def _menu(stdscr, options, title, question_text):
 
         # Display the options, centered
         options_start_y = question_start_y + len(question_lines) + 2
+        options_per_page = max(window_height - options_start_y - 4, 3)
+        total_pages = (len(options) - 1) // options_per_page + 1
         for i in range(options_per_page):
             index = current_page * options_per_page + i
             if index < len(options):
