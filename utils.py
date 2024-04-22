@@ -576,6 +576,9 @@ def logos_reuse_download(
     if FOUND == 1:
         file_path = os.path.join(config.MYDOWNLOADS, FILE)
         if config.DIALOG == 'tk' and app:
+            # Ensure progress bar.
+            app.stop_indeterminate_progress()
+            # Start download.
             net_get(
                 SOURCEURL,
                 target=file_path,
