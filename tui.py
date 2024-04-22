@@ -22,6 +22,14 @@ def confirm(title, question_text):
     return curses.wrapper(_confirm, title, question_text)
 
 
+def convert_yes_no(key):
+    if key.lower() == 'y' or key == '\n':
+        # '\n' for Enter key, defaults to "Yes"
+        return True
+    elif key.lower() == 'n':
+        return False
+
+
 def _confirm(stdscr, title, question_text):
     curses.curs_set(0)  # Hide the cursor
 
@@ -54,11 +62,9 @@ def _confirm(stdscr, title, question_text):
         key = stdscr.getch()
         key = chr(key)
 
-        if key.lower() == 'y' or key == '\n':
-            # '\n' for Enter key, defaults to "Yes"
-            return True
-        elif key.lower() == 'n':
-            return False
+        value = convert_yes_no(key)
+        if value is not None:
+            return value
 
         stdscr.addstr(y, 0, "Type Y[es] or N[o]. ")
 
