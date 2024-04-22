@@ -90,7 +90,7 @@ def control_panel_app():
 
         choice = tui.menu(
             options,
-            "Welcome to Logos on Linux",
+            f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})",
             "What would you like to do?"
         )
 

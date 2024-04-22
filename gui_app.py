@@ -540,6 +540,11 @@ class ControlWindow():
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
 
+        text = self.gui.update_lli_label.cget('text')
+        ver = config.LLI_CURRENT_VERSION
+        new = config.LLI_LATEST_VERSION
+        text = f"{text}\ncurrent: v{ver}\nlatest: v{new}"
+        self.gui.update_lli_label.config(text=text)
         self.configure_app_button()
         self.gui.run_indexing_radio.config(
             command=self.on_action_radio_clicked
