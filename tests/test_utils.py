@@ -7,6 +7,8 @@ from pathlib import Path
 import config
 import utils
 
+URLOBJ = utils.UrlProps('http://ip.me')
+
 
 class TestUtils(unittest.TestCase):
     def test_check_logos_release_version_false(self):
@@ -71,6 +73,16 @@ class TestUtils(unittest.TestCase):
     def test_file_exists_true(self):
         self.assertTrue(utils.file_exists('~/.bashrc'))
 
+    def test_fileprops_get_size(self):
+        f = Path(__file__).parent / 'data' / 'config_empty.json'
+        fo = utils.FileProps(f)
+        self.assertEqual(fo.size, 4)
+
+    def test_fileprops_get_md5(self):
+        f = Path(__file__).parent / 'data' / 'config_empty.json'
+        fo = utils.FileProps(f)
+        self.assertEqual(fo.get_md5(), 'W3aw7vmviiMAZz4FU/YJ+Q==')
+
     def test_filter_versions(self):
         allvers = ['1.0', '1.1', '1.2', '1.3', '1.4', '1.5']
         valvers = ['1.0', '1.1', '1.2', '1.3',]
@@ -129,6 +141,23 @@ class TestUtils(unittest.TestCase):
 
     def test_have_lib(self):
         self.assertTrue(utils.have_lib('libgcc', None))
+
+    def test_urlprops_get_headers(self):
+        self.assertIsNotNone(URLOBJ.headers)
+
+    def test_urlprops_get_headers_none(self):
+        urlobj = utils.UrlProps()
+        self.assertIsNone(urlobj.headers)
+
+    def test_urlprops_get_size(self):
+        self.assertIsNotNone(URLOBJ.size)
+
+    def test_urlprops_get_size_none(self):
+        urlobj = utils.UrlProps()
+        self.assertIsNone(urlobj.size)
+
+    def test_urlprops_get_md5(self):
+        self.assertIsNone(URLOBJ.md5)
 
 
 class TestUtilsConfigFile(unittest.TestCase):
