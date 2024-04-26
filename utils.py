@@ -9,6 +9,7 @@ import queue
 import re
 import requests
 import shutil
+import shlex
 import signal
 import stat
 import subprocess
@@ -27,7 +28,7 @@ from xml.etree import ElementTree as ET
 import config
 import msg
 import wine
-import tui
+import tui_dialog
 
 
 class Props():
@@ -130,6 +131,13 @@ class UrlProps(Props):
         return self.md5
 
 
+def append_unique(list, item):
+    if item not in list:
+        list.append(item)
+    else:
+        msg.logos_warn(f"{item} already in {list}.")
+
+
 # Set "global" variables.
 def set_default_config():
     get_os()
@@ -205,7 +213,7 @@ def die_if_running():
                 confirm = tk.messagebox.askquestion("Confirmation", message)
                 tk_root.destroy()
             elif config.DIALOG == "curses":
-                confirm = tui.confirm("Confirmation", message)
+                confirm = tui_dialog.confirm("Confirmation", message)
             else:
                 confirm = msg.cli_question(message)
 
@@ -227,9 +235,24 @@ def die(message):
     sys.exit(1)
 
 
-def run_command(command):
-    result = subprocess.run(command, check=True, text=True, capture_output=True)
-    return result.stdout
+def run_command(command, stdin=None, shell=False):
+    try:
+        logging.debug(f"Attempting to execute {command}")
+        result = subprocess.run(
+            command,
+            stdin=stdin,
+            check=True,
+            text=True,
+            shell=shell,
+            capture_output=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error occurred while executing {command}: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"An unexpected error occurred when running {command}: {e}")
+        return None
 
 
 def reboot():
@@ -381,35 +404,43 @@ def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "apt install --download-only -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
         # IDEA: Switch to Python APT library?
         # See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"
-        config.PACKAGES = "coreutils patch lsof wget findutils sed grep gawk winbind cabextract x11-apps binutils fuse3"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l"
+        config.QUERY_PREFIX = '.i  '
+        config.PACKAGES = "binutils cabextract fuse wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "dnf install --downloadonly -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
-        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed"
+        config.QUERY_PREFIX = ''
+        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "pamac install --download-only --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
-        config.PACKAGES = "wget sed grep gawk cabextract samba"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i"
+        config.QUERY_PREFIX = ''
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
         config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "pacman -Sw -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = r"pacman -R --no-confirm"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q | grep -E ^"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q"
+        config.QUERY_PREFIX = ''
         if config.OS_NAME == "steamos":  # steamOS
-            config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
+            config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader" #noqa: #E501
         else:  # arch
-            config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
+            config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader" # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     # Add more conditions for other package managers as needed
@@ -428,60 +459,139 @@ def get_runmode():
         return 'script'
 
 
-def query_packages(packages, mode="install"):
+def query_packages(packages, elements=None, mode="install", app=None):
     if config.SKIP_DEPENDENCIES:
         return
 
     missing_packages = []
     conflicting_packages = []
 
-    for p in packages:
-        command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
-        logging.debug(f"pkg query command: \"{command}\"")
-        result = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-            text=True
-        )
-        logging.debug(f"pkg query result: {result.returncode}")
-        if result.returncode != 0 and mode == "install":
-            missing_packages.append(p)
-        elif result.returncode == 0 and mode == "remove":
-            conflicting_packages.append(p)
+    command = config.PACKAGE_MANAGER_COMMAND_QUERY
+
+    try:
+        package_list = run_command(command, shell=True)
+    except Exception as e:
+        logging.error(f"Error occurred while executing command: {e}")
+
+    logging.debug(f"Checking packages: {packages} in package list.")
+    if app is not None:
+        if elements is None:
+            elements = {}  # Initialize elements if not provided
+        elif isinstance(elements, list):
+            elements = {element[0]: element[1] for element in elements}
+
+        for p in packages:
+            logging.debug(f"Current elements: {elements}")
+            logging.debug(f"Checking: package: {p}")
+            status = "Unchecked"
+            for line in package_list.split('\n'):
+                if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":
+                    status = "Installed"
+                    break
+                elif line.strip().startswith(p) and mode == "remove":
+                    conflicting_packages.append(p)
+                    status = "Conflicting"
+                    break
+
+            if status == "Unchecked":
+                if mode == "install":
+                    missing_packages.append(p)
+                    status = "Missing"
+                elif mode == "remove":
+                    status = "Not Installed"
+
+            logging.debug(f"Setting {p}: {status}")
+            elements[p] = status
+
+            logging.debug(f"DEV: {elements}")
+
+            if app is not None and config.DIALOG == "curses":
+                app.report_dependencies(
+                    f"Checking Packages (packages.index(p) + 1)/{len(packages)})",
+                    100 * (packages.index(p) + 1) // len(packages),
+                    elements,
+                    dialog=True)
 
     msg = 'None'
     if mode == "install":
         if missing_packages:
             msg = f"Missing packages: {' '.join(missing_packages)}"
         logging.info(f"Missing packages: {msg}")
-        return missing_packages
-    if mode == "remove":
+        return missing_packages, elements
+    elif mode == "remove":
         if conflicting_packages:
             msg = f"Conflicting packages: {' '.join(conflicting_packages)}"
         logging.info(f"Conflicting packages: {msg}")
-        return conflicting_packages
+        return conflicting_packages, elements
 
 
-def install_packages(packages):
+def download_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
-        logging.debug(f"install_packages cmd: {command}")
-        result = run_command(command)
+        total_packages = len(packages)
+        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"
+        logging.debug(f"download_packages cmd: {command}")
+        command_args = shlex.split(command)
+        result = run_command(command_args)
+
+        for index, package in enumerate(packages):
+            status = "Downloaded" if result.returncode == 0 else "Failed"
+            if elements is not None:
+                elements[index] = (package, status)
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:
+                app.report_dependencies(f"Downloading Packages ({index + 1}/{total_packages})",
+                                        100 * (index + 1) // total_packages, elements, dialog=True)
 
 
-def remove_packages(packages):
+def install_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {' '.join(packages)}"  # noqa: E501
-        logging.debug(f"remove_packages cmd: {command}")
-        result = run_command(command)
+        total_packages = len(packages)
+        for index, package in enumerate(packages):
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"
+            logging.debug(f"install_packages cmd: {command}")
+            result = run_command(command)
+
+            if elements is not None:
+                elements[index] = (
+                    package,
+                    "Installed" if result.returncode == 0 else "Failed")
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:
+                app.report_dependencies(
+                    f"Installing Packages ({index + 1}/{total_packages})",
+                    100 * (index + 1) // total_packages,
+                    elements,
+                    dialog=True)
+
+
+def remove_packages(packages, elements, app=None):
+    if config.SKIP_DEPENDENCIES:
+        return
+
+    if packages:
+        total_packages = len(packages)
+        for index, package in enumerate(packages):
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"
+            logging.debug(f"remove_packages cmd: {command}")
+            result = run_command(command)
+
+            if elements is not None:
+                elements[index] = (
+                    package,
+                    "Removed" if result.returncode == 0 else "Failed")
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:
+                app.report_dependencies(
+                    f"Removing Packages ({index + 1}/{total_packages})",
+                    100 * (index + 1) // total_packages,
+                    elements,
+                    dialog=True)
 
 
 def have_dep(cmd):
@@ -489,6 +599,42 @@ def have_dep(cmd):
         return True
     else:
         return False
+
+
+def check_dialog_version():
+    if have_dep("dialog"):
+        try:
+            result = run_command(["dialog", "--version"])
+            version_info = result.strip()
+            if version_info.startswith("Version: "):
+                version_info = version_info[len("Version: "):]
+            return version_info
+        except subprocess.CalledProcessError as e:
+            print(f"Error running command: {e.stderr}")
+        except FileNotFoundError:
+            print("The 'dialog' command is not found. Please ensure it is installed and in your PATH.")
+        return None
+
+
+def test_dialog_version():
+    version = check_dialog_version()
+
+    def parse_date(version):
+        try:
+            return version.split('-')[1]
+        except IndexError:
+            return ''
+
+    minimum_version = "1.3-20201126-1"
+
+    logging.debug(f"Current dialog version: {version}")
+    if version is not None:
+        minimum_version = parse_date(minimum_version)
+        current_version = parse_date(version)
+        logging.debug(f"Minimum dialog version: {minimum_version}. Installed version: {current_version}.")
+        return current_version > minimum_version
+    else:
+        return None
 
 
 def clean_all():
@@ -526,7 +672,7 @@ def get_user_downloads_dir():
 def cli_download(uri, destination):
     message = f"Downloading '{uri}' to '{destination}'"
     logging.info(message)
-    msg.cli_msg(message)
+    msg.logos_msg(message)
 
     # Set target.
     if destination != destination.rstrip('/'):
@@ -582,7 +728,7 @@ def logos_reuse_download(
                     app=app,
                 ):
                     logging.info(f"{FILE} properties match. Using it…")
-                    msg.cli_msg(f"Copying {FILE} into {TARGETDIR}")
+                    msg.logos_msg(f"Copying {FILE} into {TARGETDIR}")
                     try:
                         shutil.copy(os.path.join(i, FILE), TARGETDIR)
                     except shutil.SameFileError:
@@ -609,7 +755,7 @@ def logos_reuse_download(
             file_path,
             app=app,
         ):
-            msg.cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
+            msg.logos_msg(f"Copying: {FILE} into: {TARGETDIR}")
             try:
                 shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
             except shutil.SameFileError:
@@ -678,7 +824,7 @@ def postinstall_dependencies_steamos():
 
 
 def preinstall_dependencies():
-    if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mintn":
+    if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mint":
         preinstall_dependencies_ubuntu()
     elif config.OS_NAME == "Steam":
         preinstall_dependencies_steamos()
@@ -689,21 +835,36 @@ def postinstall_dependencies():
         postinstall_dependencies_steamos()
 
 
-def install_dependencies(packages, badpackages, logos9_packages=None):
-    missing_packages = []
-    conflicting_packages = []
+def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
+    missing_packages = {}
+    conflicting_packages = {}
     package_list = []
+    elements = {}
+    bad_elements = {}
+
     if packages:
         package_list = packages.split()
+
     bad_package_list = []
     if badpackages:
         bad_package_list = badpackages.split()
+
     if logos9_packages:
         package_list.extend(logos9_packages.split())
 
+    if config.DIALOG == "curses" and app is not None and elements is not None:
+        for p in package_list:
+            elements[p] = "Unchecked"
+    if config.DIALOG == "curses" and app is not None and bad_elements is not None:
+        for p in bad_package_list:
+            bad_elements[p] = "Unchecked"
+
+    if config.DIALOG == "curses" and app is not None:
+        app.report_dependencies("Checking Packages", 0, elements, dialog=True)
+
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
-        missing_packages = query_packages(package_list)
-        conflicting_packages = query_packages(bad_package_list, "remove")
+        missing_packages, elements = query_packages(package_list, elements, app=app)
+        conflicting_packages, bad_elements = query_packages(bad_package_list, bad_elements, "remove", app=app)
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if missing_packages and conflicting_packages:
@@ -729,18 +890,18 @@ def install_dependencies(packages, badpackages, logos9_packages=None):
         check_libs(["libfuse"])
 
         if missing_packages:
-            install_packages(missing_packages)
+            download_packages(missing_packages, elements, app)
+            install_packages(missing_packages, elements, app)
 
         if conflicting_packages:
             # AppImage Launcher is the only known conflicting package.
-            remove_packages(conflicting_packages)
-            config.REBOOT_REQUIRED = True
+            remove_packages(conflicting_packages, bad_elements, app)
+            #config.REBOOT_REQUIRED = True
+            #TODO: Verify with user before executing
 
         postinstall_dependencies()
 
         if config.REBOOT_REQUIRED:
-            # TODO: Add resumable install functionality to speed up running the
-            # program after reboot. See #19.
             reboot()
 
     else:
@@ -784,21 +945,24 @@ def check_dependencies(app=None):
     logging.info(f"Checking Logos {str(targetversion)} dependencies…")
     if app:
         app.status_q.put(f"Checking Logos {str(targetversion)} dependencies…")
-        app.root.event_generate('<<UpdateStatus>>')
+        if config.DIALOG == "tk":
+            app.root.event_generate('<<UpdateStatus>>')
 
     if targetversion == 10:
-        install_dependencies(config.PACKAGES, config.BADPACKAGES)
+        install_dependencies(config.PACKAGES, config.BADPACKAGES, app=app)
     elif targetversion == 9:
         install_dependencies(
             config.PACKAGES,
             config.BADPACKAGES,
-            config.L9PACKAGES
+            config.L9PACKAGES,
+            app=app
         )
     else:
         logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
 
     if app:
-        app.root.event_generate('<<StopIndeterminateProgress>>')
+        if config.DIALOG == "tk":
+            app.root.event_generate('<<StopIndeterminateProgress>>')
 
 
 def file_exists(file_path):
@@ -832,7 +996,7 @@ def get_logos_releases(app=None):
             app.root.event_generate(app.release_evt)
         return downloaded_releases
 
-    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
+    msg.logos_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
 
@@ -841,7 +1005,8 @@ def get_logos_releases(app=None):
     if response_xml_bytes is None:
         if app:
             app.releases_q.put(None)
-            app.root.event_generate(app.release_evt)
+            if config.DIALOG == 'tk':
+                app.root.event_generate(app.release_evt)
         return None
 
     # Parse XML
@@ -868,7 +1033,10 @@ def get_logos_releases(app=None):
 
     if app:
         app.releases_q.put(filtered_releases)
-        app.root.event_generate(app.release_evt)
+        if config.DIALOG == 'tk':
+            app.root.event_generate(app.release_evt)
+        elif config.DIALOG == 'curses':
+            app.releases_e.set()
     return filtered_releases
 
 
@@ -914,17 +1082,17 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
     wine_binary_options = []
 
     # Add AppImages to list
-    if config.DIALOG == 'tk':
-        wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
-        wine_binary_options.extend(appimages)
-    else:
-        appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
-        wine_binary_options.append([
-            "Recommended",  # Code
-            f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # noqa: E501
-            f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # noqa: E501
-            ])
-        wine_binary_options.extend(appimage_entries)
+    # if config.DIALOG == 'tk':
+    wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
+    wine_binary_options.extend(appimages)
+    # else:
+    #     appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
+    #     wine_binary_options.append([
+    #         "Recommended",  # Code
+    #         f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # noqa: E501
+    #         f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # noqa: E501
+    #         ])
+    #     wine_binary_options.extend(appimage_entries)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
@@ -933,15 +1101,15 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
         WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(WINEBIN_PATH)  # noqa: E501
 
         # Create wine binary option array
-        if config.DIALOG == 'tk':
-            wine_binary_options.append(WINEBIN_PATH)
-        else:
-            wine_binary_options.append(
-                [WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION]
-            )
-
-    if config.DIALOG != 'tk':
-        wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
+        # if config.DIALOG == 'tk':
+        wine_binary_options.append(WINEBIN_PATH)
+        # else:
+        #     wine_binary_options.append(
+        #         [WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION]
+        #     )
+        #
+    # if config.DIALOG != 'tk':
+    #     wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
 
     logging.debug(f"{wine_binary_options=}")
     if app:
@@ -971,7 +1139,7 @@ def install_winetricks(
     app=None,
     version=config.WINETRICKS_VERSION,
 ):
-    msg.cli_msg(f"Installing winetricks v{version}…")
+    msg.logos_msg(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
     zip_name = f"{version}.zip"
     logos_reuse_download(
@@ -1130,9 +1298,12 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
     if app:
-        app.root.event_generate('<<StartIndeterminateProgress>>')
-        app.status_q.put(f"Verifying {file_path}…")
-        app.root.event_generate('<<UpdateStatus>>')
+        if config.DIALOG == "tk":
+            app.root.event_generate('<<StartIndeterminateProgress>>')
+            app.status_q.put(f"Verifying {file_path}…")
+            app.root.event_generate('<<UpdateStatus>>')
+        else:
+            app.status_q.put(f"Verifying {file_path}…")
     res = False
     msg = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
@@ -1144,9 +1315,10 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
             res = True
     logging.info(msg)
     if app:
-        if not evt:
-            evt = app.check_evt
-        app.root.event_generate(evt)
+        if config.DIALOG == "tk":
+            if not evt:
+                evt = app.check_evt
+            app.root.event_generate(evt)
     return res
 
 
@@ -1180,7 +1352,10 @@ def write_progress_bar(percent, screen_width=80):
     l_f = int(screen_width * 0.75)  # progress bar length
     l_y = int(l_f * percent / 100)  # num. of chars. complete
     l_n = l_f - l_y  # num. of chars. incomplete
-    print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
+    if config.DIALOG == 'curses':
+        msg.status(f" [{y * l_y}{n * l_n}] {percent:>3}%")
+    else:
+        print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
 
 
 def app_is_installed():
@@ -1366,7 +1541,7 @@ def get_recommended_appimage():
 
 
 def install_premade_wine_bottle(srcdir, appdir):
-    msg.cli_msg(f"Extracting: '{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
+    msg.logos_msg(f"Extracting: '{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
     shutil.unpack_archive(
         f"{srcdir}/{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
         appdir
@@ -1642,7 +1817,7 @@ def set_appimage_symlink(app=None):
             confirm = tk.messagebox.askquestion("Confirmation", copy_message)
             tk_root.destroy()
         else:
-            confirm = tui.confirm("Confirmation", copy_message)
+            confirm = tui_dialog.confirm("Confirmation", copy_message)
     # FIXME: What if user cancels the confirmation dialog?
 
     appimage_symlink_path = Path(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
@@ -1708,3 +1883,40 @@ def get_downloaded_file_path(filename):
             logging.info(f"'{filename}' exists in {str(d)}.")
             return str(file_path)
     logging.debug(f"File not found: {filename}")
+
+
+def send_task(app, task):
+    logging.debug(f"{task=}")
+    app.todo_q.put(task)
+    if config.DIALOG == 'tk':
+        app.root.event_generate('<<ToDo>>')
+    elif config.DIALOG == 'curses':
+        app.task_processor(app, task=task)
+
+
+def grep(regexp, filepath):
+    fp = Path(filepath)
+    found = False
+    ct = 0
+    with fp.open() as f:
+        for line in f:
+            ct += 1
+            text = line.rstrip()
+            if re.search(regexp, text):
+                logging.debug(f"{filepath}:{ct}:{text}")
+                found = True
+    return found
+
+
+def start_thread(task, daemon_bool=True, *args):
+    thread = threading.Thread(name=f"{task}", target=task, daemon=daemon_bool, args=args)
+    thread.start()
+    return thread
+
+
+def str_array_to_string(text, delimeter="\n"):
+    try:
+        processed_text = delimeter.join(text)
+        return processed_text
+    except TypeError:
+        return text

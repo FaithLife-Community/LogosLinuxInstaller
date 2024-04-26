@@ -17,7 +17,8 @@ from pathlib import Path
 import config
 # import installer
 import msg
-import tui
+import tui_curses
+import tui_app
 import utils
 # import wine
 
@@ -70,7 +71,7 @@ def backup_and_restore(mode='backup', app=None):
                 answer = msg.cli_ask_filepath("Give backups folder path:")
                 answer = Path(answer).expanduser().resolve()
                 if not answer.is_dir():
-                    msg.cli_msg(f"Not a valid folder path: {answer}")
+                    msg.logos_msg(f"Not a valid folder path: {answer}")
             config.BACKUPDIR = answer
 
     # Set source folders.
@@ -109,7 +110,7 @@ def backup_and_restore(mode='backup', app=None):
         app.status_q.put(m)
         app.root.event_generate('<<StartIndeterminateProgress>>')
         app.root.event_generate('<<UpdateStatus>>')
-    msg.cli_msg(m, end='')
+    msg.logos_msg(m, end='')
     t.start()
     try:
         while t.is_alive():
@@ -184,7 +185,7 @@ def backup_and_restore(mode='backup', app=None):
     else:
         m = f"Backing up to {str(dst_dir)}"
     logging.info(m)
-    msg.cli_msg(m)
+    msg.logos_msg(m)
     if app is not None:
         app.status_q.put(m)
         app.root.event_generate('<<UpdateStatus>>')
@@ -248,7 +249,7 @@ def remove_all_index_files(app=None):
             except OSError as e:
                 logging.error(f"Error removing {file_to_remove}: {e}")
 
-    msg.cli_msg("======= Removing all LogosBible index files done! =======")
+    msg.logos_msg("======= Removing all LogosBible index files done! =======")
     if app is not None:
         app.root.event_generate(app.message_event)
     sys.exit(0)
@@ -266,7 +267,7 @@ def remove_library_catalog():
 
 
 def set_winetricks():
-    msg.cli_msg("Preparing winetricks…")
+    msg.logos_msg("Preparing winetricks…")
     if not config.APPDIR_BINDIR:
         config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
     # Check if local winetricks version available; else, download it
@@ -304,10 +305,10 @@ def set_winetricks():
                         )
                         return 0
                     else:
-                        msg.cli_msg("Installation canceled!")
+                        msg.logos_msg("Installation canceled!")
                         sys.exit(0)
             else:
-                msg.cli_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")  # noqa: E501
+                msg.logos_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")  # noqa: E501
                 # download_winetricks()
                 utils.install_winetricks(config.APPDIR_BINDIR)
                 config.WINETRICKSBIN = os.path.join(
@@ -316,7 +317,7 @@ def set_winetricks():
                 )
                 return 0
         else:
-            msg.cli_msg("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
+            msg.logos_msg("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
             # download_winetricks()
             utils.install_winetricks(config.APPDIR_BINDIR)
             config.WINETRICKSBIN = os.path.join(
@@ -328,7 +329,7 @@ def set_winetricks():
 
 
 def download_winetricks():
-    msg.cli_msg("Downloading winetricks…")
+    msg.logos_msg("Downloading winetricks…")
     appdir_bindir = f"{config.INSTALLDIR}/data/bin"
     utils.logos_reuse_download(
         config.WINETRICKS_URL,
