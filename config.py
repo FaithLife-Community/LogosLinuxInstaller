@@ -6,7 +6,7 @@ import tempfile
 
 # Define and set variables that are required in the config file.
 core_config_keys = [
-    "FLPRODUCT", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
+    "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
     "INSTALLDIR", "WINETRICKSBIN", "WINEBIN_CODE", "WINE_EXE",
     "WINECMD_ENCODING", "LOGS", "BACKUPDIR", "LAST_UPDATED",
     "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION"
@@ -17,6 +17,7 @@ for k in core_config_keys:
 # Define and set additional variables that can be set in the env.
 extended_config = {
     'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
+    'APPDIR_BINDIR': None,
     'CHECK_UPDATES': False,
     'CONFIG_FILE': None,
     'CUSTOMBINPATH': None,
@@ -35,9 +36,11 @@ extended_config = {
     'SKIP_FONTS': False,
     'VERBOSE': False,
     'WINE_EXE': None,
+    'WINEBIN_CODE': None,
     'WINEDEBUG': "fixme-all,err-all",
     'WINEDLLOVERRIDES': '',
     'WINEPREFIX': None,
+    'WINE_EXE': None,
     'WINESERVER_EXE': None,
     'WINETRICKS_UNATTENDED': None,
 }
@@ -82,6 +85,7 @@ PACKAGE_MANAGER_COMMAND_QUERY = None
 PACKAGES = None
 PASSIVE = None
 PRESENT_WORKING_DIRECTORY = os.getcwd()
+QUERY_PREFIX = None
 REBOOT_REQUIRED = None
 RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = None
 RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = None
@@ -93,6 +97,12 @@ VERBUM_PATH = None
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
 WINETRICKS_VERSION = '20220411'
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
+install_finished = False
+current_option = 0
+current_page = 0
+total_pages = 0
+options_per_page = 8
+use_python_dialog = True
 
 
 def get_config_file_dict(config_file_path):

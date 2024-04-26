@@ -37,7 +37,7 @@ def wait_on(command):
             stderr=subprocess.PIPE,
             text=True
         )
-        msg.cli_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
+        msg.logos_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
         time.sleep(1.0)
         while process.poll() is None:
             msg.logos_progress()
@@ -160,7 +160,7 @@ def check_wine_version_and_branch(TESTBINARY):
 
 
 def initializeWineBottle(app=None):
-    msg.cli_msg("Initializing wine bottle...")
+    msg.logos_msg("Initializing wine bottle...")
 
     # Avoid wine-mono window
     orig_overrides = config.WINEDLLOVERRIDES
@@ -171,7 +171,7 @@ def initializeWineBottle(app=None):
 
 
 def wine_reg_install(REG_FILE):
-    msg.cli_msg(f"Installing registry file: {REG_FILE}")
+    msg.logos_msg(f"Installing registry file: {REG_FILE}")
     env = get_wine_env()
     p = subprocess.run(
         [config.WINE_EXE, "regedit.exe", REG_FILE],
@@ -189,7 +189,7 @@ def wine_reg_install(REG_FILE):
 
 
 def install_msi():
-    msg.cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
+    msg.logos_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
     exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
@@ -247,7 +247,7 @@ def run_winetricks(cmd=None):
 
 def winetricks_install(*args):
     cmd = [*args]
-    msg.cli_msg(f"Running winetricks \"{args[-1]}\"")
+    msg.logos_msg(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
@@ -255,7 +255,7 @@ def winetricks_install(*args):
 
 
 def installFonts():
-    msg.cli_msg("Configuring fonts...")
+    msg.logos_msg("Configuring fonts…")
     fonts = ['corefonts', 'tahoma']
     if not config.SKIP_FONTS:
         for f in fonts:

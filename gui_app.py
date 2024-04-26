@@ -287,6 +287,9 @@ class InstallerWindow():
             self.set_input_widgets_state('disabled')
         elif task == 'DONE':
             self.update_install_progress()
+        elif task == 'CONFIG':
+            logging.info("Updating config file.")
+            utils.write_config(config.CONFIG_FILE)
 
     def set_product(self, evt=None):
         if self.gui.productvar.get()[0] == 'C':  # ignore default text

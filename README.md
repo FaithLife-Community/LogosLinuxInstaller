@@ -125,7 +125,7 @@ LogosLinuxInstaller$ source env/bin/activate # activate the env
 Python 3.12.1
 (env) LogosLinuxInstaller$ python -m tkinter # verify that tkinter test window opens
 (env) LogosLinuxInstaller$ pip install -r requirements.txt # install python packages
-(env) LogosLinuxInstaller$ ./LogosLinuxInstaller.py --help # run the script
+(env) LogosLinuxInstaller$ ./main.py --help # run the script
 ```
 
 ## Install Guide
