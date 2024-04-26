@@ -2,6 +2,7 @@
 import logging
 import os
 import argparse
+import curses
 
 import config
 import control
@@ -256,7 +257,7 @@ def run_control_panel():
     if config.DIALOG is None or config.DIALOG == 'tk':
         gui_app.control_panel_app()
     else:
-        tui_app.control_panel_app()
+        curses.wrapper(tui_app.control_panel_app)
 
 
 def main():

@@ -2,11 +2,26 @@ import logging
 import os
 import signal
 import sys
+import time
 
 from pathlib import Path
 
 import config
 
+logging.console_log = []
+
+class CursesHandler(logging.Handler):
+    def __init__(self, screen):
+        logging.Handler.__init__(self)
+        self.screen = screen
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            screen = self.screen
+            status(msg)
+            screen.refresh()
+        except:
+            raise
 
 def get_log_level_name(level):
     name = None
@@ -63,6 +78,40 @@ def initialize_logging(stderr_log_level):
     )
 
 
+def initialize_curses_logging(stdscr):
+    '''
+    Log levels:
+        Level       Value   Description
+        CRITICAL    50      the program can't continue
+        ERROR       40      the program has not been able to do something
+        WARNING     30      something unexpected happened (maybe neg. effect)
+        INFO        20      confirmation that things are working as expected
+        DEBUG       10      detailed, dev-level information
+        NOTSET      0       all events are handled
+    '''
+
+    # Ensure log file parent folders exist.
+    log_parent = Path(config.LOGOS_LOG).parent
+    if not log_parent.is_dir():
+        log_parent.mkdir(parents=True)
+
+    # Define logging handlers.
+    file_h = logging.FileHandler(config.LOGOS_LOG, encoding='UTF8')
+    file_h.setLevel(logging.DEBUG)
+    curses_h = CursesHandler(stdscr)
+    handlers = [
+        curses_h,
+    ]
+
+    # Set initial config.
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=handlers,
+    )
+
+
 def update_log_level(new_level):
     # Update logging level from config.
     for h in logging.getLogger().handlers:
@@ -76,9 +125,19 @@ def cli_msg(message, end='\n'):
     print(message, end=end)
 
 
+def logos_msg(message, end='\n'):
+    if config.DIALOG == 'curses':
+        logging.debug(message)
+    else:
+        cli_msg(message, end)
+
+
 def logos_progress():
-    sys.stdout.write('.')
-    sys.stdout.flush()
+    if config.DIALOG == 'curses':
+        pass
+    else:
+        sys.stdout.write('.')
+        sys.stdout.flush()
     # i = 0
     # spinner = "|/-\\"
     # sys.stdout.write(f"\r{text} {spinner[i]}")
@@ -89,7 +148,9 @@ def logos_progress():
 
 def logos_warn(message):
     if config.DIALOG == 'curses':
-        cli_msg(message)
+        logging.warning(message)
+    else:
+        logos_msg(message)
 
 
 def logos_error(message, secondary=None):
@@ -97,11 +158,15 @@ def logos_error(message, secondary=None):
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
-    if secondary != "info":
+    if config.DIALOG == 'curses' and secondary != "info":
         logging.critical(message)
-        cli_msg(help_message)
+        status(message)
+        status(help_message)
+    elif secondary != "info":
+        logging.critical(message)
+        logos_msg(message)
     else:
-        cli_msg(message)
+        logos_msg(message)
 
     if secondary is None or secondary == "":
         try:
@@ -125,7 +190,7 @@ def cli_question(QUESTION_TEXT):
         elif yn.lower() == 'n':
             return False
         else:
-            cli_msg("Type Y[es] or N[o].")
+            logos_msg("Type Y[es] or N[o].")
 
 
 def cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
@@ -135,7 +200,7 @@ def cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
 
 def cli_acknowledge_question(QUESTION_TEXT, NO_TEXT):
     if not cli_question(QUESTION_TEXT):
-        cli_msg(NO_TEXT)
+        logos_msg(NO_TEXT)
         return False
     else:
         return True
@@ -152,11 +217,15 @@ def cli_ask_filepath(question_text):
 
 def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
     if config.DIALOG == 'curses':
+        pass
+    else:
         cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)
 
 
 def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):
     if config.DIALOG == 'curses':
+        pass
+    else:
         return cli_acknowledge_question(QUESTION_TEXT, NO_TEXT)
 
 
@@ -173,15 +242,22 @@ def progress(percent, app=None):
     if config.DIALOG == 'tk' and app:
         app.progress_q.put(percent)
         app.root.event_generate('<<UpdateProgress>>')
+    elif config.DIALOG == 'curses':
+        status(f"Progress: {get_progress_str(percent)}", app)
     else:
-        cli_msg(get_progress_str(percent))  # provisional
+        logos_msg(get_progress_str(percent))  # provisional
 
 
 def status(text, app=None):
+    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     """Handles status messages for both TUI and GUI."""
     logging.debug(f"Status: {text}")
-    if config.DIALOG == 'tk' and app:
+    if config.DIALOG == 'tk':
         app.status_q.put(text)
         app.root.event_generate('<<UpdateStatus>>')
+    elif config.DIALOG == 'curses':
+        app.status_q.put(f"{timestamp} {text}")
+        logging.console_log.append(f"{app.status_q.get()}")
     else:
-        cli_msg(text)  # provisional
+        '''Prints message to stdout regardless of log level.'''
+        logos_msg(text)

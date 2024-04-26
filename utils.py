@@ -130,6 +130,13 @@ class UrlProps(Props):
         return self.md5
 
 
+def append_unique(list, item):
+    if item not in list:
+        list.append(item)
+    else:
+        msg.logos_warn(f"{item} already in {list}.")
+
+
 # Set "global" variables.
 def set_default_config():
     get_os()
@@ -518,7 +525,7 @@ def get_user_downloads_dir():
 def cli_download(uri, destination):
     message = f"Downloading '{uri}' to '{destination}'"
     logging.info(message)
-    msg.cli_msg(message)
+    msg.logos_msg(message)
 
     # Set target.
     if destination != destination.rstrip('/'):
@@ -574,7 +581,7 @@ def logos_reuse_download(
                     app=app,
                 ):
                     logging.info(f"{FILE} properties match. Using it…")
-                    msg.cli_msg(f"Copying {FILE} into {TARGETDIR}")
+                    msg.logos_msg(f"Copying {FILE} into {TARGETDIR}")
                     try:
                         shutil.copy(os.path.join(i, FILE), TARGETDIR)
                     except shutil.SameFileError:
@@ -601,7 +608,7 @@ def logos_reuse_download(
             file_path,
             app=app,
         ):
-            msg.cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
+            msg.logos_msg(f"Copying: {FILE} into: {TARGETDIR}")
             try:
                 shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
             except shutil.SameFileError:
@@ -766,7 +773,8 @@ def check_dependencies(app=None):
     logging.info(f"Checking Logos {str(targetversion)} dependencies…")
     if app:
         app.status_q.put(f"Checking Logos {str(targetversion)} dependencies…")
-        app.root.event_generate('<<UpdateStatus>>')
+        if config.DIALOG == "tk":
+            app.root.event_generate('<<UpdateStatus>>')
 
     if targetversion == 10:
         install_dependencies(config.PACKAGES, config.BADPACKAGES)
@@ -780,7 +788,8 @@ def check_dependencies(app=None):
         logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
 
     if app:
-        app.root.event_generate('<<StopIndeterminateProgress>>')
+        if config.DIALOG == "tk":
+            app.root.event_generate('<<StopIndeterminateProgress>>')
 
 
 def file_exists(file_path):
@@ -814,7 +823,7 @@ def get_logos_releases(app=None):
             app.root.event_generate(app.release_evt)
         return downloaded_releases
 
-    msg.cli_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
+    msg.logos_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
 
@@ -823,7 +832,8 @@ def get_logos_releases(app=None):
     if response_xml is None:
         if app:
             app.releases_q.put(None)
-            app.root.event_generate(app.release_evt)
+            if config.DIALOG == 'tk':
+                app.root.event_generate(app.release_evt)
         return None
 
     # Parse XML
@@ -850,7 +860,10 @@ def get_logos_releases(app=None):
 
     if app:
         app.releases_q.put(filtered_releases)
-        app.root.event_generate(app.release_evt)
+        if config.DIALOG == 'tk':
+            app.root.event_generate(app.release_evt)
+        elif config.DIALOG == 'curses':
+            app.releases_e.set()
     return filtered_releases
 
 
@@ -953,7 +966,7 @@ def install_winetricks(
     app=None,
     version=config.WINETRICKS_VERSION,
 ):
-    msg.cli_msg(f"Installing winetricks v{version}…")
+    msg.logos_msg(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
     zip_name = f"{version}.zip"
     logos_reuse_download(
@@ -1162,7 +1175,10 @@ def write_progress_bar(percent, screen_width=80):
     l_f = int(screen_width * 0.75)  # progress bar length
     l_y = int(l_f * percent / 100)  # num. of chars. complete
     l_n = l_f - l_y  # num. of chars. incomplete
-    print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
+    if config.DIALOG == 'curses':
+        msg.status(f" [{y * l_y}{n * l_n}] {percent:>3}%")
+    else:
+        print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
 
 
 def app_is_installed():
@@ -1348,7 +1364,7 @@ def get_recommended_appimage():
 
 
 def install_premade_wine_bottle(srcdir, appdir):
-    msg.cli_msg(f"Extracting: '{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
+    msg.logos_msg(f"Extracting: '{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
     shutil.unpack_archive(
         f"{srcdir}/{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
         appdir
@@ -1690,3 +1706,32 @@ def get_downloaded_file_path(filename):
             logging.info(f"'{filename}' exists in {str(d)}.")
             return str(file_path)
     logging.debug(f"File not found: {filename}")
+
+
+def send_task(app, task):
+    logging.debug(f"{task=}")
+    app.todo_q.put(task)
+    if config.DIALOG == 'tk':
+        app.root.event_generate('<<ToDo>>')
+    elif config.DIALOG == 'curses':
+        app.task_processor(app, task=task)
+
+
+def grep(regexp, filepath):
+    fp = Path(filepath)
+    found = False
+    ct = 0
+    with fp.open() as f:
+        for line in f:
+            ct += 1
+            text = line.rstrip()
+            if re.search(regexp, text):
+                logging.debug(f"{filepath}:{ct}:{text}")
+                found = True
+    return found
+
+
+def start_thread(task, daemon_bool=True, *args):
+    thread = threading.Thread(name=f"{task}", target=task, daemon=daemon_bool, args=args)
+    thread.start()
+    return thread
