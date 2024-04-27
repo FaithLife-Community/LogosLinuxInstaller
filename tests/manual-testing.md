@@ -37,4 +37,4 @@
 
 
 ### GUI testing results
-![GUI screenshot](tests/manual-testing-gui.png)
+![](tests/manual-testing-gui.png)
