@@ -38,3 +38,21 @@
 
 ### GUI testing results
 ![GUI screenshot](manual-testing-gui.png)
+
+| Button/Action | latest version tested | result |
+| :--- | :--- | :---: |
+| Install [app] | `4.0.0-alpha.6` | :+1: |
+| Run app | `4.0.0-alpha.6` | :+1: |
+| Run indexing |||
+| Remove library catalog |||
+| Remove all index files |||
+| Edit... [config file] | `4.0.0-alpha.6` | :+1: |
+| Install [dependencies] |||
+| Backup |||
+| Restore |||
+| [Self-]Update |||
+| Run [Update to Latest AppImage] |||
+| Run [Set AppImage] |||
+| Run [Winetricks] | `4.0.0-alpha.6` | :+1: |
+| Download/Update [Winetricks] |||
+| Enable/Disable [app logging] |||
