@@ -44,18 +44,16 @@
 | Install [app] | `4.0.0-alpha.6` | :+1: |
 | Run app | `4.0.0-alpha.6` | :+1: |
 | Run indexing |||
-| Remove library catalog |||
 | Remove all index files |||
-| Edit... [config file] | `4.0.0-alpha.6` | :+1: |
-| Install [dependencies] |||
-| Backup |||
-| Restore |||
-| [Self-]Update |||
-| Run [Update to Latest AppImage] |||
-| Run [Set AppImage] |||
-| Run [Winetricks] | `4.0.0-alpha.6` | :+1: |
-| Download/Update [Winetricks] |||
+| Run Winetricks | `4.0.0-alpha.6` | :+1: |
+| Download/Update Winetricks |||
+| Edit Config | `4.0.0-alpha.6` | :+1: |
+| Back up Data |||
+| Restore Data |||
 | Enable/Disable [app logging] |||
+| Update to Latest AppImage |||
+| Set AppImage |||
+| Install Dependencies |||
 
 ## GUI testing
 
