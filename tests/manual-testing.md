@@ -11,14 +11,14 @@
 | `-c/--config` | | |
 | `-f/--force-root` | | |
 | `-p/--custom-binary-path` | | |
-| `-L/--delete-log` | | |
+| `-L/--delete-log` | `4.0.0-alpha.6` | :+1: |
 | `-P/--passive` | `4.0.0-alpha.6` | :+1: |
-| `--install-app` | | |
-| `--run-installed-app` | | |
+| `--install-app` | `4.0.0-alpha.6` | :+1: |
+| `--run-installed-app` | `4.0.0-alpha.6` | :+1: |
 | `--run-indexing` | | |
 | `--remove-library-catalog` | | |
 | `--remove-index-files` | | |
-| `--edit-config` | | |
+| `--edit-config` | `4.0.0-alpha.6` | :+1: |
 | `--install-dependencies` | | |
 | `--backup` | | |
 | `--restore` | | |
@@ -26,10 +26,10 @@
 | `--update-latest-appimage` | | |
 | `--set-appimage` | | |
 | `--get-winetricks` | | |
-| `--run-winetricks` | | |
-| `--toggle-app-logging` | | |
+| `--run-winetricks` | `4.0.0-alpha.6` | :+1: |
+| `--toggle-app-logging` | `4.0.0-alpha.6` | :+1: |
 | `--create-shortcuts` | | |
-| `--remove-install-dir` | | |
+| `--remove-install-dir` | `4.0.0-alpha.6` | :+1: |
 | `--dirlink` | | |
 | `--check-resources` | | |
 
