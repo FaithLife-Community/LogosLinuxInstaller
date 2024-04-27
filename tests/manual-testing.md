@@ -1,4 +1,6 @@
-### Optarg testing results
+# Manual testing results
+
+## Optarg testing
 
 | Optargs | latest version tested | result |
 | :--- | :--- | :---: |
@@ -33,10 +35,11 @@
 | `--dirlink` | | |
 | `--check-resources` | | |
 
-### TUI testing results
+## TUI testing
 
 
-### GUI testing results
+## GUI testing
+
 ![GUI screenshot](manual-testing-gui.png)
 
 | Button/Action | latest version tested | result |
