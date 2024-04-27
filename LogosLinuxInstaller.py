@@ -192,9 +192,6 @@ def parse_args(args, parser):
     if args.force_root:
         config.LOGOS_FORCE_ROOT = True
 
-    if args.debug:
-        utils.set_debug()
-
     if args.custom_binary_path:
         if os.path.isdir(args.custom_binary_path):
             config.CUSTOMBINPATH = args.custom_binary_path
