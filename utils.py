@@ -133,6 +133,7 @@ class UrlProps(Props):
 # Set "global" variables.
 def set_default_config():
     get_os()
+    get_superuser_command()
     get_package_manager()
     if config.CONFIG_FILE is None:
         config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
@@ -355,13 +356,23 @@ def get_os():
     return config.OS_NAME, config.OS_RELEASE
 
 
-def get_package_manager():
-    # Check for superuser command
-    if shutil.which('sudo') is not None:
-        config.SUPERUSER_COMMAND = "sudo"
-    elif shutil.which('doas') is not None:
-        config.SUPERUSER_COMMAND = "doas"
+def get_superuser_command():
+    if config.DIALOG == 'tk':
+        if shutil.which('pkexec'):
+            config.SUPERUSER_COMMAND = "pkexec"
+        else:
+            logging.critical("No superuser command found. Please install pkexec.")
+    elif config.DIALOG != 'tk':
+        if shutil.which('sudo'):
+            config.SUPERUSER_COMMAND = "sudo"
+        elif shutil.which('doas'):
+            config.SUPERUSER_COMMAND = "doas")
+        else:
+            logging.critical("No superuser command found. Please install sudo or doas.")
+    logging.debug(f"{config.SUPERUSER_COMMAND=}")
 
+
+def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
@@ -396,7 +407,6 @@ def get_package_manager():
     # Add more conditions for other package managers as needed
 
     # Add logging output.
-    logging.debug(f"{config.SUPERUSER_COMMAND=}")
     logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_INSTALL=}")
     logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_QUERY=}")
     logging.debug(f"{config.PACKAGES=}")

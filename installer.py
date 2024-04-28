@@ -314,7 +314,6 @@ def ensure_sys_deps(app=None):
     update_install_feedback("Ensuring system dependencies are met…", app=app)
 
     if not config.SKIP_DEPENDENCIES:
-        utils.get_package_manager()
         utils.check_dependencies()
         logging.debug("> Done.")
     else:
