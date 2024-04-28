@@ -96,6 +96,8 @@ def control_panel_app():
 
         if choice is None or choice == "Exit":
             sys.exit(0)
+        elif choice == "Install Dependencies":
+            utils.check_dependencies()
         elif choice.startswith("Install"):
             installer.ensure_launcher_shortcuts()
         elif choice.startswith("Update Logos Linux Installer"):
@@ -110,8 +112,6 @@ def control_panel_app():
             control.remove_all_index_files()
         elif choice == "Edit Config":
             control.edit_config()
-        elif choice == "Install Dependencies":
-            utils.check_dependencies()
         elif choice == "Back up Data":
             control.backup()
         elif choice == "Restore Data":
