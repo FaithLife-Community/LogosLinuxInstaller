@@ -2,14 +2,14 @@
 
 ## Optarg testing
 
-| Optargs | latest version tested | result |
-| :--- | :--- | :---: |
-| `-v/--version` | `4.0.0-alpha.6` | :+1: |
+| Optargs | latest version tested | result | notes
+| :--- | :--- | :---: | :--- |
+| `-v/--version` | `main-20240426-09cb40d` | :+1: |
 | `-F/--skip-fonts` | `4.0.0-alpha.6` | :+1: |
 | `-a/--check-for-updates` | | |
 | `-K/--skip-dependencies` | `4.0.0-alpha.6` | :+1: |
-| `-V/--verbose` | `4.0.0-alpha.6` | :+1: |
-| `-D/--debug` | `4.0.0-alpha.6` | :+1: |
+| `-V/--verbose` | `main-20240426-09cb40d` | :+1: |
+| `-D/--debug` | `main-20240426-09cb40d` | :+1: |
 | `-c/--config` | | |
 | `-f/--force-root` | | |
 | `-p/--custom-binary-path` | | |
@@ -20,8 +20,8 @@
 | `--run-indexing` | | |
 | `--remove-library-catalog` | | |
 | `--remove-index-files` | | |
-| `--edit-config` | `4.0.0-alpha.6` | :+1: |
-| `--install-dependencies` | | |
+| `--edit-config` | `main-20240426-09cb40d` | :-1: | gnome-text-editor symbol lookup error: /lib/x86_64-linux-gnu/libcairo.so.2: undefined symbol: FT_Get_Transform
+| `--install-dependencies` | `main-20240426-09cb40d` | :+1: |
 | `--backup` | | |
 | `--restore` | | |
 | `--update-self` | | |
@@ -66,8 +66,8 @@
 | Run indexing |||
 | Remove library catalog |||
 | Remove all index files |||
-| Edit... [config file] | `4.0.0-alpha.6` | :+1: |
-| Install [dependencies] |||
+| Edit... [config file] | `main-20240426-09cb40d` | :-1: | Ubuntu 24.04: gnome-text-editor symbol lookup error: /lib/x86_64-linux-gnu/libcairo.so.2: undefined symbol: FT_Get_Transform
+| Install [dependencies] | `main-20240426-09cb40d` | :-1: | Ubuntu 24.04: fails to prompt for password
 | Backup |||
 | Restore |||
 | [Self-]Update |||
