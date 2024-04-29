@@ -758,12 +758,16 @@ def check_libs(libraries):
                     f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")  # noqa: E501
 
 
-def check_dependencies():
+def check_dependencies(app=None):
     if config.TARGETVERSION:
         targetversion = int(config.TARGETVERSION)
     else:
         targetversion = 10
     logging.info(f"Checking Logos {str(targetversion)} dependencies…")
+    if app:
+        app.status_q.put(f"Checking Logos {str(targetversion)} dependencies…")
+        app.root.event_generate('<<UpdateStatus>>')
+
     if targetversion == 10:
         install_dependencies(config.PACKAGES, config.BADPACKAGES)
     elif targetversion == 9:
@@ -774,6 +778,9 @@ def check_dependencies():
         )
     else:
         logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
+
+    if app:
+        app.root.event_generate('<<StopIndeterminateProgress>>')
 
 
 def file_exists(file_path):
