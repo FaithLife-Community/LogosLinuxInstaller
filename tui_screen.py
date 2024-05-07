@@ -1,5 +1,6 @@
 import curses
 import logging
+from pathlib import Path
 import time
 
 import msg
@@ -93,14 +94,17 @@ class InputScreen(Screen):
         self.default = default
 
     def display(self):
-        self.stdscr.erase()
-        self.choice = tui.get_user_input(
-            self.app,
-            self.question,
-            self.default
-        )
-        self.stdscr.noutrefresh()
-        curses.doupdate()
+        self.choice = tui.directory_picker(self.app, self.default)
+        if self.choice:
+            self.choice = Path(self.choice)
+        # self.stdscr.erase()
+        # self.choice = tui.get_user_input(
+        #     self.app,
+        #     self.question,
+        #     self.default
+        # )
+        # self.stdscr.noutrefresh()
+        # curses.doupdate()
 
     def get_question(self):
         return self.question

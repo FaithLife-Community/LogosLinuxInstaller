@@ -1,5 +1,7 @@
 import curses
+from dialog import Dialog
 import logging
+from pathlib import Path
 import signal
 import textwrap
 import time
@@ -66,10 +68,28 @@ def spinner(app, index, start_y=0):
     return i
 
 
+def directory_picker(app, path_dir):
+    stdscr = app.get_menu_window()
+    str_dir = str(path_dir)
+
+    try:
+        dialog = Dialog()
+        curses.curs_set(1)
+        _, path = dialog.dselect(str_dir)
+        curses.curs_set(0)
+    except Exception as e:
+        logging.error("An error occurred:", e)
+        curses.endwin()
+
+    return path
+
+
 def get_user_input(app, question_text, default_text):
     stdscr = app.get_menu_window()
     curses.echo()
+    curses.curs_set(1)
     user_input = input_keyboard(app, question_text, default_text)
+    curses.curs_set(0)
     curses.noecho()
 
     return user_input
