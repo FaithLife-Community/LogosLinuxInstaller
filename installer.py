@@ -111,6 +111,7 @@ def ensure_wine_choice(app=None):
         config.WINE_EXE = app.wine_q.get()
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
+    logging.debug(f"Preparing to process WINE_EXE. Currently set to: {config.WINE_EXE}.")
     if config.WINE_EXE.lower().endswith('.appimage'):
         config.SELECTED_APPIMAGE_FILENAME = config.WINE_EXE
     if not config.WINEBIN_CODE:
@@ -301,7 +302,7 @@ def ensure_wine_executables(app=None):
         elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:  # noqa: E501
             appimage_filename = "none.AppImage"
         else:
-            msg.logos_error("WINEBIN_CODE error. Installation canceled!")
+            msg.logos_error(f"WINEBIN_CODE error. WINEBIN_CODE is {config.WINEBIN_CODE}. Installation canceled!")
 
         appimage_link.unlink(missing_ok=True)  # remove & replace
         appimage_link.symlink_to(f"./{appimage_filename}")

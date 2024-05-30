@@ -256,8 +256,9 @@ def status(text, app=None):
         app.status_q.put(text)
         app.root.event_generate('<<UpdateStatus>>')
     elif config.DIALOG == 'curses':
-        app.status_q.put(f"{timestamp} {text}")
-        logging.console_log.append(f"{app.status_q.get()}")
+        if app is not None:
+            app.status_q.put(f"{timestamp} {text}")
+            logging.console_log.append(f"{app.status_q.get()}")
     else:
         '''Prints message to stdout regardless of log level.'''
         logos_msg(text)

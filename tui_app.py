@@ -295,8 +295,8 @@ class TUI():
                 self.installdir_q.put(config.INSTALLDIR)
                 self.installdir_e.set()
         elif screen_id == 6:
-            config.WINEBIN_CODE = choice[0]
-            config.WINE_EXE = choice[1]
+            logging.debug(f"The user chose {choice}.")
+            config.WINE_EXE = choice
             if choice:
                 self.wine_q.put(config.WINE_EXE)
                 self.wine_e.set()
