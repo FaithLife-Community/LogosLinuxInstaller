@@ -227,6 +227,11 @@ def die(message):
     sys.exit(1)
 
 
+def run_command(command):
+    result = subprocess.run(command, check=True, text=True, capture_output=True)
+    return result.stdout
+
+
 def reboot():
     logging.info("Rebooting system.")
     command = f"{config.SUPERUSER_COMMAND} reboot now"
@@ -466,7 +471,7 @@ def install_packages(packages):
     if packages:
         command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
         logging.debug(f"install_packages cmd: {command}")
-        subprocess.run(command, shell=True, check=True)
+        result = run_command(command)
 
 
 def remove_packages(packages):
@@ -476,7 +481,7 @@ def remove_packages(packages):
     if packages:
         command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {' '.join(packages)}"  # noqa: E501
         logging.debug(f"remove_packages cmd: {command}")
-        subprocess.run(command, shell=True, check=True)
+        result = run_command(command)
 
 
 def have_dep(cmd):
@@ -623,53 +628,65 @@ def delete_symlink(symlink_path):
             logging.error(f"Error removing symlink: {e}")
 
 
-def steam_preinstall_dependencies():
-    subprocess.run(
-        [config.SUPERUSER_COMMAND, "steamos-readonly", "disable"],
-        check=True
-    )
-    subprocess.run(
-        [config.SUPERUSER_COMMAND, "pacman-key", "--init"],
-        check=True
-    )
-    subprocess.run(
-        [config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"],
-        check=True
-    )
+def preinstall_dependencies_ubuntu():
+    try:
+        run_command(["sudo", "dpkg", "--add-architecture", "i386"])
+        run_command(["sudo", "mkdir", "-pm755", "/etc/apt/keyrings"])
+        run_command(
+            ["sudo", "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", "https://dl.winehq.org/wine-builds/winehq.key"])
+        lsboutput = run_command(["lsb_release", "-a"])
+        codename = [line for line in lsboutput.split('\n') if "Description" in line][0].split()[1].strip()
+        run_command(["sudo", "wget", "-NP", "/etc/apt/sources.list.d/",
+                     f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"])
+        run_command(["sudo", "apt", "update"])
+        run_command(["sudo", "apt", "install", "--install-recommends", "winehq-staging"])
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+        print(f"Command output: {e.output}")
+
+def preinstall_dependencies_steamos():
+    command = [config.SUPERUSER_COMMAND, "steamos-readonly", "disable"]
+    result = run_command(command)
+    command = [config.SUPERUSER_COMMAND, "pacman-key", "--init"]
+    result = run_command(command)
+    command = [config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"]
+    result = run_command(command)
 
 
-def steam_postinstall_dependencies():
-    subprocess.run(
-        [
+def postinstall_dependencies_steamos():
+    command =[
             config.SUPERUSER_COMMAND,
             "sed", '-i',
             's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
             '/etc/nsswitch.conf'
-        ],
-        check=True
-    )
-    subprocess.run(
-        [config.SUPERUSER_COMMAND, "locale-gen"],
-        check=True
-    )
-    subprocess.run(
-        [
+        ]
+    result = run_command(command)
+    command =[config.SUPERUSER_COMMAND, "locale-gen"]
+    result = run_command(command)
+    command =[
             config.SUPERUSER_COMMAND,
             "systemctl",
             "enable",
             "--now",
             "avahi-daemon"
-        ],
-        check=True
-    )
-    subprocess.run(
-        [config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"],
-        check=True
-    )
-    subprocess.run(
-        [config.SUPERUSER_COMMAND, "steamos-readonly", "enable"],
-        check=True
-    )
+        ]
+    result = run_command(command)
+    command =[config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"]
+    result = run_command(command)
+    command = [config.SUPERUSER_COMMAND, "steamos-readonly", "enable"]
+    result = run_command(command)
+
+
+def preinstall_dependencies():
+    if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mintn":
+        preinstall_dependencies_ubuntu()
+    elif config.OS_NAME == "Steam":
+        preinstall_dependencies_steamos()
+
+
+def postinstall_dependencies():
+    if config.OS_NAME == "Steam":
+        postinstall_dependencies_steamos()
 
 
 def install_dependencies(packages, badpackages, logos9_packages=None):
@@ -706,8 +723,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None):
         # Do we need a TK continue question? I see we have a CLI and curses one
         # in msg.py
 
-        if config.OS_NAME == "Steam":
-            steam_preinstall_dependencies()
+        preinstall_dependencies()
 
         # libfuse: for AppImage use. This is the only known needed library.
         check_libs(["libfuse"])
@@ -720,8 +736,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None):
             remove_packages(conflicting_packages)
             config.REBOOT_REQUIRED = True
 
-        if config.OS_NAME == "Steam":
-            steam_postinstall_dependencies()
+        postinstall_dependencies()
 
         if config.REBOOT_REQUIRED:
             # TODO: Add resumable install functionality to speed up running the

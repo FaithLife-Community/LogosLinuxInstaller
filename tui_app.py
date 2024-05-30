@@ -31,6 +31,10 @@ def set_appimage():
         config.SELECTED_APPIMAGE_FILENAME = appimage_filename
         utils.set_appimage_symlink()
 
+# TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
+# TODO: Add a checklist page for deps check. Python Dialog Mixed Gauge?
+# TODO: Add a waiting page for long functions?
+
 
 def control_panel_app():
     # Run TUI.
