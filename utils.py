@@ -1125,9 +1125,12 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
     if app:
-        app.root.event_generate('<<StartIndeterminateProgress>>')
-        app.status_q.put(f"Verifying {file_path}…")
-        app.root.event_generate('<<UpdateStatus>>')
+        if config.DIALOG == "tk":
+            app.root.event_generate('<<StartIndeterminateProgress>>')
+            app.status_q.put(f"Verifying {file_path}…")
+            app.root.event_generate('<<UpdateStatus>>')
+        else:
+            app.status_q.put(f"Verifying {file_path}…")
     res = False
     msg = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
@@ -1139,9 +1142,10 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
             res = True
     logging.info(msg)
     if app:
-        if not evt:
-            evt = app.check_evt
-        app.root.event_generate(evt)
+        if config.DIALOG == "tk":
+            if not evt:
+                evt = app.check_evt
+            app.root.event_generate(evt)
     return res
 
 

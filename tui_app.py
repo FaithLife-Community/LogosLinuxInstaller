@@ -375,7 +375,8 @@ class TUI():
         if use_dialog:
             enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
             self.menu_options = enumerated_options
-            self.stack_menu(6, self.wine_q, self.wine_e, question, enumerated_options, width=max_length, dialog=use_dialog)
+            self.stack_menu(6, self.wine_q, self.wine_e, question, enumerated_options, width=max_length,
+                            dialog=use_dialog)
         else:
             self.menu_options = options
             self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length,
