@@ -363,6 +363,7 @@ class TUI():
         self.stdscr.clear()
 
     def get_wine(self):
+        use_dialog = False
         logging.info("Creating binary list.")
         question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.LOGOS_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
         options = utils.get_wine_options(
@@ -370,10 +371,15 @@ class TUI():
             utils.find_wine_binary_files()
         )
         max_length = max(len(option) for option in options)
-        enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
         max_length += len(str(len(options))) + 10
-        self.menu_options = enumerated_options
-        self.stack_menu(6, self.wine_q, self.wine_e, question, enumerated_options, width=max_length, dialog=True)
+        if use_dialog:
+            enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
+            self.menu_options = enumerated_options
+            self.stack_menu(6, self.wine_q, self.wine_e, question, enumerated_options, width=max_length, dialog=use_dialog)
+        else:
+            self.menu_options = options
+            self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length,
+                            dialog=use_dialog)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
