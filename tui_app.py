@@ -147,10 +147,7 @@ class TUI():
         msg.status(self.console_message, self)
 
         while True:
-            if len(self.tui_screens) > 0:
-                self.active_screen = self.tui_screens[-1]
-            else:
-                self.active_screen = self.menu_screen
+            self.active_screen = self.tui_screens[-1] if self.tui_screens else self.menu_screen
 
             if isinstance(self.active_screen, tui_screen.CursesScreen):
                 self.main_window.erase()
@@ -215,6 +212,8 @@ class TUI():
             if choice is None or choice == "Exit":
                 sys.exit(0)
             elif choice.startswith("Install"):
+                config.INSTALL_STEPS_COUNT = 0
+                config.INSTALL_STEP = 0
                 utils.start_thread(installer.ensure_launcher_shortcuts, True, self)
             elif choice.startswith("Update Logos Linux Installer"):
                 utils.update_to_latest_lli_release()
@@ -321,21 +320,24 @@ class TUI():
                 self.config_e.set()
             self.tui_screens = []
 
+    def switch_screen(self):
+        if self.active_screen != self.menu_screen:
+            self.tui_screens.pop(0)
+        self.stdscr.clear()
+
     def get_product(self, dialog):
-        dialog
         question = "Choose which FaithLife product the script should install:"  # noqa: E501
         options = [("0", "Logos"), ("1", "Verbum"), ("2", "Exit")]
         self.menu_options = options
         self.stack_menu(2, self.product_q, self.product_e, question, options, dialog=dialog)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_version(self, dialog):
         question = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
         options = [("0", "10"), ("1", "9"), ("2", "Exit")]
         self.menu_options = options
         self.stack_menu(3, self.version_q, self.version_e, question, options, dialog=dialog)
-        self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_release(self, dialog):
         question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
@@ -353,15 +355,13 @@ class TUI():
         enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
         self.menu_options = enumerated_options
         self.stack_menu(4, self.release_q, self.release_e, question, enumerated_options, dialog=dialog)
-        self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_installdir(self, dialog):
         default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
         question = f"Where should {config.FLPRODUCT} files be installed to? [{default}]: "  # noqa: E501
         self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=dialog)
-        self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_wine(self, dialog):
         logging.info("Creating binary list.")
@@ -381,8 +381,7 @@ class TUI():
             self.menu_options = options
             self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length,
                             dialog=dialog)
-        self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_winetricksbin(self, dialog):
         winetricks_options = utils.get_winetricks_options()
@@ -394,23 +393,20 @@ class TUI():
             ]
             self.menu_options = options
             self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog)
-            self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_waiting(self, dialog):
         text = ["Install is running…\n"] + logging.console_log[-2:]
         processed_text = utils.str_array_to_string(text)
         self.stack_text(8, self.status_q, self.status_e, processed_text, True, dialog=dialog)
-        self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def get_config(self, dialog):
         question = f"Update config file at {config.CONFIG_FILE}?"
         options = ["Yes", "No"]
         self.menu_options = options
         self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog)
-        self.tui_screens.pop(0)
-        self.stdscr.clear()
+        self.switch_screen()
 
     def finish_install(self):
         utils.send_task(self, 'TUI-UPDATE-MENU')

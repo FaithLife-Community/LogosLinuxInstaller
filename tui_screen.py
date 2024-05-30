@@ -220,30 +220,29 @@ class TextDialog(DialogScreen):
         self.text = text
         self.percent = percent
         self.wait = wait
-        self.spinner_index = 0
         self.height = height
         self.width = width
         self.title = title
         self.backtitle = backtitle
         self.colors = colors
-        self.last_displayed_text = ""
-        self.last_displayed_spinner = ""
 
     def __str__(self):
         return f"PyDialog Screen"
 
     def display(self):
         if self.wait:
+            logging.info(f"self.wait == True")
             self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
-            if not self.app.active_progress:
-                self.app.active_progress = True
-                tui_dialog.progress_bar(self, self.text, self.percent)
-            elif self.percent != 100:
-                tui_dialog.update_progress_bar(self, self.percent, self.text, True)
-            elif self.percent == 100:
-                tui_dialog.stop_progress_bar(self)
-                self.wait = False
-        # else:
+            # if not self.app.active_progress:
+            #     self.app.active_progress = True
+            tui_dialog.progress_bar(self, self.text, self.percent)
+            # elif self.percent != 100:
+            #     tui_dialog.update_progress_bar(self, self.percent, self.text, True)
+            # elif self.percent == 100:
+            #     tui_dialog.stop_progress_bar(self)
+            #     self.wait = False
+        else:
+            logging.error(f"self.wait != True")
         #     tui_dialog.text(self, self.text)
 
         time.sleep(0.1)
