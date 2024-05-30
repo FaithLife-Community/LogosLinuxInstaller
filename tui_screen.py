@@ -242,27 +242,82 @@ class TextDialog(DialogScreen):
         self.title = title
         self.backtitle = backtitle
         self.colors = colors
+        self.lastpercent = 0
 
     def __str__(self):
         return f"PyDialog Screen"
 
     def display(self):
-        if self.wait:
-            logging.info(f"self.wait == True")
-            self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
-            # if not self.app.active_progress:
-            #     self.app.active_progress = True
-            tui_dialog.progress_bar(self, self.text, self.percent)
-            # elif self.percent != 100:
-            #     tui_dialog.update_progress_bar(self, self.percent, self.text, True)
-            # elif self.percent == 100:
-            #     tui_dialog.stop_progress_bar(self)
-            #     self.wait = False
-        else:
-            logging.error(f"self.wait != True")
-        #     tui_dialog.text(self, self.text)
+        if self.running == 0:
+            if self.wait:
+                self.running = 1
+                self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                tui_dialog.progress_bar(self, self.text, self.percent)
+                self.lastpercent = self.percent
+            else:
+                tui_dialog.text(self, self.text)
+        elif self.running == 1:
+            if self.wait:
+                self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                # tui_dialog.update_progress_bar(self, self.percent, self.text, True)
+                if self.lastpercent != self.percent:
+                    tui_dialog.progress_bar(self, self.text, self.percent)
+
+                if self.percent == 100:
+                    tui_dialog.stop_progress_bar(self)
+                    self.running = 2
+                    self.wait = False
 
         time.sleep(0.1)
+
+    def get_text(self):
+        return self.text
+
+
+class TaskListDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, text, elements, percent, wait=False,
+                 height=None, width=None, title=None, backtitle=None, colors=True):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.text = text
+        self.elements = elements
+        self.percent = percent
+        self.wait = wait
+        self.height = height
+        self.width = width
+        self.title = title
+        self.backtitle = backtitle
+        self.colors = colors
+        self.updated = False
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        if self.running == 0:
+            if self.wait:
+                tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
+                                                 self.height, self.width, self.title, self.backtitle, self.colors)
+        elif self.running == 1:
+            if self.wait and self.updated:
+                tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
+                                                 self.height, self.width, self.title, self.backtitle, self.colors)
+        else:
+            pass
+
+        time.sleep(0.1)
+
+    def set_text(self, text):
+        self.text = text
+        self.updated = True
+
+    def set_percent(self, percent):
+        self.percent = percent
+        self.updated = True
+
+    def set_elements(self, elements):
+        self.elements = elements
+        self.updated = True
 
     def get_text(self):
         return self.text

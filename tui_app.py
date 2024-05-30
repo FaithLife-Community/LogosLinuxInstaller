@@ -320,6 +320,10 @@ class TUI():
                 self.config_q.put(choice)
                 self.config_e.set()
             self.tui_screens = []
+        elif screen_id == 10:
+            pass
+        elif screen_id == 11:
+            pass
 
     def switch_screen(self, dialog):
         if self.active_screen != self.menu_screen:
@@ -343,7 +347,9 @@ class TUI():
         self.switch_screen(dialog)
 
     def get_release(self, dialog):
+        self.stack_text(10, self.version_q, self.version_e, "Waiting to acquire Logos versions…", wait=True, dialog=dialog)
         self.version_e.wait()
+        self.switch_screen(dialog)
         question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
         utils.start_thread(utils.get_logos_releases, True, self)
         self.releases_e.wait()
@@ -370,7 +376,7 @@ class TUI():
 
     def get_wine(self, dialog):
         self.installdir_e.wait()
-        logging.info("Creating binary list.")
+        self.stack_text(10, self.wine_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog)
         question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.LOGOS_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
         options = utils.get_wine_options(
             utils.find_appimage_files(),
@@ -378,6 +384,7 @@ class TUI():
         )
         max_length = max(len(option) for option in options)
         max_length += len(str(len(options))) + 10
+        self.switch_screen(dialog)
         if dialog:
             enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
             self.menu_options = enumerated_options
@@ -420,6 +427,10 @@ class TUI():
 
     def finish_install(self):
         utils.send_task(self, 'TUI-UPDATE-MENU')
+
+    def report_dependencies(self, text, percent, elements, dialog):
+        self.stack_tasklist(self, 11, self.deps_q, self.deps_e, text, elements, percent, wait=True, dialog=True)
+        self.switch_screen(dialog)
 
     def set_tui_menu_options(self, curses=False):
         options_first = []
@@ -531,6 +542,14 @@ class TUI():
         else:
             utils.append_unique(self.tui_screens,
                             tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
+
+    def stack_tasklist(self, screen_id, queue, event, text, elements, percent, wait=False, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens, tui_screen.TaskListDialog(self, screen_id, queue, event, text,
+                                                                            elements, percent, wait))
+        else:
+            #TODO: curses version
+            pass
 
     def update_tty_dimensions(self):
         self.window_height, self.window_width = self.stdscr.getmaxyx()

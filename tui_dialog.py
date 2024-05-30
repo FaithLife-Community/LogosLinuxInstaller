@@ -34,6 +34,7 @@ def progress_bar(app, text, percent, height=None, width=None, title=None, backti
     d.gauge_start(text=text, percent=percent, **options)
 
 
+#FIXME: Not working. See tui_screen.py#262.
 def update_progress_bar(app, percent, text='', update_text=False):
     d = Dialog()
     d.gauge_update(percent, text, update_text)
@@ -42,6 +43,21 @@ def update_progress_bar(app, percent, text='', update_text=False):
 def stop_progress_bar(app):
     d = Dialog()
     d.gauge_stop()
+
+
+def tasklist_progress_bar(app, text, global_percent, elements, height=None, width=None, title=None, backtitle=None, colors=None):
+    d = Dialog()
+    options = {'colors': colors}
+    if height is not None:
+        options['height'] = height
+    if width is not None:
+        options['width'] = width
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
+
+    d.mixedgauge(text, percent=global_percent, elements=elements, **options)
 
 
 def confirm(app, question_text, height=None, width=None):

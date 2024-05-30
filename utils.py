@@ -693,10 +693,11 @@ def postinstall_dependencies():
         postinstall_dependencies_steamos()
 
 
-def install_dependencies(packages, badpackages, logos9_packages=None):
+def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
     missing_packages = []
     conflicting_packages = []
     package_list = []
+    elements = []
     if packages:
         package_list = packages.split()
     bad_package_list = []
@@ -704,6 +705,12 @@ def install_dependencies(packages, badpackages, logos9_packages=None):
         bad_package_list = badpackages.split()
     if logos9_packages:
         package_list.extend(logos9_packages.split())
+
+    if config.DIALOG == "curses" and app is not None:
+        elements[0] = ("Package 1", 0, "Checking")
+        elements[1] = ("Package 2", 0, "Checking")
+        elements[2] = ("Package 3", 0, "Checking")
+        app.report_dependencies("Checking Packages", 0, elements, dialog=True)
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
         missing_packages = query_packages(package_list)
@@ -792,12 +799,13 @@ def check_dependencies(app=None):
             app.root.event_generate('<<UpdateStatus>>')
 
     if targetversion == 10:
-        install_dependencies(config.PACKAGES, config.BADPACKAGES)
+        install_dependencies(config.PACKAGES, config.BADPACKAGES, app=app)
     elif targetversion == 9:
         install_dependencies(
             config.PACKAGES,
             config.BADPACKAGES,
-            config.L9PACKAGES
+            config.L9PACKAGES,
+            app=app
         )
     else:
         logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
