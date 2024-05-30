@@ -20,6 +20,10 @@ import wine
 
 console_message = ""
 
+# TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
+# TODO: Add a checklist page for deps check. Python Dialog Mixed Gauge?
+# TODO: Add a waiting page for long functions?
+
 
 class TUI():
     def __init__(self, stdscr):
