@@ -1,10 +1,16 @@
-import curses
 import logging
-from pathlib import Path
+import queue
+
 import time
+from pathlib import Path
+import curses
 
 import msg
-import tui
+import config
+import installer
+import tui_curses
+import tui_dialog
+import utils
 
 
 class Screen:
@@ -40,7 +46,15 @@ class Screen:
         return self.event.is_set()
 
 
-class ConsoleScreen(Screen):
+class CursesScreen(Screen):
+    pass
+
+
+class DialogScreen(Screen):
+    pass
+
+
+class ConsoleScreen(CursesScreen):
     def __init__(self, app, screen_id, queue, event, title):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_main_window()
@@ -48,12 +62,12 @@ class ConsoleScreen(Screen):
 
     def display(self):
         self.stdscr.erase()
-        tui.title(self.app, self.title)
+        tui_curses.title(self.app, self.title)
 
         self.stdscr.addstr(2, 2, f"---Console---")
         recent_messages = logging.console_log[-6:]
         for i, message in enumerate(recent_messages, 1):
-            message_lines = tui.wrap_text(self.app, message)
+            message_lines = tui_curses.wrap_text(self.app, message)
             for j, line in enumerate(message_lines):
                 if 2 + j < self.app.window_height:
                     self.stdscr.addstr(2 + i, 2, f"{message}")
@@ -62,16 +76,19 @@ class ConsoleScreen(Screen):
         curses.doupdate()
 
 
-class MenuScreen(Screen):
-    def __init__(self, app, screen_id, queue, event, question, options):
+class MenuScreen(CursesScreen):
+    def __init__(self, app, screen_id, queue, event, question, options, height=None, width=None, menu_height=8):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
         self.question = question
         self.options = options
+        self.height = height
+        self.width = width
+        self.menu_height = menu_height
 
     def display(self):
         self.stdscr.erase()
-        self.choice = tui.menu(
+        self.choice = tui_curses.menu(
             self.app,
             self.question,
             self.options
@@ -86,7 +103,7 @@ class MenuScreen(Screen):
         self.options = new_options
 
 
-class InputScreen(Screen):
+class InputScreen(CursesScreen):
     def __init__(self, app, screen_id, queue, event, question, default):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
@@ -94,17 +111,14 @@ class InputScreen(Screen):
         self.default = default
 
     def display(self):
-        self.choice = tui.directory_picker(self.app, self.default)
-        if self.choice:
-            self.choice = Path(self.choice)
-        # self.stdscr.erase()
-        # self.choice = tui.get_user_input(
-        #     self.app,
-        #     self.question,
-        #     self.default
-        # )
-        # self.stdscr.noutrefresh()
-        # curses.doupdate()
+        self.stdscr.erase()
+        self.choice = tui_curses.get_user_input(
+            self.app,
+            self.question,
+            self.default
+        )
+        self.stdscr.noutrefresh()
+        curses.doupdate()
 
     def get_question(self):
         return self.question
@@ -113,7 +127,7 @@ class InputScreen(Screen):
         return self.default
 
 
-class TextScreen(Screen):
+class TextScreen(CursesScreen):
     def __init__(self, app, screen_id, queue, event, text, wait):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
@@ -123,12 +137,116 @@ class TextScreen(Screen):
 
     def display(self):
         self.stdscr.erase()
-        text_start_y, text_lines = tui.text_centered(self.app, self.text)
+        text_start_y, text_lines = tui_curses.text_centered(self.app, self.text)
         if self.wait:
-            self.spinner_index = tui.spinner(self.app, self.spinner_index, text_start_y + len(text_lines) + 1)
+            self.spinner_index = tui_curses.spinner(self.app, self.spinner_index, text_start_y + len(text_lines) + 1)
             time.sleep(0.1)
         self.stdscr.noutrefresh()
         curses.doupdate()
+
+    def get_text(self):
+        return self.text
+
+
+class MenuDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, question, options, height=None, width=None, menu_height=8):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.question = question
+        self.options = options
+        self.height = height
+        self.width = width
+        self.menu_height = menu_height
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        _, _, self.choice = tui_dialog.menu(self.app, self.question, self.options, self.height, self.width,
+                                            self.menu_height)
+
+    def get_question(self):
+        return self.question
+
+    def set_options(self, new_options):
+        self.options = new_options
+
+
+class InputDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, question, default):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.question = question
+        self.default = default
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        self.choice = tui_dialog.directory_picker(self.app, self.default)
+        if self.choice:
+            self.choice = Path(self.choice)
+
+    def get_question(self):
+        return self.question
+
+    def get_default(self):
+        return self.default
+
+
+class ConfirmDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, question, yes_label="Yes", no_label="No"):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.question = question
+        self.yes_label = yes_label
+        self.no_label = no_label
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        _, _, self.choice = tui_dialog.confirm(self.app, self.question, self.yes_label, self.no_label)
+
+    def get_question(self):
+        return self.question
+
+
+class TextDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, text, percent=None, wait=False, height=None, width=None,
+                 title=None, backtitle=None, colors=True):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.text = text
+        self.percent = percent
+        self.wait = wait
+        self.spinner_index = 0
+        self.height = height
+        self.width = width
+        self.title = title
+        self.backtitle = backtitle
+        self.colors = colors
+        self.last_displayed_text = ""
+        self.last_displayed_spinner = ""
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        if self.wait:
+            self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+            if not self.app.active_progress:
+                self.app.active_progress = True
+                tui_dialog.progress_bar(self, self.text, self.percent)
+            elif self.percent != 100:
+                tui_dialog.update_progress_bar(self, self.percent, self.text, True)
+            elif self.percent == 100:
+                tui_dialog.stop_progress_bar(self)
+                self.wait = False
+        # else:
+        #     tui_dialog.text(self, self.text)
+
+        time.sleep(0.1)
 
     def get_text(self):
         return self.text

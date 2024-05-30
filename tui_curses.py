@@ -1,10 +1,7 @@
 import curses
-from dialog import Dialog
 import logging
-from pathlib import Path
 import signal
 import textwrap
-import time
 
 import config
 import msg
@@ -40,7 +37,7 @@ def text_centered(app, text, start_y=0):
     return text_start_y, text_lines
 
 
-def confirm(app, question_text):
+def confirm(app, question_text, height=None, width=None):
     stdscr = app.get_menu_window()
     question_text = question_text + " [Y/n]: "
     question_start_y, question_lines = text_centered(app, question_text)
@@ -66,22 +63,6 @@ def spinner(app, index, start_y=0):
     i = (i + 1) % len(spinner_chars)
 
     return i
-
-
-def directory_picker(app, path_dir):
-    stdscr = app.get_menu_window()
-    str_dir = str(path_dir)
-
-    try:
-        dialog = Dialog()
-        curses.curs_set(1)
-        _, path = dialog.dselect(str_dir)
-        curses.curs_set(0)
-    except Exception as e:
-        logging.error("An error occurred:", e)
-        curses.endwin()
-
-    return path
 
 
 def get_user_input(app, question_text, default_text):
@@ -159,8 +140,6 @@ def do_menu_down(app):
         config.current_option = 0
     else:
         config.current_option = min(len(app.menu_options) - 1, config.current_option + 1)
-
-
 
 def menu(app, question_text, options):
     stdscr = app.get_menu_window()

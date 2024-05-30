@@ -27,7 +27,7 @@ from xml.etree import ElementTree as ET
 import config
 import msg
 import wine
-import tui
+import tui_dialog
 
 
 class Props():
@@ -212,7 +212,7 @@ def die_if_running():
                 confirm = tk.messagebox.askquestion("Confirmation", message)
                 tk_root.destroy()
             elif config.DIALOG == "curses":
-                confirm = tui.confirm("Confirmation", message)
+                confirm = tui_dialog.confirm("Confirmation", message)
             else:
                 confirm = msg.cli_question(message)
 
@@ -909,17 +909,17 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
     wine_binary_options = []
 
     # Add AppImages to list
-    if config.DIALOG == 'tk':
-        wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
-        wine_binary_options.extend(appimages)
-    else:
-        appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
-        wine_binary_options.append([
-            "Recommended",  # Code
-            f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # noqa: E501
-            f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # noqa: E501
-            ])
-        wine_binary_options.extend(appimage_entries)
+    # if config.DIALOG == 'tk':
+    wine_binary_options.append(f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
+    wine_binary_options.extend(appimages)
+    # else:
+    #     appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
+    #     wine_binary_options.append([
+    #         "Recommended",  # Code
+    #         f'{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # noqa: E501
+    #         f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # noqa: E501
+    #         ])
+    #     wine_binary_options.extend(appimage_entries)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
@@ -928,15 +928,15 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
         WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(WINEBIN_PATH)  # noqa: E501
 
         # Create wine binary option array
-        if config.DIALOG == 'tk':
-            wine_binary_options.append(WINEBIN_PATH)
-        else:
-            wine_binary_options.append(
-                [WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION]
-            )
-
-    if config.DIALOG != 'tk':
-        wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
+        # if config.DIALOG == 'tk':
+        wine_binary_options.append(WINEBIN_PATH)
+        # else:
+        #     wine_binary_options.append(
+        #         [WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION]
+        #     )
+        #
+    # if config.DIALOG != 'tk':
+    #     wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
 
     logging.debug(f"{wine_binary_options=}")
     if app:
@@ -1640,7 +1640,7 @@ def set_appimage_symlink(app=None):
             confirm = tk.messagebox.askquestion("Confirmation", copy_message)
             tk_root.destroy()
         else:
-            confirm = tui.confirm("Confirmation", copy_message)
+            confirm = tui_dialog.confirm("Confirmation", copy_message)
     # FIXME: What if user cancels the confirmation dialog?
 
     appimage_symlink_path = Path(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
@@ -1735,3 +1735,11 @@ def start_thread(task, daemon_bool=True, *args):
     thread = threading.Thread(name=f"{task}", target=task, daemon=daemon_bool, args=args)
     thread.start()
     return thread
+
+
+def str_array_to_string(text, delimeter="\n"):
+    try:
+        processed_text = delimeter.join(text)
+        return processed_text
+    except TypeError:
+        return text

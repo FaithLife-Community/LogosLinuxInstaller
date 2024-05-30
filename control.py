@@ -17,7 +17,7 @@ from pathlib import Path
 import config
 # import installer
 import msg
-import tui
+import tui_curses
 import tui_app
 import utils
 # import wine

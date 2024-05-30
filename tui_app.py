@@ -10,12 +10,13 @@ from queue import Queue
 
 import config
 import control
-import tui
+import tui_curses
+import tui_dialog
+import tui_screen
 import installer
 import msg
 import utils
 import wine
-from tui_screen import ConsoleScreen, MenuScreen, InputScreen, TextScreen
 
 console_message = ""
 
@@ -26,6 +27,7 @@ class TUI():
         self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.console_message = "Starting TUI…"
         self.choice = "Processing"
+        self.active_progress = False
 
         # Queues
         self.main_thread = threading.Thread()
@@ -99,8 +101,8 @@ class TUI():
         curses.cbreak()
         self.stdscr.keypad(True)
 
-        self.console = ConsoleScreen(self, 0, self.status_q, self.status_e, self.title)
-        self.menu_screen = MenuScreen(self, 0, self.status_q, self.status_e, "Main Menu", self.set_tui_menu_options())
+        self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title)
+        self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e, "Main Menu", self.set_tui_menu_options(curses=True))
 
         self.main_window.noutrefresh()
         self.menu_window.noutrefresh()
@@ -132,7 +134,7 @@ class TUI():
         self.stdscr.noutrefresh()
         self.update_tty_dimensions()
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
-        self.console = ConsoleScreen(self.main_window, 0, self.status_q, self.status_e, self.title)
+        self.console = tui_screen.ConsoleScreen(self.main_window, 0, self.status_q, self.status_e, self.title)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 7, 0)
         self.main_window.noutrefresh()
         self.menu_window.noutrefresh()
@@ -145,26 +147,30 @@ class TUI():
         msg.status(self.console_message, self)
 
         while True:
-            self.main_window.erase()
-            self.menu_window.erase()
-
-            self.stdscr.timeout(100)
-
-            self.console.display()
-
             if len(self.tui_screens) > 0:
                 self.active_screen = self.tui_screens[-1]
             else:
                 self.active_screen = self.menu_screen
 
+            if isinstance(self.active_screen, tui_screen.CursesScreen):
+                self.main_window.erase()
+                self.menu_window.erase()
+                self.stdscr.timeout(100)
+                self.console.display()
+
             self.active_screen.display()
 
-            if not isinstance(self.active_screen, TextScreen):
-                self.choice_processor(self.menu_window, self.active_screen.get_screen_id(), self.active_screen.get_choice())
-                self.choice = "Processing" # Reset for next round
+            if (not isinstance(self.active_screen, tui_screen.TextScreen)
+                    and not isinstance(self.active_screen, tui_screen.TextDialog)):
+                self.choice_processor(
+                    self.menu_window,
+                    self.active_screen.get_screen_id(),
+                    self.active_screen.get_choice())
+                self.choice = "Processing"  # Reset for next round
 
-            self.main_window.noutrefresh()
-            self.menu_window.noutrefresh()
+            if isinstance(self.active_screen, tui_screen.CursesScreen):
+                self.main_window.noutrefresh()
+                self.menu_window.noutrefresh()
 
     def run(self):
         self.init_curses()
@@ -197,7 +203,7 @@ class TUI():
         elif task == 'TUI-RESIZE':
             self.resize_curses()
         elif task == 'TUI-UPDATE-MENU':
-            self.menu_screen.set_options(self.set_tui_menu_options())
+            self.menu_screen.set_options(self.set_tui_menu_options(curses=True))
 
     def choice_processor(self, stdscr, screen_id, choice):
         if choice == "Processing":
@@ -238,7 +244,7 @@ class TUI():
                 appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
                 self.menu_options = appimage_choices
                 question = "Which AppImage should be used?"
-                self.stack_menu_screen(1, self.appimage_q, self.appimage_e, question, appimage_choices)
+                self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices)
             elif choice == "Download or Update Winetricks":
                 control.set_winetricks()
             elif choice == "Run Winetricks":
@@ -249,7 +255,7 @@ class TUI():
                 msg.logos_error("Unknown menu choice.")
         elif screen_id == 1:
             if choice == "Input Custom AppImage":
-                appimage_filename = tui.get_user_input(self, "Enter AppImage filename: ", "")
+                appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
             else:
                 appimage_filename = choice
             config.SELECTED_APPIMAGE_FILENAME = appimage_filename
@@ -296,12 +302,12 @@ class TUI():
                 self.wine_e.set()
         elif screen_id == 7:
             winetricks_options = utils.get_winetricks_options()
-            if choice.startswith("1"):
+            if choice.startswith("Use"):
                 logging.info("Setting winetricks to the local binary…")
                 config.WINETRICKSBIN = winetricks_options[0]
                 self.tricksbin_q.put(config.WINETRICKSBIN)
                 self.tricksbin_e.set()
-            elif choice.startswith("2"):
+            elif choice.startswith("Download"):
                 self.tricksbin_q.put("Download")
                 self.tricksbin_e.set()
         elif screen_id == 8:
@@ -317,16 +323,16 @@ class TUI():
 
     def get_product(self):
         question = "Choose which FaithLife product the script should install:"  # noqa: E501
-        options = ["Logos", "Verbum", "Exit"]
+        options = [("0", "Logos"), ("1", "Verbum"), ("2", "Exit")]
         self.menu_options = options
-        self.stack_menu_screen(2, self.product_q, self.product_e, question, options)
+        self.stack_menu(2, self.product_q, self.product_e, question, options, dialog=True)
         self.stdscr.clear()
 
     def get_version(self):
         question = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
-        options = ["10", "9", "Exit"]
+        options = [("0", "10"), ("1", "9"), ("2", "Exit")]
         self.menu_options = options
-        self.stack_menu_screen(3, self.version_q, self.version_e, question, options)
+        self.stack_menu(3, self.version_q, self.version_e, question, options, dialog=True)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
@@ -343,15 +349,16 @@ class TUI():
         if options is None:
             msg.logos_error("Failed to fetch LOGOS_RELEASE_VERSION.")
         options.append("Exit")
-        self.menu_options = options
-        self.stack_menu_screen(4, self.release_q, self.release_e, question, options)
+        enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
+        self.menu_options = enumerated_options
+        self.stack_menu(4, self.release_q, self.release_e, question, enumerated_options, dialog=True)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
     def get_installdir(self):
         default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
         question = f"Where should {config.FLPRODUCT} files be installed to? [{default}]: "  # noqa: E501
-        self.stack_input_screen(5, self.installdir_q, self.installdir_e, question, default)
+        self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=True)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
@@ -362,8 +369,11 @@ class TUI():
             utils.find_appimage_files(),
             utils.find_wine_binary_files()
         )
-        self.menu_options = options
-        self.stack_menu_screen(6, self.wine_q, self.wine_e, question, options)
+        max_length = max(len(option) for option in options)
+        enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
+        max_length += len(str(len(options))) + 10
+        self.menu_options = enumerated_options
+        self.stack_menu(6, self.wine_q, self.wine_e, question, enumerated_options, width=max_length, dialog=True)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
@@ -372,17 +382,18 @@ class TUI():
         if len(winetricks_options) > 1:
             question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux."  # noqa: E501
             options = [
-                "1: Use local winetricks.",
-                "2: Download winetricks from the Internet"
+                ("1", "Use local winetricks."),
+                ("2", "Download winetricks from the Internet.")
             ]
             self.menu_options = options
-            self.stack_menu_screen(7, self.tricksbin_q, self.tricksbin_e, question, options)
+            self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=True)
             self.tui_screens.pop(0)
         self.stdscr.clear()
 
     def get_waiting(self):
-        text = "Install is running…"
-        self.stack_text_screen(8, self.status_q, self.status_e, text, True)
+        text = ["Install is running…\n"] + logging.console_log[-2:]
+        processed_text = utils.str_array_to_string(text)
+        self.stack_text(8, self.status_q, self.status_e, processed_text, True, True)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
@@ -390,32 +401,16 @@ class TUI():
         question = f"Update config file at {config.CONFIG_FILE}?"
         options = ["Yes", "No"]
         self.menu_options = options
-        self.stack_menu_screen(9, self.config_q, self.config_e, question, options)
+        self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=True)
         self.tui_screens.pop(0)
         self.stdscr.clear()
 
     def finish_install(self):
         utils.send_task(self, 'TUI-UPDATE-MENU')
 
-    def set_tui_menu_options(self):
+    def set_tui_menu_options(self, curses=False):
         options_first = []
-        options_default = ["Install Logos Bible Software"]
-        options_main = [
-            "Install Dependencies",
-            "Download or Update Winetricks",
-            "Run Winetricks"
-        ]
-        options_installed = [
-            f"Run {config.FLPRODUCT}",
-            "Run Indexing",
-            "Remove Library Catalog",
-            "Remove All Index Files",
-            "Edit Config",
-            "Back up Data",
-            "Restore Data",
-        ]
-        options_exit = ["Exit"]
-        if utils.file_exists(config.LOGOS_EXE):
+        if curses:
             if config.LLI_LATEST_VERSION and utils.get_runmode() == 'binary':
                 logging.debug("Checking if Logos Linux Installers needs updated.")  # noqa: E501
                 status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
@@ -428,42 +423,101 @@ class TUI():
                 else:
                     logging.error(f"{error_message}")
 
-            if config.WINEBIN_CODE == "AppImage" or config.WINEBIN_CODE == "Recommended":  # noqa: E501
-                logging.debug("Checking if the AppImage needs updated.")
-                status, error_message = utils.compare_recommended_appimage_version()  # noqa: E501
+            options_support = [
+                "Install Dependencies",
+                "Download or Update Winetricks",
+                "Run Winetricks"
+            ]
+            options_exit = ["Exit"]
+
+            if utils.file_exists(config.LOGOS_EXE):
+                if config.LOGS == "DISABLED":
+                    options_support.append("Enable Logging")
+                else:
+                    options_support.append("Disable Logging")
+                options_default = [
+                    f"Run {config.FLPRODUCT}",
+                    "Run Indexing",
+                    "Remove Library Catalog",
+                    "Remove All Index Files",
+                    "Edit Config",
+                    "Back up Data",
+                    "Restore Data",
+                ]
+            else:
+                options_default = ["Install Logos Bible Software"]
+        else:
+            if config.LLI_LATEST_VERSION and utils.get_runmode() == 'binary':
+                logging.debug("Checking if Logos Linux Installers needs updated.")  # noqa: E501
+                status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
                 if status == 0:
-                    options_main.insert(0, "Update to Latest AppImage")
+                    options_first.append("Update Logos Linux Installer")
                 elif status == 1:
-                    logging.warning("The AppImage is already set to the latest recommended.")  # noqa: E501
+                    logging.warning("Logos Linux Installer is up-to-date.")
                 elif status == 2:
-                    logging.warning("The AppImage version is newer than the latest recommended.")  # noqa: E501
+                    logging.warning("Logos Linux Installer is newer than the latest release.")  # noqa: E501
                 else:
                     logging.error(f"{error_message}")
 
-                options_main.insert(1, "Set AppImage")
+            options_support = [
+                "Install Dependencies",
+                "Download or Update Winetricks",
+                "Run Winetricks"
+            ]
+            options_exit = ["Exit"]
 
-            if config.LOGS == "DISABLED":
-                options_installed.append("Enable Logging")
+            if utils.file_exists(config.LOGOS_EXE):
+                if config.LOGS == "DISABLED":
+                    options_support.append(("14", "Enable Logging"))
+                else:
+                    options_support.append(("14", "Disable Logging"))
+                options_default = [
+                    ("3", f"Run {config.FLPRODUCT}"),
+                    ("4", "Run Indexing"),
+                    ("5", "Remove Library Catalog"),
+                    ("6", "Remove All Index Files"),
+                    ("7", "Edit Config"),
+                    ("8", "Back up Data"),
+                    ("9", "Restore Data"),
+                ]
             else:
-                options_installed.append("Disable Logging")
+                options_default = [("2", "Install Logos Bible Software")]
 
-            options = options_first + options_installed + options_main + options_default + options_exit  # noqa: E501
-        else:
-            options = options_first + options_default + options_main + options_exit  # noqa: E501
+        options = options_first + options_default + options_support + options_exit  # noqa: E501
 
         return options
 
-    def stack_menu_screen(self, screen_id, queue, event, question, options):
-        utils.append_unique(self.tui_screens,
-                            MenuScreen(self, screen_id, queue, event, question, options))
+    def stack_menu(self, screen_id, queue, event, question, options, height=None, width=None, menu_height=8, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.MenuDialog(self, screen_id, queue, event, question, options, height, width, menu_height))
+        else:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.MenuScreen(self, screen_id, queue, event, question, options, height, width, menu_height))
 
-    def stack_input_screen(self, screen_id, queue, event, question, default):
-        utils.append_unique(self.tui_screens,
-                            InputScreen(self, screen_id, queue, event, question, default))
+    def stack_input(self, screen_id, queue, event, question, default, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.InputDialog(self, screen_id, queue, event, question, default))
+        else:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.InputScreen(self, screen_id, queue, event, question, default))
 
-    def stack_text_screen(self, screen_id, queue, event, text, wait):
-        utils.append_unique(self.tui_screens,
-                            TextScreen(self, screen_id, queue, event, text, wait))
+    def stack_confirm(self, screen_id, queue, event, question, options, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.ConfirmDialog(self, screen_id, queue, event, question, options))
+        else:
+            #TODO: curses version
+            pass
+
+    def stack_text(self, screen_id, queue, event, text, wait, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                                tui_screen.TextDialog(self, screen_id, queue, event, text, wait))
+        else:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
 
     def update_tty_dimensions(self):
         self.window_height, self.window_width = self.stdscr.getmaxyx()

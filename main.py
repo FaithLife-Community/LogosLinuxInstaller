@@ -220,7 +220,6 @@ def parse_args(args, parser):
         'update_self': utils.update_to_latest_lli_release,
         'update_latest_appimage': utils.update_to_latest_recommended_appimage,
         'set_appimage': utils.set_appimage_symlink,
-        # 'get_winetricks': control.get_winetricks,
         'get_winetricks': control.set_winetricks,
         'run_winetricks': wine.run_winetricks,
         'toggle_app_logging': wine.switch_logging,
