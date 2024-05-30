@@ -335,7 +335,7 @@ def ensure_winetricks_executable(app=None):
         tricksbin = Path(config.WINETRICKSBIN)
         tricksbin.unlink(missing_ok=True)
         # The choice of System winetricks was made previously. Here we are only
-        # concerned about whether or not the downloaded winetricks is usable.
+        # concerned about whether the downloaded winetricks is usable.
         msg.logos_msg("Downloading winetricks from the Internet…")
         utils.install_winetricks(
             tricksbin.parent,

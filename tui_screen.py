@@ -20,6 +20,14 @@ class Screen:
         self.choice = ""
         self.queue = queue
         self.event = event
+        # running:
+        # This var is used for DialogScreens. The var indicates whether a Dialog has already started.
+        # If the dialog has already started, then the program will not display the dialog again
+        # in order to prevent phantom key presses.
+        # 0 = not started
+        # 1 = started
+        # 2 = finished
+        self.running = 0
 
     def __str__(self):
         return f"Curses Screen"
@@ -162,8 +170,11 @@ class MenuDialog(DialogScreen):
         return f"PyDialog Screen"
 
     def display(self):
-        _, _, self.choice = tui_dialog.menu(self.app, self.question, self.options, self.height, self.width,
+        if self.running == 0:
+            self.running = 1
+            _, _, self.choice = tui_dialog.menu(self.app, self.question, self.options, self.height, self.width,
                                             self.menu_height)
+            self.running = 2
 
     def get_question(self):
         return self.question
@@ -183,9 +194,12 @@ class InputDialog(DialogScreen):
         return f"PyDialog Screen"
 
     def display(self):
-        self.choice = tui_dialog.directory_picker(self.app, self.default)
-        if self.choice:
-            self.choice = Path(self.choice)
+        if self.running == 0:
+            self.running = 1
+            self.choice = tui_dialog.directory_picker(self.app, self.default)
+            if self.choice:
+                self.choice = Path(self.choice)
+            self.running = 2
 
     def get_question(self):
         return self.question
@@ -206,7 +220,10 @@ class ConfirmDialog(DialogScreen):
         return f"PyDialog Screen"
 
     def display(self):
-        _, _, self.choice = tui_dialog.confirm(self.app, self.question, self.yes_label, self.no_label)
+        if self.running == 0:
+            self.running = 1
+            _, _, self.choice = tui_dialog.confirm(self.app, self.question, self.yes_label, self.no_label)
+            self.running = 2
 
     def get_question(self):
         return self.question

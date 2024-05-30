@@ -266,12 +266,10 @@ class TUI():
             self.appimage_e.set()
         elif screen_id == 2:
             if str(choice).startswith("Logos"):
-                logging.info("Installing Logos Bible Software")
                 config.FLPRODUCT = "Logos"
                 self.product_q.put(config.FLPRODUCT)
                 self.product_e.set()
             elif str(choice).startswith("Verbum"):
-                logging.info("Installing Verbum Bible Software")
                 config.FLPRODUCT = "Verbum"
                 self.product_q.put(config.FLPRODUCT)
                 self.product_e.set()
@@ -285,7 +283,6 @@ class TUI():
                 self.version_q.put(config.TARGETVERSION)
                 self.version_e.set()
         elif screen_id == 4:
-            logging.info(f"Release version: {choice}")
             if choice:
                 config.LOGOS_RELEASE_VERSION = choice
                 self.release_q.put(config.LOGOS_RELEASE_VERSION)
@@ -297,7 +294,6 @@ class TUI():
                 self.installdir_q.put(config.INSTALLDIR)
                 self.installdir_e.set()
         elif screen_id == 6:
-            logging.debug(f"The user chose {choice}.")
             config.WINE_EXE = choice
             if choice:
                 self.wine_q.put(config.WINE_EXE)
@@ -305,7 +301,6 @@ class TUI():
         elif screen_id == 7:
             winetricks_options = utils.get_winetricks_options()
             if choice.startswith("Use"):
-                logging.info("Setting winetricks to the local binary…")
                 config.WINETRICKSBIN = winetricks_options[0]
                 self.tricksbin_q.put(config.WINETRICKSBIN)
                 self.tricksbin_e.set()
@@ -317,7 +312,6 @@ class TUI():
                 self.finished_q.put(True)
                 self.finished_e.set()
         elif screen_id == 9:
-            logging.info("Updating config file.")
             if choice:
                 self.config_q.put(choice)
                 self.config_e.set()
@@ -337,6 +331,7 @@ class TUI():
         self.switch_screen(dialog)
 
     def get_version(self, dialog):
+        self.product_e.wait()
         question = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
         options = [("0", "10"), ("1", "9"), ("2", "Exit")]
         self.menu_options = options
@@ -344,6 +339,7 @@ class TUI():
         self.switch_screen(dialog)
 
     def get_release(self, dialog):
+        self.version_e.wait()
         question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
         utils.start_thread(utils.get_logos_releases, True, self)
         self.releases_e.wait()
@@ -362,12 +358,14 @@ class TUI():
         self.switch_screen(dialog)
 
     def get_installdir(self, dialog):
+        self.release_e.wait()
         default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
         question = f"Where should {config.FLPRODUCT} files be installed to? [{default}]: "  # noqa: E501
         self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=dialog)
         self.switch_screen(dialog)
 
     def get_wine(self, dialog):
+        self.installdir_e.wait()
         logging.info("Creating binary list.")
         question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.LOGOS_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
         options = utils.get_wine_options(
@@ -388,6 +386,7 @@ class TUI():
         self.switch_screen(dialog)
 
     def get_winetricksbin(self, dialog):
+        self.wine_e.wait()
         winetricks_options = utils.get_winetricks_options()
         if len(winetricks_options) > 1:
             question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux."  # noqa: E501
@@ -400,6 +399,7 @@ class TUI():
         self.switch_screen(dialog)
 
     def get_waiting(self, dialog):
+        self.tricksbin_e.wait()
         text = ["Install is running…\n"] + logging.console_log[-2:]
         processed_text = utils.str_array_to_string(text)
         percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
