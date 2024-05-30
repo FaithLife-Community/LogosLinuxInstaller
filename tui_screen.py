@@ -213,7 +213,7 @@ class ConfirmDialog(DialogScreen):
 
 
 class TextDialog(DialogScreen):
-    def __init__(self, app, screen_id, queue, event, text, percent=None, wait=False, height=None, width=None,
+    def __init__(self, app, screen_id, queue, event, text, wait=False, percent=None, height=None, width=None,
                  title=None, backtitle=None, colors=True):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
