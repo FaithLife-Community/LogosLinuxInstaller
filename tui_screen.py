@@ -275,14 +275,14 @@ class TextDialog(DialogScreen):
 
 
 class TaskListDialog(DialogScreen):
-    def __init__(self, app, screen_id, queue, event, text, elements, percent, wait=False,
+    def __init__(self, app, screen_id, queue, event, text, elements, percent,
                  height=None, width=None, title=None, backtitle=None, colors=True):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
         self.text = text
+        self.elements = []
         self.elements = elements
         self.percent = percent
-        self.wait = wait
         self.height = height
         self.width = width
         self.title = title
@@ -295,11 +295,10 @@ class TaskListDialog(DialogScreen):
 
     def display(self):
         if self.running == 0:
-            if self.wait:
-                tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
-                                                 self.height, self.width, self.title, self.backtitle, self.colors)
+            tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
+                                                self.height, self.width, self.title, self.backtitle, self.colors)
         elif self.running == 1:
-            if self.wait and self.updated:
+            if self.updated:
                 tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
                                                  self.height, self.width, self.title, self.backtitle, self.colors)
         else:

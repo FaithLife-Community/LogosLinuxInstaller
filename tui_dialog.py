@@ -57,6 +57,9 @@ def tasklist_progress_bar(app, text, global_percent, elements, height=None, widt
     if backtitle is not None:
         options['backtitle'] = backtitle
 
+    if elements is None:
+        elements = []
+
     d.mixedgauge(text, percent=global_percent, elements=elements, **options)
 
 

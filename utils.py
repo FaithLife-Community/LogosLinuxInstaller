@@ -9,6 +9,7 @@ import queue
 import re
 import requests
 import shutil
+import shlex
 import signal
 import stat
 import subprocess
@@ -234,10 +235,24 @@ def die(message):
     sys.exit(1)
 
 
-def run_command(command):
-    result = subprocess.run(command, check=True, text=True, capture_output=True)
-    return result.stdout
-
+def run_command(command, stdin=None, shell=False):
+    try:
+        logging.debug(f"Attempting to execute {command}")
+        result = subprocess.run(
+            command,
+            stdin=stdin,
+            check=True,
+            text=True,
+            shell=shell,
+            capture_output=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error occurred while executing {command}: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"An unexpected error occurred when running {command}: {e}")
+        return None
 
 def reboot():
     logging.info("Rebooting system.")
@@ -388,31 +403,40 @@ def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "apt install --download-only -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
         # IDEA: Switch to Python APT library?
         # See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l"
+        config.QUERY_PREFIX = '.i  '
         config.PACKAGES = "binutils cabextract fuse wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "dnf install --downloadonly -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed"
+        config.QUERY_PREFIX = ''
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "pamac install --download-only --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i | grep -E ^"
-        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i"
+        config.QUERY_PREFIX = ''
+        #config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "nano"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
         config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "pacman -Sw -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = r"pacman -R --no-confirm"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q | grep -E ^"
+        config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q"
+        config.QUERY_PREFIX = ''
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks cabextract appmenu-gtk-module patch bc lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
@@ -432,60 +456,132 @@ def get_runmode():
         return 'script'
 
 
-def query_packages(packages, mode="install"):
+def query_packages(packages, elements=None, mode="install", app=None):
     if config.SKIP_DEPENDENCIES:
         return
 
     missing_packages = []
     conflicting_packages = []
 
-    for p in packages:
-        command = f"{config.PACKAGE_MANAGER_COMMAND_QUERY}{p}"
-        logging.debug(f"pkg query command: \"{command}\"")
-        result = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-            text=True
-        )
-        logging.debug(f"pkg query result: {result.returncode}")
-        if result.returncode != 0 and mode == "install":
-            missing_packages.append(p)
-        elif result.returncode == 0 and mode == "remove":
-            conflicting_packages.append(p)
+    command = config.PACKAGE_MANAGER_COMMAND_QUERY
+
+    try:
+        package_list = run_command(command, shell=True)
+    except Exception as e:
+        logging.error(f"Error occurred while executing command: {e}")
+
+    logging.debug("Checking packages in package list.")
+    for index, p in enumerate(packages):
+        logging.debug(f"Checking: index: {index}, package: {p}")
+        status = "Unchecked"
+        for line in package_list.split('\n'):
+            if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":
+                status = "Installed"
+                break
+            elif line.strip().startswith(p) and mode == "remove":
+                conflicting_packages.append(p)
+                status = "Conflicting"
+                break
+
+        if status == "Unchecked":
+            if mode == "install":
+                missing_packages.append(p)
+                status = "Missing"
+            elif mode == "remove":
+                status = "Not Installed"
+
+        if elements is not None:
+            elements[index] = (p, 100 * (index + 1) // len(packages), status)
+
+        if app is not None and config.DIALOG == "curses" and elements is not None:
+            app.report_dependencies(
+                f"Checking Packages ({index + 1}/{len(packages)})",
+                100 * (index + 1) // len(packages),
+                elements,
+                dialog=True)
 
     msg = 'None'
     if mode == "install":
         if missing_packages:
             msg = f"Missing packages: {' '.join(missing_packages)}"
         logging.info(f"Missing packages: {msg}")
-        return missing_packages
-    if mode == "remove":
+        return missing_packages, elements
+    elif mode == "remove":
         if conflicting_packages:
             msg = f"Conflicting packages: {' '.join(conflicting_packages)}"
         logging.info(f"Conflicting packages: {msg}")
-        return conflicting_packages
+        return conflicting_packages, elements
 
 
-def install_packages(packages):
+def download_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
-        logging.debug(f"install_packages cmd: {command}")
-        result = run_command(command)
+        total_packages = len(packages)
+        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"
+        logging.debug(f"download_packages cmd: {command}")
+        command_args = shlex.split(command)
+        result = run_command(command_args)
+
+        for index, package in enumerate(packages):
+            status = "Downloaded" if result.returncode == 0 else "Failed"
+            if elements is not None:
+                elements[index] = (package, 100 * (index + 1) // total_packages, status)
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:
+                app.report_dependencies(f"Downloading Packages ({index + 1}/{total_packages})",
+                                        100 * (index + 1) // total_packages, elements, dialog=True)
 
 
-def remove_packages(packages):
+def install_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {' '.join(packages)}"  # noqa: E501
-        logging.debug(f"remove_packages cmd: {command}")
-        result = run_command(command)
+        total_packages = len(packages)
+        for index, package in enumerate(packages):
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"
+            logging.debug(f"install_packages cmd: {command}")
+            result = run_command(command)
+
+            if elements is not None:
+                elements[index] = (
+                    package,
+                    100 * (index + 1) // total_packages,
+                    "Installed" if result.returncode == 0 else "Failed")
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:
+                app.report_dependencies(
+                    f"Installing Packages ({index + 1}/{total_packages})",
+                    100 * (index + 1) // total_packages,
+                    elements,
+                    dialog=True)
+
+
+def remove_packages(packages, elements, app=None):
+    if config.SKIP_DEPENDENCIES:
+        return
+
+    if packages:
+        total_packages = len(packages)
+        for index, package in enumerate(packages):
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"
+            logging.debug(f"remove_packages cmd: {command}")
+            result = run_command(command)
+
+            if elements is not None:
+                elements[index] = (
+                    package,
+                    100 * (index + 1) // total_packages,
+                    "Removed" if result.returncode == 0 else "Failed")
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:
+                app.report_dependencies(
+                    f"Removing Packages ({index + 1}/{total_packages})",
+                    100 * (index + 1) // total_packages,
+                    elements,
+                    dialog=True)
 
 
 def have_dep(cmd):
@@ -698,23 +794,30 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
     conflicting_packages = []
     package_list = []
     elements = []
+    bad_elements = []
+
     if packages:
         package_list = packages.split()
+
     bad_package_list = []
     if badpackages:
         bad_package_list = badpackages.split()
+
     if logos9_packages:
         package_list.extend(logos9_packages.split())
 
-    if config.DIALOG == "curses" and app is not None:
-        elements[0] = ("Package 1", 0, "Checking")
-        elements[1] = ("Package 2", 0, "Checking")
-        elements[2] = ("Package 3", 0, "Checking")
+    if config.DIALOG == "curses" and app is not None and elements is not None:
+        for p in package_list:
+            elements.append((p, 0, "Unchecked"))
+    if config.DIALOG == "curses" and app is not None and bad_elements is not None:
+        for p in bad_package_list:
+            bad_elements.append((p, 0, "Unchecked"))
+
         app.report_dependencies("Checking Packages", 0, elements, dialog=True)
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
-        missing_packages = query_packages(package_list)
-        conflicting_packages = query_packages(bad_package_list, "remove")
+        missing_packages, elements = query_packages(package_list, elements, app=app)
+        conflicting_packages, bad_elements = query_packages(bad_package_list, bad_elements, "remove", app=app)
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if missing_packages and conflicting_packages:
@@ -740,18 +843,18 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         check_libs(["libfuse"])
 
         if missing_packages:
-            install_packages(missing_packages)
+            download_packages(missing_packages, elements, app)
+            install_packages(missing_packages, elements, app)
 
         if conflicting_packages:
             # AppImage Launcher is the only known conflicting package.
-            remove_packages(conflicting_packages)
-            config.REBOOT_REQUIRED = True
+            remove_packages(conflicting_packages, bad_elements, app)
+            #config.REBOOT_REQUIRED = True
+            #TODO: Verify with user before executing
 
         postinstall_dependencies()
 
         if config.REBOOT_REQUIRED:
-            # TODO: Add resumable install functionality to speed up running the
-            # program after reboot. See #19.
             reboot()
 
     else:

@@ -21,8 +21,6 @@ import wine
 console_message = ""
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
-# TODO: Add a checklist page for deps check. Python Dialog Mixed Gauge?
-# TODO: Add a waiting page for long functions?
 
 
 class TUI():
@@ -61,6 +59,8 @@ class TUI():
         self.wine_e = threading.Event()
         self.tricksbin_q = Queue()
         self.tricksbin_e = threading.Event()
+        self.deps_q = Queue()
+        self.deps_e = threading.Event()
         self.finished_q = Queue()
         self.finished_e = threading.Event()
         self.config_q = Queue()
@@ -429,8 +429,9 @@ class TUI():
         utils.send_task(self, 'TUI-UPDATE-MENU')
 
     def report_dependencies(self, text, percent, elements, dialog):
-        self.stack_tasklist(self, 11, self.deps_q, self.deps_e, text, elements, percent, wait=True, dialog=True)
-        self.switch_screen(dialog)
+        if elements is not None:
+            self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog)
+            self.switch_screen(dialog)
 
     def set_tui_menu_options(self, curses=False):
         options_first = []
@@ -543,10 +544,10 @@ class TUI():
             utils.append_unique(self.tui_screens,
                             tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
 
-    def stack_tasklist(self, screen_id, queue, event, text, elements, percent, wait=False, dialog=False):
+    def stack_tasklist(self, screen_id, queue, event, text, elements, percent, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens, tui_screen.TaskListDialog(self, screen_id, queue, event, text,
-                                                                            elements, percent, wait))
+                                                                            elements, percent))
         else:
             #TODO: curses version
             pass
