@@ -281,7 +281,7 @@ class TaskListDialog(DialogScreen):
         self.stdscr = self.app.get_menu_window()
         self.text = text
         self.elements = []
-        self.elements = elements
+        self.elements = elements if elements is not None else []
         self.percent = percent
         self.height = height
         self.width = width
@@ -295,11 +295,12 @@ class TaskListDialog(DialogScreen):
 
     def display(self):
         if self.running == 0:
-            tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
+            tui_dialog.tasklist_progress_bar(self, self.text, self.percent, self.elements,
                                                 self.height, self.width, self.title, self.backtitle, self.colors)
+            self.running = 1
         elif self.running == 1:
             if self.updated:
-                tui_dialog.tasklist_progress_bar(self.text, self.percent, self.elements,
+                tui_dialog.tasklist_progress_bar(self, self.text, self.percent, self.elements,
                                                  self.height, self.width, self.title, self.backtitle, self.colors)
         else:
             pass

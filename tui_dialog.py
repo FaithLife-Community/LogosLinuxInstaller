@@ -45,7 +45,7 @@ def stop_progress_bar(app):
     d.gauge_stop()
 
 
-def tasklist_progress_bar(app, text, global_percent, elements, height=None, width=None, title=None, backtitle=None, colors=None):
+def tasklist_progress_bar(app, text, percent, elements, height=None, width=None, title=None, backtitle=None, colors=None):
     d = Dialog()
     options = {'colors': colors}
     if height is not None:
@@ -60,7 +60,11 @@ def tasklist_progress_bar(app, text, global_percent, elements, height=None, widt
     if elements is None:
         elements = []
 
-    d.mixedgauge(text, percent=global_percent, elements=elements, **options)
+    try:
+        d.mixedgauge(text=text, percent=percent, elements=elements, **options)
+    except Exception as e:
+        logging.debug(f"Error in mixedgauge: {e}")
+        raise
 
 
 def confirm(app, question_text, height=None, width=None):

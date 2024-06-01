@@ -428,10 +428,22 @@ class TUI():
     def finish_install(self):
         utils.send_task(self, 'TUI-UPDATE-MENU')
 
+    def report_waiting(self, text, dialog):
+        if dialog:
+            self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)
+            self.switch_screen(dialog)
+        else:
+            self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)
+            logging.console_log.append(text)
+
     def report_dependencies(self, text, percent, elements, dialog):
         if elements is not None:
-            self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog)
-            self.switch_screen(dialog)
+            if dialog:
+                self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog)
+                self.switch_screen(dialog)
+            else:
+                #TODO
+                pass
 
     def set_tui_menu_options(self, curses=False):
         options_first = []
@@ -545,6 +557,7 @@ class TUI():
                             tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
 
     def stack_tasklist(self, screen_id, queue, event, text, elements, percent, dialog=False):
+        logging.debug(f"Elements stacked: {elements}")
         if dialog:
             utils.append_unique(self.tui_screens, tui_screen.TaskListDialog(self, screen_id, queue, event, text,
                                                                             elements, percent))

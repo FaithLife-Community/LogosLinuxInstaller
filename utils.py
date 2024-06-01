@@ -427,8 +427,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i"
         config.QUERY_PREFIX = ''
-        #config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
-        config.PACKAGES = "nano"  # noqa: E501
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
@@ -491,7 +490,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
                 status = "Not Installed"
 
         if elements is not None:
-            elements[index] = (p, 100 * (index + 1) // len(packages), status)
+            elements[index] = (p, status)
 
         if app is not None and config.DIALOG == "curses" and elements is not None:
             app.report_dependencies(
@@ -527,7 +526,7 @@ def download_packages(packages, elements, app=None):
         for index, package in enumerate(packages):
             status = "Downloaded" if result.returncode == 0 else "Failed"
             if elements is not None:
-                elements[index] = (package, 100 * (index + 1) // total_packages, status)
+                elements[index] = (package, status)
 
             if app is not None and config.DIALOG == "curses" and elements is not None:
                 app.report_dependencies(f"Downloading Packages ({index + 1}/{total_packages})",
@@ -548,7 +547,6 @@ def install_packages(packages, elements, app=None):
             if elements is not None:
                 elements[index] = (
                     package,
-                    100 * (index + 1) // total_packages,
                     "Installed" if result.returncode == 0 else "Failed")
 
             if app is not None and config.DIALOG == "curses" and elements is not None:
@@ -573,7 +571,6 @@ def remove_packages(packages, elements, app=None):
             if elements is not None:
                 elements[index] = (
                     package,
-                    100 * (index + 1) // total_packages,
                     "Removed" if result.returncode == 0 else "Failed")
 
             if app is not None and config.DIALOG == "curses" and elements is not None:
@@ -808,11 +805,12 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
 
     if config.DIALOG == "curses" and app is not None and elements is not None:
         for p in package_list:
-            elements.append((p, 0, "Unchecked"))
+            elements.append((p, "Unchecked"))
     if config.DIALOG == "curses" and app is not None and bad_elements is not None:
         for p in bad_package_list:
-            bad_elements.append((p, 0, "Unchecked"))
+            bad_elements.append((p, "Unchecked"))
 
+    if config.DIALOG == "curses" and app is not None:
         app.report_dependencies("Checking Packages", 0, elements, dialog=True)
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
