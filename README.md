@@ -143,7 +143,7 @@ NOTE: The following section is WIP.
 ### Install Dependencies
 
 ```
-sudo apt install mktemp patch lsof wget find sed grep gawk tr winbind cabextract x11-apps bc 
+sudo apt install coreutils patch lsof wget findutils sed grep gawk winbind cabextract x11-apps bc binutils
 ```
 
 If using wine from a repo, you must install wine staging. Run:
@@ -154,6 +154,7 @@ sudo mkdir -pm755 /etc/apt/keyrings
 sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
 CODENAME=$(lsb_release -a | grep Codename | awk '{print $2}')
 sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/"${CODENAME}"/winehq-"${CODENAME}".sources
+sudo apt update
 sudo apt install --install-recommends winehq-staging
 ```
 

@@ -27,10 +27,16 @@ def get_pids_using_file(file_path, mode=None):
             pass
     return pids
 
+
 def wait_on(command):
     try:
         # Start the process in the background
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         msg.cli_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
         time.sleep(1.0)
         while process.poll() is None:
@@ -45,7 +51,7 @@ def wait_on(command):
             logging.info(f"\"{' '.join(command)}\" has ended properly.")
         else:
             logging.error(f"Error: {stderr}")
-    
+
     except Exception as e:
         logging.critical(f"{e}")
 
@@ -67,16 +73,17 @@ def get_wine_release(binary):
         logging.debug(f"Version string: {str(version_string)}")
         try:
             version, release = version_string.split()
-        except ValueError: # neither "Devel" nor "Stable" release is noted in version output
+        except ValueError:
+            # Neither "Devel" nor "Stable" release is noted in version output
             version = version_string
             release = get_wine_branch(binary)
 
         logging.debug(f"Wine branch of {binary}: {release}")
 
         if release is not None:
-            ver_major = version.split('.')[0].lstrip('wine-') # remove 'wine-'
+            ver_major = version.split('.')[0].lstrip('wine-')  # remove 'wine-'
             ver_minor = version.split('.')[1]
-            release = release.lstrip('(').rstrip(')').lower() # remove parentheses
+            release = release.lstrip('(').rstrip(')').lower()  # remove parens
         else:
             ver_major = 0
             ver_minor = 0
@@ -100,7 +107,8 @@ def get_wine_release(binary):
 
 
 def check_wine_version_and_branch(TESTBINARY):
-    # Does not check for Staging. Will not implement: expecting merging of commits in time.
+    # Does not check for Staging. Will not implement: expecting merging of
+    # commits in time.
     if config.TARGETVERSION == "10":
         WINE_MINIMUM = [7, 18]
     elif config.TARGETVERSION == "9":
@@ -108,7 +116,9 @@ def check_wine_version_and_branch(TESTBINARY):
     else:
         raise ValueError("TARGETVERSION not set.")
 
-    # Check if the binary is executable. If so, check if TESTBINARY's version is ≥ WINE_MINIMUM, or if it is Proton or a link to a Proton binary, else remove.
+    # Check if the binary is executable. If so, check if TESTBINARY's version
+    # is ≥ WINE_MINIMUM, or if it is Proton or a link to a Proton binary, else
+    # remove.
     if not os.path.exists(TESTBINARY):
         reason = "Binary does not exist."
         return False, reason
@@ -126,13 +136,16 @@ def check_wine_version_and_branch(TESTBINARY):
         elif wine_release[0] < 7:
             return False, "Version is < 7.0"
         elif wine_release[0] < 8:
-            if "Proton" in TESTBINARY or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False):
+            if (
+                "Proton" in TESTBINARY
+                or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False)  # noqa: E501
+            ):
                 if wine_release[1] == 0:
                     return True, "None"
             elif wine_release[2] != 'staging':
                 return False, "Needs to be Staging release"
             elif wine_release[1] < WINE_MINIMUM[1]:
-                reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(WINE_MINIMUM)}"
+                reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(WINE_MINIMUM)}"  # noqa: E501
                 return False, reason
         elif wine_release[0] < 9:
             if wine_release[1] < 1:
@@ -146,15 +159,14 @@ def check_wine_version_and_branch(TESTBINARY):
     return True, "None"
 
 
-def initializeWineBottle(app):
-    msg.cli_msg(f"Initializing wine bottle...")
-    if app is not None:
-        app.install_q.put("Initializing wine bottle...")
-        app.root.event_generate("<<UpdateInstallText>>")
+def initializeWineBottle(app=None):
+    msg.cli_msg("Initializing wine bottle...")
 
-    config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree=" # avoid wine-mono window
+    # Avoid wine-mono window
+    orig_overrides = config.WINEDLLOVERRIDES
+    config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree="
     run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])
-    config.WINEDLLOVERRIDES = ';'.join([o for o in config.WINEDLLOVERRIDES.split(';') if o != 'mscoree='])
+    config.WINEDLLOVERRIDES = orig_overrides
     light_wineserver_wait()
 
 
@@ -179,7 +191,7 @@ def wine_reg_install(REG_FILE):
 def install_msi():
     msg.cli_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
-    exe_args = ["/i", f"{config.APPDIR}/{config.LOGOS_EXECUTABLE}"]
+    exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
         exe_args.append('/passive')
     logging.info(f"Running: {config.WINE_EXE} msiexec {' '.join(exe_args)}")
@@ -190,9 +202,9 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     env = get_wine_env()
     if config.WINECMD_ENCODING is None:
         # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
-        codepages = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages').split(',')
+        codepages = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages').split(',')  # noqa: E501
         config.WINECMD_ENCODING = codepages[-1]
-    logging.debug(f"run_wine_proc: {winecmd}; {exe = }; {exe_args = }")
+    logging.debug(f"run_wine_proc: {winecmd}; {exe=}; {exe_args=}")
     wine_env_vars = {k: v for k, v in env.items() if k.startswith('WINE')}
     logging.debug(f"wine environment: {wine_env_vars}")
 
@@ -204,23 +216,28 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     logging.debug(f"subprocess cmd: '{' '.join(command)}'")
 
     try:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=env
+        )
         with process.stdout:
             for line in iter(process.stdout.readline, b''):
                 if winecmd.endswith('winetricks'):
-                    logging.debug(line.decode().rstrip())
+                    logging.debug(line.decode('cp437').rstrip())
                 else:
                     try:
                         logging.info(line.decode().rstrip())
                     except UnicodeDecodeError:
-                        logging.info(line.decode(config.WINECMD_ENCODING).rstrip())
+                        logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
         returncode = process.wait()
 
         if returncode != 0:
-            logging.error(f"Error 1 running {winecmd} {exe}: {process.returncode}")
+            logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
 
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error 2 running {winecmd} {exe}: {e}")
+        logging.error(f"Exception running '{' '.join(command)}': {e}")
 
 
 def run_winetricks(cmd=None):
@@ -274,7 +291,10 @@ def get_registry_value(reg_path, name):
 
 def get_app_logging_state(app=None, init=False):
     state = 'DISABLED'
-    current_value = get_registry_value('HKCU\\Software\\Logos4\\Logging', 'Enabled')
+    current_value = get_registry_value(
+        'HKCU\\Software\\Logos4\\Logging',
+        'Enabled'
+    )
     if current_value == '0x1':
         state = 'ENABLED'
     if app is not None:
@@ -299,7 +319,7 @@ def switch_logging(action=None, app=None):
         state = state_enabled
     else:
         current_state = get_app_logging_state()
-        logging.debug(f"app logging {current_state = }")
+        logging.debug(f"app logging {current_state=}")
         if current_state == state_enabled:
             value = value_disabled
             state = state_disabled
@@ -308,8 +328,9 @@ def switch_logging(action=None, app=None):
             state = state_enabled
 
     logging.info(f"Setting app logging to '{state}'.")
-    exe_args = ['add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled', '/t',
-        'REG_DWORD', '/d', value, '/f'
+    exe_args = [
+        'add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled',
+        '/t', 'REG_DWORD', '/d', value, '/f'
     ]
     run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
     run_wine_proc(config.WINESERVER_EXE, exe_args=['-w'])
@@ -336,7 +357,11 @@ def get_wine_branch(binary):
     if utils.check_appimage(binary_obj):
         logging.debug(f"Mounting AppImage: {binary_obj}")
         # Mount appimage to inspect files.
-        p = subprocess.Popen([binary_obj, '--appimage-mount'], stdout=subprocess.PIPE, encoding='UTF8')
+        p = subprocess.Popen(
+            [binary_obj, '--appimage-mount'],
+            stdout=subprocess.PIPE,
+            encoding='UTF8'
+        )
         while p.returncode is None:
             for line in p.stdout:
                 if line.startswith('/tmp'):
@@ -348,20 +373,30 @@ def get_wine_branch(binary):
             p.poll()
         return branch
     else:
-        logging.debug(f"Binary object is not an AppImage.")
+        logging.debug("Binary object is not an AppImage.")
     logging.info(f"'{binary}' resolved to '{binary_obj}'")
-    mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'
+    mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'  # noqa: E501
     return get_mscoree_winebranch(mscoree64)
 
 
 def get_wine_env():
     wine_env = os.environ.copy()
-    wine_env['WINE'] = config.WINE_EXE # used by winetricks
-    wine_env['WINE_EXE'] = config.WINE_EXE
-    wine_env['WINEDEBUG'] = config.WINEDEBUG
-    wine_env['WINEDLLOVERRIDES'] = config.WINEDLLOVERRIDES
-    wine_env['WINELOADER'] = config.WINE_EXE
-    wine_env['WINEPREFIX'] = config.WINEPREFIX
+    winepath = Path(config.WINE_EXE)
+    if winepath.name != 'wine64':  # AppImage
+        # Winetricks commands can fail if 'wine64' is not explicitly defined.
+        # https://github.com/Winetricks/winetricks/issues/2084#issuecomment-1639259359
+        winepath = winepath.parent / 'wine64'
+    wine_env_defaults = {
+        'WINE': str(winepath),
+        'WINE_EXE': config.WINE_EXE,
+        'WINEDEBUG': config.WINEDEBUG,
+        'WINEDLLOVERRIDES': config.WINEDLLOVERRIDES,
+        'WINELOADER': str(winepath),
+        'WINEPREFIX': config.WINEPREFIX,
+        'WINETRICKS_SUPER_QUIET': '',
+    }
+    for k, v in wine_env_defaults.items():
+        wine_env[k] = v
     if config.LOG_LEVEL > logging.INFO:
         wine_env['WINETRICKS_SUPER_QUIET'] = "1"
 
@@ -370,8 +405,9 @@ def get_wine_env():
     if cfg is not None:
         for key, value in cfg.items():
             if value is None:
-                continue # or value = ''?
-            wine_env[key] = value
+                continue  # or value = ''?
+            if key in wine_env_defaults.keys():
+                wine_env[key] = value
 
     return wine_env
 
@@ -382,7 +418,7 @@ def run_logos():
 
 
 def run_indexing():
-    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):
+    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
         for f in files:
             if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
                 logos_indexer_exe = os.path.join(root, f)

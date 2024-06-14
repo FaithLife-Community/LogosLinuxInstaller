@@ -19,7 +19,7 @@ fi
 # Warn about build deps.
 echo "Warning: You will likely need to install build dependencies for your system."
 echo "e.g. Ubuntu requires: build-essential libreadline-dev tk-dev tcl-dev"
-read -pr "Continue? [Y/n] " ans
+read -r -p "Continue? [Y/n] " ans
 if [[ ${ans,,} != 'y' ]]; then
     exit 1
 fi

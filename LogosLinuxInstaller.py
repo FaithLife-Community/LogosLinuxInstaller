@@ -14,10 +14,14 @@ import wine
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description=f'Installs FaithLife Bible Software with Wine on Linux.')
+    desc = "Installs FaithLife Bible Software with Wine on Linux."
+    parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
         '-v', '--version', action='version',
-        version=f'{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}',
+        version=(
+            f"{config.LLI_TITLE}, "
+            f"{config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}"
+        ),
     )
 
     # Define options that affect runtime config.
@@ -25,6 +29,10 @@ def get_parser():
     cfg.add_argument(
         '-F', '--skip-fonts', action='store_true',
         help='skip font installations',
+    )
+    cfg.add_argument(
+        '-a', '--check-for-updates', action='store_true',
+        help='force a check for updates'
     )
     cfg.add_argument(
         '-K', '--skip-dependencies', action='store_true',
@@ -40,11 +48,17 @@ def get_parser():
     )
     cfg.add_argument(
         '-c', '--config', metavar='CONFIG_FILE',
-        help=f'use a custom config file during installation [default: {config.DEFAULT_CONFIG_PATH}]',
+        help=(
+            "use a custom config file during installation "
+            f"[default: {config.DEFAULT_CONFIG_PATH}]"
+        ),
     )
     cfg.add_argument(
         '-f', '--force-root', action='store_true',
-        help='set LOGOS_FORCE_ROOT to true, which permits the root user to use the script',
+        help=(
+            "set LOGOS_FORCE_ROOT to true, which permits "
+            "the root user to use the script"
+        ),
     )
     cfg.add_argument(
         '-p', '--custom-binary-path', metavar='CUSTOMBINPATH',
@@ -62,7 +76,10 @@ def get_parser():
     # Define runtime actions (mutually exclusive).
     grp = parser.add_argument_group(
         title="subcommands",
-        description="these options run specific subcommands; only 1 at a time is accepted",
+        description=(
+            "these options run specific subcommands; "
+            "only 1 at a time is accepted"
+        ),
     )
     cmd = grp.add_mutually_exclusive_group()
     cmd.add_argument(
@@ -105,6 +122,10 @@ def get_parser():
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
+        '--update-self', '-u', action='store_true',
+        help='Update Logos Linux Installer to the latest release.',
+    )
+    cmd.add_argument(
         '--update-latest-appimage', '-U', action='store_true',
         help='Update the to the latest AppImage.',
     )
@@ -138,11 +159,6 @@ def get_parser():
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
-        '--make-skel', action='store_true',
-        # help='make a skeleton install only',
-        help=argparse.SUPPRESS,
-    )
-    cmd.add_argument(
         '--check-resources', action='store_true',
         # help='check resources'
         help=argparse.SUPPRESS,
@@ -167,6 +183,9 @@ def parse_args(args, parser):
     if args.skip_fonts:
         config.SKIP_FONTS = True
 
+    if args.check_for_updates:
+        config.CHECK_UPDATES = True
+
     if args.skip_dependencies:
         config.SKIP_DEPENDENCIES = True
 
@@ -176,21 +195,19 @@ def parse_args(args, parser):
     if args.debug:
         utils.set_debug()
 
-    if args.make_skel:
-        config.SKEL = True
-
     if args.custom_binary_path:
         if os.path.isdir(args.custom_binary_path):
             config.CUSTOMBINPATH = args.custom_binary_path
         else:
-            parser.exit(status=1, message=f"Custom binary path does not exist: \"{args.custom_binary_path}\"\n")
+            message = f"Custom binary path does not exist: \"{args.custom_binary_path}\"\n"  # noqa: E501
+            parser.exit(status=1, message=message)
 
     if args.passive:
         config.PASSIVE = True
 
     # Set ACTION function.
     actions = {
-        'install_app': installer.install,
+        'install_app': installer.ensure_launcher_shortcuts,
         'run_installed_app': wine.run_logos,
         'run_indexing': wine.run_indexing,
         'remove_library_catalog': control.remove_library_catalog,
@@ -199,12 +216,14 @@ def parse_args(args, parser):
         'install_dependencies': utils.check_dependencies,
         'backup': control.backup,
         'restore': control.restore,
+        'update_self': utils.update_to_latest_lli_release,
         'update_latest_appimage': utils.update_to_latest_recommended_appimage,
         'set_appimage': utils.set_appimage_symlink,
-        'get_winetricks': control.get_winetricks,
+        # 'get_winetricks': control.get_winetricks,
+        'get_winetricks': control.set_winetricks,
         'run_winetricks': wine.run_winetricks,
         'toggle_app_logging': wine.switch_logging,
-        'create_shortcuts': installer.create_shortcuts,
+        'create_shortcuts': installer.ensure_launcher_shortcuts,
         'remove_install_dir': control.remove_install_dir,
     }
 
@@ -213,21 +232,23 @@ def parse_args(args, parser):
         if getattr(args, arg):
             if arg == "update_latest_appimage" or arg == "set_appimage":
                 logging.debug("Running an AppImage command.")
-                if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":
+                if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
                     config.ACTION = "disabled"
-                    logging.debug("AppImage commands not added since WINEBIN_CODE != (AppImage|Recommended)")
+                    logging.debug("AppImage commands not added since WINEBIN_CODE != (AppImage|Recommended)")  # noqa: E501
                     break
             if arg == "set_appimage":
                 config.APPIMAGE_FILE_PATH = getattr(args, arg)[0]
                 if not utils.file_exists(config.APPIMAGE_FILE_PATH):
-                    raise argparse.ArgumentTypeError(
-                        f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist.")
+                    e = f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist."  # noqa: E501
+                    raise argparse.ArgumentTypeError(e)
                 if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
-                    raise argparse.ArgumentTypeError(f"{config.APPIMAGE_FILE_PATH} is not an AppImage.")
+                    e = f"{config.APPIMAGE_FILE_PATH} is not an AppImage."
+                    raise argparse.ArgumentTypeError(e)
             config.ACTION = action
             break
     if config.ACTION is None:
         config.ACTION = run_control_panel
+    logging.debug(f"{config.ACTION=}")
 
 
 def run_control_panel():
@@ -240,9 +261,9 @@ def run_control_panel():
 
 def main():
     parser = get_parser()
-    cli_args = parser.parse_args()  # parsing early lets '--help' run immediately
+    cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
-    ### Set runtime config.
+    # Set runtime config.
     # Initialize logging.
     msg.initialize_logging(config.LOG_LEVEL)
     current_log_level = config.LOG_LEVEL
@@ -251,7 +272,7 @@ def main():
     utils.set_default_config()
 
     # Update config from CONFIG_FILE.
-    if not utils.file_exists(config.CONFIG_FILE) and utils.file_exists(config.LEGACY_CONFIG_FILE):
+    if not utils.file_exists(config.CONFIG_FILE) and utils.file_exists(config.LEGACY_CONFIG_FILE):  # noqa: E501
         config.set_config_env(config.LEGACY_CONFIG_FILE)
         utils.write_config(config.CONFIG_FILE)
     else:
@@ -266,7 +287,9 @@ def main():
 
     # Update config based on environment variables.
     config.get_env_config()
-    # Update terminal log level if set in environment and changed from current level.
+    utils.set_runtime_config()
+    # Update terminal log level if set in environment and changed from current
+    # level.
     if config.VERBOSE:
         config.LOG_LEVEL = logging.VERBOSE
     if config.DEBUG:
@@ -285,38 +308,49 @@ def main():
     # Log persistent config.
     utils.log_current_persistent_config()
 
-    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that can
-    #   be run in conjunction with other actions, so it gets special treatment
-    #   here once config is set.
+    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
+    # can be run in conjunction with other actions, so it gets special
+    # treatment here once config is set.
     if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
         control.delete_log_file_contents()
 
-    ### Run desired action (requested function, defaulting to installer)
+    # Run desired action (requested function, defaulting to installer)
     # Run safety checks.
-    utils.die_if_running()
+    # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
+    # self-update when updating LLI as it asks for a confirmation in the CLI.
+    # Disabled until it can be fixed. Avoid running multiple instances of the
+    # program.
+    # utils.die_if_running()
     utils.die_if_root()
 
     # Print terminal banner
-    logging.info(f"{config.LOGOS_SCRIPT_TITLE}, {config.LOGOS_SCRIPT_VERSION} by {config.LOGOS_SCRIPT_AUTHOR}.")
+    logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
     logging.debug(f"Installer log file: {config.LOGOS_LOG}")
 
-    utils.self_update()
+    utils.check_for_updates()
 
     # Check if app is installed.
-    install_not_required = [ 'remove_install_dir', 'check_dependencies', 'update_to_latest_recommended_appimage', 'set_appimage_symlink' ]
+    install_required = [
+        'backup',
+        'create_shortcuts',
+        'remove_all_index_files',
+        'remove_library_catalog',
+        'restore',
+        'run_indexing',
+        'run_logos',
+        'switch_logging',
+    ]
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")
-    elif config.ACTION.__name__ in install_not_required:  # These actions don't require an install
+    elif config.ACTION.__name__ not in install_required:
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()
     elif utils.app_is_installed():
         # Run the desired Logos action.
-        if config.ACTION is None:
-            msg.logos_error("No function given for this subcommand.")
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()  # defaults to run_control_panel()
     else:
-        logging.info(f"Starting Control Panel")
+        logging.info("Starting Control Panel")
         run_control_panel()
 
 

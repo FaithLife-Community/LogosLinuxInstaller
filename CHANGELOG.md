@@ -1,5 +1,15 @@
 # Changelog
 
+- 4.0.0-alpha.6
+	- Hotfix to get correct LOGOS_EXE value after installation [N. Marti]
+- 4.0.0-alpha.5
+	- Fix #19 [N. Marti]
+	- Fix #64 [N. Marti]
+	- Fix #77 [N. Marti]
+- 4.0.0-alpha.4
+	- Fix #46 [T. H. Wright, N. Marti]
+	- Fix networking issues [N. Marti]
+	- Clean up install procedure [N. Marti]
 - 4.0.0-alpha.3
 	- Fix #5 [T. H. Wright, N. Marti]
 	- Fix #49 [T. H. Wright]
