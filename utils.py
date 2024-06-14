@@ -380,14 +380,14 @@ def get_package_manager():
         # IDEA: Switch to Python APT library?
         # See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l | grep -E '^.i  '"
-        config.PACKAGES = "coreutils patch lsof wget findutils sed grep gawk winbind cabextract x11-apps bc binutils fuse3"
+        config.PACKAGES = "coreutils patch lsof wget findutils sed grep gawk winbind cabextract x11-apps binutils fuse3"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed | grep -E ^"
-        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
