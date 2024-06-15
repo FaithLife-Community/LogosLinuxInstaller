@@ -836,16 +836,16 @@ def get_logos_releases(app=None):
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
     url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
 
-    response_xml = net_get(url)
+    response_xml_bytes = net_get(url)
     # if response_xml is None and None not in [q, app]:
-    if response_xml is None:
+    if response_xml_bytes is None:
         if app:
             app.releases_q.put(None)
             app.root.event_generate(app.release_evt)
         return None
 
     # Parse XML
-    root = ET.fromstring(response_xml)
+    root = ET.fromstring(response_xml_bytes.decode('utf-8-sig'))
 
     # Define namespaces
     namespaces = {
@@ -1094,7 +1094,7 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                         logging.error(f"HTTP error occurred: {e.response.status_code}")  # noqa: E501
                     return None
 
-                return r.text
+                return r._content  # raw bytes
         else:  # download url to target.path
             with requests.get(url.path, stream=True, headers=headers) as r:
                 with target.path.open(mode=file_mode) as f:
@@ -1254,7 +1254,7 @@ def get_latest_release_data(releases_url):
     data = net_get(releases_url)
     if data:
         try:
-            json_data = json.loads(data)
+            json_data = json.loads(data.decode())
             logging.debug(f"{json_data=}")
         except json.JSONDecodeError as e:
             logging.error(f"Error decoding JSON response: {e}")
