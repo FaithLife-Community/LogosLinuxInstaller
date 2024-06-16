@@ -1,5 +1,11 @@
 # Changelog
 
+- 4.0.0-alpha.8
+	- Fix #1 [T. H. Wright, N. Marti, T. Bleher, C. Reeder]
+	- Fix #102 [T. H. Wright]
+	- Fix #110 [N. Marti]
+- 4.0.0-alpha.7
+	- Various fixes [N. Marti]
 - 4.0.0-alpha.6
 	- Hotfix to get correct LOGOS_EXE value after installation [N. Marti]
 - 4.0.0-alpha.5
