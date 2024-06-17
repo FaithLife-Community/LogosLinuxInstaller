@@ -10,14 +10,7 @@ import config
 
 def get_log_level_name(level):
     name = None
-    levels = {
-        "CRITICAL": logging.CRITICAL,
-        "ERROR": logging.ERROR,
-        "WARNING": logging.WARNING,
-        "INFO": logging.INFO,
-        "DEBUG": logging.DEBUG,
-    }
-    for k, v in levels.items():
+    for k, v in config.LOG_LEVELS.items():
         if level == v:
             name = k
             break
@@ -148,11 +141,6 @@ def cli_ask_filepath(question_text):
         print()
         logos_error("Cancelled with Ctrl+C")
     return answer.strip('"').strip("'")
-
-
-def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
-    if config.DIALOG == 'curses':
-        cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)
 
 
 def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):

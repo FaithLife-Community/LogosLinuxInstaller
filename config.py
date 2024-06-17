@@ -4,6 +4,14 @@ import os
 import tempfile
 
 
+LOG_LEVELS = {
+    "CRITICAL": logging.CRITICAL,
+    "ERROR": logging.ERROR,
+    "WARNING": logging.WARNING,
+    "INFO": logging.INFO,
+    "DEBUG": logging.DEBUG,
+}
+
 # Define and set variables that are required in the config file.
 core_config_keys = [
     "FLPRODUCT", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
@@ -23,6 +31,7 @@ extended_config = {
     'DEBUG': False,
     'DELETE_LOG': None,
     'DIALOG': None,
+    'LOG_LEVEL': logging.WARNING,
     'LOGOS_LOG': os.path.expanduser("~/.local/state/Logos_on_Linux/Logos_on_Linux.log"),  # noqa: E501
     'LOGOS_EXE': None,
     'LOGOS_EXECUTABLE': None,
@@ -42,10 +51,17 @@ extended_config = {
     'WINETRICKS_UNATTENDED': None,
 }
 for key, default in extended_config.items():
-    globals()[key] = os.getenv(key, default)
+    val = os.getenv(key)
+    if key == 'LOG_LEVEL' and val:
+        val = LOG_LEVELS.get(val.upper())
+        os.environ.pop('LOG_LEVEL')  # avoids getting re-read again later
+    if not val:
+        val = default
+    globals()[key] = val
 
 # Set other run-time variables not set in the env.
 ACTION = 'app'
+APPDIR_BINDIR = None
 APPIMAGE_FILE_PATH = None
 BADPACKAGES = None
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")  # noqa: E501
@@ -58,7 +74,6 @@ LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
 LLI_CURRENT_VERSION = "4.0.0-alpha.8"
 LLI_LATEST_VERSION = None
 LLI_TITLE = "Logos Linux Installer"
-LOG_LEVEL = logging.WARNING
 LOGOS_BLUE = '#0082FF'
 LOGOS_GRAY = '#E7E7E7'
 LOGOS_WHITE = '#FCFCFC'

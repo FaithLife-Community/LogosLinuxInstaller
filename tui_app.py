@@ -43,14 +43,14 @@ def control_panel_app():
         options_default = ["Install Logos Bible Software"]
         options_main = [
             "Install Dependencies",
-            "Download or Update Winetricks",
-            "Run Winetricks"
         ]
         options_installed = [
             f"Run {config.FLPRODUCT}",
             "Run Indexing",
             "Remove Library Catalog",
             "Remove All Index Files",
+            "Run Winetricks",
+            "Download or Update Winetricks",
             "Edit Config",
             "Back up Data",
             "Restore Data",

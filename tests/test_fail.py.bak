@@ -1,0 +1,6 @@
+import unittest
+
+
+class TestFake(unittest.TestCase):
+    def test_force_failure(self):
+        self.assertEqual(False, True)

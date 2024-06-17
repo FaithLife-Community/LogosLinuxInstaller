@@ -691,6 +691,8 @@ def send_gui_task(app, task):
 
 def grep(regexp, filepath):
     fp = Path(filepath)
+    if not fp.is_file():
+        return None
     found = False
     ct = 0
     with fp.open() as f:
@@ -704,7 +706,15 @@ def grep(regexp, filepath):
 
 
 def get_progress_pct(current, total):
-    return round(current * 100 / total)
+    if total == 0:
+        logging.warning(f"Progress {total=}; can't divide by zero")
+        pct = 0
+    else:
+        pct = round(current * 100 / total)
+    if pct > 100:
+        logging.warning(f"Progress {pct=}; setting to \"100\"")
+        pct = 100
+    return pct
 
 
 def create_desktop_file(name, contents):
