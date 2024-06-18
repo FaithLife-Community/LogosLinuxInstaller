@@ -379,7 +379,13 @@ def get_superuser_command():
 
 def get_package_manager():
     # Check for package manager and associated packages
-    if shutil.which('apt') is not None:  # debian, ubuntu
+    if config.OS_NAME == 'nixos':
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ""
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ""
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ""
+        config.PACKAGES = ""
+        config.BADPACKAGES = ""
+    elif shutil.which('apt') is not None:  # debian, ubuntu
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
         # IDEA: Switch to Python APT library?
