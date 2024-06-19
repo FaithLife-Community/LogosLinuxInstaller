@@ -563,12 +563,16 @@ def logos_reuse_download(
     FILE,
     TARGETDIR,
     app=None,
+    download_dir=None,
 ):
     DIRS = [
         config.INSTALLDIR,
         os.getcwd(),
         config.MYDOWNLOADS,
     ]
+    if download_dir:
+        download_dir = str(Path(download_dir).expanduser())
+        DIRS.insert(0, download_dir)
     FOUND = 1
     for i in DIRS:
         if i is not None:
@@ -592,7 +596,10 @@ def logos_reuse_download(
                 else:
                     logging.info(f"Incomplete file: {file_path}.")
     if FOUND == 1:
-        file_path = os.path.join(config.MYDOWNLOADS, FILE)
+        if download_dir:
+            file_path = os.path.join(download_dir, FILE)
+        else:
+            file_path = os.path.join(config.MYDOWNLOADS, FILE)
         if config.DIALOG == 'tk' and app:
             # Ensure progress bar.
             app.stop_indeterminate_progress()
@@ -611,7 +618,8 @@ def logos_reuse_download(
         ):
             msg.cli_msg(f"Copying: {FILE} into: {TARGETDIR}")
             try:
-                shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
+                shutil.copy(file_path, TARGETDIR)
+                return True
             except shutil.SameFileError:
                 pass
         else:
@@ -1108,7 +1116,6 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                         local_size = target.get_size()
                         if type(total_size) is int:
                             percent = round(local_size / total_size * 100)
-                            # if None not in [app, evt]:
                             if app:
                                 # Send progress value to tk window.
                                 app.get_q.put(percent)
