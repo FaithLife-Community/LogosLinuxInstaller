@@ -11,6 +11,8 @@ import config
 import msg
 import utils
 
+from main import processes
+
 
 def get_pids_using_file(file_path, mode=None):
     # Make list (set) of pids using 'directory'.
@@ -222,6 +224,8 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
             stderr=subprocess.STDOUT,
             env=env
         )
+        if exe is not None and isinstance(process, subprocess.Popen):
+            processes[exe] = process
         with process.stdout:
             for line in iter(process.stdout.readline, b''):
                 if winecmd.endswith('winetricks'):
@@ -427,3 +431,15 @@ def run_indexing():
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
     run_wine_proc(config.WINE_EXE, exe=logos_indexer_exe)
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+
+
+def end_wine_processes():
+    for process_name, process in processes.items():
+        if isinstance(process, subprocess.Popen):
+            logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")
+            try:
+                process.terminate()
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()

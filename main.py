@@ -13,6 +13,8 @@ import tui_app
 import utils
 import wine
 
+processes = {}
+
 
 def get_parser():
     desc = "Installs FaithLife Bible Software with Wine on Linux."
@@ -371,5 +373,16 @@ def main():
         run_control_panel()
 
 
+def close():
+    logging.debug("Closing Logos on Linux.")
+    if len(processes) > 0:
+        wine.end_wine_processes()
+    else:
+        logging.debug("No processes found.")
+    logging.debug("Closing Logos on Linux finished.")
+
+
 if __name__ == '__main__':
     main()
+
+    close()
