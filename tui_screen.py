@@ -321,3 +321,57 @@ class TaskListDialog(DialogScreen):
 
     def get_text(self):
         return self.text
+
+
+class BuildListDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, question, options, list_height=None, height=None, width=None):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.question = question
+        self.options = options
+        self.height = height
+        self.width = width
+        self.list_height = list_height
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        if self.running == 0:
+            self.running = 1
+            code, self.choice = tui_dialog.buildlist(self.app, self.question, self.options, self.height, self.width,
+                                            self.list_height)
+            self.running = 2
+
+    def get_question(self):
+        return self.question
+
+    def set_options(self, new_options):
+        self.options = new_options
+
+
+class CheckListDialog(DialogScreen):
+    def __init__(self, app, screen_id, queue, event, question, options, list_height=None, height=None, width=None):
+        super().__init__(app, screen_id, queue, event)
+        self.stdscr = self.app.get_menu_window()
+        self.question = question
+        self.options = options
+        self.height = height
+        self.width = width
+        self.list_height = list_height
+
+    def __str__(self):
+        return f"PyDialog Screen"
+
+    def display(self):
+        if self.running == 0:
+            self.running = 1
+            code, self.choice = tui_dialog.checklist(self.app, self.question, self.options, self.height, self.width,
+                                            self.list_height)
+            self.running = 2
+
+    def get_question(self):
+        return self.question
+
+    def set_options(self, new_options):
+        self.options = new_options

@@ -87,6 +87,7 @@ def directory_picker(app, path_dir):
 
     return path
 
+
 def menu(app, question_text, options, height=None, width=None, menu_height=8):
     tag_to_description = {tag: description for tag, description in options}
     dialog = Dialog(dialog="dialog")
@@ -98,4 +99,28 @@ def menu(app, question_text, options, height=None, width=None, menu_height=8):
     if code == dialog.OK:
         return code, tag, selected_description
     elif code == dialog.CANCEL:
+        return None
+
+
+def buildlist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=None):
+    # items is an interable of (tag, item, status)
+    dialog = Dialog(dialog="dialog")
+
+    code, tags = dialog.buildlist(text, height, width, list_height, items, title, backtitle, colors)
+
+    if code == dialog.OK:
+        return code, tags
+    elif code == dialog.CANCEL:
+        return None
+
+
+def checklist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=None):
+    # items is an iterable of (tag, item, status)
+    dialog = Dialog(dialog="dialog")
+
+    code, tags = dialog.checklist(text, items, height, width, list_height, title, backtitle, colors)
+
+    if code == dialog.OK:
+        return code, tags
+    elif code == dialog.Cancel:
         return None

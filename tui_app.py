@@ -552,6 +552,23 @@ class TUI():
             #TODO: curses version
             pass
 
+    def stack_buildlist(self, screen_id, queue, event, question, options, height=None, width=None, list_height=None, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.BuildListDialog(self, screen_id, queue, event, question, options, height, width, list_height))
+        else:
+            # TODO
+            pass
+
+    def stack_checklist(self, screen_id, queue, event, question, options, height=None, width=None, list_height=None, dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.CheckListDialog(self, screen_id, queue, event, question, options, height, width, list_height))
+        else:
+            # TODO
+            pass
+
+
     def update_tty_dimensions(self):
         self.window_height, self.window_width = self.stdscr.getmaxyx()
 
