@@ -421,7 +421,11 @@ def get_package_manager():
         # See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l"
         config.QUERY_PREFIX = '.i  '
-        config.PACKAGES = "binutils cabextract fuse wget winbind"
+        if distro.id() == "ubuntu" and distro.version() < "24.04":
+            fuse = "fuse"
+        else:
+            fuse = "fuse3"
+        config.PACKAGES = f"binutils cabextract {fuse} wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
