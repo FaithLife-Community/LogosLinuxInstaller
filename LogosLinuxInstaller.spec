@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['LogosLinuxInstaller.py'],
+    ['main.py'],
     pathex=[],
     #binaries=[('/usr/bin/tclsh8.6', '.')],
     binaries=[],

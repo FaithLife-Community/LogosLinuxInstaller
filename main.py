@@ -2,6 +2,7 @@
 import logging
 import os
 import argparse
+import curses
 
 import config
 import control
@@ -11,6 +12,8 @@ import msg
 import tui_app
 import utils
 import wine
+
+processes = {}
 
 
 def get_parser():
@@ -219,7 +222,6 @@ def parse_args(args, parser):
         'update_self': utils.update_to_latest_lli_release,
         'update_latest_appimage': utils.update_to_latest_recommended_appimage,
         'set_appimage': utils.set_appimage_symlink,
-        # 'get_winetricks': control.get_winetricks,
         'get_winetricks': control.set_winetricks,
         'run_winetricks': wine.run_winetricks,
         'toggle_app_logging': wine.switch_logging,
@@ -256,7 +258,12 @@ def run_control_panel():
     if config.DIALOG is None or config.DIALOG == 'tk':
         gui_app.control_panel_app()
     else:
-        tui_app.control_panel_app()
+        try:
+            curses.wrapper(tui_app.control_panel_app)
+        except curses.error as e:
+            logging.error(f"Curses error in run_control_panel(): {e}")
+        except Exception as e:
+            logging.error(f"An error occurred in run_control_panel(): {e}")
 
 
 def main():
@@ -304,6 +311,18 @@ def main():
         config.DIALOG = config.DIALOG.lower()
         if config.DIALOG == 'tk':
             config.GUI = True
+
+    if config.DIALOG == 'curses':
+        config.use_python_dialog = utils.test_dialog_version()
+
+        if config.use_python_dialog is None:
+            logging.debug("The 'dialog' package was not found.")
+        elif config.use_python_dialog:
+            logging.debug("Dialog version is up-to-date.")
+            config.use_python_dialog = True
+        else:
+            logging.error("Dialog version is outdated. Please use the GUI.")
+            config.use_python_dialog = False
 
     # Log persistent config.
     utils.log_current_persistent_config()
@@ -354,5 +373,16 @@ def main():
         run_control_panel()
 
 
+def close():
+    logging.debug("Closing Logos on Linux.")
+    if len(processes) > 0:
+        wine.end_wine_processes()
+    else:
+        logging.debug("No processes found.")
+    logging.debug("Closing Logos on Linux finished.")
+
+
 if __name__ == '__main__':
     main()
+
+    close()
