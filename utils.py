@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import threading
+import time
 import tkinter as tk
 import zipfile
 from base64 import b64encode
@@ -235,24 +236,34 @@ def die(message):
     sys.exit(1)
 
 
-def run_command(command, stdin=None, shell=False):
-    try:
-        logging.debug(f"Attempting to execute {command}")
-        result = subprocess.run(
-            command,
-            stdin=stdin,
-            check=True,
-            text=True,
-            shell=shell,
-            capture_output=True
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error occurred while executing {command}: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"An unexpected error occurred when running {command}: {e}")
-        return None
+def run_command(command, retries=1, delay=0, stdin=None, shell=False):
+    if retries < 1:
+        retries = 1
+
+    for attempt in range(retries):
+        try:
+            logging.debug(f"Attempting to execute {command}")
+            result = subprocess.run(
+                command,
+                stdin=stdin,
+                check=True,
+                text=True,
+                shell=shell,
+                capture_output=True
+            )
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error occurred while executing {command}: {e}")
+            if "lock" in str(e):
+                logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")
+                time.sleep(delay)
+            else:
+                raise e
+        except Exception as e:
+            logging.error(f"An unexpected error occurred when running {command}: {e}")
+            return None
+
+    logging.error(f"Failed to execute after {retries} attempts: '{command}'")
 
 
 def reboot():
@@ -534,7 +545,7 @@ def download_packages(packages, elements, app=None):
         command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"
         logging.debug(f"download_packages cmd: {command}")
         command_args = shlex.split(command)
-        result = run_command(command_args)
+        result = run_command(command_args, retries=5, delay=15)
 
         for index, package in enumerate(packages):
             status = "Downloaded" if result.returncode == 0 else "Failed"
@@ -555,7 +566,7 @@ def install_packages(packages, elements, app=None):
         for index, package in enumerate(packages):
             command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"
             logging.debug(f"install_packages cmd: {command}")
-            result = run_command(command)
+            result = run_command(command, retries=5, delay=15)
 
             if elements is not None:
                 elements[index] = (
@@ -579,7 +590,7 @@ def remove_packages(packages, elements, app=None):
         for index, package in enumerate(packages):
             command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"
             logging.debug(f"remove_packages cmd: {command}")
-            result = run_command(command)
+            result = run_command(command, retries=5, delay=15)
 
             if elements is not None:
                 elements[index] = (
