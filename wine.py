@@ -265,6 +265,13 @@ def winetricks_install(*args):
     heavy_wineserver_wait()
 
 
+def installD3DCompiler():
+    cmd = ['d3dcompiler_47']
+    if config.WINETRICKS_UNATTENDED is None:
+        cmd.insert(0, '-q')
+    winetricks_install(*cmd)
+
+
 def installFonts():
     msg.logos_msg("Configuring fonts…")
     fonts = ['corefonts', 'tahoma']
@@ -278,11 +285,17 @@ def installFonts():
     winetricks_install('-q', 'settings', 'fontsmooth=rgb')
 
 
-def installD3DCompiler():
-    cmd = ['d3dcompiler_47']
-    if config.WINETRICKS_UNATTENDED is None:
-        cmd.insert(0, '-q')
-    winetricks_install(*cmd)
+def installICUDataFiles():
+    releases_url = "https://api.github.com/repos/FaithLife-Community/icu/releases"  # noqa: E501
+    json_data = utils.get_latest_release_data(releases_url)
+    icu_url = utils.get_latest_release_url(json_data)
+    icu_tag_name = utils.get_latest_release_version_tag_name(json_data)  # noqa: E501
+    if icu_url is None:
+        logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
+        return
+    icu_filename = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
+    utils.logos_reuse_download(icu_url, "icu.tar.gz", config.MYDOWNLOADS)
+    utils.untar_file(f"{config.MYDOWNLOADS}/icu.tar.gz", f"{config.APPDIR}/wine64_bottle/drive_c")
 
 
 def get_registry_value(reg_path, name):

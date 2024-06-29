@@ -535,7 +535,7 @@ def get_logos_releases(app=None):
         # if len(releases) == 5:
         #    break
 
-    filtered_releases = utils.filter_versions(releases, 30, 1)
+    filtered_releases = utils.filter_versions(releases, 36, 1)
     logging.debug(f"Available releases: {', '.join(releases)}")
     logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
@@ -546,6 +546,7 @@ def get_logos_releases(app=None):
         elif config.DIALOG == 'curses':
             app.releases_e.set()
     return filtered_releases
+
 
 def update_lli_binary(app=None):
     lli_file_path = os.path.realpath(sys.argv[0])
