@@ -11,6 +11,7 @@ import signal
 import stat
 import subprocess
 import sys
+import tarfile
 import threading
 import tkinter as tk
 from packaging import version
@@ -848,3 +849,16 @@ def str_array_to_string(text, delimeter="\n"):
         return processed_text
     except TypeError:
         return text
+
+
+def untar_file(file_path, output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    try:
+        with tarfile.open(file_path, 'r:gz') as tar:
+            tar.extractall(path=output_dir)
+            logging.debug(f"Successfully extracted '{file_path}' to '{output_dir}'")
+    except tarfile.TarError as e:
+        logging.error(f"Error extracting '{file_path}': {e}")
+
