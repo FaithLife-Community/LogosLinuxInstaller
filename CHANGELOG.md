@@ -1,5 +1,7 @@
 # Changelog
 
+- 4.0.0-alpha.9
+	- Fix #22. [T. Bleher, J. Goodman, N. Marti, T. Wright]
 - 4.0.0-alpha.8
 	- Fix #1 [T. H. Wright, N. Marti, T. Bleher, C. Reeder]
 	- Fix #102 [T. H. Wright]
