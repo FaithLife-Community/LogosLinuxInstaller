@@ -13,6 +13,7 @@ import signal
 import stat
 import subprocess
 import sys
+import tarfile
 import threading
 import tkinter as tk
 import zipfile
@@ -630,16 +631,16 @@ def delete_symlink(symlink_path):
 
 def preinstall_dependencies_ubuntu():
     try:
-        run_command(["sudo", "dpkg", "--add-architecture", "i386"])
-        run_command(["sudo", "mkdir", "-pm755", "/etc/apt/keyrings"])
+        run_command([config.SUPERUSER_COMMAND, "dpkg", "--add-architecture", "i386"])
+        run_command([config.SUPERUSER_COMMAND, "mkdir", "-pm755", "/etc/apt/keyrings"])
         run_command(
-            ["sudo", "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", "https://dl.winehq.org/wine-builds/winehq.key"])
+            [config.SUPERUSER_COMMAND, "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", "https://dl.winehq.org/wine-builds/winehq.key"])
         lsboutput = run_command(["lsb_release", "-a"])
         codename = [line for line in lsboutput.split('\n') if "Description" in line][0].split()[1].strip()
-        run_command(["sudo", "wget", "-NP", "/etc/apt/sources.list.d/",
+        run_command([config.SUPERUSER_COMMAND, "wget", "-NP", "/etc/apt/sources.list.d/",
                      f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"])
-        run_command(["sudo", "apt", "update"])
-        run_command(["sudo", "apt", "install", "--install-recommends", "winehq-staging"])
+        run_command([config.SUPERUSER_COMMAND, "apt", "update"])
+        run_command([config.SUPERUSER_COMMAND, "apt", "install", "--install-recommends", "winehq-staging"])
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         print(f"Command output: {e.output}")
@@ -862,7 +863,7 @@ def get_logos_releases(app=None):
         # if len(releases) == 5:
         #    break
 
-    filtered_releases = filter_versions(releases, 30, 1)
+    filtered_releases = filter_versions(releases, 36, 1)
     logging.debug(f"Available releases: {', '.join(releases)}")
     logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
@@ -1708,3 +1709,15 @@ def get_downloaded_file_path(filename):
             logging.info(f"'{filename}' exists in {str(d)}.")
             return str(file_path)
     logging.debug(f"File not found: {filename}")
+
+
+def untar_file(file_path, output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    try:
+        with tarfile.open(file_path, 'r:gz') as tar:
+            tar.extractall(path=output_dir)
+            logging.debug(f"Successfully extracted '{file_path}' to '{output_dir}'")
+    except tarfile.TarError as e:
+        logging.error(f"Error extracting '{file_path}': {e}")
