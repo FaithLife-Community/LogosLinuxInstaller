@@ -861,4 +861,3 @@ def untar_file(file_path, output_dir):
             logging.debug(f"Successfully extracted '{file_path}' to '{output_dir}'")
     except tarfile.TarError as e:
         logging.error(f"Error extracting '{file_path}': {e}")
-
