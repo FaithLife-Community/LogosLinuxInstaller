@@ -1,5 +1,9 @@
 # Changelog
 
+- 4.0.0-alpha.13
+	- Fix #22. [T. Bleher, J. Goodman, N. Marti, S. Freilichtbuenhe, M. Malevic, T. Wright]
+	- Fix package installer and TUI app [T. H. Wright]
+	- Introduce network.py and system.py
 - 4.0.0-alpha.12
 	- Fix TUI app's installer [T. H. Wright]
 - 4.0.0-alpha.11
