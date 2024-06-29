@@ -455,9 +455,21 @@ def ensure_wineprefix_init(app=None):
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 
-def ensure_winetricks_applied(app=None):
+def ensure_icu_data_files(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_wineprefix_init(app=app)
+    config.INSTALL_STEP += 1
+    status = "Ensuring ICU data files installed…"
+    update_install_feedback(status, app=app)
+    logging.debug('- ICU data files')
+    # TODO: Need a test to skip
+    wine.installICUDataFiles()
+    logging.debug('+ ICU data files')
+
+
+def ensure_winetricks_applied(app=None):
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_icu_data_files(app=app)
     config.INSTALL_STEP += 1
     status = "Ensuring winetricks & other settings are applied…"
     update_install_feedback(status, app=app)
