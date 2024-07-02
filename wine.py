@@ -293,7 +293,7 @@ def installICUDataFiles():
     if icu_url is None:
         logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
         return
-    icu_filename = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
+    icu_filename = os.path.basename(icu_url)
     utils.logos_reuse_download(icu_url, "icu.tar.gz", config.MYDOWNLOADS)
     utils.untar_file(f"{config.MYDOWNLOADS}/icu.tar.gz", f"{config.APPDIR}/wine64_bottle/drive_c")
 
