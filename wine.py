@@ -376,13 +376,22 @@ def get_wine_branch(binary):
             stdout=subprocess.PIPE,
             encoding='UTF8'
         )
+        branch = None
         while p.returncode is None:
             for line in p.stdout:
                 if line.startswith('/tmp'):
                     tmp_dir = Path(line.rstrip())
-                    for f in tmp_dir.glob('**/lib64/**/mscoree.dll'):
-                        branch = get_mscoree_winebranch(f)
-                        break
+                    for f in tmp_dir.glob('org.winehq.wine.desktop'):
+                        if not branch:
+                            for dline in f.read_text().splitlines():
+                                try:
+                                    k, v = dline.split('=')
+                                except ValueError:  # not a key=value line
+                                    continue
+                                if k == 'X-AppImage-Version':
+                                    branch = v.split('_')[0]
+                                    logging.debug(f"{branch=}")
+                                    break
                 p.send_signal(signal.SIGINT)
             p.poll()
         return branch
