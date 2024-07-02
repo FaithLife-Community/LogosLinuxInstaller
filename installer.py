@@ -463,7 +463,7 @@ def ensure_icu_data_files(app=None):
     update_install_feedback(status, app=app)
     logging.debug('- ICU data files')
     # TODO: Need a test to skip
-    wine.installICUDataFiles()
+    wine.installICUDataFiles(app=app)
     logging.debug('+ ICU data files')
 
 
