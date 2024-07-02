@@ -254,6 +254,13 @@ def winetricks_install(*args):
     heavy_wineserver_wait()
 
 
+def installD3DCompiler():
+    cmd = ['d3dcompiler_47']
+    if config.WINETRICKS_UNATTENDED is None:
+        cmd.insert(0, '-q')
+    winetricks_install(*cmd)
+
+
 def installFonts():
     msg.cli_msg("Configuring fonts...")
     fonts = ['corefonts', 'tahoma']
@@ -267,11 +274,23 @@ def installFonts():
     winetricks_install('-q', 'settings', 'fontsmooth=rgb')
 
 
-def installD3DCompiler():
-    cmd = ['d3dcompiler_47']
-    if config.WINETRICKS_UNATTENDED is None:
-        cmd.insert(0, '-q')
-    winetricks_install(*cmd)
+def installICUDataFiles(app=None):
+    releases_url = "https://api.github.com/repos/FaithLife-Community/icu/releases"  # noqa: E501
+    json_data = utils.get_latest_release_data(releases_url)
+    icu_url = utils.get_latest_release_url(json_data)
+    # icu_tag_name = utils.get_latest_release_version_tag_name(json_data)
+    if icu_url is None:
+        logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
+        return
+    icu_filename = os.path.basename(icu_url)
+    utils.logos_reuse_download(
+        icu_url,
+        icu_filename,
+        config.MYDOWNLOADS,
+        app=app
+    )
+    drive_c = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c"
+    utils.untar_file(f"{config.MYDOWNLOADS}/icu.tar.gz", drive_c)
 
 
 def get_registry_value(reg_path, name):
@@ -362,13 +381,22 @@ def get_wine_branch(binary):
             stdout=subprocess.PIPE,
             encoding='UTF8'
         )
+        branch = None
         while p.returncode is None:
             for line in p.stdout:
                 if line.startswith('/tmp'):
                     tmp_dir = Path(line.rstrip())
-                    for f in tmp_dir.glob('**/lib64/**/mscoree.dll'):
-                        branch = get_mscoree_winebranch(f)
-                        break
+                    for f in tmp_dir.glob('org.winehq.wine.desktop'):
+                        if not branch:
+                            for dline in f.read_text().splitlines():
+                                try:
+                                    k, v = dline.split('=')
+                                except ValueError:  # not a key=value line
+                                    continue
+                                if k == 'X-AppImage-Version':
+                                    branch = v.split('_')[0]
+                                    logging.debug(f"{branch=}")
+                                    break
                 p.send_signal(signal.SIGINT)
             p.poll()
         return branch
