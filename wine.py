@@ -284,7 +284,8 @@ def installICUDataFiles():
         return
     icu_filename = os.path.basename(icu_url)
     utils.logos_reuse_download(icu_url, "icu.tar.gz", config.MYDOWNLOADS)
-    utils.untar_file(f"{config.MYDOWNLOADS}/icu.tar.gz", f"{config.APPDIR}/wine64_bottle/drive_c")
+    drive_c = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c"
+    utils.untar_file(f"{config.MYDOWNLOADS}/icu.tar.gz", drive_c)
 
 
 def get_registry_value(reg_path, name):
