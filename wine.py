@@ -313,6 +313,7 @@ def installICUDataFiles(app=None):
     )
     drive_c = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c"
     utils.untar_file(f"{config.MYDOWNLOADS}/icu-win.tar.gz", drive_c)
+    shutil.copytree(f"{drive_c}/icu-win/windows", f"{drive_c}/windows", dirs_exist_ok = True)
 
     # Ensure the target directory exists
     icu_win_dir = f"{drive_c}/icu-win/windows"
