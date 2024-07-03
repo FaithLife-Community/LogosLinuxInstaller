@@ -290,7 +290,7 @@ def installICUDataFiles(app=None):
         app=app
     )
     drive_c = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c"
-    utils.untar_file(f"{config.MYDOWNLOADS}/icu.tar.gz", drive_c)
+    utils.untar_file(f"{config.MYDOWNLOADS}/icu-win.tar.gz", drive_c)
 
 
 def get_registry_value(reg_path, name):
