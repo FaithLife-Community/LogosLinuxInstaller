@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+import platform
 import psutil
 import queue
 import re
@@ -11,6 +12,7 @@ import requests
 import shutil
 import signal
 import stat
+import struct
 import subprocess
 import sys
 import threading
@@ -298,6 +300,30 @@ def get_dialog():
     # Set config.GUI.
     if config.DIALOG == 'tk':
         config.GUI = True
+
+
+def get_architecture():
+    machine = platform.machine().lower()
+    bits = struct.calcsize("P") * 8
+
+    if "x86_64" in machine or "amd64" in machine:
+        architecture = "x86_64"
+    elif "i386" in machine or "i686" in machine:
+        architecture = "x86_32"
+    elif "arm" in machine or "aarch64" in machine:
+        if bits == 64:
+            architecture = "ARM64"
+        else:
+            architecture = "ARM"
+    elif "riscv" in machine or "riscv64" in machine:
+        if bits == 64:
+            architecture = "RISC-V 64"
+        else:
+            architecture = "RISC-V 32"
+    else:
+        architecture = "Unknown"
+
+    return architecture, bits
 
 
 def get_os():

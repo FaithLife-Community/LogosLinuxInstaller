@@ -47,7 +47,9 @@ for key, default in extended_config.items():
 # Set other run-time variables not set in the env.
 ACTION = 'app'
 APPIMAGE_FILE_PATH = None
+architecture = None
 BADPACKAGES = None
+bits = None
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")  # noqa: E501
 GUI = None
 INSTALL_STEP = 0
