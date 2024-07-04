@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+import platform
 import psutil
 import queue
 import re
@@ -11,6 +12,7 @@ import requests
 import shutil
 import signal
 import stat
+import struct
 import subprocess
 import sys
 import threading
@@ -300,6 +302,40 @@ def get_dialog():
         config.GUI = True
 
 
+def get_architecture():
+    machine = platform.machine().lower()
+    bits = struct.calcsize("P") * 8
+
+    if "x86_64" in machine or "amd64" in machine:
+        architecture = "x86_64"
+    elif "i386" in machine or "i686" in machine:
+        architecture = "x86_32"
+    elif "arm" in machine or "aarch64" in machine:
+        if bits == 64:
+            architecture = "ARM64"
+        else:
+            architecture = "ARM32"
+    elif "riscv" in machine or "riscv64" in machine:
+        if bits == 64:
+            architecture = "RISC-V 64"
+        else:
+            architecture = "RISC-V 32"
+    else:
+        architecture = "Unknown"
+
+    return architecture, bits
+
+
+def install_elf_interpreter():
+    if "x86_64" not in config.architecture:
+        if config.ELFPACKAGES is not None:
+            install_packages(config.ELFPACKAGES)
+        else:
+            logging.critical(f"ELFPACKAGES is not set.")
+    else:
+        logging.critical(f"ELF interpreter is not needed.")
+
+
 def get_os():
     # TODO: Remove if we can verify these are no longer needed commented code.
 
@@ -388,6 +424,7 @@ def get_package_manager():
         config.PACKAGES = "coreutils patch lsof wget findutils sed grep gawk winbind cabextract x11-apps binutils fuse3"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
+        config.ELFPACKAGES = ""
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
@@ -395,6 +432,7 @@ def get_package_manager():
         config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
+        config.ELFPACKAGES = ""
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
@@ -402,6 +440,7 @@ def get_package_manager():
         config.PACKAGES = "wget sed grep gawk cabextract samba"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
+        config.ELFPACKAGES = ""
     elif shutil.which('pacman') is not None:  # arch, steamOS
         config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = r"pacman -R --no-confirm"
@@ -412,6 +451,7 @@ def get_package_manager():
             config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
+        config.ELFPACKAGES = ""
     # Add more conditions for other package managers as needed
 
     # Add logging output.

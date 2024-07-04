@@ -305,6 +305,10 @@ def main():
         if config.DIALOG == 'tk':
             config.GUI = True
 
+    # Set Architecture
+    config.architecture, config.bits = utils.get_architecture()
+    logging.debug(f"Current Architecture: {config.architecture}, {config.bits}bit.")
+
     # Log persistent config.
     utils.log_current_persistent_config()
 

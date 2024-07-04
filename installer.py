@@ -307,9 +307,42 @@ def ensure_install_dirs(app=None):
         send_gui_task(app, 'INSTALLING')
 
 
-def ensure_sys_deps(app=None):
+
+def ensure_architecture(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_install_dirs(app=app)
+    config.INSTALL_STEP += 1
+    update_install_feedback("Ensure system architecture…", app=app)
+    logging.debug('- config.architecture')
+    logging.debug('- config.bits')
+
+    if "x86_64" in config.architecture:
+        pass
+    elif "ARM64" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        utils.install_elf_interpreter()
+    elif "RISC-V 64" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        utils.install_elf_interpreter()
+    elif "x86_32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        utils.install_elf_interpreter()
+    elif "ARM32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        utils.install_elf_interpreter()
+    elif "RISC-V 32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        utils.install_elf_interpreter()
+    else:
+        logging.critical("System archictecture unknown.")
+
+    logging.debug(f"> {config.architecture=}")
+    logging.debug(f"> {config.bits=}")
+
+
+def ensure_sys_deps(app=None):
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_architecture(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Ensuring system dependencies are met…", app=app)
 
