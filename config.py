@@ -6,7 +6,11 @@ import tempfile
 
 # Define and set variables that are required in the config file.
 core_config_keys = [
+<<<<<<< HEAD
     "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
+=======
+    "current_logos_version", "FLPRODUCT", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
+>>>>>>> 1a0c240 (Add utils.get_logos_version())
     "INSTALLDIR", "WINETRICKSBIN", "WINEBIN_CODE", "WINE_EXE",
     "WINECMD_ENCODING", "LOGS", "BACKUPDIR", "LAST_UPDATED",
     "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION"
@@ -58,7 +62,7 @@ INSTALL_STEPS_COUNT = 0
 L9PACKAGES = None
 LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
-LLI_CURRENT_VERSION = "4.0.0-alpha.9"
+LLI_CURRENT_VERSION = "4.0.0-alpha.10"
 LLI_LATEST_VERSION = None
 LLI_TITLE = "Logos Linux Installer"
 LOG_LEVEL = logging.WARNING
