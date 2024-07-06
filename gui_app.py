@@ -194,6 +194,7 @@ class InstallerWindow():
         self.config_thread.start()
 
     def get_winetricks_options(self):
+        config.WINETRICKSBIN = None  # override config file b/c "Download" accounts for that  # noqa: E501
         self.gui.tricks_dropdown['values'] = utils.get_winetricks_options()
         self.gui.tricksvar.set(self.gui.tricks_dropdown['values'][0])
 
