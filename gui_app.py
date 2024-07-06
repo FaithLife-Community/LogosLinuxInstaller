@@ -183,6 +183,9 @@ class InstallerWindow():
         self.start_ensure_config()
 
     def start_ensure_config(self):
+        # Ensure progress counter is reset.
+        config.INSTALL_STEP = 1
+        config.INSTALL_STEPS_COUNT = 0
         self.config_thread = Thread(
             target=installer.ensure_installation_config,
             kwargs={'app': self},
@@ -230,7 +233,6 @@ class InstallerWindow():
                 self.gui.release_check_button,
                 self.gui.wine_dropdown,
                 self.gui.wine_check_button,
-                # self.gui.tricks_dropdown,
                 self.gui.okay_button,
             ]
             self.set_input_widgets_state('disabled', widgets=widgets)
@@ -258,16 +260,7 @@ class InstallerWindow():
                 self.gui.okay_button,
             ]
             self.set_input_widgets_state('disabled', widgets=widgets)
-            # if not self.gui.releasevar.get():
-            if not self.gui.release_dropdown['values']:
-                # No previous choice.
-                self.start_releases_check()
-            else:
-                # Check if previous choice was for other TARGETVERSION.
-                if config.TARGETVERSION == '9' and not self.gui.release_dropdown['values'][0].startswith('9'):  # noqa: E501
-                    self.start_releases_check()
-                if config.TARGETVERSION == '10' and self.gui.release_dropdown['values'][0].startswith('9'):  # noqa: E501
-                    self.start_releases_check()
+            self.start_releases_check()
         elif task == 'WINE_EXE':
             # Disable all input widgets after Wine Exe.
             widgets = [
@@ -294,15 +287,30 @@ class InstallerWindow():
             utils.write_config(config.CONFIG_FILE)
 
     def set_product(self, evt=None):
-        if self.gui.productvar.get()[0] == 'C':  # ignore default text
+        if self.gui.productvar.get().startswith('C'):  # ignore default text
             return
         self.gui.flproduct = self.gui.productvar.get()
         self.gui.product_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
+            logging.debug(f"User changed FLPRODUCT to '{self.gui.flproduct}'")
             config.FLPRODUCT = None
+            config.FLPRODUCTi = None
+            config.VERBUM_PATH = None
+
+            config.TARGETVERSION = None
+            self.gui.versionvar.set('')
+
+            config.TARGET_RELEASE_VERSION = None
+            self.gui.releasevar.set('')
+
             config.INSTALLDIR = None
+            config.APPDIR_BINDIR = None
+
             config.WINE_EXE = None
-            config.WINETRICKSBIN = None
+            self.gui.winevar.set('')
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.product_q.put(self.gui.flproduct)
@@ -311,13 +319,20 @@ class InstallerWindow():
         self.gui.targetversion = self.gui.versionvar.get()
         self.gui.version_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
-            logging.debug(f"Change TARGETVERSION to {self.gui.targetversion}")
+            logging.debug(f"User changed TARGETVERSION to '{self.gui.targetversion}'")  # noqa: E501
             config.TARGETVERSION = None
             self.gui.releasevar.set('')
             config.TARGET_RELEASE_VERSION = None
+            self.gui.releasevar.set('')
+
             config.INSTALLDIR = None
+            config.APPDIR_BINDIR = None
+
             config.WINE_EXE = None
-            config.WINETRICKSBIN = None
+            self.gui.winevar.set('')
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.version_q.put(self.gui.targetversion)
@@ -352,6 +367,16 @@ class InstallerWindow():
         self.gui.release_dropdown.selection_clear()
         if evt:  # manual override
             config.TARGET_RELEASE_VERSION = None
+            logging.debug(f"User changed TARGET_RELEASE_VERSION to '{self.gui.logos_release_version}'")  # noqa: E501
+
+            config.INSTALLDIR = None
+            config.APPDIR_BINDIR = None
+
+            config.WINE_EXE = None
+            self.gui.winevar.set('')
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.release_q.put(self.gui.logos_release_version)
@@ -410,7 +435,11 @@ class InstallerWindow():
         self.gui.wine_exe = self.gui.winevar.get()
         self.gui.wine_dropdown.selection_clear()
         if evt:  # manual override
+            logging.debug(f"User changed WINE_EXE to '{self.gui.wine_exe}'")
             config.WINE_EXE = None
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.wine_q.put(self.gui.wine_exe)
@@ -492,7 +521,9 @@ class InstallerWindow():
         if evt and self.wines_q.empty():
             return
         self.gui.wine_dropdown['values'] = self.wines_q.get()
-        self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
+        if not self.gui.winevar.get():
+            # If no value selected, default to 1st item in list.
+            self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
         self.set_wine()
         self.stop_indeterminate_progress()
         self.gui.wine_check_button.state(['!disabled'])
