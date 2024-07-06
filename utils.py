@@ -417,8 +417,6 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "apt install --download-only -y"
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
-        # IDEA: Switch to Python APT library?
-        # See https://github.com/FaithLife-Community/LogosLinuxInstaller/pull/33#discussion_r1443623996  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l"
         config.QUERY_PREFIX = '.i  '
         if distro.id() == "ubuntu" and distro.version() < "24.04":
@@ -791,16 +789,16 @@ def delete_symlink(symlink_path):
 
 def preinstall_dependencies_ubuntu():
     try:
-        run_command(["sudo", "dpkg", "--add-architecture", "i386"])
-        run_command(["sudo", "mkdir", "-pm755", "/etc/apt/keyrings"])
+        run_command([config.SUPERUSER_COMMAND, "dpkg", "--add-architecture", "i386"])
+        run_command([config.SUPERUSER_COMMAND, "mkdir", "-pm755", "/etc/apt/keyrings"])
         run_command(
-            ["sudo", "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", "https://dl.winehq.org/wine-builds/winehq.key"])
+            [config.SUPERUSER_COMMAND, "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", "https://dl.winehq.org/wine-builds/winehq.key"])
         lsboutput = run_command(["lsb_release", "-a"])
         codename = [line for line in lsboutput.split('\n') if "Description" in line][0].split()[1].strip()
-        run_command(["sudo", "wget", "-NP", "/etc/apt/sources.list.d/",
+        run_command([config.SUPERUSER_COMMAND, "wget", "-NP", "/etc/apt/sources.list.d/",
                      f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"])
-        run_command(["sudo", "apt", "update"])
-        run_command(["sudo", "apt", "install", "--install-recommends", "winehq-staging"])
+        run_command([config.SUPERUSER_COMMAND, "apt", "update"])
+        run_command([config.SUPERUSER_COMMAND, "apt", "install", "--install-recommends", "winehq-staging"])
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         print(f"Command output: {e.output}")
