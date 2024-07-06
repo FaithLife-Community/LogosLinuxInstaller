@@ -112,7 +112,10 @@ def check_wine_version_and_branch(TESTBINARY):
     # Does not check for Staging. Will not implement: expecting merging of
     # commits in time.
     if config.TARGETVERSION == "10":
-        WINE_MINIMUM = [7, 18]
+        if utils.check_logos_release_version(config.current_logos_version, 30, 1):
+            WINE_MINIMUM = [7, 18]
+        else:
+            WINE_MINIMUM = [9, 10]
     elif config.TARGETVERSION == "9":
         WINE_MINIMUM = [7, 0]
     else:

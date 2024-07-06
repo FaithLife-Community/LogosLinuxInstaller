@@ -1,5 +1,6 @@
 import atexit
 import distro
+import glob
 import hashlib
 import json
 import logging
@@ -986,6 +987,26 @@ def file_exists(file_path):
         return False
 
 
+def get_logos_version():
+    path_regex = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"
+    file_paths = glob.glob(path_regex)
+    if file_paths:
+        logos_version_file = file_paths[0]
+        with open(logos_version_file, 'r') as json_file:
+            json_data = json.load(json_file)
+
+        dependencies = json_data["targets"]['.NETCoreApp,Version=v6.0/win10-x64']['Logos/1.0.0']['dependencies']
+        logos_version_number = dependencies.get("LogosUpdater.Reference")
+
+        if logos_version_number is not None:
+            return logos_version_number
+        else:
+            logging.debug("Couldn't determine installed Logos version.")
+            return None
+    else:
+        logging.debug(f"Logos.deps.json not found.")
+
+
 def check_logos_release_version(version, threshold, check_version_part):
     version_parts = list(map(int, version.split('.')))
     return version_parts[check_version_part - 1] < threshold
@@ -1515,6 +1536,11 @@ def check_for_updates():
     # We limit the number of times set_recommended_appimage_config is run in
     # order to avoid GitHub API limits. This sets the check to once every 12
     # hours.
+
+    config.current_logos_version = get_logos_version()
+    write_config(config.CONFIG_FILE)
+
+    # TODO: Check for New Logos Versions. See #116.
 
     now = datetime.now().replace(microsecond=0)
     if config.CHECK_UPDATES:
