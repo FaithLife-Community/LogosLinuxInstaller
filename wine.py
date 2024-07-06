@@ -140,7 +140,7 @@ def check_wine_version_and_branch(TESTBINARY):
             return False, "Can't use Stable release"
         elif wine_release[0] < 7:
             return False, "Version is < 7.0"
-        elif wine_release[0] < 8:
+        elif wine_release[0] == 7:
             if (
                 "Proton" in TESTBINARY
                 or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False)  # noqa: E501
@@ -152,12 +152,17 @@ def check_wine_version_and_branch(TESTBINARY):
             elif wine_release[1] < WINE_MINIMUM[1]:
                 reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(WINE_MINIMUM)}"  # noqa: E501
                 return False, reason
-        elif wine_release[0] < 9:
+        elif wine_release[0] == 8:
             if wine_release[1] < 1:
                 return False, "Version is 8.0"
             elif wine_release[1] < 16:
                 if wine_release[2] != 'staging':
                     return False, "Version < 8.16 needs to be Staging release"
+        elif wine_release[0] == 9:
+            if wine_release[1] < 10:
+                return False, "Version < 9.10"
+        elif wine_release[0] > 9:
+            pass
     else:
         return False, error_message
 
