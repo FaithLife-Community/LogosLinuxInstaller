@@ -270,6 +270,12 @@ class TUI():
                 control.set_winetricks()
             elif choice == "Run Winetricks":
                 wine.run_winetricks()
+            elif choice == "Install d3dcompiler":
+                wine.installD3DCompiler()
+            elif choice == "Install Fonts":
+                wine.installFonts()
+            elif choice == "Install ICU":
+                wine.installICUDataFiles()
             elif choice.endswith("Logging"):
                 wine.switch_logging()
             else:
@@ -493,7 +499,10 @@ class TUI():
         labels_support = [
             "Install Dependencies",
             "Download or Update Winetricks",
-            "Run Winetricks"
+            "Run Winetricks",
+            "Install d3dcompiler",
+            "Install Fonts",
+            "Install ICU"
         ]
         labels.extend(labels_support)
 
