@@ -1,8 +1,11 @@
 # Changelog
 
+- 4.0.0-alpha.10
+	- Fix #121 [T. H. Wright]
+	- Prep for Logos 30+ support [N. Marti, T. H. Wright]
 - 4.0.0-alpha.9
 	- Fix #42 [T. H. Wright]
-	- Fix #76, #104 [T. H. Wright]
+	- Fix #76, #104, #111, #115 [T. H. Wright]
 - 4.0.0-alpha.8
 	- Fix #1 [T. H. Wright, N. Marti, T. Bleher, C. Reeder]
 	- Fix #102 [T. H. Wright]
