@@ -149,6 +149,18 @@ def get_parser():
         help='start Winetricks window',
     )
     cmd.add_argument(
+        '--install-d3d-compiler', action='store_true',
+        help='Install d3dcompiler through Winetricks',
+    )
+    cmd.add_argument(
+        '--install-fonts', action='store_true',
+        help='Install fonts through Winetricks',
+    )
+    cmd.add_argument(
+        '--install-icu', action='store_true',
+        help='Install ICU data files for Logos 30+',
+    )
+    cmd.add_argument(
         '--toggle-app-logging', action='store_true',
         help='enable/disable app logs',
     )
@@ -228,6 +240,9 @@ def parse_args(args, parser):
         'set_appimage': utils.set_appimage_symlink,
         'get_winetricks': control.set_winetricks,
         'run_winetricks': wine.run_winetricks,
+        'install_d3d_compiler': wine.installD3DCompiler,
+        'install_fonts': wine.installFonts,
+        'install_icu': wine.installICUDataFiles,
         'toggle_app_logging': wine.switch_logging,
         'create_shortcuts': installer.ensure_launcher_shortcuts,
         'remove_install_dir': control.remove_install_dir,
