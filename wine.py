@@ -67,7 +67,6 @@ def heavy_wineserver_wait():
     utils.wait_process_using_dir(config.WINEPREFIX)
     wait_on([f"{config.WINESERVER_EXE}", "-w"])
 
-
 def get_wine_release(binary):
     cmd = [binary, "--version"]
     try:
@@ -425,8 +424,21 @@ def get_wine_env():
 
 
 def run_logos():
-    run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+    logos_release = utils.convert_logos_release(config.current_logos_version)
+    wine_release = get_wine_release(config.WINE_EXE)
+    
+    #TODO: Find a way to incorporate check_wine_version_and_branch()
+    if logos_release[0] < 30 and logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):
+        txt = "Can't run Logos 10+ with Wine below 7.18."
+        logging.critical(txt)
+        msg.status(txt)
+    if logos_release[0] > 29 and wine_release[0] < 9 and wine_release[1] < 10:
+        txt = "Can't run Logos 30+ with Wine below 9.10."
+        logging.critical(txt)
+        msg.status(txt)
+    else:
+        run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
+        run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 
 def run_indexing():

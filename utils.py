@@ -987,7 +987,7 @@ def file_exists(file_path):
         return False
 
 
-def get_logos_version():
+def get_current_logos_version():
     path_regex = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"
     file_paths = glob.glob(path_regex)
     if file_paths:
@@ -1005,6 +1005,22 @@ def get_logos_version():
             return None
     else:
         logging.debug(f"Logos.deps.json not found.")
+
+
+def convert_logos_release(logos_release):
+    if logos_release is not None:
+        ver_major = logos_release.split('.')[0]
+        ver_minor = logos_release.split('.')[1]
+        release = logos_release.split('.')[2]
+        point = logos_release.split('.')[3]
+    else:
+        ver_major = 0
+        ver_minor = 0
+        release = 0
+        point = 0
+
+    logos_release_arr = [int(ver_major), int(ver_minor), int(release), int(point)]
+    return logos_release_arr
 
 
 def check_logos_release_version(version, threshold, check_version_part):
@@ -1537,7 +1553,7 @@ def check_for_updates():
     # order to avoid GitHub API limits. This sets the check to once every 12
     # hours.
 
-    config.current_logos_version = get_logos_version()
+    config.current_logos_version = get_current_logos_version()
     write_config(config.CONFIG_FILE)
 
     # TODO: Check for New Logos Versions. See #116.
