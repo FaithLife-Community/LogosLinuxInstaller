@@ -48,6 +48,7 @@ def ensure_version_choice(app=None):
             if config.DIALOG == 'curses':
                 app.version_e.wait()
             config.TARGETVERSION = app.version_q.get()
+
     logging.debug(f"> {config.TARGETVERSION=}")
 
 
@@ -56,16 +57,17 @@ def ensure_release_choice(app=None):
     ensure_version_choice(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Choose product release…", app=app)
-    logging.debug('- config.LOGOS_RELEASE_VERSION')
+    logging.debug('- config.TARGET_RELEASE_VERSION')
 
-    if not config.LOGOS_RELEASE_VERSION:
+    if not config.TARGET_RELEASE_VERSION:
         if app:
-            utils.send_task(app, 'LOGOS_RELEASE_VERSION')
+            utils.send_task(app, 'TARGET_RELEASE_VERSION')
             if config.DIALOG == 'curses':
                 app.release_e.wait()
-            config.LOGOS_RELEASE_VERSION = app.release_q.get()
-            logging.debug(f"{config.LOGOS_RELEASE_VERSION=}")
-    logging.debug(f"> {config.LOGOS_RELEASE_VERSION=}")
+            config.TARGET_RELEASE_VERSION = app.release_q.get()
+            logging.debug(f"{config.TARGET_RELEASE_VERSION=}")
+
+    logging.debug(f"> {config.TARGET_RELEASE_VERSION=}")
 
 
 def ensure_install_dir_choice(app=None):
@@ -189,9 +191,9 @@ def ensure_installation_config(app=None):
     logos_icon_url = app_dir / 'img' / f"{config.FLPRODUCTi}-128-icon.png"
     config.LOGOS_ICON_URL = str(logos_icon_url)
     config.LOGOS_ICON_FILENAME = logos_icon_url.name
-    config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{config.TARGETVERSION}{config.VERBUM_PATH}Installer/{config.LOGOS_RELEASE_VERSION}/{config.FLPRODUCT}-x64.msi"  # noqa: E501
+    config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{config.TARGETVERSION}{config.VERBUM_PATH}Installer/{config.TARGET_RELEASE_VERSION}/{config.FLPRODUCT}-x64.msi"  # noqa: E501
 
-    config.LOGOS_VERSION = config.LOGOS_RELEASE_VERSION
+    config.LOGOS_VERSION = config.TARGET_RELEASE_VERSION
     config.LOGOS64_MSI = Path(config.LOGOS64_URL).name
 
     logging.debug(f"> {config.LOGOS_ICON_URL=}")

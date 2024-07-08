@@ -170,6 +170,9 @@ def write_config(config_file_path):
     config_data = {key: config.__dict__.get(key) for key in config.core_config_keys}  # noqa: E501
 
     try:
+        for key, value in config_data.items():
+            if isinstance(value, Path):
+                config_data[key] = str(value)
         with open(config_file_path, 'w') as config_file:
             json.dump(config_data, config_file, indent=4, sort_keys=True)
             config_file.write('\n')
@@ -521,7 +524,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
 
             if app is not None and config.DIALOG == "curses":
                 app.report_dependencies(
-                    f"Checking Packages (packages.index(p) + 1)/{len(packages)})",
+                    f"Checking Packages {(packages.index(p) + 1)}/{len(packages)}",
                     100 * (packages.index(p) + 1) // len(packages),
                     elements,
                     dialog=True)
@@ -1023,9 +1026,19 @@ def convert_logos_release(logos_release):
     return logos_release_arr
 
 
+def which_release():
+    if config.current_logos_release:
+        return config.current_logos_release
+    else:
+        return config.TARGET_RELEASE_VERSION
+
+
 def check_logos_release_version(version, threshold, check_version_part):
-    version_parts = list(map(int, version.split('.')))
-    return version_parts[check_version_part - 1] < threshold
+    if version is not None:
+        version_parts = list(map(int, version.split('.')))
+        return version_parts[check_version_part - 1] < threshold
+    else:
+        return False
 
 
 def filter_versions(versions, threshold, check_version_part):
@@ -1770,7 +1783,7 @@ def check_appimage(filestr):
         return False
 
 
-def find_appimage_files(app=None):
+def find_appimage_files(release_version, app=None):
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",
@@ -1787,7 +1800,7 @@ def find_appimage_files(app=None):
         appimage_paths = Path(d).rglob('wine*.appimage', case_sensitive=False)
         for p in appimage_paths:
             if p is not None and check_appimage(p):
-                output1, output2 = wine.check_wine_version_and_branch(p)
+                output1, output2 = wine.check_wine_version_and_branch(release_version, p)
                 if output1 is not None and output1:
                     appimages.append(str(p))
                 else:
@@ -1800,7 +1813,7 @@ def find_appimage_files(app=None):
     return appimages
 
 
-def find_wine_binary_files():
+def find_wine_binary_files(release_version):
     wine_binary_path_list = [
         "/usr/local/bin",
         os.path.expanduser("~") + "/bin",
@@ -1827,7 +1840,7 @@ def find_wine_binary_files():
             binaries.append(binary_path)
 
     for binary in binaries[:]:
-        output1, output2 = wine.check_wine_version_and_branch(binary)
+        output1, output2 = wine.check_wine_version_and_branch(release_version, binary)
         if output1 is not None and output1:
             continue
         else:

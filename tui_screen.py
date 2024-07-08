@@ -63,16 +63,19 @@ class DialogScreen(Screen):
 
 
 class ConsoleScreen(CursesScreen):
-    def __init__(self, app, screen_id, queue, event, title):
+    def __init__(self, app, screen_id, queue, event, title, subtitle, title_start_y):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_main_window()
         self.title = title
+        self.subtitle = subtitle
+        self.title_start_y = title_start_y
 
     def display(self):
         self.stdscr.erase()
-        tui_curses.title(self.app, self.title)
+        subtitle_start = tui_curses.title(self.app, self.title, self.title_start_y)
+        tui_curses.title(self.app, self.subtitle, subtitle_start + 1)
 
-        self.stdscr.addstr(2, 2, f"---Console---")
+        self.stdscr.addstr(3, 2, f"---Console---")
         recent_messages = logging.console_log[-6:]
         for i, message in enumerate(recent_messages, 1):
             message_lines = tui_curses.wrap_text(self.app, message)

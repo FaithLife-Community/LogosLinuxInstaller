@@ -25,7 +25,11 @@ console_message = ""
 class TUI():
     def __init__(self, stdscr):
         self.stdscr = stdscr
+        #if config.current_logos_version is not None:
         self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
+        self.subtitle = f"Logos Version: {config.current_logos_version}"
+        #else:
+        #    self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.console_message = "Starting TUI…"
         self.running = True
         self.choice = "Processing"
@@ -106,7 +110,7 @@ class TUI():
             curses.cbreak()
             self.stdscr.keypad(True)
 
-            self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title)
+            self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
             self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e,
                                                      "Main Menu", self.set_tui_menu_options(curses=True))
             #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu",
@@ -200,7 +204,7 @@ class TUI():
             utils.start_thread(self.get_product(config.use_python_dialog))
         elif task == 'TARGETVERSION':
             utils.start_thread(self.get_version(config.use_python_dialog))
-        elif task == 'LOGOS_RELEASE_VERSION':
+        elif task == 'TARGET_RELEASE_VERSION':
             utils.start_thread(self.get_release(config.use_python_dialog))
         elif task == 'INSTALLDIR':
             utils.start_thread(self.get_installdir(config.use_python_dialog))
@@ -259,7 +263,7 @@ class TUI():
                 utils.update_to_latest_recommended_appimage()
             elif choice == "Set AppImage":
                 # TODO: Allow specifying the AppImage File
-                appimages = utils.find_appimage_files()
+                appimages = utils.find_appimage_files(utils.which_release())
                 appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in
                                     appimages]  # noqa: E501
                 appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
@@ -309,8 +313,8 @@ class TUI():
                 self.version_e.set()
         elif screen_id == 4:
             if choice:
-                config.LOGOS_RELEASE_VERSION = choice
-                self.release_q.put(config.LOGOS_RELEASE_VERSION)
+                config.TARGET_RELEASE_VERSION = choice
+                self.release_q.put(config.TARGET_RELEASE_VERSION)
                 self.release_e.set()
         elif screen_id == 5:
             if choice:
@@ -381,7 +385,7 @@ class TUI():
             options = self.releases_q.get()
 
         if options is None:
-            msg.logos_error("Failed to fetch LOGOS_RELEASE_VERSION.")
+            msg.logos_error("Failed to fetch TARGET_RELEASE_VERSION.")
         options.append("Exit")
         enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
         self.menu_options = enumerated_options
@@ -398,10 +402,10 @@ class TUI():
     def get_wine(self, dialog):
         self.installdir_e.wait()
         self.stack_text(10, self.wine_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog)
-        question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.LOGOS_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
+        question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
         options = utils.get_wine_options(
-            utils.find_appimage_files(),
-            utils.find_wine_binary_files()
+            utils.find_appimage_files(config.TARGET_RELEASE_VERSION),
+            utils.find_wine_binary_files(config.TARGET_RELEASE_VERSION)
         )
         max_length = max(len(option) for option in options)
         max_length += len(str(len(options))) + 10
@@ -462,6 +466,8 @@ class TUI():
             if dialog:
                 self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog)
                 self.switch_screen(dialog)
+                # Without this delay, the reporting works too quickly and instead appears all at once.
+                time.sleep(0.1)
             else:
                 #TODO
                 pass
