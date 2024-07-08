@@ -26,7 +26,7 @@ class InstallerGui(Frame):
         # Initialize vars from ENV.
         self.flproduct = config.FLPRODUCT
         self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.LOGOS_RELEASE_VERSION
+        self.logos_release_version = config.TARGET_RELEASE_VERSION
         self.default_config_path = config.DEFAULT_CONFIG_PATH
         self.wine_exe = config.WINE_EXE
         self.winetricksbin = config.WINETRICKSBIN
@@ -153,7 +153,7 @@ class ControlGui(Frame):
         self.installdir = config.INSTALLDIR
         self.flproduct = config.FLPRODUCT
         self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.LOGOS_RELEASE_VERSION
+        self.logos_release_version = config.TARGET_RELEASE_VERSION
         self.logs = config.LOGS
         self.config_file = config.CONFIG_FILE
 

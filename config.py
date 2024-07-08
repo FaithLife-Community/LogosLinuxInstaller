@@ -6,11 +6,8 @@ import tempfile
 
 # Define and set variables that are required in the config file.
 core_config_keys = [
-<<<<<<< HEAD
-    "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
-=======
-    "current_logos_version", "FLPRODUCT", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
->>>>>>> 1a0c240 (Add utils.get_logos_version())
+    "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "TARGET_RELEASE_VERSION",
+    "current_logos_version", "FLPRODUCT", "TARGETVERSION",
     "INSTALLDIR", "WINETRICKSBIN", "WINEBIN_CODE", "WINE_EXE",
     "WINECMD_ENCODING", "LOGS", "BACKUPDIR", "LAST_UPDATED",
     "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION"

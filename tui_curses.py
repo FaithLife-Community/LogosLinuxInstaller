@@ -15,13 +15,17 @@ def wrap_text(app, text):
     return lines
 
 
-def title(app, title_text):
+def title(app, title_text, title_start_y_adj):
     stdscr = app.get_main_window()
     title_lines = wrap_text(app, title_text)
     title_start_y = max(0, app.window_height // 2 - len(title_lines) // 2)
+    last_index = 0
     for i, line in enumerate(title_lines):
         if i < app.window_height:
-            stdscr.addstr(i, 2, line, curses.A_BOLD)
+            stdscr.addstr(i + title_start_y_adj, 2, line, curses.A_BOLD)
+        last_index = i
+
+    return last_index
 
 
 def text_centered(app, text, start_y=0):

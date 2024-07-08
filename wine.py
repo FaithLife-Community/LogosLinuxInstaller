@@ -107,11 +107,11 @@ def get_wine_release(binary):
         return False, f"Error: {e}"
 
 
-def check_wine_version_and_branch(TESTBINARY):
+def check_wine_version_and_branch(release_version, test_binary):
     # Does not check for Staging. Will not implement: expecting merging of
     # commits in time.
     if config.TARGETVERSION == "10":
-        if utils.check_logos_release_version(config.current_logos_version, 30, 1):
+        if utils.check_logos_release_version(release_version, 30, 1):
             WINE_MINIMUM = [7, 18]
         else:
             WINE_MINIMUM = [9, 10]
@@ -123,16 +123,16 @@ def check_wine_version_and_branch(TESTBINARY):
     # Check if the binary is executable. If so, check if TESTBINARY's version
     # is ≥ WINE_MINIMUM, or if it is Proton or a link to a Proton binary, else
     # remove.
-    if not os.path.exists(TESTBINARY):
+    if not os.path.exists(test_binary):
         reason = "Binary does not exist."
         return False, reason
 
-    if not os.access(TESTBINARY, os.X_OK):
+    if not os.access(test_binary, os.X_OK):
         reason = "Binary is not executable."
         return False, reason
 
     wine_release = []
-    wine_release, error_message = get_wine_release(TESTBINARY)
+    wine_release, error_message = get_wine_release(test_binary)
 
     if wine_release is not False and error_message is not None:
         if wine_release[2] == 'stable':
@@ -141,8 +141,8 @@ def check_wine_version_and_branch(TESTBINARY):
             return False, "Version is < 7.0"
         elif wine_release[0] == 7:
             if (
-                "Proton" in TESTBINARY
-                or ("Proton" in os.path.realpath(TESTBINARY) if os.path.islink(TESTBINARY) else False)  # noqa: E501
+                "Proton" in test_binary
+                or ("Proton" in os.path.realpath(test_binary) if os.path.islink(test_binary) else False)  # noqa: E501
             ):
                 if wine_release[1] == 0:
                     return True, "None"

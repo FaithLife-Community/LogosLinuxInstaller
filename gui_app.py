@@ -248,7 +248,7 @@ class InstallerWindow():
             if not self.gui.versionvar.get():
                 self.gui.versionvar.set(self.gui.version_dropdown['values'][1])
             self.set_version()
-        elif task == 'LOGOS_RELEASE_VERSION':
+        elif task == 'TARGET_RELEASE_VERSION':
             # Disable all input widgets after Release.
             widgets = [
                 self.gui.wine_dropdown,
@@ -272,7 +272,7 @@ class InstallerWindow():
                 self.gui.okay_button,
             ]
             self.set_input_widgets_state('disabled', widgets=widgets)
-            self.start_wine_versions_check()
+            self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
         elif task == 'WINETRICKSBIN':
             # Disable all input widgets after Winetricks.
             widgets = [
@@ -312,7 +312,7 @@ class InstallerWindow():
             logging.debug(f"Change TARGETVERSION to {self.gui.targetversion}")
             config.TARGETVERSION = None
             self.gui.releasevar.set('')
-            config.LOGOS_RELEASE_VERSION = None
+            config.TARGET_RELEASE_VERSION = None
             config.INSTALLDIR = None
             config.WINE_EXE = None
             config.WINETRICKSBIN = None
@@ -349,12 +349,12 @@ class InstallerWindow():
         self.gui.logos_release_version = self.gui.releasevar.get()
         self.gui.release_dropdown.selection_clear()
         if evt:  # manual override
-            config.LOGOS_RELEASE_VERSION = None
+            config.TARGET_RELEASE_VERSION = None
             self.start_ensure_config()
         else:
             self.release_q.put(self.gui.logos_release_version)
 
-    def start_find_appimage_files(self):
+    def start_find_appimage_files(self, release_version):
         # Setup queue, signal, thread.
         self.appimage_q = Queue()
         self.appimage_evt = "<<FindAppImageProgress>>"
@@ -364,7 +364,10 @@ class InstallerWindow():
         )
         self.appimage_thread = Thread(
             target=utils.find_appimage_files,
-            kwargs={'app': self},
+            kwargs={
+                'release_version': release_version,
+                'app': self
+            },
             daemon=True
         )
         # Start progress.
@@ -374,9 +377,9 @@ class InstallerWindow():
         # Start thread.
         self.appimage_thread.start()
 
-    def start_wine_versions_check(self):
+    def start_wine_versions_check(self, release_version):
         if not self.appimages:
-            self.start_find_appimage_files()
+            self.start_find_appimage_files(release_version)
             return
         # Setup queue, signal, thread.
         self.wines_q = Queue()
@@ -389,7 +392,7 @@ class InstallerWindow():
             target=utils.get_wine_options,
             args=[
                 self.appimages,
-                utils.find_wine_binary_files()
+                utils.find_wine_binary_files(release_version)
             ],
             kwargs={'app': self},
             daemon=True
@@ -424,7 +427,7 @@ class InstallerWindow():
 
     def on_wine_check_released(self, evt=None):
         self.gui.wine_check_button.state(['disabled'])
-        self.start_wine_versions_check()
+        self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
 
     def set_skip_fonts(self, evt=None):
         self.gui.skip_fonts = 1 - self.gui.fontsvar.get()  # invert True/False
@@ -481,7 +484,7 @@ class InstallerWindow():
         self.stop_indeterminate_progress()
         if not self.appimage_q.empty():
             self.appimages = self.appimage_q.get()
-            self.start_wine_versions_check()
+            self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
 
     def update_wine_check_progress(self, evt=None):
         if evt and self.wines_q.empty():
