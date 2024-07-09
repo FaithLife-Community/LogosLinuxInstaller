@@ -316,12 +316,13 @@ def main():
         config.use_python_dialog = utils.test_dialog_version()
 
         if config.use_python_dialog is None:
-            logging.debug("The 'dialog' package was not found.")
+            logging.debug("The 'dialog' package was not found. Please install it or use the GUI.")
+            config.use_python_dialog = False # In order to prevent errors, make sure now to set dialog to False.
         elif config.use_python_dialog:
             logging.debug("Dialog version is up-to-date.")
             config.use_python_dialog = True
         else:
-            logging.error("Dialog version is outdated. Please use the GUI.")
+            logging.error("Dialog version is outdated. The program will fall back to Curses.")
             config.use_python_dialog = False
 
     # Log persistent config.
