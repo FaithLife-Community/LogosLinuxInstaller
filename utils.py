@@ -527,7 +527,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
                     f"Checking Packages {(packages.index(p) + 1)}/{len(packages)}",
                     100 * (packages.index(p) + 1) // len(packages),
                     elements,
-                    dialog=True)
+                    dialog=config.use_python_dialog)
 
     msg = 'None'
     if mode == "install":
@@ -560,7 +560,7 @@ def download_packages(packages, elements, app=None):
 
             if app is not None and config.DIALOG == "curses" and elements is not None:
                 app.report_dependencies(f"Downloading Packages ({index + 1}/{total_packages})",
-                                        100 * (index + 1) // total_packages, elements, dialog=True)
+                                        100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog)
 
 
 def install_packages(packages, elements, app=None):
@@ -584,7 +584,7 @@ def install_packages(packages, elements, app=None):
                     f"Installing Packages ({index + 1}/{total_packages})",
                     100 * (index + 1) // total_packages,
                     elements,
-                    dialog=True)
+                    dialog=config.use_python_dialog)
 
 
 def remove_packages(packages, elements, app=None):
@@ -608,7 +608,7 @@ def remove_packages(packages, elements, app=None):
                     f"Removing Packages ({index + 1}/{total_packages})",
                     100 * (index + 1) // total_packages,
                     elements,
-                    dialog=True)
+                    dialog=config.use_python_dialog)
 
 
 def have_dep(cmd):
@@ -877,7 +877,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
             bad_elements[p] = "Unchecked"
 
     if config.DIALOG == "curses" and app is not None:
-        app.report_dependencies("Checking Packages", 0, elements, dialog=True)
+        app.report_dependencies("Checking Packages", 0, elements, dialog=config.use_python_dialog)
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
         missing_packages, elements = query_packages(package_list, elements, app=app)
