@@ -145,6 +145,7 @@ def do_menu_down(app):
     else:
         config.current_option = min(len(app.menu_options) - 1, config.current_option + 1)
 
+
 def menu(app, question_text, options):
     stdscr = app.get_menu_window()
     current_option = config.current_option
@@ -209,11 +210,12 @@ def menu(app, question_text, options):
 
         # Get user input
         thread = utils.start_thread(menu_keyboard, True, app)
+
         thread.join()
 
         stdscr.noutrefresh()
 
-        return app.choice
+        return
 
 
 def menu_keyboard(app):
@@ -257,6 +259,6 @@ def menu_keyboard(app):
 
     stdscr.refresh()
     if choice:
-        app.choice = choice
+        app.active_screen.choice = choice
     else:
         return "Processing"

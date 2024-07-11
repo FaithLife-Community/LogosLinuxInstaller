@@ -31,8 +31,7 @@ class TUI():
         #else:
         #    self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.console_message = "Starting TUI…"
-        self.running = True
-        self.choice = "Processing"
+        self.llirunning = True
         self.active_progress = False
 
         # Queues
@@ -47,6 +46,9 @@ class TUI():
         self.progress_e = threading.Event()
         self.todo_q = Queue()
         self.todo_e = threading.Event()
+        self.screen_q = Queue()
+        self.choice_q = Queue()
+        self.switch_q = Queue()
 
         # Install and Options
         self.product_q = Queue()
@@ -112,9 +114,9 @@ class TUI():
 
             self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
             self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e,
-                                                     "Main Menu", self.set_tui_menu_options(curses=True))
+                                                     "Main Menu", self.set_tui_menu_options(dialog=False))
             #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu",
-            #                                         self.set_tui_menu_options(curses=False))
+            #                                         self.set_tui_menu_options(dialog=True))
 
             self.main_window.noutrefresh()
             self.menu_window.noutrefresh()
@@ -167,10 +169,9 @@ class TUI():
         signal.signal(signal.SIGINT, self.end)
         msg.initialize_curses_logging(self.stdscr)
         msg.status(self.console_message, self)
+        self.active_screen = self.menu_screen
 
-        while self.running:
-            self.active_screen = self.tui_screens[-1] if self.tui_screens else self.menu_screen
-
+        while self.llirunning:
             if isinstance(self.active_screen, tui_screen.CursesScreen):
                 self.main_window.erase()
                 self.menu_window.erase()
@@ -179,17 +180,31 @@ class TUI():
 
             self.active_screen.display()
 
-            if (not isinstance(self.active_screen, tui_screen.TextScreen)
-                    and not isinstance(self.active_screen, tui_screen.TextDialog)):
+            #if (not isinstance(self.active_screen, tui_screen.TextScreen)
+            #        and not isinstance(self.active_screen, tui_screen.TextDialog)):
+            if self.choice_q.qsize() > 0:
                 self.choice_processor(
                     self.menu_window,
                     self.active_screen.get_screen_id(),
-                    self.active_screen.get_choice())
-                self.choice = "Processing"  # Reset for next round
+                    self.choice_q.get())
+
+            if self.screen_q.qsize() > 0:
+                self.screen_q.get()
+                self.switch_q.put(1)
+
+            if self.switch_q.qsize() > 0:
+                self.switch_q.get()
+                self.switch_screen(config.use_python_dialog)
+
+            if len(self.tui_screens) == 0:
+                self.active_screen = self.menu_screen
+            else:
+                self.active_screen = self.tui_screens[-1]
 
             if isinstance(self.active_screen, tui_screen.CursesScreen):
                 self.main_window.noutrefresh()
                 self.menu_window.noutrefresh()
+                curses.doupdate()
 
     def run(self):
         try:
@@ -221,21 +236,17 @@ class TUI():
         elif task == 'TUI-RESIZE':
             self.resize_curses()
         elif task == 'TUI-UPDATE-MENU':
-            self.menu_screen.set_options(self.set_tui_menu_options(curses=True))
-            #self.menu_screen.set_options(self.set_tui_menu_options(curses=False))
+            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
+            #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
 
     def choice_processor(self, stdscr, screen_id, choice):
-        if choice == "Processing":
-            pass
-        elif screen_id == 0 and choice == "Exit":
-            msg.logos_warn("Exiting installation.")
-            self.tui_screens = []
-            self.running = False
-        elif screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
-            self.tui_screens.pop(0)
-            self.stdscr.clear()
+        if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
+            self.switch_q.put(1)
         elif screen_id == 0:
             if choice is None or choice == "Exit":
+                msg.logos_warn("Exiting installation.")
+                self.tui_screens = []
+                self.llirunning = False
                 sys.exit(0)
             elif choice.startswith("Install"):
                 config.INSTALL_STEPS_COUNT = 0
@@ -269,7 +280,7 @@ class TUI():
                 appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
                 self.menu_options = appimage_choices
                 question = "Which AppImage should be used?"
-                self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices)
+                self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
             elif choice == "Download or Update Winetricks":
                 control.set_winetricks()
             elif choice == "Run Winetricks":
@@ -282,8 +293,6 @@ class TUI():
                 wine.installICUDataFiles()
             elif choice.endswith("Logging"):
                 wine.switch_logging()
-            else:
-                msg.logos_error("Unknown menu choice.")
         elif screen_id == 1:
             if choice == "Input Custom AppImage":
                 appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
@@ -351,131 +360,125 @@ class TUI():
             pass
 
     def switch_screen(self, dialog):
-        if self.active_screen != self.menu_screen:
+        if self.active_screen is not None and self.active_screen != self.menu_screen:
             self.tui_screens.pop(0)
+        if self.active_screen == self.menu_screen:
+            self.menu_screen.choice = "Processing"
+            self.menu_screen.running = 0
         if isinstance(self.active_screen, tui_screen.CursesScreen):
             self.stdscr.clear()
 
     def get_product(self, dialog):
         question = "Choose which FaithLife product the script should install:"  # noqa: E501
-        options = [("0", "Logos"), ("1", "Verbum"), ("2", "Exit")]
+        labels = ["Logos", "Verbum", "Return to Main Menu"]
+        options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
-        self.stack_menu(2, self.product_q, self.product_e, question, options, dialog=dialog)
-        self.switch_screen(dialog)
+        self.screen_q.put(self.stack_menu(2, self.product_q, self.product_e, question, options, dialog=dialog))
 
     def get_version(self, dialog):
         self.product_e.wait()
         question = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
-        options = [("0", "10"), ("1", "9"), ("2", "Exit")]
+        labels = ["10", "9", "Return to Main Menu"]
+        options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
-        self.stack_menu(3, self.version_q, self.version_e, question, options, dialog=dialog)
-        self.switch_screen(dialog)
+        self.screen_q.put(self.stack_menu(3, self.version_q, self.version_e, question, options, dialog=dialog))
 
     def get_release(self, dialog):
-        self.stack_text(10, self.version_q, self.version_e, "Waiting to acquire Logos versions…", wait=True, dialog=dialog)
+        labels = []
+        self.screen_q.put(self.stack_text(10, self.version_q, self.version_e, "Waiting to acquire Logos versions…", wait=True, dialog=dialog))
         self.version_e.wait()
-        self.switch_screen(dialog)
         question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
         utils.start_thread(utils.get_logos_releases, True, self)
         self.releases_e.wait()
 
         if config.TARGETVERSION == '10':
-            options = self.releases_q.get()
+            labels = self.releases_q.get()
         elif config.TARGETVERSION == '9':
-            options = self.releases_q.get()
+            labels = self.releases_q.get()
 
-        if options is None:
+        if labels is None:
             msg.logos_error("Failed to fetch TARGET_RELEASE_VERSION.")
-        options.append("Exit")
-        enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
-        self.menu_options = enumerated_options
-        self.stack_menu(4, self.release_q, self.release_e, question, enumerated_options, dialog=dialog)
-        self.switch_screen(dialog)
+        labels.append("Return to Main Menu")
+        options = self.which_dialog_options(labels, dialog)
+        self.menu_options = options
+        self.screen_q.put(self.stack_menu(4, self.release_q, self.release_e, question, options, dialog=dialog))
 
     def get_installdir(self, dialog):
         self.release_e.wait()
         default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
         question = f"Where should {config.FLPRODUCT} files be installed to? [{default}]: "  # noqa: E501
-        self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=dialog)
-        self.switch_screen(dialog)
+        self.screen_q.put(self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=dialog))
 
     def get_wine(self, dialog):
         self.installdir_e.wait()
-        self.stack_text(10, self.wine_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog)
+        self.screen_q.put(self.stack_text(10, self.wine_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog))
         question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
-        options = utils.get_wine_options(
+        labels = utils.get_wine_options(
             utils.find_appimage_files(config.TARGET_RELEASE_VERSION),
             utils.find_wine_binary_files(config.TARGET_RELEASE_VERSION)
         )
-        max_length = max(len(option) for option in options)
-        max_length += len(str(len(options))) + 10
-        self.switch_screen(dialog)
-        if dialog:
-            enumerated_options = [(str(i), option) for i, option in enumerate(options, start=1)]
-            self.menu_options = enumerated_options
-            self.stack_menu(6, self.wine_q, self.wine_e, question, enumerated_options, width=max_length,
-                            dialog=dialog)
-        else:
-            self.menu_options = options
-            self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length,
-                            dialog=dialog)
-        self.switch_screen(dialog)
+        labels.append("Return to Main Menu")
+        max_length = max(len(label) for label in labels)
+        max_length += len(str(len(labels))) + 10
+        options = self.which_dialog_options(labels, dialog)
+        self.menu_options = options
+        self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length, dialog=dialog)
 
     def get_winetricksbin(self, dialog):
         self.wine_e.wait()
         winetricks_options = utils.get_winetricks_options()
         if len(winetricks_options) > 1:
             question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux."  # noqa: E501
-            options = [
-                ("1", "Use local winetricks."),
-                ("2", "Download winetricks from the Internet.")
-            ]
+            labels = ["Use local winetricks.", "Download winetricks from the Internet.", "Return to Main Menu"]
+            options = self.which_dialog_options(labels, dialog)
             self.menu_options = options
-            self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog)
-        self.switch_screen(dialog)
+            self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
 
     def get_waiting(self, dialog):
         self.tricksbin_e.wait()
         text = ["Install is running…\n"] + logging.console_log[-2:]
         processed_text = utils.str_array_to_string(text)
         percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
-        self.stack_text(8, self.status_q, self.status_e, processed_text, wait=True, percent=percent,
-                        dialog=dialog)
-        self.switch_screen(dialog)
+        self.screen_q.put(self.stack_text(8, self.status_q, self.status_e, processed_text, wait=True, percent=percent,
+                        dialog=dialog))
 
     def get_config(self, dialog):
         question = f"Update config file at {config.CONFIG_FILE}?"
-        options = ["Yes", "No"]
+        labels = ["Yes", "No"]
+        options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
-        self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog)
-        self.switch_screen(dialog)
+        self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
 
     def finish_install(self):
         utils.send_task(self, 'TUI-UPDATE-MENU')
 
     def report_waiting(self, text, dialog):
-        if dialog:
-            self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)
-            self.switch_screen(dialog)
-        else:
-            self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)
-            logging.console_log.append(text)
+        #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
+        logging.console_log.append(text)
 
     def report_dependencies(self, text, percent, elements, dialog):
         if elements is not None:
             if dialog:
-                self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog)
-                self.switch_screen(dialog)
+                self.screen_q.put(self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog))
                 # Without this delay, the reporting works too quickly and instead appears all at once.
                 time.sleep(0.1)
             else:
                 #TODO
                 pass
 
-    def set_tui_menu_options(self, curses=False):
-        labels = []
+    def which_dialog_options(self, labels, dialog=False):
         options = []
         option_number = 1
+        for label in labels:
+            if dialog:
+                options.append((str(option_number), label))
+                option_number += 1
+            else:
+                options.append(label)
+        return options
+
+    def set_tui_menu_options(self, dialog=False):
+        labels = []
         if config.LLI_LATEST_VERSION and utils.get_runmode() == 'binary':
             logging.debug("Checking if Logos Linux Installers needs updated.")  # noqa: E501
             status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
@@ -517,12 +520,7 @@ class TUI():
 
         labels.append("Exit")
 
-        for label in labels:
-            if curses:
-                options.append(label)
-            else:
-                options.append((str(option_number), label))
-                option_number += 1
+        options = self.which_dialog_options(labels, dialog=False)
 
         return options
 
@@ -552,11 +550,9 @@ class TUI():
 
     def stack_text(self, screen_id, queue, event, text, wait=False, percent=None, dialog=False):
         if dialog:
-            utils.append_unique(self.tui_screens,
-                                tui_screen.TextDialog(self, screen_id, queue, event, text, wait, percent))
+            utils.append_unique(self.tui_screens, tui_screen.TextDialog(self, screen_id, queue, event, text, wait, percent))
         else:
-            utils.append_unique(self.tui_screens,
-                            tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
+            utils.append_unique(self.tui_screens, tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
 
     def stack_tasklist(self, screen_id, queue, event, text, elements, percent, dialog=False):
         logging.debug(f"Elements stacked: {elements}")

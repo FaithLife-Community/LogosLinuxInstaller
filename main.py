@@ -258,12 +258,12 @@ def run_control_panel():
     if config.DIALOG is None or config.DIALOG == 'tk':
         gui_app.control_panel_app()
     else:
-        try:
+        #try:
             curses.wrapper(tui_app.control_panel_app)
-        except curses.error as e:
-            logging.error(f"Curses error in run_control_panel(): {e}")
-        except Exception as e:
-            logging.error(f"An error occurred in run_control_panel(): {e}")
+        #except curses.error as e:
+        #    logging.error(f"Curses error in run_control_panel(): {e}")
+        #except Exception as e:
+        #    logging.error(f"An error occurred in run_control_panel(): {e}")
 
 
 def main():
@@ -316,8 +316,8 @@ def main():
         config.use_python_dialog = utils.test_dialog_version()
 
         if config.use_python_dialog is None:
-            logging.debug("The 'dialog' package was not found. Please install it or use the GUI.")
-            config.use_python_dialog = False # In order to prevent errors, make sure now to set dialog to False.
+            logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")
+            config.use_python_dialog = False
         elif config.use_python_dialog:
             logging.debug("Dialog version is up-to-date.")
             config.use_python_dialog = True

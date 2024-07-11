@@ -9,6 +9,10 @@ import msg
 import utils
 import wine
 
+#TODO: Fix install progress if user returns to main menu?
+# To replicate, start a TUI install, return/cancel on second step
+# Then launch a new install
+
 
 def ensure_product_choice(app=None):
     config.INSTALL_STEPS_COUNT += 1

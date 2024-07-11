@@ -2,8 +2,6 @@ import curses
 from dialog import Dialog
 import logging
 
-import installer
-
 
 def text(app, text, height=None, width=None, title=None, backtitle=None, colors=True):
     d = Dialog()
@@ -100,7 +98,7 @@ def menu(app, question_text, options, height=None, width=None, menu_height=8):
     if code == dialog.OK:
         return code, tag, selected_description
     elif code == dialog.CANCEL:
-        return None
+        return None, None, "Exit"
 
 
 def buildlist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=None):

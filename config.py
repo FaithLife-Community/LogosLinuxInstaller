@@ -103,7 +103,7 @@ current_option = 0
 current_page = 0
 total_pages = 0
 options_per_page = 8
-use_python_dialog = True
+use_python_dialog = False
 
 
 def get_config_file_dict(config_file_path):

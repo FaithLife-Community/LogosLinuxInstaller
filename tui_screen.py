@@ -10,6 +10,7 @@ import config
 import installer
 import tui_curses
 import tui_dialog
+import tui_screen
 import utils
 
 
@@ -17,16 +18,17 @@ class Screen:
     def __init__(self, app, screen_id, queue, event):
         self.app = app
         self.screen_id = screen_id
-        self.choice = ""
+        self.choice = "Processing"
         self.queue = queue
         self.event = event
         # running:
-        # This var is used for DialogScreens. The var indicates whether a Dialog has already started.
-        # If the dialog has already started, then the program will not display the dialog again
-        # in order to prevent phantom key presses.
-        # 0 = not started
-        # 1 = started
-        # 2 = finished
+        # This var indicates either whether:
+        # A CursesScreen has already submitted its choice to the choice_q, or
+        # The var indicates whether a Dialog has already started. If the dialog has already started,
+        # then the program will not display the dialog again in order to prevent phantom key presses.
+        # 0 = not submitted or not started
+        # 1 = submitted or started
+        # 2 = none or finished
         self.running = 0
 
     def __str__(self):
@@ -44,9 +46,6 @@ class Screen:
     def get_choice(self):
         return self.choice
 
-    def submit_choice_to_queue(self):
-        self.queue.put(self.choice)
-
     def wait_event(self):
         self.event.wait()
 
@@ -55,11 +54,17 @@ class Screen:
 
 
 class CursesScreen(Screen):
-    pass
+    def submit_choice_to_queue(self):
+        if self.running == 0 and self.choice != "Processing":
+            self.app.choice_q.put(self.choice)
+            self.running = 1
 
 
 class DialogScreen(Screen):
-    pass
+    def submit_choice_to_queue(self):
+        if self.running == 1 and self.choice != "Processing":
+            self.app.choice_q.put(self.choice)
+            self.running = 2
 
 
 class ConsoleScreen(CursesScreen):
@@ -69,6 +74,9 @@ class ConsoleScreen(CursesScreen):
         self.title = title
         self.subtitle = subtitle
         self.title_start_y = title_start_y
+
+    def __str__(self):
+        return f"Curses Console Screen"
 
     def display(self):
         self.stdscr.erase()
@@ -97,13 +105,17 @@ class MenuScreen(CursesScreen):
         self.width = width
         self.menu_height = menu_height
 
+    def __str__(self):
+        return f"Curses Menu Screen"
+
     def display(self):
         self.stdscr.erase()
-        self.choice = tui_curses.menu(
+        tui_curses.menu(
             self.app,
             self.question,
             self.options
         )
+        self.submit_choice_to_queue()
         self.stdscr.noutrefresh()
         curses.doupdate()
 
@@ -121,6 +133,9 @@ class InputScreen(CursesScreen):
         self.question = question
         self.default = default
 
+    def __str__(self):
+        return f"Curses Input Screen"
+
     def display(self):
         self.stdscr.erase()
         self.choice = tui_curses.get_user_input(
@@ -128,6 +143,7 @@ class InputScreen(CursesScreen):
             self.question,
             self.default
         )
+        self.submit_choice_to_queue()
         self.stdscr.noutrefresh()
         curses.doupdate()
 
@@ -145,6 +161,9 @@ class TextScreen(CursesScreen):
         self.text = text
         self.wait = wait
         self.spinner_index = 0
+
+    def __str__(self):
+        return f"Curses Text Screen"
 
     def display(self):
         self.stdscr.erase()
@@ -170,14 +189,14 @@ class MenuDialog(DialogScreen):
         self.menu_height = menu_height
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Menu Screen"
 
     def display(self):
         if self.running == 0:
             self.running = 1
             _, _, self.choice = tui_dialog.menu(self.app, self.question, self.options, self.height, self.width,
                                             self.menu_height)
-            self.running = 2
+            self.submit_choice_to_queue()
 
     def get_question(self):
         return self.question
@@ -194,7 +213,7 @@ class InputDialog(DialogScreen):
         self.default = default
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Input Screen"
 
     def display(self):
         if self.running == 0:
@@ -202,7 +221,7 @@ class InputDialog(DialogScreen):
             self.choice = tui_dialog.directory_picker(self.app, self.default)
             if self.choice:
                 self.choice = Path(self.choice)
-            self.running = 2
+            self.submit_choice_to_queue()
 
     def get_question(self):
         return self.question
@@ -220,13 +239,13 @@ class ConfirmDialog(DialogScreen):
         self.no_label = no_label
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Confirm Screen"
 
     def display(self):
         if self.running == 0:
             self.running = 1
             _, _, self.choice = tui_dialog.confirm(self.app, self.question, self.yes_label, self.no_label)
-            self.running = 2
+            self.submit_choice_to_queue()
 
     def get_question(self):
         return self.question
@@ -248,20 +267,27 @@ class TextDialog(DialogScreen):
         self.lastpercent = 0
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Text Screen"
 
     def display(self):
         if self.running == 0:
             if self.wait:
                 self.running = 1
-                self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                if config.INSTALL_STEPS_COUNT > 0:
+                    self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                else:
+                    self.percent = 0
+
                 tui_dialog.progress_bar(self, self.text, self.percent)
                 self.lastpercent = self.percent
             else:
                 tui_dialog.text(self, self.text)
         elif self.running == 1:
             if self.wait:
-                self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                if config.INSTALL_STEPS_COUNT > 0:
+                    self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                else:
+                    self.percent = 0
                 # tui_dialog.update_progress_bar(self, self.percent, self.text, True)
                 if self.lastpercent != self.percent:
                     tui_dialog.progress_bar(self, self.text, self.percent)
@@ -293,7 +319,7 @@ class TaskListDialog(DialogScreen):
         self.updated = False
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Task List Screen"
 
     def display(self):
         if self.running == 0:
@@ -336,7 +362,7 @@ class BuildListDialog(DialogScreen):
         self.list_height = list_height
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Build List Screen"
 
     def display(self):
         if self.running == 0:
@@ -363,7 +389,7 @@ class CheckListDialog(DialogScreen):
         self.list_height = list_height
 
     def __str__(self):
-        return f"PyDialog Screen"
+        return f"PyDialog Check List Screen"
 
     def display(self):
         if self.running == 0:

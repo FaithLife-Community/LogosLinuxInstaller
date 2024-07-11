@@ -258,7 +258,7 @@ def status(text, app=None):
     elif config.DIALOG == 'curses':
         if app is not None:
             app.status_q.put(f"{timestamp} {text}")
-            app.report_waiting(f"{app.status_q.get()}", dialog=True)
+            app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)
     else:
         '''Prints message to stdout regardless of log level.'''
         logos_msg(text)
