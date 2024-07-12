@@ -1,5 +1,7 @@
 # Changelog
 
+- 4.0.0-alpha.12
+	- Fix TUI app's installer [T. H. Wright]
 - 4.0.0-alpha.11
 	- Fix #124 [T. H. Wright]
 - 4.0.0-alpha.10
