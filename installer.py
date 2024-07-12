@@ -239,7 +239,7 @@ def ensure_install_dirs(app=None):
     logging.debug(f"> {wine_dir} exists: {wine_dir.is_dir()}")
     logging.debug(f"> {config.WINEPREFIX=}")
 
-    if config.DIALOG == 'tk' and app:
+    if app:
         utils.send_task(app, 'INSTALLING')
 
 

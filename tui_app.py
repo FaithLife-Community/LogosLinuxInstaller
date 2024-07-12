@@ -342,12 +342,12 @@ class TUI():
                 self.wine_e.set()
         elif screen_id == 7:
             winetricks_options = utils.get_winetricks_options()
-            if choice.startswith("Use"):
+            if choice.startswith("Download"):
+                self.tricksbin_q.put("Download")
+                self.tricksbin_e.set()
+            else:
                 config.WINETRICKSBIN = winetricks_options[0]
                 self.tricksbin_q.put(config.WINETRICKSBIN)
-                self.tricksbin_e.set()
-            elif choice.startswith("Download"):
-                self.tricksbin_q.put("Download")
                 self.tricksbin_e.set()
         elif screen_id == 8:
             if config.install_finished:
@@ -438,7 +438,7 @@ class TUI():
 
     def get_waiting(self, dialog):
         self.tricksbin_e.wait()
-        text = ["Install is running…\n"] + logging.console_log[-2:]
+        text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
         percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
         self.screen_q.put(self.stack_text(8, self.status_q, self.status_e, processed_text, wait=True, percent=percent,
