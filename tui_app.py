@@ -422,7 +422,7 @@ class TUI():
         max_length += len(str(len(labels))) + 10
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
-        self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length, dialog=dialog)
+        self.screen_q.put(self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length, dialog=dialog))
 
     def get_winetricksbin(self, dialog):
         self.wine_e.wait()
