@@ -1183,7 +1183,7 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
 
 def get_winetricks_options():
     local_winetricks_path = shutil.which('winetricks')
-    winetricks_options = ['Download']
+    winetricks_options = ['Download', 'Return to Main Menu']
     if local_winetricks_path is not None:
         # Check if local winetricks version is up-to-date.
         cmd = ["winetricks", "--version"]

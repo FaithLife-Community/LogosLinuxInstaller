@@ -98,7 +98,7 @@ def menu(app, question_text, options, height=None, width=None, menu_height=8):
     if code == dialog.OK:
         return code, tag, selected_description
     elif code == dialog.CANCEL:
-        return None, None, "Exit"
+        return None, None, "Return to Main Menu"
 
 
 def buildlist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=None):

@@ -242,6 +242,9 @@ class TUI():
     def choice_processor(self, stdscr, screen_id, choice):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
             self.switch_q.put(1)
+            #FIXME: There is some kind of graphical glitch that activates on returning to Main Menu,
+            # but not from all submenus.
+            # Further, there appear to be issues with how the program exits on Ctrl+C as part of this.
         elif screen_id == 0:
             if choice is None or choice == "Exit":
                 msg.logos_warn("Exiting installation.")
@@ -294,6 +297,7 @@ class TUI():
             elif choice.endswith("Logging"):
                 wine.switch_logging()
         elif screen_id == 1:
+            #FIXME
             if choice == "Input Custom AppImage":
                 appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
             else:
@@ -427,12 +431,10 @@ class TUI():
     def get_winetricksbin(self, dialog):
         self.wine_e.wait()
         winetricks_options = utils.get_winetricks_options()
-        if len(winetricks_options) > 1:
-            question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux."  # noqa: E501
-            labels = ["Use local winetricks.", "Download winetricks from the Internet.", "Return to Main Menu"]
-            options = self.which_dialog_options(labels, dialog)
-            self.menu_options = options
-            self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
+        question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux."  # noqa: E501
+        options = self.which_dialog_options(winetricks_options, dialog)
+        self.menu_options = options
+        self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
 
     def get_waiting(self, dialog):
         self.tricksbin_e.wait()
