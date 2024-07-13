@@ -501,8 +501,6 @@ def query_packages(packages, elements=None, mode="install", app=None):
             elements = {element[0]: element[1] for element in elements}
 
         for p in packages:
-            logging.debug(f"Current elements: {elements}")
-            logging.debug(f"Checking: package: {p}")
             status = "Unchecked"
             for line in package_list.split('\n'):
                 if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":
@@ -522,8 +520,6 @@ def query_packages(packages, elements=None, mode="install", app=None):
 
             logging.debug(f"Setting {p}: {status}")
             elements[p] = status
-
-            logging.debug(f"DEV: {elements}")
 
             if app is not None and config.DIALOG == "curses":
                 app.report_dependencies(
