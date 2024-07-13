@@ -255,7 +255,7 @@ def run_command(command, retries=1, delay=0, stdin=None, shell=False):
                 shell=shell,
                 capture_output=True
             )
-            return result.stdout
+            return result
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred while executing {command}: {e}")
             if "lock" in str(e):
@@ -477,6 +477,7 @@ def get_runmode():
 
 
 def query_packages(packages, elements=None, mode="install", app=None):
+    result = ""
     if config.SKIP_DEPENDENCIES:
         return
 
@@ -486,9 +487,11 @@ def query_packages(packages, elements=None, mode="install", app=None):
     command = config.PACKAGE_MANAGER_COMMAND_QUERY
 
     try:
-        package_list = run_command(command, shell=True)
+        result = run_command(command, shell=True)
     except Exception as e:
         logging.error(f"Error occurred while executing command: {e}")
+
+    package_list = result.stdout
 
     logging.debug(f"Checking packages: {packages} in package list.")
     if app is not None:
@@ -529,16 +532,16 @@ def query_packages(packages, elements=None, mode="install", app=None):
                     elements,
                     dialog=config.use_python_dialog)
 
-    msg = 'None'
+    txt = 'None'
     if mode == "install":
         if missing_packages:
-            msg = f"Missing packages: {' '.join(missing_packages)}"
-        logging.info(f"Missing packages: {msg}")
+            txt = f"Missing packages: {' '.join(missing_packages)}"
+        logging.info(f"Missing packages: {txt}")
         return missing_packages, elements
     elif mode == "remove":
         if conflicting_packages:
-            msg = f"Conflicting packages: {' '.join(conflicting_packages)}"
-        logging.info(f"Conflicting packages: {msg}")
+            txt = f"Conflicting packages: {' '.join(conflicting_packages)}"
+        logging.info(f"Conflicting packages: {txt}")
         return conflicting_packages, elements
 
 
@@ -622,7 +625,7 @@ def check_dialog_version():
     if have_dep("dialog"):
         try:
             result = run_command(["dialog", "--version"])
-            version_info = result.strip()
+            version_info = result.stdout.strip()
             if version_info.startswith("Version: "):
                 version_info = version_info[len("Version: "):]
             return version_info
@@ -793,27 +796,27 @@ def delete_symlink(symlink_path):
 
 def preinstall_dependencies_ubuntu():
     try:
-        run_command([config.SUPERUSER_COMMAND, "dpkg", "--add-architecture", "i386"])
-        run_command([config.SUPERUSER_COMMAND, "mkdir", "-pm755", "/etc/apt/keyrings"])
-        run_command(
+        dpkg_output = run_command([config.SUPERUSER_COMMAND, "dpkg", "--add-architecture", "i386"])
+        mkdir_output = run_command([config.SUPERUSER_COMMAND, "mkdir", "-pm755", "/etc/apt/keyrings"])
+        wget_key_output = run_command(
             [config.SUPERUSER_COMMAND, "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", "https://dl.winehq.org/wine-builds/winehq.key"])
-        lsboutput = run_command(["lsb_release", "-a"])
-        codename = [line for line in lsboutput.split('\n') if "Description" in line][0].split()[1].strip()
-        run_command([config.SUPERUSER_COMMAND, "wget", "-NP", "/etc/apt/sources.list.d/",
+        lsb_release_output = run_command(["lsb_release", "-a"])
+        codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[1].strip()
+        wget_sources_output = run_command([config.SUPERUSER_COMMAND, "wget", "-NP", "/etc/apt/sources.list.d/",
                      f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"])
-        run_command([config.SUPERUSER_COMMAND, "apt", "update"])
-        run_command([config.SUPERUSER_COMMAND, "apt", "install", "--install-recommends", "winehq-staging"])
+        apt_update_output = run_command([config.SUPERUSER_COMMAND, "apt", "update"])
+        apt_install_output = run_command([config.SUPERUSER_COMMAND, "apt", "install", "--install-recommends", "winehq-staging"])
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         print(f"Command output: {e.output}")
 
 def preinstall_dependencies_steamos():
     command = [config.SUPERUSER_COMMAND, "steamos-readonly", "disable"]
-    result = run_command(command)
+    steamsos_readonly_output = run_command(command)
     command = [config.SUPERUSER_COMMAND, "pacman-key", "--init"]
-    result = run_command(command)
+    pacman_key_init_output = run_command(command)
     command = [config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"]
-    result = run_command(command)
+    pacman_key_populate_output = run_command(command)
 
 
 def postinstall_dependencies_steamos():
@@ -823,9 +826,9 @@ def postinstall_dependencies_steamos():
             's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
             '/etc/nsswitch.conf'
         ]
-    result = run_command(command)
+    sed_output = run_command(command)
     command =[config.SUPERUSER_COMMAND, "locale-gen"]
-    result = run_command(command)
+    locale_gen_output = run_command(command)
     command =[
             config.SUPERUSER_COMMAND,
             "systemctl",
@@ -833,11 +836,11 @@ def postinstall_dependencies_steamos():
             "--now",
             "avahi-daemon"
         ]
-    result = run_command(command)
+    systemctl_avahi_daemon_output = run_command(command)
     command =[config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"]
-    result = run_command(command)
+    systemctl_cups = run_command(command)
     command = [config.SUPERUSER_COMMAND, "steamos-readonly", "enable"]
-    result = run_command(command)
+    steamos_readonly_output = run_command(command)
 
 
 def preinstall_dependencies():
