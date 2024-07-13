@@ -436,7 +436,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed"
         config.QUERY_PREFIX = ''
-        config.PACKAGES = "patch mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
