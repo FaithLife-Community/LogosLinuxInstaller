@@ -530,7 +530,11 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         preinstall_dependencies()
 
         # libfuse: for AppImage use. This is the only known needed library.
-        check_libs(["libfuse"])
+        if config.OS_NAME == "fedora":
+            fuse = "fuse"
+        else:
+            fuse = "libfuse"
+        check_libs([f"{fuse}"], app=app)
 
         if missing_packages:
             download_packages(missing_packages, elements, app)
@@ -564,7 +568,7 @@ def have_lib(library, ld_library_path):
     return False
 
 
-def check_libs(libraries):
+def check_libs(libraries, app=None):
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     for library in libraries:
         have_lib_result = have_lib(library, ld_library_path)
@@ -573,8 +577,17 @@ def check_libs(libraries):
         else:
             if config.PACKAGE_MANAGER_COMMAND_INSTALL:
                 message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND_INSTALL}. Proceed?"  # noqa: E501
-                if msg.cli_continue_question(message, "", ""):
-                    install_packages(config.PACKAGES)
+                #if msg.cli_continue_question(message, "", ""):
+                elements = {}
+
+                if config.DIALOG == "curses" and app is not None and elements is not None:
+                    for p in libraries:
+                        elements[p] = "Unchecked"
+
+                if config.DIALOG == "curses" and app is not None:
+                    app.report_dependencies("Checking Packages", 0, elements, dialog=config.use_python_dialog)
+
+                install_packages(config.PACKAGES, elements, app=app)
             else:
                 msg.logos_error(
                     f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")  # noqa: E501
