@@ -18,6 +18,9 @@ def run_command(command, retries=1, delay=0, stdin=None, shell=False):
     if retries < 1:
         retries = 1
 
+    if isinstance(command, str) and not shell:
+        command = command.split()
+
     for attempt in range(retries):
         try:
             logging.debug(f"Attempting to execute {command}")
@@ -42,6 +45,7 @@ def run_command(command, retries=1, delay=0, stdin=None, shell=False):
             return None
 
     logging.error(f"Failed to execute after {retries} attempts: '{command}'")
+    return None
 
 
 def reboot():
@@ -333,10 +337,10 @@ def install_packages(packages, elements, app=None):
             result = run_command(command, retries=5, delay=15)
 
             if elements is not None:
-                elements[index] = (
-                    package,
-                    "Installed" if result.returncode == 0 else "Failed")
-
+                if result and result.returncode == 0:
+                    elements[index] = (package, "Installed")
+                else:
+                    elements[index] = (package, "Failed")
             if app is not None and config.DIALOG == "curses" and elements is not None:
                 app.report_dependencies(
                     f"Installing Packages ({index + 1}/{total_packages})",
@@ -357,10 +361,10 @@ def remove_packages(packages, elements, app=None):
             result = run_command(command, retries=5, delay=15)
 
             if elements is not None:
-                elements[index] = (
-                    package,
-                    "Removed" if result.returncode == 0 else "Failed")
-
+                if result and result.returncode == 0:
+                    elements[index] = (package, "Removed")
+                else:
+                    elements[index] = (package, "Failed")
             if app is not None and config.DIALOG == "curses" and elements is not None:
                 app.report_dependencies(
                     f"Removing Packages ({index + 1}/{total_packages})",
@@ -508,13 +512,13 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if missing_packages and conflicting_packages:
             message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}) and will remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"  # noqa: E501
-            logging.critical(message)
+            #logging.critical(message)
         elif missing_packages:
             message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"  # noqa: E501
-            logging.critical(message)
+            #logging.critical(message)
         elif conflicting_packages:
             message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"  # noqa: E501
-            logging.critical(message)
+            #logging.critical(message)
         else:
             logging.debug("No missing or conflicting dependencies found.")
 
