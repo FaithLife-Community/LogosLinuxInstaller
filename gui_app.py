@@ -18,6 +18,7 @@ import config
 import control
 import gui
 import installer
+import network
 import utils
 import wine
 
@@ -332,7 +333,7 @@ class InstallerWindow():
             self.update_release_check_progress
         )
         self.release_thread = Thread(
-            target=utils.get_logos_releases,
+            target=network.get_logos_releases,
             kwargs={'app': self},
             daemon=True,
         )

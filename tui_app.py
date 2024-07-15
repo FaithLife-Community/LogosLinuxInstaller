@@ -10,6 +10,7 @@ from queue import Queue
 
 import config
 import control
+import network
 import tui_curses
 import tui_dialog
 import tui_screen
@@ -392,7 +393,7 @@ class TUI():
         self.screen_q.put(self.stack_text(10, self.version_q, self.version_e, "Waiting to acquire Logos versions…", wait=True, dialog=dialog))
         self.version_e.wait()
         question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
-        utils.start_thread(utils.get_logos_releases, True, self)
+        utils.start_thread(network.get_logos_releases, True, self)
         self.releases_e.wait()
 
         if config.TARGETVERSION == '10':

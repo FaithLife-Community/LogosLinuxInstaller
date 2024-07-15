@@ -6,12 +6,15 @@ from pathlib import Path
 
 import config
 import msg
+import network
 import utils
 import wine
 
 #TODO: Fix install progress if user returns to main menu?
 # To replicate, start a TUI install, return/cancel on second step
 # Then launch a new install
+
+#TODO: Reimplement `--install-app`?
 
 
 def ensure_product_choice(app=None):
@@ -27,6 +30,8 @@ def ensure_product_choice(app=None):
             if config.DIALOG == 'curses':
                 app.product_e.wait()
             config.FLPRODUCT = app.product_q.get()
+        else:
+            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
 
     if config.FLPRODUCT == 'Logos':
         config.FLPRODUCTi = 'logos4'
@@ -52,6 +57,8 @@ def ensure_version_choice(app=None):
             if config.DIALOG == 'curses':
                 app.version_e.wait()
             config.TARGETVERSION = app.version_q.get()
+        else:
+            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
 
     logging.debug(f"> {config.TARGETVERSION=}")
 
@@ -70,6 +77,8 @@ def ensure_release_choice(app=None):
                 app.release_e.wait()
             config.TARGET_RELEASE_VERSION = app.release_q.get()
             logging.debug(f"{config.TARGET_RELEASE_VERSION=}")
+        else:
+            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
 
     logging.debug(f"> {config.TARGET_RELEASE_VERSION=}")
 
@@ -95,6 +104,8 @@ def ensure_install_dir_choice(app=None):
                 app.installdir_e.wait()
                 config.INSTALLDIR = app.installdir_q.get()
                 config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
+        else:
+            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
 
     logging.debug(f"> {config.INSTALLDIR=}")
     logging.debug(f"> {config.APPDIR_BINDIR=}")
@@ -113,12 +124,14 @@ def ensure_wine_choice(app=None):
     logging.debug('- config.WINEBIN_CODE')
 
     if config.WINE_EXE is None:
-        utils.set_recommended_appimage_config()
+        network.set_recommended_appimage_config()
         if app:
             utils.send_task(app, 'WINE_EXE')
             if config.DIALOG == 'curses':
                 app.wine_e.wait()
             config.WINE_EXE = app.wine_q.get()
+        else:
+            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
     logging.debug(f"Preparing to process WINE_EXE. Currently set to: {config.WINE_EXE}.")
@@ -146,10 +159,14 @@ def ensure_winetricks_choice(app=None):
     # Check if local winetricks version available; else, download it.
         config.WINETRICKSBIN = f"{config.APPDIR_BINDIR}/winetricks"
 
-        utils.send_task(app, 'WINETRICKSBIN')
-        if config.DIALOG == 'curses':
-            app.tricksbin_e.wait()
-        winetricksbin = app.tricksbin_q.get()
+        if app:
+            utils.send_task(app, 'WINETRICKSBIN')
+            if config.DIALOG == 'curses':
+                app.tricksbin_e.wait()
+            winetricksbin = app.tricksbin_q.get()
+        else:
+            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+
         if not winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = winetricksbin
 
@@ -241,6 +258,8 @@ def ensure_install_dirs(app=None):
 
     if app:
         utils.send_task(app, 'INSTALLING')
+    else:
+        logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
 
 
 def ensure_sys_deps(app=None):
@@ -272,7 +291,7 @@ def ensure_appimage_download(app=None):
     downloaded_file = utils.get_downloaded_file_path(filename)
     if not downloaded_file:
         downloaded_file = Path(f"{config.MYDOWNLOADS}/{filename}")
-    utils.logos_reuse_download(
+    network.logos_reuse_download(
         config.RECOMMENDED_WINE64_APPIMAGE_URL,
         filename,
         config.MYDOWNLOADS,
@@ -372,7 +391,7 @@ def ensure_premade_winebottle_download(app=None):
     downloaded_file = utils.get_downloaded_file_path(config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
     if not downloaded_file:
         downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
-    utils.logos_reuse_download(
+    network.logos_reuse_download(
         config.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
         config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
         config.MYDOWNLOADS,
@@ -402,7 +421,7 @@ def ensure_product_installer_download(app=None):
     downloaded_file = utils.get_downloaded_file_path(config.LOGOS_EXECUTABLE)
     if not downloaded_file:
         downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
-    utils.logos_reuse_download(
+    network.logos_reuse_download(
         config.LOGOS64_URL,
         config.LOGOS_EXECUTABLE,
         config.MYDOWNLOADS,

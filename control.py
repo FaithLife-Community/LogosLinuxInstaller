@@ -17,6 +17,7 @@ from pathlib import Path
 import config
 # import installer
 import msg
+import network
 import tui_curses
 import tui_app
 import utils
@@ -331,7 +332,7 @@ def set_winetricks():
 def download_winetricks():
     msg.logos_msg("Downloading winetricks…")
     appdir_bindir = f"{config.INSTALLDIR}/data/bin"
-    utils.logos_reuse_download(
+    network.logos_reuse_download(
         config.WINETRICKS_URL,
         "winetricks",
         appdir_bindir

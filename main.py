@@ -9,6 +9,7 @@ import control
 import gui_app
 import installer
 import msg
+import network
 import tui_app
 import utils
 import wine
@@ -186,7 +187,7 @@ def parse_args(args, parser):
     if args.skip_fonts:
         config.SKIP_FONTS = True
 
-    if args.check_for_updates:
+    if network.check_for_updates:
         config.CHECK_UPDATES = True
 
     if args.skip_dependencies:
@@ -347,7 +348,7 @@ def main():
     logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
     logging.debug(f"Installer log file: {config.LOGOS_LOG}")
 
-    utils.check_for_updates()
+    network.check_for_updates()
 
     # Check if app is installed.
     install_required = [
