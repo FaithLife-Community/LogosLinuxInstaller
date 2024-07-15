@@ -18,6 +18,7 @@ import config
 # import installer
 import msg
 import network
+import system
 import tui_curses
 import tui_app
 import utils
@@ -290,7 +291,7 @@ def set_winetricks():
                         "1: Use local winetricks.",
                         "2: Download winetricks from the Internet"
                     ]
-                    winetricks_choice = tui.menu(options, title, question_text)
+                    winetricks_choice = tui_curses.menu(options, title, question_text)
 
                     logging.debug(f"winetricks_choice: {winetricks_choice}")
                     if winetricks_choice.startswith("1"):
@@ -299,7 +300,7 @@ def set_winetricks():
                         return 0
                     elif winetricks_choice.startswith("2"):
                         # download_winetricks()
-                        utils.install_winetricks(config.APPDIR_BINDIR)
+                        system.install_winetricks(config.APPDIR_BINDIR)
                         config.WINETRICKSBIN = os.path.join(
                             config.APPDIR_BINDIR,
                             "winetricks"
@@ -311,7 +312,7 @@ def set_winetricks():
             else:
                 msg.logos_msg("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet...")  # noqa: E501
                 # download_winetricks()
-                utils.install_winetricks(config.APPDIR_BINDIR)
+                system.install_winetricks(config.APPDIR_BINDIR)
                 config.WINETRICKSBIN = os.path.join(
                     config.APPDIR_BINDIR,
                     "winetricks"
@@ -320,7 +321,7 @@ def set_winetricks():
         else:
             msg.logos_msg("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
             # download_winetricks()
-            utils.install_winetricks(config.APPDIR_BINDIR)
+            system.install_winetricks(config.APPDIR_BINDIR)
             config.WINETRICKSBIN = os.path.join(
                 config.APPDIR_BINDIR,
                 "winetricks"

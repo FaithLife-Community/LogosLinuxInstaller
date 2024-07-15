@@ -10,12 +10,12 @@ from queue import Queue
 
 import config
 import control
-import network
-import tui_curses
-import tui_dialog
-import tui_screen
 import installer
 import msg
+import network
+import system
+import tui_curses
+import tui_screen
 import utils
 import wine
 
@@ -482,7 +482,7 @@ class TUI():
 
     def set_tui_menu_options(self, dialog=False):
         labels = []
-        if config.LLI_LATEST_VERSION and utils.get_runmode() == 'binary':
+        if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
             logging.debug("Checking if Logos Linux Installers needs updated.")  # noqa: E501
             status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
             if status == 0:

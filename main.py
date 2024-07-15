@@ -10,6 +10,7 @@ import gui_app
 import installer
 import msg
 import network
+import system
 import tui_app
 import utils
 import wine
@@ -307,14 +308,14 @@ def main():
 
     # Set DIALOG and GUI variables.
     if config.DIALOG is None:
-        utils.get_dialog()
+        system.get_dialog()
     else:
         config.DIALOG = config.DIALOG.lower()
         if config.DIALOG == 'tk':
             config.GUI = True
 
     if config.DIALOG == 'curses':
-        config.use_python_dialog = utils.test_dialog_version()
+        config.use_python_dialog = system.test_dialog_version()
 
         if config.use_python_dialog is None:
             logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")

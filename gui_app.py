@@ -19,6 +19,7 @@ import control
 import gui
 import installer
 import network
+import system
 import utils
 import wine
 
@@ -758,7 +759,7 @@ class ControlWindow():
     def get_winetricks(self, evt=None):
         self.gui.statusvar.set("Installing Winetricks…")
         t1 = Thread(
-            target=utils.install_winetricks,
+            target=system.install_winetricks,
             args=[config.APPDIR_BINDIR],
             kwargs={'app': self},
             daemon=True,
@@ -815,7 +816,7 @@ class ControlWindow():
     def update_latest_lli_release_button(self, evt=None):
         status, reason = utils.compare_logos_linux_installer_version()
         msg = None
-        if utils.get_runmode() != 'binary':
+        if system.get_runmode() != 'binary':
             state = 'disabled'
             msg = "This button is disabled. Can't run self-update from script."
         elif status == 0:

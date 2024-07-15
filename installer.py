@@ -7,6 +7,7 @@ from pathlib import Path
 import config
 import msg
 import network
+import system
 import utils
 import wine
 
@@ -368,7 +369,7 @@ def ensure_winetricks_executable(app=None):
         # The choice of System winetricks was made previously. Here we are only
         # concerned about whether the downloaded winetricks is usable.
         msg.logos_msg("Downloading winetricks from the Internet…")
-        utils.install_winetricks(
+        system.install_winetricks(
             tricksbin.parent,
             app=app
         )
@@ -580,7 +581,7 @@ def ensure_launcher_executable(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_config_file(app=app)
     config.INSTALL_STEP += 1
-    runmode = utils.get_runmode()
+    runmode = system.get_runmode()
     if runmode != 'binary':
         return
     update_install_feedback(
@@ -602,7 +603,7 @@ def ensure_launcher_shortcuts(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_launcher_executable(app=app)
     config.INSTALL_STEP += 1
-    runmode = utils.get_runmode()
+    runmode = system.get_runmode()
     if runmode != 'binary':
         return
     update_install_feedback("Creating launcher shortcuts…", app=app)
