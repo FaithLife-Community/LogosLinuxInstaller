@@ -253,16 +253,18 @@ def file_exists(file_path):
 
 
 def get_current_logos_version():
-    path_regex = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"
+    path_regex = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"  # noqa: E501
     file_paths = glob.glob(path_regex)
+    logos_version_number = None
     if file_paths:
         logos_version_file = file_paths[0]
         with open(logos_version_file, 'r') as json_file:
             json_data = json.load(json_file)
+        for key in json_data.get('libraries', dict()):
+            if key.startswith('Logos') and '/' in key:
+                logos_version_number = key.split('/')[1]
 
-        dependencies = json_data["targets"]['.NETCoreApp,Version=v6.0/win10-x64']['Logos/1.0.0']['dependencies']
-        logos_version_number = dependencies.get("LogosUpdater.Reference")
-
+        logging.debug(f"{logos_version_number=}")
         if logos_version_number is not None:
             return logos_version_number
         else:
