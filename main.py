@@ -8,7 +8,6 @@ import threading
 
 processes = {}
 threads = []
-stop_event = threading.Event()
 
 import config
 import control
@@ -266,9 +265,6 @@ def run_control_panel():
         try:
             curses.wrapper(tui_app.control_panel_app)
         except KeyboardInterrupt:
-            stop_event.set()
-            for thread in threads:
-                thread.join()
             raise
         except SystemExit:
             logging.info("Caught SystemExit, exiting gracefully...")
@@ -276,12 +272,12 @@ def run_control_panel():
                 close()
             except Exception as e:
                 raise
+            raise
         except curses.error as e:
             logging.error(f"Curses error in run_control_panel(): {e}")
             raise
         except Exception as e:
             logging.error(f"An error occurred in run_control_panel(): {e}")
-            curses.endwin()
             raise
 
 
@@ -395,6 +391,8 @@ def main():
 
 def close():
     logging.debug("Closing Logos on Linux.")
+    for thread in threads:
+        thread.join()
     if len(processes) > 0:
         wine.end_wine_processes()
     else:

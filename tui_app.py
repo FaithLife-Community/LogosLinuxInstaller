@@ -139,18 +139,15 @@ class TUI():
             curses.echo()
         except curses.error as e:
             logging.error(f"Curses error in end_curses: {e}")
+            raise
         except Exception as e:
             logging.error(f"An error occurred in end_curses(): {e}")
+            raise
 
     def end(self, signal, frame):
         logging.debug("Exiting…")
-        if self.stdscr is not None:
-            self.stdscr.clear()
-            curses.endwin()
-        for thread in threads:
-            thread.join()
-
-        sys.exit(0)
+        self.llirunning = False
+        curses.endwin()
 
     def resize_curses(self):
         config.resizing = True
@@ -215,6 +212,9 @@ class TUI():
         try:
             self.init_curses()
             self.display()
+        except KeyboardInterrupt:
+            self.end_curses()
+            signal.signal(signal.SIGINT, self.end)
         finally:
             self.end_curses()
             signal.signal(signal.SIGINT, self.end)
@@ -255,7 +255,6 @@ class TUI():
                 msg.logos_warn("Exiting installation.")
                 self.tui_screens = []
                 self.llirunning = False
-                sys.exit(0)
             elif choice.startswith("Install"):
                 config.INSTALL_STEPS_COUNT = 0
                 config.INSTALL_STEP = 0

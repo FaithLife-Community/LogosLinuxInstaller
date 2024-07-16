@@ -14,6 +14,7 @@ if 'dialog' in sys.modules:
 class Screen:
     def __init__(self, app, screen_id, queue, event):
         self.app = app
+        self.stdscr = ""
         self.screen_id = screen_id
         self.choice = "Processing"
         self.queue = queue
@@ -107,12 +108,15 @@ class MenuScreen(CursesScreen):
 
     def display(self):
         self.stdscr.erase()
-        tui_curses.menu(
+        self.choice = tui_curses.MenuDialog(
             self.app,
             self.question,
             self.options
-        )
-        self.submit_choice_to_queue()
+        ).run()
+        if self.choice is not None and not self.choice == "" and not self.choice == "Processing":
+            config.current_option = 0
+            config.current_page = 0
+            self.submit_choice_to_queue()
         self.stdscr.noutrefresh()
         curses.doupdate()
 
@@ -121,6 +125,7 @@ class MenuScreen(CursesScreen):
 
     def set_options(self, new_options):
         self.options = new_options
+        self.app.menu_options = new_options
 
 
 class InputScreen(CursesScreen):
@@ -129,7 +134,7 @@ class InputScreen(CursesScreen):
         self.stdscr = self.app.get_menu_window()
         self.question = question
         self.default = default
-        self.user_input_dialog = tui_curses.UserInputDialog(
+        self.dialog = tui_curses.UserInputDialog(
             self.app,
             self.question,
             self.default
@@ -140,8 +145,10 @@ class InputScreen(CursesScreen):
 
     def display(self):
         self.stdscr.erase()
-        self.choice = self.user_input_dialog.run()
-        self.submit_choice_to_queue()
+        self.choice = self.dialog.run()
+        if not self.choice == "Processing":
+            logging.debug(f"DEV: {self.choice}")
+            self.submit_choice_to_queue()
         self.stdscr.noutrefresh()
         curses.doupdate()
 

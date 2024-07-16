@@ -7,26 +7,6 @@ import config
 import msg
 import utils
 
-from main import stop_event
-
-
-class CursesDialog():
-    def __init__(self, app):
-        self.app = app
-        self.stdscr = app.get_menu_window()
-
-    def __str__(self):
-        return f"Curses Dialog"
-
-    def draw(self):
-        pass
-
-    def input(self):
-        pass
-
-    def run(self):
-        pass
-
 
 def wrap_text(app, text):
     # Turn text into wrapped text, line by line, centered
@@ -61,6 +41,14 @@ def text_centered(app, text, start_y=0):
     return text_start_y, text_lines
 
 
+def spinner(app, index, start_y=0):
+    spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"]
+    i = index
+    text_centered(app, spinner_chars[i], start_y)
+    i = (i + 1) % len(spinner_chars)
+    return i
+
+
 def confirm(app, question_text, height=None, width=None):
     stdscr = app.get_menu_window()
     question_text = question_text + " [Y/n]: "
@@ -80,13 +68,22 @@ def confirm(app, question_text, height=None, width=None):
         stdscr.addstr(y, 0, "Type Y[es] or N[o]. ")
 
 
-def spinner(app, index, start_y=0):
-    spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"]
-    i = index
-    text_centered(app, spinner_chars[i], start_y)
-    i = (i + 1) % len(spinner_chars)
+class CursesDialog:
+    def __init__(self, app):
+        self.app = app
+        self.stdscr = self.app.get_menu_window()
 
-    return i
+    def __str__(self):
+        return f"Curses Dialog"
+
+    def draw(self):
+        pass
+
+    def input(self):
+        pass
+
+    def run(self):
+        pass
 
 
 class UserInputDialog(CursesDialog):
@@ -131,57 +128,42 @@ class UserInputDialog(CursesDialog):
         except KeyboardInterrupt:
             signal.signal(signal.SIGINT, self.app.end)
 
-        logging.debug(f"DEV: {self.user_input}")
-
     def run(self):
         if not self.submit:
             self.draw()
             return "Processing"
         else:
-            if self.user_input is None or not self.user_input or self.user_input == "":
+            if self.user_input is None or self.user_input == "":
                 self.user_input = self.default_text
             logging.debug(f"Selected Path: {self.user_input}")
             return self.user_input
 
 
-def do_menu_up(app):
-    if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:
-        # Move to the previous page
-        config.current_page -= 1
-        config.current_option = min(len(app.menu_options) - 1, (config.current_page + 1) * config.options_per_page - 1)
-    elif config.current_option == 0:
-        if config.total_pages == 1:
-            config.current_option = len(app.menu_options) - 1
-        else:
-            config.current_page = config.total_pages - 1
-            config.current_option = len(app.menu_options) - 1
-    else:
-        config.current_option = max(0, config.current_option - 1)
+class MenuDialog(CursesDialog):
+    def __init__(self, app, question_text, options):
+        super().__init__(app)
+        self.user_input = "Processing"
+        self.submit = False
+        self.question_text = question_text
+        self.options = options
+        self.question_start_y = None
+        self.question_lines = None
 
+    def __str__(self):
+        return f"Menu Curses Dialog"
 
-def do_menu_down(app):
-    if config.current_option == (config.current_page + 1) * config.options_per_page - 1 and config.current_page < config.total_pages - 1:
-        # Move to the next page
-        config.current_page += 1
-        config.current_option = min(len(app.menu_options) - 1, config.current_page * config.options_per_page)
-    elif config.current_option == len(app.menu_options) - 1:
-        config.current_page = 0
-        config.current_option = 0
-    else:
-        config.current_option = min(len(app.menu_options) - 1, config.current_option + 1)
+    def draw(self):
+        self.stdscr.erase()
+        self.app.active_screen.set_options(self.options)
+        config.total_pages = (len(self.options) - 1) // config.options_per_page + 1
 
-
-def menu(app, question_text, options):
-    def draw(app):
-        stdscr.erase()
-        question_start_y, question_lines = text_centered(app, question_text)
-
+        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text)
         # Display the options, centered
-        options_start_y = question_start_y + len(question_lines) + 2
+        options_start_y = self.question_start_y + len(self.question_lines) + 2
         for i in range(config.options_per_page):
             index = config.current_page * config.options_per_page + i
-            if index < len(options):
-                option = options[index]
+            if index < len(self.options):
+                option = self.options[index]
                 if type(option) is list:
                     option_lines = []
                     wine_binary_code = option[0]
@@ -189,99 +171,107 @@ def menu(app, question_text, options):
                         wine_binary_path = option[1]
                         wine_binary_description = option[2]
                         wine_binary_path_wrapped = textwrap.wrap(
-                            f"Binary Path: {wine_binary_path}", app.window_width - 4)
+                            f"Binary Path: {wine_binary_path}", self.app.window_width - 4)
                         option_lines.extend(wine_binary_path_wrapped)
                         wine_binary_desc_wrapped = textwrap.wrap(
-                            f"Description: {wine_binary_description}", app.window_width - 4)
+                            f"Description: {wine_binary_description}", self.app.window_width - 4)
                         option_lines.extend(wine_binary_desc_wrapped)
                     else:
                         wine_binary_path = option[1]
                         wine_binary_description = option[2]
                         wine_binary_path_wrapped = textwrap.wrap(
-                            f"{wine_binary_path}", app.window_width - 4)
+                            f"{wine_binary_path}", self.app.window_width - 4)
                         option_lines.extend(wine_binary_path_wrapped)
                         wine_binary_desc_wrapped = textwrap.wrap(
-                            f"{wine_binary_description}", app.window_width - 4)
+                            f"{wine_binary_description}", self.app.window_width - 4)
                         option_lines.extend(wine_binary_desc_wrapped)
                 else:
-                    option_lines = textwrap.wrap(option, app.window_width - 4)
+                    option_lines = textwrap.wrap(option, self.app.window_width - 4)
 
                 for j, line in enumerate(option_lines):
                     y = options_start_y + i + j
-                    x = max(0, app.window_width // 2 - len(line) // 2)
-                    if y < app.menu_window_height:
+                    x = max(0, self.app.window_width // 2 - len(line) // 2)
+                    if y < self.app.menu_window_height:
                         if index == config.current_option:
-                            stdscr.addstr(y, x, line, curses.A_REVERSE)
+                            self.stdscr.addstr(y, x, line, curses.A_REVERSE)
                         else:
-                            stdscr.addstr(y, x, line)
+                            self.stdscr.addstr(y, x, line)
 
                 if type(option) is list:
                     options_start_y += (len(option_lines))
 
         # Display pagination information
-        page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(options)}"
-        stdscr.addstr(app.menu_window_height - 1, 2, page_info, curses.A_BOLD)
+        page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
+        self.stdscr.addstr(self.app.menu_window_height - 1, 2, page_info, curses.A_BOLD)
 
-        # Refresh the windows
-        stdscr.noutrefresh()
-
-    stdscr = app.get_menu_window()
-    options_per_page = config.options_per_page
-    config.total_pages = (len(options) - 1) // options_per_page + 1
-
-    app.menu_options = options
-
-    while True:
-        while not stop_event.is_set():
-            draw(app)
-            # Get user input
-            thread = utils.start_thread(menu_keyboard, False, app)
-            thread.join()
-            stdscr.noutrefresh()
-            return
-
-
-def menu_keyboard(app):
-    if len(app.tui_screens) > 0:
-        stdscr = app.tui_screens[-1].get_stdscr()
-    else:
-        stdscr = app.menu_screen.get_stdscr()
-    options = app.menu_options
-    key = stdscr.getch()
-    choice = ""
-
-    try:
-        if key == -1:  # If key not found, keep processing.
-            pass
-        elif key == curses.KEY_RESIZE:
-            utils.send_task(app, 'RESIZE')
-        elif key == curses.KEY_UP or key == 259:  # Up arrow
-            do_menu_up(app)
-        elif key == curses.KEY_DOWN or key == 258:  # Down arrow
-            do_menu_down(app)
-        elif key == 27:  # Sometimes the up/down arrow key is represented by a series of three keys.
-            next_key = stdscr.getch()
-            if next_key == 91:
-                final_key = stdscr.getch()
-                if final_key == 65:
-                    do_menu_up(app)
-                elif final_key == 66:
-                    do_menu_down(app)
-        elif key == ord('\n'):  # Enter key
-            choice = options[config.current_option]
-            # Reset for next menu
-            config.current_option = 0
-            config.current_page = 0
-        elif key == ord('\x1b'):
-            signal.signal(signal.SIGINT, app.end)
+    def do_menu_up(self):
+        if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:
+            # Move to the previous page
+            config.current_page -= 1
+            config.current_option = min(len(self.app.menu_options) - 1, (config.current_page + 1) * config.options_per_page - 1)
+        elif config.current_option == 0:
+            if config.total_pages == 1:
+                config.current_option = len(self.app.menu_options) - 1
+            else:
+                config.current_page = config.total_pages - 1
+                config.current_option = len(self.app.menu_options) - 1
         else:
-            msg.status("Input unknown.", app)
-            pass
-    except KeyboardInterrupt:
-        signal.signal(signal.SIGINT, app.end)
+            config.current_option = max(0, config.current_option - 1)
 
-    stdscr.refresh()
-    if choice:
-        app.active_screen.choice = choice
-    else:
-        return "Processing"
+    def do_menu_down(self):
+        if config.current_option == (config.current_page + 1) * config.options_per_page - 1 and config.current_page < config.total_pages - 1:
+            # Move to the next page
+            config.current_page += 1
+            config.current_option = min(len(self.app.menu_options) - 1, config.current_page * config.options_per_page)
+        elif config.current_option == len(self.app.menu_options) - 1:
+            config.current_page = 0
+            config.current_option = 0
+        else:
+            config.current_option = min(len(self.app.menu_options) - 1, config.current_option + 1)
+
+    def input(self):
+        if len(self.app.tui_screens) > 0:
+            self.stdscr = self.app.tui_screens[-1].get_stdscr()
+        else:
+            self.stdscr = self.app.menu_screen.get_stdscr()
+        key = self.stdscr.getch()
+
+        try:
+            if key == -1:  # If key not found, keep processing.
+                pass
+            elif key == curses.KEY_RESIZE:
+                utils.send_task(self.app, 'RESIZE')
+            elif key == curses.KEY_UP or key == 259:  # Up arrow
+                self.do_menu_up()
+            elif key == curses.KEY_DOWN or key == 258:  # Down arrow
+                self.do_menu_down()
+            elif key == 27:  # Sometimes the up/down arrow key is represented by a series of three keys.
+                next_key = self.stdscr.getch()
+                if next_key == 91:
+                    final_key = self.stdscr.getch()
+                    if final_key == 65:
+                        self.do_menu_up()
+                    elif final_key == 66:
+                        self.do_menu_down()
+            elif key == ord('\n') or key == 10:  # Enter key
+                self.user_input = self.options[config.current_option]
+            elif key == ord('\x1b'):
+                signal.signal(signal.SIGINT, self.app.end)
+            else:
+                msg.status("Input unknown.", self.app)
+                pass
+        except KeyboardInterrupt:
+            signal.signal(signal.SIGINT, self.app.end)
+
+        self.stdscr.noutrefresh()
+
+    def run(self):
+        #thread = utils.start_thread(self.input, False)
+        #thread.join()
+        self.draw()
+        self.input()
+        return self.user_input
+
+    def set_options(self, new_options):
+        self.options = new_options
+        self.app.menu_options = new_options
