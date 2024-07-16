@@ -10,6 +10,24 @@ import utils
 from main import stop_event
 
 
+class CursesDialog():
+    def __init__(self, app):
+        self.app = app
+        self.stdscr = app.get_menu_window()
+
+    def __str__(self):
+        return f"Curses Dialog"
+
+    def draw(self):
+        pass
+
+    def input(self):
+        pass
+
+    def run(self):
+        pass
+
+
 def wrap_text(app, text):
     # Turn text into wrapped text, line by line, centered
     wrapped_text = textwrap.fill(text, app.window_width - 4)
@@ -71,54 +89,59 @@ def spinner(app, index, start_y=0):
     return i
 
 
-def get_user_input(app, question_text, default_text):
-    stdscr = app.get_menu_window()
-    curses.echo()
-    curses.curs_set(1)
-    user_input = input_keyboard(app, question_text, default_text)
-    curses.curs_set(0)
-    curses.noecho()
+class UserInputDialog(CursesDialog):
+    def __init__(self, app, question_text, default_text):
+        super().__init__(app)
+        self.question_text = question_text
+        self.default_text = default_text
+        self.user_input = ""
+        self.submit = False
+        self.question_start_y = None
+        self.question_lines = None
 
-    return user_input
+    def __str__(self):
+        return f"UserInput Curses Dialog"
 
+    def draw(self):
+        curses.echo()
+        curses.curs_set(1)
+        self.stdscr.clear()
+        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text)
+        self.input()
+        curses.curs_set(0)
+        curses.noecho()
+        self.stdscr.refresh()
 
-def input_keyboard(app, question_text, default):
-    stdscr = app.get_menu_window()
-    done = False
-    choice = ""
+    def input(self):
+        self.stdscr.addstr(self.question_start_y + len(self.question_lines) + 2, 10, self.user_input)
+        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.user_input))
 
-    stdscr.clear()
-    question_start_y, question_lines = text_centered(app, question_text)
-
-    try:
-        while done is False:
-            curses.echo()
-            key = stdscr.getch(question_start_y + len(question_lines) + 2, 10 + len(choice))
+        try:
             if key == -1:  # If key not found, keep processing.
                 pass
             elif key == ord('\n'):  # Enter key
-                if choice is None or not choice:
-                    choice = default
-                logging.debug(f"Selected Path: {choice}")
-                done = True
+                self.submit = True
             elif key == curses.KEY_RESIZE:
-                utils.send_task(app, 'RESIZE')
+                utils.send_task(self.app, 'RESIZE')
             elif key == curses.KEY_BACKSPACE or key == 127:
-                if len(choice) > 0:
-                    choice = choice[:-1]
-                    stdscr.addstr(question_start_y + len(question_lines) + 2, 10, ' ' * (len(choice) + 1))
-                    stdscr.addstr(question_start_y + len(question_lines) + 2, 10, choice)
+                if len(self.user_input) > 0:
+                    self.user_input = self.user_input[:-1]
             else:
-                choice += chr(key)
-                stdscr.addch(question_start_y + len(question_lines) + 2, 10 + len(choice) - 1, chr(key))
-            stdscr.refresh()
-        curses.noecho()
+                self.user_input += chr(key)
+        except KeyboardInterrupt:
+            signal.signal(signal.SIGINT, self.app.end)
 
-        stdscr.refresh()
-        if done:
-            return choice
-    except KeyboardInterrupt:
-        signal.signal(signal.SIGINT, app.end)
+        logging.debug(f"DEV: {self.user_input}")
+
+    def run(self):
+        if not self.submit:
+            self.draw()
+            return "Processing"
+        else:
+            if self.user_input is None or not self.user_input or self.user_input == "":
+                self.user_input = self.default_text
+            logging.debug(f"Selected Path: {self.user_input}")
+            return self.user_input
 
 
 def do_menu_up(app):

@@ -129,17 +129,18 @@ class InputScreen(CursesScreen):
         self.stdscr = self.app.get_menu_window()
         self.question = question
         self.default = default
+        self.user_input_dialog = tui_curses.UserInputDialog(
+            self.app,
+            self.question,
+            self.default
+        )
 
     def __str__(self):
         return f"Curses Input Screen"
 
     def display(self):
         self.stdscr.erase()
-        self.choice = tui_curses.get_user_input(
-            self.app,
-            self.question,
-            self.default
-        )
+        self.choice = self.user_input_dialog.run()
         self.submit_choice_to_queue()
         self.stdscr.noutrefresh()
         curses.doupdate()
