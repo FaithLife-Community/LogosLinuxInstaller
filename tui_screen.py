@@ -1,15 +1,14 @@
 import logging
-import queue
-
 import time
 from pathlib import Path
 import curses
+import sys
 
-import msg
 import config
 import installer
 import tui_curses
-import tui_dialog
+if 'dialog' in sys.modules:
+    import tui_dialog
 import tui_screen
 import utils
 

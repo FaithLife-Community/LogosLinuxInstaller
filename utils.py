@@ -21,7 +21,8 @@ import config
 import msg
 import network
 import system
-import tui_dialog
+if 'dialog' in sys.modules:
+    import tui_dialog
 import wine
 
 #TODO: Move config commands to config.py
