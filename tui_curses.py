@@ -147,22 +147,14 @@ def do_menu_down(app):
 
 
 def menu(app, question_text, options):
-    stdscr = app.get_menu_window()
-    current_option = config.current_option
-    current_page = config.current_page
-    options_per_page = config.options_per_page
-    config.total_pages = (len(options) - 1) // options_per_page + 1
-
-    app.menu_options = options
-
-    while True:
+    def draw(app):
         stdscr.erase()
         question_start_y, question_lines = text_centered(app, question_text)
 
         # Display the options, centered
         options_start_y = question_start_y + len(question_lines) + 2
-        for i in range(options_per_page):
-            index = current_page * options_per_page + i
+        for i in range(config.options_per_page):
+            index = config.current_page * config.options_per_page + i
             if index < len(options):
                 option = options[index]
                 if type(option) is list:
@@ -193,7 +185,7 @@ def menu(app, question_text, options):
                     y = options_start_y + i + j
                     x = max(0, app.window_width // 2 - len(line) // 2)
                     if y < app.menu_window_height:
-                        if index == current_option:
+                        if index == config.current_option:
                             stdscr.addstr(y, x, line, curses.A_REVERSE)
                         else:
                             stdscr.addstr(y, x, line)
@@ -203,18 +195,26 @@ def menu(app, question_text, options):
 
         # Display pagination information
         page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(options)}"
+        logging.debug(f"DEV: Options: {config.options_per_page}")
+        logging.debug(f"DEV: Main: {app.main_window_height}")
+        logging.debug(f"DEV: Menu: {app.menu_window_height}")
         stdscr.addstr(app.menu_window_height - 1, 2, page_info, curses.A_BOLD)
 
         # Refresh the windows
         stdscr.noutrefresh()
 
+    stdscr = app.get_menu_window()
+    options_per_page = config.options_per_page
+    config.total_pages = (len(options) - 1) // options_per_page + 1
+
+    app.menu_options = options
+
+    while True:
+        draw(app)
         # Get user input
         thread = utils.start_thread(menu_keyboard, True, app)
-
         thread.join()
-
         stdscr.noutrefresh()
-
         return
 
 
