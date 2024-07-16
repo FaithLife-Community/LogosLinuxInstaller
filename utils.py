@@ -27,6 +27,7 @@ import wine
 
 #TODO: Move config commands to config.py
 
+from main import threads
 
 def get_calling_function_name():
     if 'inspect' in sys.modules:
@@ -834,6 +835,7 @@ def grep(regexp, filepath):
 
 def start_thread(task, daemon_bool=True, *args):
     thread = threading.Thread(name=f"{task}", target=task, daemon=daemon_bool, args=args)
+    threads.append(thread)
     thread.start()
     return thread
 

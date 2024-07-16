@@ -7,6 +7,8 @@ import config
 import msg
 import utils
 
+from main import stop_event
+
 
 def wrap_text(app, text):
     # Turn text into wrapped text, line by line, centered
@@ -207,12 +209,13 @@ def menu(app, question_text, options):
     app.menu_options = options
 
     while True:
-        draw(app)
-        # Get user input
-        thread = utils.start_thread(menu_keyboard, True, app)
-        thread.join()
-        stdscr.noutrefresh()
-        return
+        while not stop_event.is_set():
+            draw(app)
+            # Get user input
+            thread = utils.start_thread(menu_keyboard, False, app)
+            thread.join()
+            stdscr.noutrefresh()
+            return
 
 
 def menu_keyboard(app):

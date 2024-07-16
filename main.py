@@ -3,6 +3,12 @@ import logging
 import os
 import argparse
 import curses
+import sys
+import threading
+
+processes = {}
+threads = []
+stop_event = threading.Event()
 
 import config
 import control
@@ -14,9 +20,6 @@ import system
 import tui_app
 import utils
 import wine
-
-processes = {}
-
 
 def get_parser():
     desc = "Installs FaithLife Bible Software with Wine on Linux."
@@ -260,12 +263,26 @@ def run_control_panel():
     if config.DIALOG is None or config.DIALOG == 'tk':
         gui_app.control_panel_app()
     else:
-        #try:
+        try:
             curses.wrapper(tui_app.control_panel_app)
-        #except curses.error as e:
-        #    logging.error(f"Curses error in run_control_panel(): {e}")
-        #except Exception as e:
-        #    logging.error(f"An error occurred in run_control_panel(): {e}")
+        except KeyboardInterrupt:
+            stop_event.set()
+            for thread in threads:
+                thread.join()
+            raise
+        except SystemExit:
+            logging.info("Caught SystemExit, exiting gracefully...")
+            try:
+                close()
+            except Exception as e:
+                raise
+        except curses.error as e:
+            logging.error(f"Curses error in run_control_panel(): {e}")
+            raise
+        except Exception as e:
+            logging.error(f"An error occurred in run_control_panel(): {e}")
+            curses.endwin()
+            raise
 
 
 def main():
@@ -386,6 +403,9 @@ def close():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        close()
 
     close()

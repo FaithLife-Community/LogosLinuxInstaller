@@ -19,6 +19,8 @@ import tui_screen
 import utils
 import wine
 
+from main import threads
+
 console_message = ""
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
@@ -83,8 +85,6 @@ class TUI():
         self.menu_window_height = 6 + config.options_per_page
         self.tui_screens = []
         self.menu_options = []
-        self.threads = []
-        self.threads_started = []
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 9, 0)
         self.console = None
@@ -144,9 +144,10 @@ class TUI():
 
     def end(self, signal, frame):
         logging.debug("Exiting…")
-        self.stdscr.clear()
-        curses.endwin()
-        for thread in self.threads_started:
+        if self.stdscr is not None:
+            self.stdscr.clear()
+            curses.endwin()
+        for thread in threads:
             thread.join()
 
         sys.exit(0)
