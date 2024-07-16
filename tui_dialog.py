@@ -1,6 +1,8 @@
 import curses
-from dialog import Dialog
 import logging
+import sys
+if "dialog" in sys.modules:
+    from dialog import Dialog
 
 
 def text(app, text, height=None, width=None, title=None, backtitle=None, colors=True):

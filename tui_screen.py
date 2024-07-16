@@ -6,9 +6,12 @@ import sys
 
 import config
 import installer
+import system
 import tui_curses
-if 'dialog' in sys.modules:
+if system.have_dep("dialog"):
     import tui_dialog
+else:
+    logging.error(f"tui_screen.py: dialog not installed.")
 
 
 class Screen:

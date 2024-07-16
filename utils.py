@@ -21,8 +21,10 @@ import config
 import msg
 import network
 import system
-if 'dialog' in sys.modules:
+if system.have_dep("dialog"):
     import tui_dialog
+else:
+    logging.error(f"utils.py: dialog not installed.")
 import wine
 
 #TODO: Move config commands to config.py

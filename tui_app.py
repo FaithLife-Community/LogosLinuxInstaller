@@ -19,8 +19,6 @@ import tui_screen
 import utils
 import wine
 
-from main import threads
-
 console_message = ""
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
