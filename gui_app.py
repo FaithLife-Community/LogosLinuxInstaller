@@ -666,7 +666,8 @@ class ControlWindow():
         if utils.app_is_installed():
             t = Thread(
                 target=wine.get_app_logging_state,
-                kwargs={'app': self, 'init': True}
+                kwargs={'app': self, 'init': True},
+                daemon=True,
             )
             t.start()
             self.gui.statusvar.set('Getting current app logging status…')
