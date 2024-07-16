@@ -9,8 +9,6 @@ import installer
 import tui_curses
 if 'dialog' in sys.modules:
     import tui_dialog
-import tui_screen
-import utils
 
 
 class Screen:

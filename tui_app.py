@@ -160,9 +160,6 @@ class TUI():
         available_height = self.window_height - self.menu_window_height - 6
         config.options_per_page = max(available_height, 3)
         self.menu_window_height = 6 + config.options_per_page
-        logging.debug(f"DEV: Options: {config.options_per_page}")
-        logging.debug(f"DEV: Main: {self.main_window_height}")
-        logging.debug(f"DEV: Menu: {self.menu_window_height}")
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 9, 0)
         self.init_curses()

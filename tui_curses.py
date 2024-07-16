@@ -195,9 +195,6 @@ def menu(app, question_text, options):
 
         # Display pagination information
         page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(options)}"
-        logging.debug(f"DEV: Options: {config.options_per_page}")
-        logging.debug(f"DEV: Main: {app.main_window_height}")
-        logging.debug(f"DEV: Menu: {app.menu_window_height}")
         stdscr.addstr(app.menu_window_height - 1, 2, page_info, curses.A_BOLD)
 
         # Refresh the windows
