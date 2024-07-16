@@ -533,7 +533,7 @@ def ensure_product_installed(app=None):
     if not utils.find_installed_product():
         wine.install_msi()
         config.LOGOS_EXE = utils.find_installed_product()
-        utils.send_task(app, 'DONE')
+        utils.send_task(app, 'CONFIG')
         if config.DIALOG == 'curses':
             app.finished_e.wait()
 
@@ -585,7 +585,10 @@ def ensure_config_file(app=None):
             ):
                 logging.info("Updating config file.")
                 utils.write_config(config.CONFIG_FILE)
-    utils.send_task(app, "TUI-UPDATE-MENU")
+    if config.DIALOG == 'tk':
+        utils.send_task(app, 'DONE')
+    else:
+        utils.send_task(app, "TUI-UPDATE-MENU")
     logging.debug(f"> File exists?: {config.CONFIG_FILE}: {Path(config.CONFIG_FILE).is_file()}")  # noqa: E501
 
 
