@@ -14,7 +14,19 @@ import msg
 import network
 
 
-def run_command(command, retries=1, delay=0, stdin=None, shell=False):
+#TODO: Add a Popen variant to run_command to replace functions in control.py and wine.py
+def run_command(command, retries=1, delay=0, **kwargs):
+    check = kwargs.get("check", True)
+    text = kwargs.get("text", True)
+    capture_output = kwargs.get("capture_output", True)
+    shell = kwargs.get("shell", False)
+    env = kwargs.get("env", None)
+    cwd = kwargs.get("cwd", None)
+    encoding = kwargs.get("encoding", None)
+    stdin = kwargs.get("stdin", None)
+    stdout = kwargs.get("stdout", None)
+    stderr = kwargs.get("stderr", None)
+
     if retries < 1:
         retries = 1
 
@@ -26,11 +38,16 @@ def run_command(command, retries=1, delay=0, stdin=None, shell=False):
             logging.debug(f"Attempting to execute {command}")
             result = subprocess.run(
                 command,
-                stdin=stdin,
-                check=True,
-                text=True,
+                check=check,
+                text=text,
                 shell=shell,
-                capture_output=True
+                capture_output=capture_output,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                encoding=encoding,
+                cwd=cwd,
+                env=env
             )
             return result
         except subprocess.CalledProcessError as e:

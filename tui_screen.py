@@ -150,7 +150,6 @@ class InputScreen(CursesScreen):
         self.stdscr.erase()
         self.choice = self.dialog.run()
         if not self.choice == "Processing":
-            logging.debug(f"DEV: {self.choice}")
             self.submit_choice_to_queue()
         self.stdscr.noutrefresh()
         curses.doupdate()
