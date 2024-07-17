@@ -48,7 +48,7 @@ def spinner(app, index, start_y=0):
     i = (i + 1) % len(spinner_chars)
     return i
 
-
+#FIXME: Display flickers.
 def confirm(app, question_text, height=None, width=None):
     stdscr = app.get_menu_window()
     question_text = question_text + " [Y/n]: "
