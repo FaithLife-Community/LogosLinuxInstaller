@@ -487,6 +487,7 @@ def ensure_winetricks_applied(app=None):
     usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
     sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
     if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
+        #FIXME: This command is failing.
         reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
         with open(reg_file, 'w') as f:
             f.write(r'''REGEDIT4
