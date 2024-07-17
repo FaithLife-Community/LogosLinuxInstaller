@@ -10,6 +10,8 @@ from pathlib import Path
 
 import config
 import msg
+import network
+import system
 import utils
 
 from main import processes
@@ -67,6 +69,7 @@ def light_wineserver_wait():
 def heavy_wineserver_wait():
     utils.wait_process_using_dir(config.WINEPREFIX)
     wait_on([f"{config.WINESERVER_EXE}", "-w"])
+
 
 def get_wine_release(binary):
     cmd = [binary, "--version"]
@@ -183,18 +186,18 @@ def initializeWineBottle(app=None):
 def wine_reg_install(REG_FILE):
     msg.logos_msg(f"Installing registry file: {REG_FILE}")
     env = get_wine_env()
-    p = subprocess.run(
+    result = system.run_command(
         [config.WINE_EXE, "regedit.exe", REG_FILE],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
-        text=True,
         cwd=config.WORKDIR,
+        capture_output=False
     )
-    if p.returncode == 0:
-        logging.info(f"{REG_FILE} installed.")
-    elif p.returncode != 0:
+    if result is None or result.returncode != 0:
         msg.logos_error(f"Failed to install reg file: {REG_FILE}")
+    elif result.returncode == 0:
+        logging.info(f"{REG_FILE} installed.")
     light_wineserver_wait()
 
 
@@ -212,8 +215,12 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     env = get_wine_env()
     if config.WINECMD_ENCODING is None:
         # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
-        codepages = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages').split(',')  # noqa: E501
-        config.WINECMD_ENCODING = codepages[-1]
+        registry_value = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages')
+        if registry_value is not None:
+            codepages = registry_value.split(',')  # noqa: E501
+            config.WINECMD_ENCODING = codepages[-1]
+        else:
+            logging.error("wine.wine_proc: wine.get_registry_value returned None.")
     logging.debug(f"run_wine_proc: {winecmd}; {exe=}; {exe_args=}")
     wine_env_vars = {k: v for k, v in env.items() if k.startswith('WINE')}
     logging.debug(f"wine environment: {wine_env_vars}")
@@ -242,7 +249,10 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
                     try:
                         logging.info(line.decode().rstrip())
                     except UnicodeDecodeError:
-                        logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
+                        if config.WINECMD_ENCODING is not None:
+                            logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
+                        else:
+                            logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")
         returncode = process.wait()
 
         if returncode != 0:
@@ -288,14 +298,14 @@ def installFonts():
 
 def installICUDataFiles(app=None):
     releases_url = "https://api.github.com/repos/FaithLife-Community/icu/releases"  # noqa: E501
-    json_data = utils.get_latest_release_data(releases_url)
-    icu_url = utils.get_latest_release_url(json_data)
+    json_data = network.get_latest_release_data(releases_url)
+    icu_url = network.get_latest_release_url(json_data)
     # icu_tag_name = utils.get_latest_release_version_tag_name(json_data)
     if icu_url is None:
         logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
         return
     icu_filename = os.path.basename(icu_url)
-    utils.logos_reuse_download(
+    network.logos_reuse_download(
         icu_url,
         icu_filename,
         config.MYDOWNLOADS,
@@ -316,14 +326,14 @@ def get_registry_value(reg_path, name):
     value = None
     env = get_wine_env()
     cmd = [config.WINE_EXE, 'reg', 'query', reg_path, '/v', name]
-    stdout = subprocess.run(
-        cmd, capture_output=True,
-        text=True, encoding=config.WINECMD_ENCODING,
-        env=env).stdout
-    for line in stdout.splitlines():
-        if line.strip().startswith(name):
-            value = line.split()[-1].strip()
-            break
+    result = system.run_command(cmd, encoding=config.WINECMD_ENCODING, env=env)
+    if result.stdout is not None:
+        for line in result.stdout.splitlines():
+            if line.strip().startswith(name):
+                value = line.split()[-1].strip()
+                break
+    else:
+        logging.critical(f"wine.get_registry_value: Failed to get registry value: {reg_path}")
     return value
 
 
@@ -464,7 +474,7 @@ def run_logos():
     wine_release = get_wine_release(config.WINE_EXE)
     
     #TODO: Find a way to incorporate check_wine_version_and_branch()
-    if logos_release[0] < 30 and logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):
+    if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):
         txt = "Can't run Logos 10+ with Wine below 7.18."
         logging.critical(txt)
         msg.status(txt)
