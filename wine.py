@@ -319,7 +319,9 @@ def installICUDataFiles(app=None):
     if not os.path.exists(icu_win_dir):
         os.makedirs(icu_win_dir)
 
-    shutil.copytree(icu_win_dir, f"{drive_c}/windows", dirs_exist_ok = True)
+    shutil.copytree(icu_win_dir, f"{drive_c}/windows", dirs_exist_ok=True)
+    if app and not hasattr(app, 'todo_q'):
+        app.root.event_generate(app.message_event)
 
 
 def get_registry_value(reg_path, name):
