@@ -219,6 +219,7 @@ class InstallerWindow():
             w.state(state)
 
     def todo(self, evt=None, task=None):
+        logging.debug(f"GUI todo: {task=}")
         widgets = []
         if not task:
             if not self.todo_q.empty():
@@ -700,6 +701,8 @@ class ControlWindow():
                 self.gui.actioncmd = self.remove_library_catalog
             elif self.gui.actionsvar.get() == 'remove-index-files':
                 self.gui.actioncmd = self.remove_indexes
+            elif self.gui.actionsvar.get() == 'install-icu':
+                self.gui.actioncmd = self.install_icu
 
     def run_indexing(self, evt=None):
         t = Thread(target=wine.run_indexing)
@@ -713,6 +716,15 @@ class ControlWindow():
         t = Thread(
             target=control.remove_all_index_files,
             kwargs={'app': self}
+        )
+        t.start()
+
+    def install_icu(self, evt=None):
+        self.gui.statusvar.set("Installing ICU files…")
+        t = Thread(
+            target=wine.installICUDataFiles,
+            kwargs={'app': self},
+            daemon=True,
         )
         t.start()
 
