@@ -187,6 +187,12 @@ class ControlGui(Frame):
             variable=self.actionsvar,
             value='remove-index-files',
         )
+        self.install_icu_radio = Radiobutton(
+            self,
+            text="Install/Update ICU files",
+            variable=self.actionsvar,
+            value='install-icu',
+        )
         self.actions_button = Button(self, text="Run action")
         self.actions_button.state(['disabled'])
         s2 = Separator(self, orient='horizontal')
@@ -237,46 +243,55 @@ class ControlGui(Frame):
         self.progress.state(['disabled'])
 
         # Place widgets.
-        self.app_label.grid(column=0, row=0, sticky='w', pady=2)
-        self.app_button.grid(column=1, row=0, sticky='w', pady=2)
-
+        row = 0
+        self.app_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.app_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
         s1.grid(column=0, row=1, columnspan=3, sticky='we', pady=2)
-        self.actions_label.grid(column=0, row=2, sticky='e', padx=20, pady=2)
-        self.actions_button.grid(column=0, row=4, sticky='e', padx=20, pady=2)
-        self.run_indexing_radio.grid(column=1, row=2, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        self.remove_library_catalog_radio.grid(column=1, row=3, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        self.remove_index_files_radio.grid(column=1, row=4, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        s2.grid(column=0, row=5, columnspan=3, sticky='we', pady=2)
-
-        self.config_label.grid(column=0, row=6, sticky='w', pady=2)
-        self.config_button.grid(column=1, row=6, sticky='w', pady=2)
-
-        self.deps_label.grid(column=0, row=7, sticky='w', pady=2)
-        self.deps_button.grid(column=1, row=7, sticky='w', pady=2)
-
-        self.backups_label.grid(column=0, row=8, sticky='w', pady=2)
-        self.backup_button.grid(column=1, row=8, sticky='w', pady=2)
-        self.restore_button.grid(column=2, row=8, sticky='w', pady=2)
-
-        self.update_lli_label.grid(column=0, row=9, sticky='w', pady=2)
-        self.update_lli_button.grid(column=1, row=9, sticky='w', pady=2)
-
-        self.latest_appimage_label.grid(column=0, row=10, sticky='w', pady=2)
-        self.latest_appimage_button.grid(column=1, row=10, sticky='w', pady=2)
-
-        self.set_appimage_label.grid(column=0, row=11, sticky='w', pady=2)
-        self.set_appimage_button.grid(column=1, row=11, sticky='w', pady=2)
-
-        self.winetricks_label.grid(column=0, row=12, sticky='w', pady=2)
-        self.run_winetricks_button.grid(column=1, row=12, sticky='w', pady=2)
-        self.get_winetricks_button.grid(column=2, row=12, sticky='w', pady=2)
-
-        self.logging_label.grid(column=0, row=13, sticky='w', pady=2)
-        self.logging_button.grid(column=1, row=13, sticky='w', pady=2)
-
-        s3.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)  # noqa: E501
-        self.progress.grid(column=0, row=16, columnspan=3, sticky='we', pady=2)
+        row += 1
+        self.actions_label.grid(column=0, row=row, sticky='e', padx=20, pady=2)
+        self.run_indexing_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        self.remove_library_catalog_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        self.actions_button.grid(column=0, row=row, sticky='e', padx=20, pady=2)  # noqa: E501
+        self.remove_index_files_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        self.install_icu_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        s2.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)
+        row += 1
+        self.config_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.config_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.deps_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.deps_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.backups_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.backup_button.grid(column=1, row=row, sticky='w', pady=2)
+        self.restore_button.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.update_lli_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.update_lli_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.latest_appimage_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.latest_appimage_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.set_appimage_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.set_appimage_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.winetricks_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.run_winetricks_button.grid(column=1, row=row, sticky='w', pady=2)
+        self.get_winetricks_button.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.logging_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.logging_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        s3.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)
+        row += 1
+        self.message_label.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        row += 1
+        self.progress.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
 
 
 class ToolTip:
