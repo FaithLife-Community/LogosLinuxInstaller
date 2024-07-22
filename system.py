@@ -182,15 +182,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l"
         config.QUERY_PREFIX = '.i  '
-        if distro.id() == "debian":
-            binutils = "binutils binutils-common binutils-x86-64-linux-gnu libbinutils libctf-nobfd0 libctf0 libgprofng0"
-        else:
-            binutils = "binutils"
-        if distro.id() == "ubuntu" and distro.version() < "24.04":
-            fuse = "fuse"
-        else:
-            fuse = "fuse3"
-        config.PACKAGES = f"{binutils} cabextract {fuse} wget winbind"
+        config.PACKAGES = "binutils cabextract fuse3 wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
