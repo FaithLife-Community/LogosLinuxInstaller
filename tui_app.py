@@ -166,6 +166,7 @@ class TUI():
 
     def display(self):
         signal.signal(signal.SIGINT, self.end)
+        msg.initialize_curses_logging(self.stdscr)
         msg.status(self.console_message, self)
         self.active_screen = self.menu_screen
 
