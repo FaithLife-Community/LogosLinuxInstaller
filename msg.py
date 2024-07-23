@@ -10,18 +10,18 @@ import config
 
 logging.console_log = []
 
+
 class CursesHandler(logging.Handler):
-    def __init__(self, screen):
+    def __init__(self):
         logging.Handler.__init__(self)
-        self.screen = screen
+
     def emit(self, record):
         try:
             msg = self.format(record)
-            screen = self.screen
             status(msg)
-            screen.refresh()
         except:
             raise
+
 
 def get_log_level_name(level):
     name = None
@@ -78,18 +78,7 @@ def initialize_logging(stderr_log_level):
     )
 
 
-def initialize_curses_logging(stdscr):
-    '''
-    Log levels:
-        Level       Value   Description
-        CRITICAL    50      the program can't continue
-        ERROR       40      the program has not been able to do something
-        WARNING     30      something unexpected happened (maybe neg. effect)
-        INFO        20      confirmation that things are working as expected
-        DEBUG       10      detailed, dev-level information
-        NOTSET      0       all events are handled
-    '''
-
+def initialize_curses_logging():
     # Ensure log file parent folders exist.
     log_parent = Path(config.LOGOS_LOG).parent
     if not log_parent.is_dir():
@@ -98,7 +87,7 @@ def initialize_curses_logging(stdscr):
     # Define logging handlers.
     file_h = logging.FileHandler(config.LOGOS_LOG, encoding='UTF8')
     file_h.setLevel(logging.DEBUG)
-    curses_h = CursesHandler(stdscr)
+    curses_h = CursesHandler()
     handlers = [
         curses_h,
     ]
