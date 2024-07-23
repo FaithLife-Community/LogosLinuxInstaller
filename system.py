@@ -282,14 +282,29 @@ def query_packages(packages, elements=None, mode="install", app=None):
 
         for p in packages:
             status = "Unchecked"
+            l_num = 0
             for line in package_list.split('\n'):
-                if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":
-                    status = "Installed"
-                    break
-                elif line.strip().startswith(p) and mode == "remove":
-                    conflicting_packages.append(p)
-                    status = "Conflicting"
-                    break
+                l_num += 1
+                if config.PACKAGE_MANAGER_COMMAND_QUERY.startswith('dpkg'):
+                    parts = line.strip().split()
+                    if l_num < 6 or len(parts) < 2:  # skip header, etc.
+                        continue
+                    state = parts[0]
+                    pkg = parts[1].split(':')[0]  # remove :arch if present
+                    if pkg == p and state[1] == 'i':
+                        if mode == 'install':
+                            status = "Installed"
+                        elif mode == 'remove':
+                            status == 'Conflicting'
+                        break
+                else:
+                    if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":
+                        status = "Installed"
+                        break
+                    elif line.strip().startswith(p) and mode == "remove":
+                        conflicting_packages.append(p)
+                        status = "Conflicting"
+                        break
 
             if status == "Unchecked":
                 if mode == "install":
@@ -309,6 +324,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
                     dialog=config.use_python_dialog)
 
     txt = 'None'
+    exit()
     if mode == "install":
         if missing_packages:
             txt = f"Missing packages: {' '.join(missing_packages)}"
@@ -523,8 +539,9 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         app.report_dependencies("Checking Packages", 0, elements, dialog=config.use_python_dialog)
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
-        missing_packages, elements = query_packages(package_list, elements, app=app)
-        conflicting_packages, bad_elements = query_packages(bad_package_list, bad_elements, "remove", app=app)
+        logging.debug("Querying packages...")
+        missing_packages, elements = query_packages(package_list, elements, app=app)  # noqa: E501
+        conflicting_packages, bad_elements = query_packages(bad_package_list, bad_elements, "remove", app=app)  # noqa: E501
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if missing_packages and conflicting_packages:
