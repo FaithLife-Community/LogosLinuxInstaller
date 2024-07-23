@@ -166,7 +166,7 @@ class TUI():
 
     def display(self):
         signal.signal(signal.SIGINT, self.end)
-        msg.initialize_curses_logging(self.stdscr)
+        msg.initialize_curses_logging()
         msg.status(self.console_message, self)
         self.active_screen = self.menu_screen
 
@@ -597,4 +597,3 @@ class TUI():
 def control_panel_app(stdscr):
     os.environ.setdefault('ESCDELAY', '100')
     TUI(stdscr).run()
-
