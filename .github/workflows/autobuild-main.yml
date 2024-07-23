@@ -1,4 +1,4 @@
-name: Build & release to test-builds repo
+name: Auto-build & release to test-builds repo
 on:
   push:
     branches:
