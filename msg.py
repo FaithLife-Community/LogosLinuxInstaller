@@ -10,18 +10,20 @@ import config
 
 logging.console_log = []
 
+
 class CursesHandler(logging.Handler):
     def __init__(self, screen):
-        logging.Handler.__init__(self)
+        super().__init__()
         self.screen = screen
+
     def emit(self, record):
         try:
             msg = self.format(record)
-            screen = self.screen
             status(msg)
-            screen.refresh()
-        except:
+            self.screen.refresh()
+        except Exception:
             raise
+
 
 def get_log_level_name(level):
     name = None
@@ -58,10 +60,12 @@ def initialize_logging(stderr_log_level):
 
     # Define logging handlers.
     file_h = logging.FileHandler(config.LOGOS_LOG, encoding='UTF8')
+    file_h.name = "logfile"
     file_h.setLevel(logging.DEBUG)
     # stdout_h = logging.StreamHandler(sys.stdout)
     # stdout_h.setLevel(stdout_log_level)
     stderr_h = logging.StreamHandler(sys.stderr)
+    stderr_h.name = "terminal"
     stderr_h.setLevel(stderr_log_level)
     handlers = [
         file_h,
@@ -79,37 +83,13 @@ def initialize_logging(stderr_log_level):
 
 
 def initialize_curses_logging(stdscr):
-    '''
-    Log levels:
-        Level       Value   Description
-        CRITICAL    50      the program can't continue
-        ERROR       40      the program has not been able to do something
-        WARNING     30      something unexpected happened (maybe neg. effect)
-        INFO        20      confirmation that things are working as expected
-        DEBUG       10      detailed, dev-level information
-        NOTSET      0       all events are handled
-    '''
-
-    # Ensure log file parent folders exist.
-    log_parent = Path(config.LOGOS_LOG).parent
-    if not log_parent.is_dir():
-        log_parent.mkdir(parents=True)
-
-    # Define logging handlers.
-    file_h = logging.FileHandler(config.LOGOS_LOG, encoding='UTF8')
-    file_h.setLevel(logging.DEBUG)
+    current_logger = logging.getLogger()
+    for h in current_logger.handlers:
+        if h.name == 'terminal':
+            current_logger.removeHandler(h)
+            break
     curses_h = CursesHandler(stdscr)
-    handlers = [
-        curses_h,
-    ]
-
-    # Set initial config.
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=handlers,
-    )
+    current_logger.addHandler(curses_h)
 
 
 def update_log_level(new_level):
@@ -251,7 +231,6 @@ def progress(percent, app=None):
 def status(text, app=None):
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     """Handles status messages for both TUI and GUI."""
-    logging.debug(f"Status: {text}")
     if config.DIALOG == 'tk':
         app.status_q.put(text)
         app.root.event_generate('<<UpdateStatus>>')
