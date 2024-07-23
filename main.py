@@ -301,16 +301,8 @@ def main():
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
     # Set runtime config.
-    # Set DIALOG and GUI variables and initialize logging.
-    if config.DIALOG is None:
-        system.get_dialog()
-        # Initialize logging.
-        msg.initialize_logging(config.LOG_LEVEL)
-    else:
-        config.DIALOG = config.DIALOG.lower()
-        if config.DIALOG == 'tk':
-            config.GUI = True
-            msg.initialize_curses_logging()
+    # Initialize logging.
+    msg.initialize_logging(config.LOG_LEVEL)
     current_log_level = config.LOG_LEVEL
 
     # Set default config; incl. defining CONFIG_FILE.
@@ -341,6 +333,14 @@ def main():
         config.LOG_LEVEL = logging.DEBUG
     if config.LOG_LEVEL != current_log_level:
         msg.update_log_level(config.LOG_LEVEL)
+
+    # Set DIALOG and GUI variables.
+    if config.DIALOG is None:
+        system.get_dialog()
+    else:
+        config.DIALOG = config.DIALOG.lower()
+        if config.DIALOG == 'tk':
+            config.GUI = True
 
     if config.DIALOG == 'curses' and "dialog" in sys.modules:
         config.use_python_dialog = system.test_dialog_version()
