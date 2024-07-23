@@ -12,15 +12,13 @@ logging.console_log = []
 
 
 class CursesHandler(logging.Handler):
-    def __init__(self, screen):
+    def __init__(self):
         super().__init__()
-        self.screen = screen
 
     def emit(self, record):
         try:
             msg = self.format(record)
             status(msg)
-            self.screen.refresh()
         except Exception:
             raise
 
@@ -82,13 +80,13 @@ def initialize_logging(stderr_log_level):
     )
 
 
-def initialize_curses_logging(stdscr):
+def initialize_curses_logging():
     current_logger = logging.getLogger()
     for h in current_logger.handlers:
         if h.name == 'terminal':
-            current_logger.removeHandler(h)
+            #current_logger.removeHandler(h)
             break
-    curses_h = CursesHandler(stdscr)
+    curses_h = CursesHandler()
     current_logger.addHandler(curses_h)
 
 
