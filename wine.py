@@ -337,14 +337,24 @@ def get_registry_value(reg_path, name):
     value = None
     env = get_wine_env()
     cmd = [config.WINE_EXE, 'reg', 'query', reg_path, '/v', name]
-    result = system.run_command(cmd, encoding=config.WINECMD_ENCODING, env=env)
+    err_msg = f"Failed to get registry value: {reg_path}\\{name}"
+    try:
+        result = system.run_command(
+            cmd,
+            encoding=config.WINECMD_ENCODING,
+            env=env
+        )
+    except subprocess.CalledProcessError as e:
+        if 'non-zero exit status' in str(e):
+            logging.warning(err_msg)
+            return None
     if result.stdout is not None:
         for line in result.stdout.splitlines():
             if line.strip().startswith(name):
                 value = line.split()[-1].strip()
                 break
     else:
-        logging.critical(f"wine.get_registry_value: Failed to get registry value: {reg_path}")
+        logging.critical(err_msg)
     return value
 
 
