@@ -324,6 +324,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
                     dialog=config.use_python_dialog)
 
     txt = 'None'
+    exit()
     if mode == "install":
         if missing_packages:
             txt = f"Missing packages: {' '.join(missing_packages)}"
