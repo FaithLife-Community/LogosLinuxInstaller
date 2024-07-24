@@ -596,6 +596,9 @@ class ControlWindow():
         self.gui.remove_index_files_radio.config(
             command=self.on_action_radio_clicked
         )
+        self.gui.install_icu_radio.config(
+            command=self.on_action_radio_clicked
+        )
         self.gui.actions_button.config(command=self.gui.actioncmd)
 
         self.gui.loggingstatevar.set('Enable')
