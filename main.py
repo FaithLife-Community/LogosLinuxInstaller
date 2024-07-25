@@ -286,14 +286,14 @@ def run_control_panel():
             try:
                 close()
             except Exception as e:
-                raise
+                raise e
             raise
         except curses.error as e:
             logging.error(f"Curses error in run_control_panel(): {e}")
-            raise
+            raise e
         except Exception as e:
             logging.error(f"An error occurred in run_control_panel(): {e}")
-            raise
+            raise e
 
 
 def main():
