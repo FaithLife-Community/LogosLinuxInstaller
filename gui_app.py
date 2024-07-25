@@ -157,10 +157,8 @@ class InstallerWindow():
         self.check_evt = "<<CheckFile>>"
         self.root.bind(self.check_evt, self.update_file_check_progress)
         self.status_q = Queue()
-        self.root.bind(
-            "<<UpdateStatus>>",
-            self.update_status_text
-        )
+        self.status_evt = "<<UpdateStatus>>"
+        self.root.bind(self.status_evt, self.update_status_text)
         self.progress_q = Queue()
         self.root.bind(
             "<<UpdateProgress>>",
@@ -641,8 +639,9 @@ class ControlWindow():
         self.root.bind('<<InitLoggingButton>>', self.initialize_logging_button)
         self.root.bind('<<UpdateLoggingButton>>', self.update_logging_button)
         self.status_q = Queue()
+        self.status_evt = '<<UpdateStatus>>'
+        self.root.bind(self.status_evt, self.update_status_text)
         self.root.bind('<<ClearStatus>>', self.clear_status_text)
-        self.root.bind('<<UpdateStatus>>', self.update_status_text)
         self.progress_q = Queue()
         self.root.bind(
             '<<StartIndeterminateProgress>>',

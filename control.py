@@ -252,8 +252,8 @@ def remove_all_index_files(app=None):
                 logging.error(f"Error removing {file_to_remove}: {e}")
 
     msg.logos_msg("======= Removing all LogosBible index files done! =======")
-    if app is not None:
-        app.root.event_generate(app.message_event)
+    if app and hasattr(app, 'status_evt'):
+        app.root.event_generate(app.status_evt)
     sys.exit(0)
 
 
