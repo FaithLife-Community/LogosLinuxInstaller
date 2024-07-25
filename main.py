@@ -1,28 +1,27 @@
 #!/usr/bin/env python3
-import logging
-import os
 import argparse
-import curses
-import sys
-import threading
-
-processes = {}
-threads = []
-
 import config
 import control
+import curses
 try:
     import dialog  # noqa: F401
 except ImportError:
     pass
 import gui_app
 import installer
+import logging
 import msg
 import network
+import os
+import sys
 import system
 import tui_app
 import utils
 import wine
+
+processes = {}
+threads = []
+
 
 def get_parser():
     desc = "Installs FaithLife Bible Software with Wine on Linux."
@@ -350,13 +349,13 @@ def main():
         config.use_python_dialog = system.test_dialog_version()
 
         if config.use_python_dialog is None:
-            logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")
+            logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")  # noqa: E501
             config.use_python_dialog = False
         elif config.use_python_dialog:
             logging.debug("Dialog version is up-to-date.")
             config.use_python_dialog = True
         else:
-            logging.error("Dialog version is outdated. The program will fall back to Curses.")
+            logging.error("Dialog version is outdated. The program will fall back to Curses.")  # noqa: E501
             config.use_python_dialog = False
 
     # Log persistent config.

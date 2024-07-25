@@ -376,7 +376,7 @@ def get_latest_release_data(releases_url):
     if data:
         try:
             json_data = json.loads(data.decode())
-            logging.debug(f"{json_data=}")
+            # logging.debug(f"{json_data=}")  # omit to make log more readable
         except json.JSONDecodeError as e:
             logging.error(f"Error decoding JSON response: {e}")
             return None
