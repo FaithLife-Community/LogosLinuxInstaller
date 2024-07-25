@@ -1,8 +1,9 @@
 import curses
 import logging
-import sys
-if "dialog" in sys.modules:
+try:
     from dialog import Dialog
+except ImportError:
+    pass
 
 
 def text(app, text, height=None, width=None, title=None, backtitle=None, colors=True):

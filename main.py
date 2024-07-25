@@ -11,6 +11,10 @@ threads = []
 
 import config
 import control
+try:
+    import dialog  # noqa: F401
+except ImportError:
+    pass
 import gui_app
 import installer
 import msg
