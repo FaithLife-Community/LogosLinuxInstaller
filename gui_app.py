@@ -580,6 +580,7 @@ class ControlWindow():
         self.root.title("Faithlife Bible Software Control Panel")
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
+        self.actioncmd = None
 
         text = self.gui.update_lli_label.cget('text')
         ver = config.LLI_CURRENT_VERSION
@@ -599,7 +600,7 @@ class ControlWindow():
         self.gui.install_icu_radio.config(
             command=self.on_action_radio_clicked
         )
-        self.gui.actions_button.config(command=self.gui.actioncmd)
+        self.gui.actions_button.config(command=self.run_action_cmd)
 
         self.gui.loggingstatevar.set('Enable')
         self.gui.logging_button.config(
@@ -695,17 +696,21 @@ class ControlWindow():
         t = Thread(target=wine.run_logos)
         t.start()
 
+    def run_action_cmd(self, evt=None):
+        self.actioncmd()
+
     def on_action_radio_clicked(self, evt=None):
+        logging.debug("gui_app.ControlPanel.on_action_radio_clicked START")
         if utils.app_is_installed():
             self.gui.actions_button.state(['!disabled'])
             if self.gui.actionsvar.get() == 'run-indexing':
-                self.gui.actioncmd = self.run_indexing
+                self.actioncmd = self.run_indexing
             elif self.gui.actionsvar.get() == 'remove-library-catalog':
-                self.gui.actioncmd = self.remove_library_catalog
+                self.actioncmd = self.remove_library_catalog
             elif self.gui.actionsvar.get() == 'remove-index-files':
-                self.gui.actioncmd = self.remove_indexes
+                self.actioncmd = self.remove_indexes
             elif self.gui.actionsvar.get() == 'install-icu':
-                self.gui.actioncmd = self.install_icu
+                self.actioncmd = self.install_icu
 
     def run_indexing(self, evt=None):
         t = Thread(target=wine.run_indexing)

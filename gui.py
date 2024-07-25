@@ -167,7 +167,6 @@ class ControlGui(Frame):
         # -> Run indexing, Remove library catalog, Remove all index files
         s1 = Separator(self, orient='horizontal')
         self.actionsvar = StringVar()
-        self.actioncmd = None
         self.actions_label = Label(self, text="App actions: ")
         self.run_indexing_radio = Radiobutton(
             self,
