@@ -462,9 +462,11 @@ def ensure_icu_data_files(app=None):
     status = "Ensuring ICU data files installed…"
     update_install_feedback(status, app=app)
     logging.debug('- ICU data files')
-    # TODO: Need a test to skip
-    wine.installICUDataFiles(app=app)
-    logging.debug('+ ICU data files')
+
+    icu_license_path = f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/LICENSE-ICU.txt"  # noqa: E501
+    if not utils.file_exists(icu_license_path):
+        wine.installICUDataFiles(app=app)
+    logging.debug('> ICU data files installed')
 
 
 def ensure_winetricks_applied(app=None):
