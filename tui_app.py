@@ -261,6 +261,8 @@ class TUI():
                 utils.update_to_latest_lli_release()
             elif choice == f"Run {config.FLPRODUCT}":
                 wine.run_logos()
+                self.active_screen.running = 0
+                self.active_screen.choice = "Processing"
             elif choice == "Run Indexing":
                 wine.run_indexing()
             elif choice == "Remove Library Catalog":
