@@ -260,9 +260,10 @@ class TUI():
             elif choice.startswith("Update Logos Linux Installer"):
                 utils.update_to_latest_lli_release()
             elif choice == f"Run {config.FLPRODUCT}":
-                wine.run_logos()
                 self.active_screen.running = 0
                 self.active_screen.choice = "Processing"
+                self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog)
+                self.choice_q.put("0")
             elif choice == "Run Indexing":
                 wine.run_indexing()
             elif choice == "Remove Library Catalog":
@@ -366,6 +367,10 @@ class TUI():
             pass
         elif screen_id == 11:
             pass
+        if screen_id == 12:
+            if choice:
+                wine.run_logos()
+                self.tui_screens = []
 
     def switch_screen(self, dialog):
         if self.active_screen is not None and self.active_screen != self.menu_screen:
