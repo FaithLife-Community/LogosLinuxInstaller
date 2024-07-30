@@ -264,6 +264,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
         result = run_command(command, shell=True)
     except Exception as e:
         logging.error(f"Error occurred while executing command: {e}")
+        logging.error(result.stderr)
 
     package_list = result.stdout
 
