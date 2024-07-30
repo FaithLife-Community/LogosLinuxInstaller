@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+import requests
 import shutil
 import sys
 import threading
@@ -11,8 +12,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
-
-import requests
 
 import config
 import msg
@@ -323,22 +322,20 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
     if app:
+        msg.status(f"Verifying {file_path}…", app)
         if config.DIALOG == "tk":
             app.root.event_generate('<<StartIndeterminateProgress>>')
-            app.status_q.put(f"Verifying {file_path}…")
             app.root.event_generate('<<UpdateStatus>>')
-        else:
-            app.status_q.put(f"Verifying {file_path}…")
     res = False
-    msg = f"{file_path} is the wrong size."
+    txt = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
     if right_size:
-        msg = f"{file_path} has the wrong MD5 sum."
+        txt = f"{file_path} has the wrong MD5 sum."
         right_md5 = same_md5(url, file_path)
         if right_md5:
-            msg = f"{file_path} is verified."
+            txt = f"{file_path} is verified."
             res = True
-    logging.info(msg)
+    logging.info(txt)
     if app:
         if config.DIALOG == "tk":
             if not evt:

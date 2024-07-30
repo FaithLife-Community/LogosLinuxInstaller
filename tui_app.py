@@ -360,7 +360,11 @@ class TUI():
                 self.finished_e.set()
         elif screen_id == 9:
             if choice:
-                self.config_q.put(choice)
+                if choice == "Yes":
+                    logging.info("Updating config file.")
+                    utils.write_config(config.CONFIG_FILE)
+                else:
+                    logging.info("Config file left unchanged.")
                 self.config_e.set()
             self.tui_screens = []
         elif screen_id == 10:

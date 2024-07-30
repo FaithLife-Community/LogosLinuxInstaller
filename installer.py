@@ -459,7 +459,7 @@ def ensure_icu_data_files(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_wineprefix_init(app=app)
     config.INSTALL_STEP += 1
-    status = "Ensuring ICU data files installed…"
+    status = "Ensuring ICU data files are installed…"
     update_install_feedback(status, app=app)
     logging.debug('- ICU data files')
 
@@ -576,22 +576,14 @@ def ensure_config_file(app=None):
                 utils.send_task(app, 'CONFIG')
                 if config.DIALOG == 'curses':
                     app.config_e.wait()
-                    choice = app.config_q.get()
-                    if choice == "Yes":
-                        logging.info("Updating config file.")
-                        utils.write_config(config.CONFIG_FILE)
-                    else:
-                        logging.info("Config file left unchanged.")
             elif msg.logos_acknowledge_question(
                 f"Update config file at {config.CONFIG_FILE}?",
                 "The existing config file was not overwritten."
             ):
                 logging.info("Updating config file.")
                 utils.write_config(config.CONFIG_FILE)
-    if config.DIALOG == 'tk':
+    if app:
         utils.send_task(app, 'DONE')
-    else:
-        utils.send_task(app, "TUI-UPDATE-MENU")
     logging.debug(f"> File exists?: {config.CONFIG_FILE}: {Path(config.CONFIG_FILE).is_file()}")  # noqa: E501
 
 
@@ -622,20 +614,19 @@ def ensure_launcher_shortcuts(app=None):
     ensure_launcher_executable(app=app)
     config.INSTALL_STEP += 1
     runmode = system.get_runmode()
-    if runmode != 'binary':
-        return
-    update_install_feedback("Creating launcher shortcuts…", app=app)
+    if runmode == 'binary':
+        update_install_feedback("Creating launcher shortcuts…", app=app)
 
-    app_dir = Path(config.INSTALLDIR) / 'data'
-    logos_icon_path = app_dir / config.LOGOS_ICON_FILENAME  # noqa: E501
-    if not logos_icon_path.is_file():
-        app_dir.mkdir(exist_ok=True)
-        shutil.copy(config.LOGOS_ICON_URL, logos_icon_path)
-    else:
-        logging.info(f"Icon found at {logos_icon_path}.")
+        app_dir = Path(config.INSTALLDIR) / 'data'
+        logos_icon_path = app_dir / config.LOGOS_ICON_FILENAME  # noqa: E501
+        if not logos_icon_path.is_file():
+            app_dir.mkdir(exist_ok=True)
+            shutil.copy(config.LOGOS_ICON_URL, logos_icon_path)
+        else:
+            logging.info(f"Icon found at {logos_icon_path}.")
 
-    desktop_files = [
-        (
+        desktop_files = [
+            (
             f"{config.FLPRODUCT}Bible.desktop",
             f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible
@@ -646,8 +637,8 @@ Terminal=false
 Type=Application
 Categories=Education;
 """
-        ),
-        (
+            ),
+            (
             f"{config.FLPRODUCT}Bible-ControlPanel.desktop",
             f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible Control Panel
@@ -658,19 +649,22 @@ Terminal=false
 Type=Application
 Categories=Education;
 """
-        ),
-    ]
-    for f, c in desktop_files:
-        create_desktop_file(f, c)
-        fpath = Path.home() / '.local' / 'share' / 'applications' / f
-        logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
+            ),
+        ]
+        for f, c in desktop_files:
+            create_desktop_file(f, c)
+            fpath = Path.home() / '.local' / 'share' / 'applications' / f
+            logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
+
+    if config.DIALOG == 'curses':
+        utils.send_task(app, "TUI-UPDATE-MENU")
 
 
 def update_install_feedback(text, app=None):
     percent = get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
     logging.debug(f"Install step {config.INSTALL_STEP} of {config.INSTALL_STEPS_COUNT}")  # noqa: E501
-    msg.status(text, app=app)
     msg.progress(percent, app=app)
+    msg.status(text, app=app)
 
 
 def get_progress_pct(current, total):
