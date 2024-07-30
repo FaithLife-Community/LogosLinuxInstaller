@@ -235,12 +235,13 @@ class TUI():
         elif task == 'CONFIG':
             utils.start_thread(self.get_config(config.use_python_dialog))
         elif task == 'DONE':
-            self.finish_install()
-        elif task == 'RESIZE':
-            self.resize_curses()
-        elif task == 'TUI-UPDATE-MENU':
+            self.subtitle = f"Logos Version: {config.current_logos_version}"
+            self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
             #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
+            self.switch_q.put(1)
+        elif task == 'RESIZE':
+            self.resize_curses()
 
     def choice_processor(self, stdscr, screen_id, choice):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
@@ -262,7 +263,7 @@ class TUI():
             elif choice == f"Run {config.FLPRODUCT}":
                 self.active_screen.running = 0
                 self.active_screen.choice = "Processing"
-                self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog)
+                self.screen_q.put(self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog))
                 self.choice_q.put("0")
             elif choice == "Run Indexing":
                 wine.run_indexing()
@@ -355,9 +356,7 @@ class TUI():
                 self.tricksbin_q.put(config.WINETRICKSBIN)
                 self.tricksbin_e.set()
         elif screen_id == 8:
-            if config.install_finished:
-                self.finished_q.put(True)
-                self.finished_e.set()
+            pass
         elif screen_id == 9:
             if choice:
                 if choice == "Yes":
@@ -365,8 +364,9 @@ class TUI():
                     utils.write_config(config.CONFIG_FILE)
                 else:
                     logging.info("Config file left unchanged.")
+                self.config_q.put(True)
                 self.config_e.set()
-            self.tui_screens = []
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Finishing install…", dialog=config.use_python_dialog))
         elif screen_id == 10:
             pass
         elif screen_id == 11:
@@ -374,7 +374,9 @@ class TUI():
         if screen_id == 12:
             if choice:
                 wine.run_logos()
-                self.tui_screens = []
+                self.switch_q.put(1)
+        if screen_id == 13:
+            pass
 
     def switch_screen(self, dialog):
         if self.active_screen is not None and self.active_screen != self.menu_screen:
@@ -463,9 +465,6 @@ class TUI():
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
         self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
-
-    def finish_install(self):
-        utils.send_task(self, 'TUI-UPDATE-MENU')
 
     def report_waiting(self, text, dialog):
         #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
