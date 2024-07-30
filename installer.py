@@ -592,21 +592,22 @@ def ensure_launcher_executable(app=None):
     ensure_config_file(app=app)
     config.INSTALL_STEP += 1
     runmode = system.get_runmode()
-    if runmode != 'binary':
-        return
-    update_install_feedback(
-        f"Copying launcher to {config.INSTALLDIR}…",
-        app=app
-    )
+    if runmode == 'binary':
+        update_install_feedback(
+            f"Copying launcher to {config.INSTALLDIR}…",
+            app=app
+        )
 
-    # Copy executable to config.INSTALLDIR.
-    launcher_exe = Path(f"{config.INSTALLDIR}/LogosLinuxInstaller")
-    if launcher_exe.is_file():
-        logging.debug("Removing existing launcher binary.")
-        launcher_exe.unlink()
-    logging.info(f"Creating launcher binary by copying this installer binary to {launcher_exe}.")  # noqa: E501
-    shutil.copy(sys.executable, launcher_exe)
-    logging.debug(f"> File exists?: {launcher_exe}: {launcher_exe.is_file()}")  # noqa: E501
+        # Copy executable to config.INSTALLDIR.
+        launcher_exe = Path(f"{config.INSTALLDIR}/LogosLinuxInstaller")
+        if launcher_exe.is_file():
+            logging.debug("Removing existing launcher binary.")
+            launcher_exe.unlink()
+        logging.info(f"Creating launcher binary by copying this installer binary to {launcher_exe}.")  # noqa: E501
+        shutil.copy(sys.executable, launcher_exe)
+        logging.debug(f"> File exists?: {launcher_exe}: {launcher_exe.is_file()}")  # noqa: E501
+    else:
+        logging.debug(f"Running from source. Skipping launcher creation.")
 
 
 def ensure_launcher_shortcuts(app=None):
@@ -655,6 +656,8 @@ Categories=Education;
             create_desktop_file(f, c)
             fpath = Path.home() / '.local' / 'share' / 'applications' / f
             logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
+    else:
+        logging.debug(f"Running from source. Skipping launcher creation.")
 
     if config.DIALOG == 'curses':
         utils.send_task(app, "TUI-UPDATE-MENU")
