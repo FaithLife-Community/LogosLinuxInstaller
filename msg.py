@@ -11,18 +11,6 @@ import config
 logging.console_log = []
 
 
-class CursesHandler(logging.Handler):
-    def __init__(self):
-        super().__init__()
-
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            status(msg)
-        except Exception:
-            raise
-
-
 def get_log_level_name(level):
     name = None
     levels = {
@@ -84,10 +72,7 @@ def initialize_curses_logging():
     current_logger = logging.getLogger()
     for h in current_logger.handlers:
         if h.name == 'terminal':
-            #current_logger.removeHandler(h)
             break
-    curses_h = CursesHandler()
-    current_logger.addHandler(curses_h)
 
 
 def update_log_level(new_level):
@@ -105,7 +90,7 @@ def cli_msg(message, end='\n'):
 
 def logos_msg(message, end='\n'):
     if config.DIALOG == 'curses':
-        logging.debug(message)
+        pass
     else:
         cli_msg(message, end)
 
@@ -216,12 +201,15 @@ def get_progress_str(percent):
 
 def progress(percent, app=None):
     """Updates progressbar values for TUI and GUI."""
-    logging.debug(f"Progress: {percent}%")
     if config.DIALOG == 'tk' and app:
         app.progress_q.put(percent)
         app.root.event_generate('<<UpdateProgress>>')
+        logging.info(f"Progress: {percent}%")
     elif config.DIALOG == 'curses':
-        status(f"Progress: {get_progress_str(percent)}", app)
+        if app:
+            status(f"Progress: {percent}%", app)
+        else:
+            status(f"Progress: {get_progress_str(percent)}", app)
     else:
         logos_msg(get_progress_str(percent))  # provisional
 
@@ -229,11 +217,12 @@ def progress(percent, app=None):
 def status(text, app=None):
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     """Handles status messages for both TUI and GUI."""
-    if config.DIALOG == 'tk':
-        app.status_q.put(text)
-        app.root.event_generate('<<UpdateStatus>>')
-    elif config.DIALOG == 'curses':
-        if app is not None:
+    if app is not None:
+        if config.DIALOG == 'tk':
+            app.status_q.put(text)
+            app.root.event_generate('<<UpdateStatus>>')
+            logging.info(f"{text}")
+        elif config.DIALOG == 'curses':
             app.status_q.put(f"{timestamp} {text}")
             app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)
     else:
