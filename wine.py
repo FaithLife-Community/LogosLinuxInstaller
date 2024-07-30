@@ -484,7 +484,8 @@ def get_wine_env():
 
 def run_logos():
     logos_release = utils.convert_logos_release(config.current_logos_version)
-    wine_release = get_wine_release(config.WINE_EXE)
+    wine_release, _ = get_wine_release(config.WINE_EXE)
+    logging.debug(f"DEV: {wine_release}")
     
     #TODO: Find a way to incorporate check_wine_version_and_branch()
     if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):

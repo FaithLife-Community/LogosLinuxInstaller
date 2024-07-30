@@ -35,6 +35,7 @@ extended_config = {
     'SELECTED_APPIMAGE_FILENAME': None,
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
+    'SKIP_WINETRICKS': False,
     'VERBOSE': False,
     'WINE_EXE': None,
     'WINEBIN_CODE': None,

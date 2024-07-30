@@ -37,16 +37,20 @@ def get_parser():
     # Define options that affect runtime config.
     cfg = parser.add_argument_group(title="runtime config options")
     cfg.add_argument(
-        '-F', '--skip-fonts', action='store_true',
-        help='skip font installations',
-    )
-    cfg.add_argument(
         '-a', '--check-for-updates', action='store_true',
         help='force a check for updates'
     )
     cfg.add_argument(
         '-K', '--skip-dependencies', action='store_true',
         help='skip dependencies check and installation',
+    )
+    cfg.add_argument(
+        '-F', '--skip-fonts', action='store_true',
+        help='skip font installations',
+    )
+    cfg.add_argument(
+        '-W', '--skip-winetricks', action='store_true',
+        help='skip winetricks installations. For development purposes only!!!',
     )
     cfg.add_argument(
         '-V', '--verbose', action='store_true',
@@ -204,6 +208,9 @@ def parse_args(args, parser):
 
     if args.skip_fonts:
         config.SKIP_FONTS = True
+
+    if args.skip_winetricks:
+        config.SKIP_WINETRICKS = True
 
     if network.check_for_updates:
         config.CHECK_UPDATES = True

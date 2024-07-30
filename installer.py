@@ -482,48 +482,49 @@ def ensure_winetricks_applied(app=None):
     logging.debug('- settings fontsmooth=rgb')
     logging.debug('- d3dcompiler_47')
 
-    usr_reg = None
-    sys_reg = None
-    workdir = Path(f"{config.WORKDIR}")
-    workdir.mkdir(parents=True, exist_ok=True)
-    usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
-    sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-    if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-        #FIXME: This command is failing.
-        reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
-        with open(reg_file, 'w') as f:
-            f.write(r'''REGEDIT4
+    if not config.SKIP_WINETRICKS:
+        usr_reg = None
+        sys_reg = None
+        workdir = Path(f"{config.WORKDIR}")
+        workdir.mkdir(parents=True, exist_ok=True)
+        usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
+        sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
+        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
+            #FIXME: This command is failing.
+            reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
+            with open(reg_file, 'w') as f:
+                f.write(r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
-        wine.wine_reg_install(reg_file)
+            wine.wine_reg_install(reg_file)
 
-    if not utils.grep(r'"renderer"="gdi"', usr_reg):
-        wine.winetricks_install("-q", "settings", "renderer=gdi")
+        if not utils.grep(r'"renderer"="gdi"', usr_reg):
+            wine.winetricks_install("-q", "settings", "renderer=gdi")
 
-    if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
-        wine.installFonts()
+        if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
+            wine.installFonts()
 
-    if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
-        wine.installD3DCompiler()
+        if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
+            wine.installD3DCompiler()
 
-    if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
-        args = ["settings", "win10"]
-        if not config.WINETRICKS_UNATTENDED:
-            args.insert(0, "-q")
-        wine.winetricks_install(*args)
+        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
+            args = ["settings", "win10"]
+            if not config.WINETRICKS_UNATTENDED:
+                args.insert(0, "-q")
+            wine.winetricks_install(*args)
 
-    if config.TARGETVERSION == '9':
-        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
-        exe_args = [
-            'add',
-            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
-            "/v", "Version",
-            "/t", "REG_SZ",
-            "/d", "vista", "/f",
-            ]
-        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+        if config.TARGETVERSION == '9':
+            msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
+            exe_args = [
+                'add',
+                f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
+                "/v", "Version",
+                "/t", "REG_SZ",
+                "/d", "vista", "/f",
+                ]
+            wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
     logging.debug("> Done.")
 
 
@@ -536,9 +537,7 @@ def ensure_product_installed(app=None):
     if not utils.find_installed_product():
         wine.install_msi()
         config.LOGOS_EXE = utils.find_installed_product()
-        utils.send_task(app, 'CONFIG')
-        if config.DIALOG == 'curses':
-            app.finished_e.wait()
+        config.current_logos_version = config.TARGET_RELEASE_VERSION
 
     # Clean up temp files, etc.
     utils.clean_all()
@@ -567,10 +566,12 @@ def ensure_config_file(app=None):
         logging.info("Comparing its contents with current config.")
         current_config_file_dict = config.get_config_file_dict(config.CONFIG_FILE)  # noqa: E501
         different = False
+
         for key in config.core_config_keys:
             if current_config_file_dict.get(key) != config.__dict__.get(key):
                 different = True
                 break
+
         if different:
             if app:
                 utils.send_task(app, 'CONFIG')
@@ -582,8 +583,10 @@ def ensure_config_file(app=None):
             ):
                 logging.info("Updating config file.")
                 utils.write_config(config.CONFIG_FILE)
+
     if app:
         utils.send_task(app, 'DONE')
+
     logging.debug(f"> File exists?: {config.CONFIG_FILE}: {Path(config.CONFIG_FILE).is_file()}")  # noqa: E501
 
 
@@ -607,7 +610,7 @@ def ensure_launcher_executable(app=None):
         shutil.copy(sys.executable, launcher_exe)
         logging.debug(f"> File exists?: {launcher_exe}: {launcher_exe.is_file()}")  # noqa: E501
     else:
-        logging.debug(f"Running from source. Skipping launcher creation.")
+        update_install_feedback(f"Running from source. Skipping launcher creation.", app=app)
 
 
 def ensure_launcher_shortcuts(app=None):
@@ -658,9 +661,7 @@ Categories=Education;
             logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
     else:
         logging.debug(f"Running from source. Skipping launcher creation.")
-
-    if config.DIALOG == 'curses':
-        utils.send_task(app, "TUI-UPDATE-MENU")
+        update_install_feedback(f"Running from source. Skipping launcher creation.", app=app)
 
 
 def update_install_feedback(text, app=None):
