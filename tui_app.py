@@ -76,8 +76,8 @@ class TUI():
         self.appimage_e = threading.Event()
 
         # Window and Screen Management
-        self.window_height = ""
-        self.window_width = ""
+        self.window_height = 0
+        self.window_width = 0
         self.update_tty_dimensions()
         self.main_window_height = 9
         self.menu_window_height = 6 + config.options_per_page
@@ -85,26 +85,30 @@ class TUI():
         self.menu_options = []
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 9, 0)
+        self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
         self.console = None
         self.menu_screen = None
         self.active_screen = None
 
+    def set_curses_style(self):
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_color(curses.COLOR_BLUE, 0, 510, 1000) # Logos Blue
+        curses.init_color(curses.COLOR_CYAN, 906, 906, 906) # Logos Gray
+        curses.init_color(curses.COLOR_WHITE, 988, 988, 988) # Logos White
+        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_CYAN)
+        curses.init_pair(2, curses.COLOR_BLUE, curses.COLOR_WHITE)
+        curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLUE)
+        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_BLUE)
+        self.stdscr.bkgd(' ', curses.color_pair(3))
+        self.main_window.bkgd(' ', curses.color_pair(3))
+        self.menu_window.bkgd(' ', curses.color_pair(3))
+
     def init_curses(self):
         try:
             if curses.has_colors():
-                curses.start_color()
-                curses.use_default_colors()
-                curses.init_color(curses.COLOR_BLUE, 0, 510, 1000) # Logos Blue
-                curses.init_color(curses.COLOR_CYAN, 906, 906, 906) # Logos Gray
-                curses.init_color(curses.COLOR_WHITE, 988, 988, 988) # Logos White
-                curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_CYAN)
-                curses.init_pair(2, curses.COLOR_BLUE, curses.COLOR_WHITE)
-                curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLUE)
-                curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
-                curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_BLUE)
-                self.stdscr.bkgd(' ', curses.color_pair(3))
-                self.main_window.bkgd(' ', curses.color_pair(3))
-                self.menu_window.bkgd(' ', curses.color_pair(3))
+                self.set_curses_style()
 
             curses.curs_set(0)
             curses.noecho()
@@ -158,53 +162,80 @@ class TUI():
         self.menu_window_height = 6 + config.options_per_page
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 9, 0)
+        self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
         self.init_curses()
         self.menu_window.refresh()
         self.menu_window.clear()
         msg.status("Resizing window.", self)
         config.resizing = False
 
+    def signal_resize(self, signum, frame):
+        self.resize_curses()
+        self.choice_q.put("resize")
+
+        if config.use_python_dialog:
+            if isinstance(self.active_screen, tui_screen.TextDialog) and self.active_screen.text == "Screen Too Small":
+                self.choice_q.put("Return to Main Menu")
+        else:
+            if self.active_screen.get_screen_id == 14:
+                if self.window_height >= 18:
+                    self.switch_q.put(1)
+
+    def draw_resize_screen(self):
+        title_lines = tui_curses.wrap_text(self, "Screen too small.")
+        self.resize_window = curses.newwin(len(title_lines), curses.COLS, 0, 0)
+        self.resize_window.erase()
+        for i, line in enumerate(title_lines):
+            if i < self.window_height:
+                self.resize_window.addstr(i + 0, 2, line, curses.A_BOLD)
+        self.resize_window.noutrefresh()
+        curses.doupdate()
+
     def display(self):
+        signal.signal(signal.SIGWINCH, self.signal_resize)
         signal.signal(signal.SIGINT, self.end)
         msg.initialize_curses_logging()
         msg.status(self.console_message, self)
         self.active_screen = self.menu_screen
 
         while self.llirunning:
-            if not config.resizing:
-                if isinstance(self.active_screen, tui_screen.CursesScreen):
-                    self.main_window.erase()
-                    self.menu_window.erase()
-                    self.stdscr.timeout(100)
-                    self.console.display()
+            if self.window_height >= (self.main_window_height + self.menu_window_height):
+                if not config.resizing:
+                    if isinstance(self.active_screen, tui_screen.CursesScreen):
+                        self.main_window.erase()
+                        self.menu_window.erase()
+                        self.stdscr.timeout(100)
+                        self.console.display()
 
-                self.active_screen.display()
+                    self.active_screen.display()
 
-                #if (not isinstance(self.active_screen, tui_screen.TextScreen)
-                #        and not isinstance(self.active_screen, tui_screen.TextDialog)):
-                if self.choice_q.qsize() > 0:
-                    self.choice_processor(
-                        self.menu_window,
-                        self.active_screen.get_screen_id(),
-                        self.choice_q.get())
+                    #if (not isinstance(self.active_screen, tui_screen.TextScreen)
+                    #        and not isinstance(self.active_screen, tui_screen.TextDialog)):
+                    if self.choice_q.qsize() > 0:
+                        self.choice_processor(
+                            self.menu_window,
+                            self.active_screen.get_screen_id(),
+                            self.choice_q.get())
 
-                if self.screen_q.qsize() > 0:
-                    self.screen_q.get()
-                    self.switch_q.put(1)
+                    if self.screen_q.qsize() > 0:
+                        self.screen_q.get()
+                        self.switch_q.put(1)
 
-                if self.switch_q.qsize() > 0:
-                    self.switch_q.get()
-                    self.switch_screen(config.use_python_dialog)
+                    if self.switch_q.qsize() > 0:
+                        self.switch_q.get()
+                        self.switch_screen(config.use_python_dialog)
 
-                if len(self.tui_screens) == 0:
-                    self.active_screen = self.menu_screen
-                else:
-                    self.active_screen = self.tui_screens[-1]
+                    if len(self.tui_screens) == 0:
+                        self.active_screen = self.menu_screen
+                    else:
+                        self.active_screen = self.tui_screens[-1]
 
-                if isinstance(self.active_screen, tui_screen.CursesScreen):
-                    self.main_window.noutrefresh()
-                    self.menu_window.noutrefresh()
-                    curses.doupdate()
+                    if isinstance(self.active_screen, tui_screen.CursesScreen):
+                        self.main_window.noutrefresh()
+                        self.menu_window.noutrefresh()
+                        curses.doupdate()
+            else:
+                self.draw_resize_screen()
 
     def run(self):
         try:
@@ -240,8 +271,6 @@ class TUI():
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
             #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
             self.switch_q.put(1)
-        elif task == 'RESIZE':
-            self.resize_curses()
 
     def choice_processor(self, stdscr, screen_id, choice):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
@@ -377,9 +406,11 @@ class TUI():
                 self.switch_q.put(1)
         if screen_id == 13:
             pass
+        if screen_id == 14:
+            pass
 
     def switch_screen(self, dialog):
-        if self.active_screen is not None and self.active_screen != self.menu_screen:
+        if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0:
             self.tui_screens.pop(0)
         if self.active_screen == self.menu_screen:
             self.menu_screen.choice = "Processing"

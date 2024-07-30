@@ -352,7 +352,7 @@ def main():
         if config.DIALOG == 'tk':
             config.GUI = True
 
-    if config.DIALOG == 'curses' and "dialog" in sys.modules:
+    if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:
         config.use_python_dialog = system.test_dialog_version()
 
         if config.use_python_dialog is None:
@@ -364,6 +364,7 @@ def main():
         else:
             logging.error("Dialog version is outdated. The program will fall back to Curses.")  # noqa: E501
             config.use_python_dialog = False
+    logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
 
     # Log persistent config.
     utils.log_current_persistent_config()
