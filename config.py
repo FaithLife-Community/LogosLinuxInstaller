@@ -36,6 +36,7 @@ extended_config = {
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
     'SKIP_WINETRICKS': False,
+    'use_python_dialog': None,
     'VERBOSE': False,
     'WINE_EXE': None,
     'WINEBIN_CODE': None,
@@ -104,7 +105,6 @@ current_option = 0
 current_page = 0
 total_pages = 0
 options_per_page = 8
-use_python_dialog = False
 resizing = False
 
 

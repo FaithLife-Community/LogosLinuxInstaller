@@ -118,8 +118,6 @@ class UserInputDialog(CursesDialog):
                 pass
             elif key == ord('\n'):  # Enter key
                 self.submit = True
-            elif key == curses.KEY_RESIZE:
-                utils.send_task(self.app, 'RESIZE')
             elif key == curses.KEY_BACKSPACE or key == 127:
                 if len(self.user_input) > 0:
                     self.user_input = self.user_input[:-1]
