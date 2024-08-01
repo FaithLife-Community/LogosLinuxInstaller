@@ -359,23 +359,28 @@ def install_packages(packages, elements, app=None):
         return
 
     if packages:
-        total_packages = len(packages)
-        for index, package in enumerate(packages):
-            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+        if config.DIALOG == 'tk':
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
             logging.debug(f"install_packages cmd: {command}")
             result = run_command(command, retries=5, delay=15)
+        else:
+            total_packages = len(packages)
+            for index, package in enumerate(packages):
+                command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+                logging.debug(f"install_packages cmd: {command}")
+                result = run_command(command, retries=5, delay=15)
 
-            if elements is not None:
-                if result and result.returncode == 0:
-                    elements[index] = (package, "Installed")
-                else:
-                    elements[index] = (package, "Failed")
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Installing Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages,
-                    elements,
-                    dialog=config.use_python_dialog)
+                if elements is not None:
+                    if result and result.returncode == 0:
+                        elements[index] = (package, "Installed")
+                    else:
+                        elements[index] = (package, "Failed")
+                if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
+                    app.report_dependencies(
+                        f"Installing Packages ({index + 1}/{total_packages})",
+                        100 * (index + 1) // total_packages,
+                        elements,
+                        dialog=config.use_python_dialog)
 
 
 def remove_packages(packages, elements, app=None):
@@ -497,7 +502,8 @@ def postinstall_dependencies_steamos():
 
 def preinstall_dependencies():
     if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mint":
-        preinstall_dependencies_ubuntu()
+        # preinstall_dependencies_ubuntu()
+        pass
     elif config.OS_NAME == "Steam":
         preinstall_dependencies_steamos()
 
@@ -557,6 +563,10 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         # Do we need a TK continue question? I see we have a CLI and curses one
         # in msg.py
 
+        if app and config.DIALOG == 'tk':
+            app.root.event_generate('<<StartIndeterminateProgress>>')
+            app.status_q.put("Installing pre-install dependencies…")
+            app.root.event_generate('<<UpdateStatus>>')
         preinstall_dependencies()
 
         # libfuse: for AppImage use. This is the only known needed library.
@@ -567,7 +577,15 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         check_libs([f"{fuse}"], app=app)
 
         if missing_packages:
+            if app and config.DIALOG == 'tk':
+                app.root.event_generate('<<StartIndeterminateProgress>>')
+                app.status_q.put("Downloading packages…")
+                app.root.event_generate('<<UpdateStatus>>')
             download_packages(missing_packages, elements, app)
+            if app and config.DIALOG == 'tk':
+                app.root.event_generate('<<StartIndeterminateProgress>>')
+                app.status_q.put("Installing packages…")
+                app.root.event_generate('<<UpdateStatus>>')
             install_packages(missing_packages, elements, app)
 
         if conflicting_packages:
