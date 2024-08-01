@@ -405,9 +405,10 @@ class InstallerWindow():
         self.appimage_thread.start()
 
     def start_wine_versions_check(self, release_version):
-        if not self.appimages:
-            self.start_find_appimage_files(release_version)
-            return
+        if self.appimages is None:
+            self.appimages = []
+            # self.start_find_appimage_files(release_version)
+            # return
         # Setup queue, signal, thread.
         self.wines_q = Queue()
         self.wine_evt = "<<WineCheckProgress>>"
