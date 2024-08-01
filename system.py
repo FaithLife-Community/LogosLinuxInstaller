@@ -564,6 +564,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         # in msg.py
 
         if app and config.DIALOG == 'tk':
+            app.root.event_generate('<<StartIndeterminateProgress>>')
             app.status_q.put("Installing pre-install dependencies…")
             app.root.event_generate('<<UpdateStatus>>')
         preinstall_dependencies()
@@ -577,10 +578,12 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
 
         if missing_packages:
             if app and config.DIALOG == 'tk':
+                app.root.event_generate('<<StartIndeterminateProgress>>')
                 app.status_q.put("Downloading packages…")
                 app.root.event_generate('<<UpdateStatus>>')
             download_packages(missing_packages, elements, app)
             if app and config.DIALOG == 'tk':
+                app.root.event_generate('<<StartIndeterminateProgress>>')
                 app.status_q.put("Installing packages…")
                 app.root.event_generate('<<UpdateStatus>>')
             install_packages(missing_packages, elements, app)
