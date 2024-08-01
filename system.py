@@ -337,7 +337,8 @@ def download_packages(packages, elements, app=None):
 
     if packages:
         total_packages = len(packages)
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"  # noqa: E501
+        # command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"  # noqa: E501
+        command = f"{config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"  # noqa: E501
         logging.debug(f"download_packages cmd: {command}")
         command_args = shlex.split(command)
         result = run_command(command_args, retries=5, delay=15)
