@@ -359,23 +359,28 @@ def install_packages(packages, elements, app=None):
         return
 
     if packages:
-        total_packages = len(packages)
-        for index, package in enumerate(packages):
-            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+        if config.DIALOG == 'tk':
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
             logging.debug(f"install_packages cmd: {command}")
             result = run_command(command, retries=5, delay=15)
+        else:
+            total_packages = len(packages)
+            for index, package in enumerate(packages):
+                command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+                logging.debug(f"install_packages cmd: {command}")
+                result = run_command(command, retries=5, delay=15)
 
-            if elements is not None:
-                if result and result.returncode == 0:
-                    elements[index] = (package, "Installed")
-                else:
-                    elements[index] = (package, "Failed")
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Installing Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages,
-                    elements,
-                    dialog=config.use_python_dialog)
+                if elements is not None:
+                    if result and result.returncode == 0:
+                        elements[index] = (package, "Installed")
+                    else:
+                        elements[index] = (package, "Failed")
+                if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
+                    app.report_dependencies(
+                        f"Installing Packages ({index + 1}/{total_packages})",
+                        100 * (index + 1) // total_packages,
+                        elements,
+                        dialog=config.use_python_dialog)
 
 
 def remove_packages(packages, elements, app=None):
