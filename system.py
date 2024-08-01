@@ -563,6 +563,9 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         # Do we need a TK continue question? I see we have a CLI and curses one
         # in msg.py
 
+        if app and config.DIALOG == 'tk':
+            app.status_q.put("Installing pre-install dependencies…")
+            app.root.event_generate('<<UpdateStatus>>')
         preinstall_dependencies()
 
         # libfuse: for AppImage use. This is the only known needed library.
@@ -573,7 +576,13 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         check_libs([f"{fuse}"], app=app)
 
         if missing_packages:
+            if app and config.DIALOG == 'tk':
+                app.status_q.put("Downloading packages…")
+                app.root.event_generate('<<UpdateStatus>>')
             download_packages(missing_packages, elements, app)
+            if app and config.DIALOG == 'tk':
+                app.status_q.put("Installing packages…")
+                app.root.event_generate('<<UpdateStatus>>')
             install_packages(missing_packages, elements, app)
 
         if conflicting_packages:
