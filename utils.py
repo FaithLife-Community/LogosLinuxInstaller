@@ -226,7 +226,7 @@ def check_dependencies(app=None):
             app.root.event_generate('<<UpdateStatus>>')
 
     if targetversion == 10:
-        system.install_dependencies(config.PACKAGES, config.BADPACKAGES, app=app)
+        system.install_dependencies(config.PACKAGES, config.BADPACKAGES, app=app)  # noqa: E501
     elif targetversion == 9:
         system.install_dependencies(
             config.PACKAGES,
