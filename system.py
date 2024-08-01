@@ -498,7 +498,8 @@ def postinstall_dependencies_steamos():
 
 def preinstall_dependencies():
     if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mint":
-        preinstall_dependencies_ubuntu()
+        # preinstall_dependencies_ubuntu()
+        pass
     elif config.OS_NAME == "Steam":
         preinstall_dependencies_steamos()
 
