@@ -8,6 +8,7 @@ import config
 import installer
 import system
 import tui_curses
+import utils
 if system.have_dep("dialog"):
     import tui_dialog
 
@@ -159,6 +160,28 @@ class InputScreen(CursesScreen):
         return self.default
 
 
+class PasswordScreen(InputScreen):
+    def __init__(self, app, screen_id, queue, event, question, default):
+        super().__init__(app, screen_id, queue, event, question, default)
+        self.dialog = tui_curses.PasswordDialog(
+            self.app,
+            self.question,
+            self.default
+        )
+
+    def __str__(self):
+        return f"Curses Password Screen"
+
+    def display(self):
+        self.stdscr.erase()
+        self.choice = self.dialog.run()
+        if not self.choice == "Processing":
+            self.submit_choice_to_queue()
+            utils.send_task(self.app, "INSTALLING_PW")
+        self.stdscr.noutrefresh()
+        curses.doupdate()
+
+
 class TextScreen(CursesScreen):
     def __init__(self, app, screen_id, queue, event, text, wait):
         super().__init__(app, screen_id, queue, event)
@@ -234,6 +257,20 @@ class InputDialog(DialogScreen):
     def get_default(self):
         return self.default
 
+
+class PasswordDialog(InputDialog):
+    def __init__(self, app, screen_id, queue, event, question, default):
+        super().__init__(app, screen_id, queue, event, question, default)
+
+    def __str__(self):
+        return f"PyDialog Password Screen"
+
+    def display(self):
+        if self.running == 0:
+            self.running = 1
+            _, self.choice = tui_dialog.password(self.app, self.question, init=self.default)
+            self.submit_choice_to_queue()
+            utils.send_task(self.app, "INSTALLING_PW")
 
 class ConfirmDialog(DialogScreen):
     def __init__(self, app, screen_id, queue, event, question, yes_label="Yes", no_label="No"):

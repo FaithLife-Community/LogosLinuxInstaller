@@ -69,19 +69,67 @@ def tasklist_progress_bar(app, text, percent, elements, height=None, width=None,
         raise
 
 
-def confirm(app, question_text, height=None, width=None):
+def input(app, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
     dialog = Dialog()
-    check = dialog.yesno(question_text, height, width)
+    options = {'colors': colors}
+    if height is not None:
+        options['height'] = height
+    if width is not None:
+        options['width'] = width
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
+    code, input = dialog.inputbox(question_text, init=init, **options)
+    return code, input
+
+
+def password(app, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
+    dialog = Dialog()
+    options = {'colors': colors}
+    if height is not None:
+        options['height'] = height
+    if width is not None:
+        options['width'] = width
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
+    code, password = dialog.passwordbox(question_text, init=init, insecure=True, **options)
+    return code, password
+
+
+def confirm(app, question_text, height=None, width=None, title=None, backtitle=None, colors=True):
+    dialog = Dialog()
+    options = {'colors': colors}
+    if height is not None:
+        options['height'] = height
+    if width is not None:
+        options['width'] = width
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
+    check = dialog.yesno(question_text, **options)
     return check
 
 
-def directory_picker(app, path_dir):
+def directory_picker(app, path_dir, height=None, width=None, title=None, backtitle=None, colors=True):
     str_dir = str(path_dir)
 
     try:
         dialog = Dialog()
+        options = {'colors': colors}
+        if height is not None:
+            options['height'] = height
+        if width is not None:
+            options['width'] = width
+        if title is not None:
+            options['title'] = title
+        if backtitle is not None:
+            options['backtitle'] = backtitle
         curses.curs_set(1)
-        _, path = dialog.dselect(str_dir)
+        _, path = dialog.dselect(str_dir, **options)
         curses.curs_set(0)
     except Exception as e:
         logging.error("An error occurred:", e)
@@ -90,12 +138,17 @@ def directory_picker(app, path_dir):
     return path
 
 
-def menu(app, question_text, options, height=None, width=None, menu_height=8):
-    tag_to_description = {tag: description for tag, description in options}
+def menu(app, question_text, choices, height=None, width=None, menu_height=8, title=None, backtitle=None, colors=True):
+    tag_to_description = {tag: description for tag, description in choices}
     dialog = Dialog(dialog="dialog")
+    options = {'colors': colors}
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
 
-    menu_options = [(tag, description) for i, (tag, description) in enumerate(options)]
-    code, tag = dialog.menu(question_text, height, width, menu_height, choices=menu_options)
+    menu_options = [(tag, description) for i, (tag, description) in enumerate(choices)]
+    code, tag = dialog.menu(question_text, height, width, menu_height, menu_options, **options)
     selected_description = tag_to_description.get(tag)
 
     if code == dialog.OK:
@@ -104,11 +157,20 @@ def menu(app, question_text, options, height=None, width=None, menu_height=8):
         return None, None, "Return to Main Menu"
 
 
-def buildlist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=None):
+def buildlist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=True):
     # items is an interable of (tag, item, status)
     dialog = Dialog(dialog="dialog")
+    options = {'colors': colors}
+    if height is not None:
+        options['height'] = height
+    if width is not None:
+        options['width'] = width
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
 
-    code, tags = dialog.buildlist(text, height, width, list_height, items, title, backtitle, colors)
+    code, tags = dialog.buildlist(text, list_height=list_height, items=items, **options)
 
     if code == dialog.OK:
         return code, tags
@@ -116,11 +178,20 @@ def buildlist(app, text, items=[], height=None, width=None, list_height=None, ti
         return None
 
 
-def checklist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=None):
+def checklist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=True):
     # items is an iterable of (tag, item, status)
     dialog = Dialog(dialog="dialog")
+    options = {'colors': colors}
+    if height is not None:
+        options['height'] = height
+    if width is not None:
+        options['width'] = width
+    if title is not None:
+        options['title'] = title
+    if backtitle is not None:
+        options['backtitle'] = backtitle
 
-    code, tags = dialog.checklist(text, items, height, width, list_height, title, backtitle, colors)
+    code, tags = dialog.checklist(text, choices=items, list_height=list_height, **options)
 
     if code == dialog.OK:
         return code, tags

@@ -12,6 +12,7 @@ from pathlib import Path
 import config
 import msg
 import network
+import utils
 
 
 #TODO: Add a Popen variant to run_command to replace functions in control.py and wine.py
@@ -35,7 +36,7 @@ def run_command(command, retries=1, delay=0, **kwargs):
 
     for attempt in range(retries):
         try:
-            logging.debug(f"Attempting to execute {command}")
+            #logging.debug(f"Attempting to execute {command}")  # WARNING: Enabling this line will show the user's password in the log.
             result = subprocess.run(
                 command,
                 check=check,
@@ -91,6 +92,13 @@ def tl(library):
         return True
     except ImportError:
         return False
+
+
+def get_password(password, app=None):
+    if password == "" or password is None:
+        utils.send_task(app, "PASSWORD")
+        app.password_e.wait()
+    return app.password_q.get()
 
 
 def get_dialog():
@@ -182,12 +190,12 @@ def get_superuser_command():
         else:
             msg.logos_error("No superuser command found. Please install pkexec.")  # noqa: E501
     else:
-        if shutil.which('pkexec'):
-            config.SUPERUSER_COMMAND = "pkexec"
-        elif shutil.which('sudo'):
+        if shutil.which('sudo'):
             config.SUPERUSER_COMMAND = "sudo"
         elif shutil.which('doas'):
             config.SUPERUSER_COMMAND = "doas"
+        elif shutil.which('pkexec'):
+            config.SUPERUSER_COMMAND = "pkexec"
         else:
             msg.logos_error("No superuser command found. Please install sudo or doas.")  # noqa: E501
     logging.debug(f"{config.SUPERUSER_COMMAND=}")
@@ -219,7 +227,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
         config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i"
         config.QUERY_PREFIX = ''
-        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl htop nano"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
@@ -332,43 +340,83 @@ def query_packages(packages, elements=None, mode="install", app=None):
 
 
 def download_packages(packages, elements, app=None):
+    privileged_command = None
+    password = ""
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
         total_packages = len(packages)
-        command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"  # noqa: E501
-        logging.debug(f"download_packages cmd: {command}")
-        command_args = shlex.split(command)
-        result = run_command(command_args, retries=5, delay=15)
+        if config.DIALOG == 'tk' or app is None:
+            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {' '.join(packages)}"  # noqa: E501
+            logging.debug(f"download_packages cmd: {command}")
+            command_args = shlex.split(command)
+            result = run_command(command_args, retries=5, delay=15)
+        else:
+            total_packages = len(packages)
+            for index, package in enumerate(packages):
+                if config.SUPERUSER_COMMAND == "pkexec" or app is None:
+                    command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {package}"  # noqa: E501
+                else:
+                    password = get_password(password, app)
+                    if config.SUPERUSER_COMMAND == "sudo":
+                        command = f"{config.SUPERUSER_COMMAND} -S {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {package}"  # noqa: E501
+                        privileged_command = f"echo {password} | {command}"  # noqa: E501
+                    else:
+                        command = f"{config.SUPERUSER_COMMAND} -n {config.PACKAGE_MANAGER_COMMAND_DOWNLOAD} {package}"  # noqa: E501
+                        privileged_command = f"echo {password} | {command}"  # noqa: E501
+                    app.password_e.clear()
+                logging.debug(f"download_packages cmd: {command}")
+                if privileged_command:
+                    result = run_command(privileged_command, retries=5, delay=15)
+                else:
+                    result = run_command(command, retries=5, delay=15)
 
-        for index, package in enumerate(packages):
-            status = "Downloaded" if result.returncode == 0 else "Failed"
-            if elements is not None:
-                elements[index] = (package, status)
+            for index, package in enumerate(packages):
+                status = "Downloaded" if result.returncode == 0 else "Failed"
+                if elements is not None:
+                    elements[index] = (package, status)
 
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Downloading Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
-                )
+                if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
+                    app.report_dependencies(
+                        f"Downloading Packages ({index + 1}/{total_packages})",
+                        100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
+                    )
+
+    privileged_command = None
+    password = ""
 
 
 def install_packages(packages, elements, app=None):
+    privileged_command = None
+    password = ""
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
-        if config.DIALOG == 'tk':
+        if config.DIALOG == 'tk' or app is None:
             command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {' '.join(packages)}"  # noqa: E501
             logging.debug(f"install_packages cmd: {command}")
             result = run_command(command, retries=5, delay=15)
         else:
             total_packages = len(packages)
             for index, package in enumerate(packages):
-                command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+                if config.SUPERUSER_COMMAND == "pkexec" or app is None:
+                    command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+                else:
+                    password = get_password(password, app)
+                    if config.SUPERUSER_COMMAND == "sudo":
+                        command = f"{config.SUPERUSER_COMMAND} -S {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+                        privileged_command = f"echo {password} | {command}"  # noqa: E501
+                    else:
+                        command = f"{config.SUPERUSER_COMMAND} -n {config.PACKAGE_MANAGER_COMMAND_INSTALL} {package}"  # noqa: E501
+                        privileged_command = f"echo {password} | {command}"  # noqa: E501
+                    app.password_e.clear()
                 logging.debug(f"install_packages cmd: {command}")
-                result = run_command(command, retries=5, delay=15)
+                if privileged_command:
+                    result = run_command(privileged_command, retries=5, delay=15)
+                else:
+                    result = run_command(command, retries=5, delay=15)
 
                 if elements is not None:
                     if result and result.returncode == 0:
@@ -382,17 +430,35 @@ def install_packages(packages, elements, app=None):
                         elements,
                         dialog=config.use_python_dialog)
 
+    privileged_command = None
+    password = ""
+
 
 def remove_packages(packages, elements, app=None):
+    privileged_command = None
+    password = ""
     if config.SKIP_DEPENDENCIES:
         return
 
     if packages:
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"  # noqa: E501
+            utils.send_task(app, "PASSWORD")
+            if config.SUPERUSER_COMMAND == "pkexec" or app is None:
+                command = f"{config.SUPERUSER_COMMAND} {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"  # noqa: E501
+            else:
+                password = get_password(password, app)
+                if config.SUPERUSER_COMMAND == "sudo":
+                    command = f"{config.SUPERUSER_COMMAND} -S {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"  # noqa: E501
+                    privileged_command = f"echo {password} | {command}"  # noqa: E501
+                else:
+                    command = f"{config.SUPERUSER_COMMAND} -n {config.PACKAGE_MANAGER_COMMAND_REMOVE} {package}"  # noqa: E501
+                    privileged_command = f"echo {password} | {command}"  # noqa: E501
             logging.debug(f"remove_packages cmd: {command}")
-            result = run_command(command, retries=5, delay=15)
+            if privileged_command is not None:
+                result = run_command(privileged_command, retries=5, delay=15)
+            else:
+                result = run_command(command, retries=5, delay=15)
 
             if elements is not None:
                 if result and result.returncode == 0:
@@ -405,6 +471,9 @@ def remove_packages(packages, elements, app=None):
                     100 * (index + 1) // total_packages,
                     elements,
                     dialog=config.use_python_dialog)
+
+    privileged_command = None
+    password = ""
 
 
 def have_dep(cmd):
@@ -450,67 +519,151 @@ def test_dialog_version():
         return None
 
 
-def preinstall_dependencies_ubuntu():
+def preinstall_dependencies_ubuntu(app=None):
+    password = ""
     try:
-        run_command([config.SUPERUSER_COMMAND, "dpkg", "--add-architecture", "i386"])  # noqa: E501
-        run_command([config.SUPERUSER_COMMAND, "mkdir", "-pm755", "/etc/apt/keyrings"])  # noqa: E501
-        url = "https://dl.winehq.org/wine-builds/winehq.key"
-        run_command([config.SUPERUSER_COMMAND, "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url])  # noqa: E501
-        lsb_release_output = run_command(["lsb_release", "-a"])
-        codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[1].strip()  # noqa: E501
-        url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
-        run_command([config.SUPERUSER_COMMAND, "wget", "-NP", "/etc/apt/sources.list.d/", url])  # noqa: E501
-        run_command([config.SUPERUSER_COMMAND, "apt", "update"])
-        run_command([config.SUPERUSER_COMMAND, "apt", "install", "--install-recommends", "winehq-staging"])  # noqa: E501
+        if config.SUPERUSER_COMMAND == "pkexec" or app is None:
+            run_command([config.SUPERUSER_COMMAND, "dpkg", "--add-architecture", "i386"])  # noqa: E501
+            run_command([config.SUPERUSER_COMMAND, "mkdir", "-pm755", "/etc/apt/keyrings"])  # noqa: E501
+            url = "https://dl.winehq.org/wine-builds/winehq.key"
+            run_command([config.SUPERUSER_COMMAND, "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url])  # noqa: E501
+            lsb_release_output = run_command(["lsb_release", "-a"])
+            codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[1].strip()  # noqa: E501
+            url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
+            run_command([config.SUPERUSER_COMMAND, "wget", "-NP", "/etc/apt/sources.list.d/", url])  # noqa: E501
+            run_command([config.SUPERUSER_COMMAND, "apt", "update"])
+            run_command([config.SUPERUSER_COMMAND, "apt", "install", "--install-recommends", "winehq-staging"])  # noqa: E501
+        else:
+            password = get_password(password, app)
+            if config.SUPERUSER_COMMAND == "sudo":
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "dpkg", "--add-architecture", "i386"])  # noqa: E501
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "mkdir", "-pm755", "/etc/apt/keyrings"])  # noqa: E501
+                url = "https://dl.winehq.org/wine-builds/winehq.key"
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url])  # noqa: E501
+                lsb_release_output = run_command(["lsb_release", "-a"])
+                codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[1].strip()  # noqa: E501
+                url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "wget", "-NP", "/etc/apt/sources.list.d/", url])  # noqa: E501
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "apt", "update"])
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "apt", "install", "--install-recommends", "winehq-staging"])  # noqa: E501
+            else:
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "dpkg", "--add-architecture", "i386"])  # noqa: E501
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "mkdir", "-pm755", "/etc/apt/keyrings"])  # noqa: E501
+                url = "https://dl.winehq.org/wine-builds/winehq.key"
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url])  # noqa: E501
+                lsb_release_output = run_command(["lsb_release", "-a"])
+                codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[1].strip()  # noqa: E501
+                url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "wget", "-NP", "/etc/apt/sources.list.d/", url])  # noqa: E501
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "apt", "update"])
+                run_command(["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "apt", "install", "--install-recommends", "winehq-staging"])  # noqa: E501
+            app.password_e.clear()
+        privileged_command = None
+        password = ""
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         print(f"Command output: {e.output}")
 
 
-def preinstall_dependencies_steamos():
-    command = [config.SUPERUSER_COMMAND, "steamos-readonly", "disable"]
-    run_command(command)
-    command = [config.SUPERUSER_COMMAND, "pacman-key", "--init"]
-    run_command(command)
-    command = [config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"]  # noqa: E501
-    run_command(command)
+def preinstall_dependencies_steamos(app=None):
+    password = ""
+    if config.SUPERUSER_COMMAND == "pkexec" or app is None:
+        command = [config.SUPERUSER_COMMAND, "steamos-readonly", "disable"]
+        run_command(command)
+        command = [config.SUPERUSER_COMMAND, "pacman-key", "--init"]
+        run_command(command)
+        command = [config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"]  # noqa: E501
+        run_command(command)
+    else:
+        password = get_password(password, app)
+        if config.SUPERUSER_COMMAND == "sudo":
+            command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "steamos-readonly", "disable"]
+            run_command(command)
+            command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "pacman-key", "--init"]
+            run_command(command)
+            command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-S", "pacman-key", "--populate", "archlinux"]  # noqa: E501
+            run_command(command)
+        else:
+            command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "steamos-readonly", "disable"]
+            run_command(command)
+            command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "pacman-key", "--init"]
+            run_command(command)
+            command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "-n", "pacman-key", "--populate", "archlinux"]  # noqa: E501
+            run_command(command)
+        app.password_e.clear()
+    privileged_command = None
+    password = ""
 
 
-def postinstall_dependencies_steamos():
-    command = [
-            config.SUPERUSER_COMMAND,
-            "sed", '-i',
-            's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
-            '/etc/nsswitch.conf'
-        ]
-    run_command(command)
-    command = [config.SUPERUSER_COMMAND, "locale-gen"]
-    run_command(command)
-    command = [
-            config.SUPERUSER_COMMAND,
-            "systemctl",
-            "enable",
-            "--now",
-            "avahi-daemon"
-        ]
-    run_command(command)
-    command = [config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"]  # noqa: E501
-    run_command(command)
-    command = [config.SUPERUSER_COMMAND, "steamos-readonly", "enable"]
-    run_command(command)
+def postinstall_dependencies_steamos(app=None):
+    password = ""
+    if config.SUPERUSER_COMMAND == "pkexec" or app is None:
+        command = [
+                config.SUPERUSER_COMMAND,
+                "sed", '-i',
+                's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
+                '/etc/nsswitch.conf'
+            ]
+        run_command(command)
+        command = [config.SUPERUSER_COMMAND, "locale-gen"]
+        run_command(command)
+        command = [
+                config.SUPERUSER_COMMAND,
+                "systemctl",
+                "enable",
+                "--now",
+                "avahi-daemon"
+            ]
+        run_command(command)
+        command = [config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"]  # noqa: E501
+        run_command(command)
+        command = [config.SUPERUSER_COMMAND, "steamos-readonly", "enable"]
+        run_command(command)
+    else:
+        password = get_password(password, app)
+        command = [
+                "echo",
+                f"{password}",
+                "|",
+                config.SUPERUSER_COMMAND,
+                "sed", '-i',
+                's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
+                '/etc/nsswitch.conf'
+            ]
+        run_command(command)
+        command = [config.SUPERUSER_COMMAND, "locale-gen"]
+        run_command(command)
+        command = [
+                "echo",
+                f"{password}",
+                "|",
+                config.SUPERUSER_COMMAND,
+                "systemctl",
+                "enable",
+                "--now",
+                "avahi-daemon"
+            ]
+        run_command(command)
+        command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups"]  # noqa: E501
+        run_command(command)
+        command = ["echo", f"{password}", "|", config.SUPERUSER_COMMAND, "steamos-readonly", "enable"]
+        run_command(command)
+        app.password_e.clear()
+    privileged_command = None
+    password = ""
 
 
-def preinstall_dependencies():
+def preinstall_dependencies(app=None):
     if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mint":
         # preinstall_dependencies_ubuntu()
         pass
     elif config.OS_NAME == "Steam":
-        preinstall_dependencies_steamos()
+        preinstall_dependencies_steamos(app)
 
 
-def postinstall_dependencies():
+def postinstall_dependencies(app=None):
     if config.OS_NAME == "Steam":
-        postinstall_dependencies_steamos()
+        postinstall_dependencies_steamos(app)
 
 
 def install_dependencies(packages, badpackages, logos9_packages=None, app=None):  # noqa: E501
@@ -567,7 +720,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
             app.root.event_generate('<<StartIndeterminateProgress>>')
             app.status_q.put("Installing pre-install dependencies…")
             app.root.event_generate('<<UpdateStatus>>')
-        preinstall_dependencies()
+        preinstall_dependencies(app)
 
         # libfuse: for AppImage use. This is the only known needed library.
         if config.OS_NAME == "fedora":
@@ -594,7 +747,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
             # config.REBOOT_REQUIRED = True
             # TODO: Verify with user before executing
 
-        postinstall_dependencies()
+        postinstall_dependencies(app)
 
         if config.REBOOT_REQUIRED:
             reboot()
