@@ -1,6 +1,9 @@
+import gzip
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import signal
+import shutil
 import sys
 import time
 
@@ -9,6 +12,29 @@ from pathlib import Path
 import config
 
 logging.console_log = []
+
+
+class GzippedRotatingFileHandler(RotatingFileHandler):
+    def doRollover(self):
+        super().doRollover()
+
+        if self.backupCount > 0:
+            for i in range(self.backupCount - 1, 0, -1):
+                source = f"{self.baseFilename}.{i}.gz"
+                destination = f"{self.baseFilename}.{i + 1}.gz"
+                if os.path.exists(source):
+                    if os.path.exists(destination):
+                        os.remove(destination)
+                    os.rename(source, destination)
+
+            last_log = self.baseFilename + ".1"
+            gz_last_log = self.baseFilename + ".1.gz"
+
+            if os.path.exists(last_log) and os.path.getsize(last_log) > 0:
+                with open(last_log, 'rb') as f_in:
+                    with gzip.open(gz_last_log, 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                os.remove(last_log)
 
 
 def get_log_level_name(level):
@@ -45,7 +71,7 @@ def initialize_logging(stderr_log_level):
         log_parent.mkdir(parents=True)
 
     # Define logging handlers.
-    file_h = logging.FileHandler(config.LOGOS_LOG, encoding='UTF8')
+    file_h = GzippedRotatingFileHandler(config.LOGOS_LOG, maxBytes=10*1024*1024, backupCount=5, encoding='UTF8')
     file_h.name = "logfile"
     file_h.setLevel(logging.DEBUG)
     # stdout_h = logging.StreamHandler(sys.stdout)
