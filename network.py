@@ -532,9 +532,12 @@ def get_logos_releases(app=None):
         # if len(releases) == 5:
         #    break
 
-    filtered_releases = utils.filter_versions(releases, 36, 1)
-    logging.debug(f"Available releases: {', '.join(releases)}")
-    logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
+    # Disabled filtering: with Logos 30+, all versions are known to be working.
+    # Keeping code if it needs to be reactivated.
+    # filtered_releases = utils.filter_versions(releases, 36, 1)
+    # logging.debug(f"Available releases: {', '.join(releases)}")
+    # logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
+    filtered_releases = releases
 
     if app:
         app.releases_q.put(filtered_releases)

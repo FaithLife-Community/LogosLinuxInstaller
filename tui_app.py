@@ -72,6 +72,8 @@ class TUI():
         self.finished_e = threading.Event()
         self.config_q = Queue()
         self.config_e = threading.Event()
+        self.password_q = Queue()
+        self.password_e = threading.Event()
         self.appimage_q = Queue()
         self.appimage_e = threading.Event()
 
@@ -263,6 +265,8 @@ class TUI():
             utils.start_thread(self.get_winetricksbin(config.use_python_dialog))
         elif task == 'INSTALLING':
             utils.start_thread(self.get_waiting(config.use_python_dialog))
+        elif task == 'INSTALLING_PW':
+            utils.start_thread(self.get_waiting(config.use_python_dialog, screen_id=15))
         elif task == 'CONFIG':
             utils.start_thread(self.get_config(config.use_python_dialog))
         elif task == 'DONE':
@@ -271,6 +275,8 @@ class TUI():
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
             #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
             self.switch_q.put(1)
+        elif task == 'PASSWORD':
+            utils.start_thread(self.get_password(config.use_python_dialog))
 
     def choice_processor(self, stdscr, screen_id, choice):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
@@ -400,14 +406,18 @@ class TUI():
             pass
         elif screen_id == 11:
             pass
-        if screen_id == 12:
+        elif screen_id == 12:
             if choice:
-                wine.run_logos()
+                wine.run_logos(self)
                 self.switch_q.put(1)
-        if screen_id == 13:
+        elif screen_id == 13:
             pass
-        if screen_id == 14:
+        elif screen_id == 14:
             pass
+        elif screen_id == 15:
+            if choice:
+                self.password_q.put(choice)
+                self.password_e.set()
 
     def switch_screen(self, dialog):
         if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0:
@@ -482,12 +492,12 @@ class TUI():
         self.menu_options = options
         self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
 
-    def get_waiting(self, dialog):
+    def get_waiting(self, dialog, screen_id=8):
         self.tricksbin_e.wait()
         text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
         percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
-        self.screen_q.put(self.stack_text(8, self.status_q, self.status_e, processed_text, wait=True, percent=percent,
+        self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text, wait=True, percent=percent,
                         dialog=dialog))
 
     def get_config(self, dialog):
@@ -496,6 +506,11 @@ class TUI():
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
         self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
+
+    def get_password(self, dialog):
+        question = (f"Logos Linux Installer needs to run a command as root. "
+                    f"Please provide your password to provide escalation privileges.")
+        self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
 
     def report_waiting(self, text, dialog):
         #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
@@ -508,7 +523,7 @@ class TUI():
                 # Without this delay, the reporting works too quickly and instead appears all at once.
                 time.sleep(0.1)
             else:
-                #TODO
+                msg.status(f"{text}", self)
                 pass
 
     def which_dialog_options(self, labels, dialog=False):
@@ -584,6 +599,14 @@ class TUI():
         else:
             utils.append_unique(self.tui_screens,
                             tui_screen.InputScreen(self, screen_id, queue, event, question, default))
+
+    def stack_password(self, screen_id, queue, event, question, default="", dialog=False):
+        if dialog:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.PasswordDialog(self, screen_id, queue, event, question, default))
+        else:
+            utils.append_unique(self.tui_screens,
+                            tui_screen.PasswordScreen(self, screen_id, queue, event, question, default))
 
     def stack_confirm(self, screen_id, queue, event, question, options, dialog=False):
         if dialog:
