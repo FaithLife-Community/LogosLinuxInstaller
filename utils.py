@@ -219,9 +219,8 @@ def check_dependencies(app=None):
         targetversion = int(config.TARGETVERSION)
     else:
         targetversion = 10
-    logging.info(f"Checking Logos {str(targetversion)} dependencies…")
+    msg.status(f"Checking Logos {str(targetversion)} dependencies…", app)
     if app:
-        app.status_q.put(f"Checking Logos {str(targetversion)} dependencies…")
         if config.DIALOG == "tk":
             app.root.event_generate('<<UpdateStatus>>')
 

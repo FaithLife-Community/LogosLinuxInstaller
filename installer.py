@@ -515,16 +515,15 @@ def ensure_winetricks_applied(app=None):
                 args.insert(0, "-q")
             wine.winetricks_install(*args)
 
-        if config.TARGETVERSION == '9':
-            msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
-            exe_args = [
-                'add',
-                f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
-                "/v", "Version",
-                "/t", "REG_SZ",
-                "/d", "vista", "/f",
-                ]
-            wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
+        exe_args = [
+            'add',
+            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
+            "/v", "Version",
+            "/t", "REG_SZ",
+            "/d", "vista", "/f",
+            ]
+        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
     logging.debug("> Done.")
 
 
