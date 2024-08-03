@@ -416,7 +416,6 @@ class TUI():
             pass
         elif screen_id == 15:
             if choice:
-                logging.debug(f"Password exists.")
                 self.password_q.put(choice)
                 self.password_e.set()
 

@@ -150,7 +150,6 @@ class PasswordDialog(UserInputDialog):
         else:
             if self.user_input is None or self.user_input == "":
                 self.user_input = self.default_text
-            logging.debug(f"Password submitted!")
             return self.user_input
 
     def input(self):
