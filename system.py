@@ -3,6 +3,7 @@ import keyring
 import logging
 import distro
 import os
+import pam
 import shlex
 import shutil
 import subprocess
@@ -102,54 +103,24 @@ def tl(library):
         return False
 
 
-def check_sudo_access(password, app=None):
-    if password is not None and password != "":
-        try:
-            cmd = ""
-            if config.SUPERUSER_COMMAND == "pkexec":
-                #TODO: Need proper GUI prompt
-                password = app.draw_prompt("Logos Linux Installer wants to run a command as root.", "Please enter your password:")
-                if t("sudo"):
-                    cmd = f'echo {password} | sudo -S whoami'
-                elif t("doas"):
-                    cmd = f'echo {password} | doas -n whoami'
-            elif config.SUPERUSER_COMMAND == "sudo":
-                cmd = f'echo "{password}" | {config.SUPERUSER_COMMAND} -S whoami'
-            else:
-                cmd = f'echo "{password}" | {config.SUPERUSER_COMMAND} -n whoami'
-            result = run_command(cmd, shell=True, verify=True)
-            if not result:
-                return False
-            elif "root" in result.stdout:
-                logging.debug("I have the power!")
-                return True
-            else:
-                return False
-        except subprocess.CalledProcessError as e:
-            return False
-    else:
-        logging.error("Supplied password empty.")
-        return False
-
-
 def set_password(app=None):
-    while not config.authenticated:
-        utils.send_task(app, "PASSWORD")
-        app.password_e.wait()
-        password = app.password_q.get()
-        if check_sudo_access(password, app):  # Verify if the password is correct.
-            logging.debug("User has authenticated.")
-            keyring.set_password("system", getpass.getuser(), password)
-            config.authenticated = True
-        else:
-            msg.status(f"Incorrect password. Try again.", app)
+    p = pam.pam()
+    username = getpass.getuser()
+    utils.send_task(app, "PASSWORD")
+    app.password_e.wait()
+    password = app.password_q.get()
+    if p.authenticate(username, password):
+        logging.debug("User has authenticated.")
+        keyring.set_password("Logos", username, password)
+        config.authenticated = True
+    else:
+        msg.status(f"Incorrect password. Try again.", app)
 
 
 def get_password(app=None):
-    if config.authenticated:
-        return keyring.get_password("system", getpass.getuser())
-    else:
+    while not config.authenticated:
         set_password(app)
+    return keyring.get_password("Logos", getpass.getuser())
 
 
 def get_dialog():
@@ -341,11 +312,7 @@ def download_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
     #TODO: As can be seen in this commit, there is good potential for reusing this code block in install_dependencies().
-    if app is None:
-        echo_pw = []
-    else:
-        password = get_password(app)
-        echo_pw = ["echo", f"{password}", "|"]
+    password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
@@ -354,8 +321,8 @@ def download_packages(packages, elements, app=None):
     if packages:
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = echo_pw + superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_DOWNLOAD, package]  # noqa: E501
-            result = run_command(command, retries=5, delay=15, verify=True)
+            command = superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_DOWNLOAD, package]  # noqa: E501
+            result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             status = "Downloaded" if result.returncode == 0 else "Failed"
             if elements is not None:
@@ -373,11 +340,7 @@ def download_packages(packages, elements, app=None):
 def install_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
-    if app is None:
-        echo_pw = []
-    else:
-        password = get_password(app)
-        echo_pw = ["echo", f"{password}", "|"]
+    password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
@@ -386,8 +349,8 @@ def install_packages(packages, elements, app=None):
     if packages:
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = echo_pw + superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_INSTALL, package]  # noqa: E501
-            result = run_command(command, retries=5, delay=15, verify=True)
+            command = superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_INSTALL, package]  # noqa: E501
+            result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
                 if result and result.returncode == 0:
@@ -407,11 +370,7 @@ def install_packages(packages, elements, app=None):
 def remove_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
-    if app is None:
-        echo_pw = []
-    else:
-        password = get_password(app)
-        echo_pw = ["echo", f"{password}", "|"]
+    password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
@@ -420,8 +379,8 @@ def remove_packages(packages, elements, app=None):
     if packages:
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = echo_pw + superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_REMOVE, package]  # noqa: E501
-            result = run_command(command, retries=5, delay=15, verify=True)
+            command = superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_REMOVE, package]  # noqa: E501
+            result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
                 if result and result.returncode == 0:
@@ -482,28 +441,24 @@ def test_dialog_version():
 
 
 def preinstall_dependencies_ubuntu(app=None):
-    if app is None:
-        echo_pw = []
-    else:
-        password = get_password(app)
-        echo_pw = ["echo", f"{password}", "|"]
+    password = get_password(app)\
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
         superuser_stdin = ["doas", "-n"]
     try:
-        run_command(echo_pw + superuser_stdin + ["dpkg", "--add-architecture", "i386"], verify=True)  # noqa: E501
-        run_command(echo_pw + superuser_stdin + ["mkdir", "-pm755", "/etc/apt/keyrings"], verify=True)  # noqa: E501
+        run_command(superuser_stdin + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
+        run_command(superuser_stdin + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
         url = "https://dl.winehq.org/wine-builds/winehq.key"
-        run_command(echo_pw + superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url],
+        run_command(superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
                     verify=True)  # noqa: E501
         lsb_release_output = run_command(["lsb_release", "-a"])
         codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[
             1].strip()  # noqa: E501
         url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
-        run_command(echo_pw + superuser_stdin + ["wget", "-NP",  "/etc/apt/sources.list.d/", url], verify=True)  # noqa: E501
-        run_command(echo_pw + superuser_stdin + ["apt", "update"], verify=True)
-        run_command(echo_pw + superuser_stdin + ["apt", "install", "--install-recommends", "winehq-staging"],
+        run_command(superuser_stdin + ["wget", "-NP",  "/etc/apt/sources.list.d/", url], input=password, verify=True)  # noqa: E501
+        run_command(superuser_stdin + ["apt", "update"], input=password, verify=True)
+        run_command(superuser_stdin + ["apt", "install", "--install-recommends", "winehq-staging"], input=password,
                     verify=True)  # noqa: E501
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
@@ -512,22 +467,18 @@ def preinstall_dependencies_ubuntu(app=None):
 
 
 def preinstall_dependencies_steamos(app=None):
-    if app is None:
-        echo_pw = []
-    else:
-        password = get_password(app)
-        echo_pw = ["echo", f"{password}", "|"]
+    password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
         superuser_stdin = ["doas", "-n"]
     try:
-        command = echo_pw + superuser_stdin + ["steamos-readonly", "disable"]
-        run_command(command, verify=True)
-        command = echo_pw + superuser_stdin + ["pacman-key", "--init"]
-        run_command(command, verify=True)
-        command = echo_pw + superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
-        run_command(command, verify=True)
+        command = superuser_stdin + ["steamos-readonly", "disable"]
+        run_command(command, input=password, verify=True)
+        command = superuser_stdin + ["pacman-key", "--init"]
+        run_command(command, input=password, verify=True)
+        command = superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
+        run_command(command, input=password, verify=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
         logging.error(f"Command output: {e.output}")
@@ -535,36 +486,32 @@ def preinstall_dependencies_steamos(app=None):
 
 
 def postinstall_dependencies_steamos(app=None):
-    if app is None:
-        echo_pw = []
-    else:
-        password = get_password(app)
-        echo_pw = ["echo", f"{password}", "|"]
+    password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
         superuser_stdin = ["doas", "-n"]
     try:
-        command = echo_pw + superuser_stdin + [
+        command = superuser_stdin + [
             config.SUPERUSER_COMMAND,
             "sed", '-i',
             's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
             '/etc/nsswitch.conf'
         ]
-        run_command(command, verify=True)
+        run_command(command, input=password, verify=True)
         command = [config.SUPERUSER_COMMAND, "locale-gen"]
-        run_command(command, verify=True)
-        command = echo_pw + superuser_stdin + [
+        run_command(command, input=password, verify=True)
+        command = superuser_stdin + [
             "systemctl",
             "enable",
             "--now",
             "avahi-daemon"
         ]
-        run_command(command, verify=True)
-        command = echo_pw + superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
-        run_command(command, verify=True)
-        command = echo_pw + superuser_stdin + ["steamos-readonly", "enable"]
-        run_command(command, verify=True)
+        run_command(command, input=password, verify=True)
+        command = superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
+        run_command(command, input=password, verify=True)
+        command = superuser_stdin + ["steamos-readonly", "enable"]
+        run_command(command, input=password, verify=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
         logging.error(f"Command output: {e.output}")
