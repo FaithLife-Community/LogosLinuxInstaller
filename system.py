@@ -57,11 +57,7 @@ def run_command(command, retries=1, delay=0, verify=False, **kwargs):
             )
             return result
         except subprocess.CalledProcessError as e:
-            if verify:
-                logging.error("User password incorrect.")
-                return False
-            else:
-                logging.error(f"Error occurred while executing {command}: {e}")
+            logging.error(f"Error occurred while executing {command}: {e}")
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
@@ -110,16 +106,17 @@ def set_password(app=None):
     app.password_e.wait()
     password = app.password_q.get()
     if p.authenticate(username, password):
-        logging.debug("User has authenticated.")
         keyring.set_password("Logos", username, password)
         config.authenticated = True
     else:
-        msg.status(f"Incorrect password. Try again.", app)
+        msg.status("Incorrect password. Try again.", app)
+        logging.debug("Incorrect password. Try again.")
 
 
 def get_password(app=None):
     while not config.authenticated:
         set_password(app)
+    msg.status("I have the power!", app)
     return keyring.get_password("Logos", getpass.getuser())
 
 
@@ -173,37 +170,37 @@ def get_superuser_command():
 def get_package_manager():
     # Check for package manager and associated packages
     if shutil.which('apt') is not None:  # debian, ubuntu
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = "apt install -y"
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "apt install --download-only -y"  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = "apt remove -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dpkg -l"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["apt", "install", "-y"]
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["apt", "install", "--download-only", "-y"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["apt", "remove", "-y"]
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["dpkg", "-l"]
         config.QUERY_PREFIX = '.i  '
         config.PACKAGES = "binutils cabextract fuse3 wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('dnf') is not None:  # rhel, fedora
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = "dnf install -y"
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "dnf install --downloadonly -y"  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = "dnf remove -y"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "dnf list installed"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["dnf", "install", "-y"]
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["dnf", "install", "--downloadonly", "-y"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["dnf", "remove", "-y"]
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "installed"]
         config.QUERY_PREFIX = ''
         config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appiamgelauncher"
     elif shutil.which('pamac') is not None:  # manjaro
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = "pamac install --no-upgrade --no-confirm"  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "pamac install --download-only --no-confirm"  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = "pamac remove --no-confirm"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "pamac list -i"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pamac", "install", "--no-upgrade", "--no-confirm"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pamac", "install", "--no-upgrade", "--download-only", "--no-confirm"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pamac", "remove", "--no-confirm"]
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["pamac", "list", "-i"]
         config.QUERY_PREFIX = ''
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = "appimagelauncher"
     elif shutil.which('pacman') is not None:  # arch, steamOS
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = r"pacman -Syu --overwrite * --noconfirm --needed"  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = "pacman -Sw -y"
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = r"pacman -R --no-confirm"
-        config.PACKAGE_MANAGER_COMMAND_QUERY = "pacman -Q"
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pacman", "-Syu", "--overwrite", r"*", "--noconfirm", "--needed"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pacman", "-Sw", "-y"]
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pacman", "-R", "--no-confirm"]
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["pacman", "-Q"]
         config.QUERY_PREFIX = ''
         if config.OS_NAME == "steamos":  # steamOS
             config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: #E501
@@ -238,14 +235,13 @@ def query_packages(packages, elements=None, mode="install", app=None):
     command = config.PACKAGE_MANAGER_COMMAND_QUERY
 
     try:
-        result = run_command(command, shell=True)
+        result = run_command(command)
     except Exception as e:
         logging.error(f"Error occurred while executing command: {e}")
         logging.error(result.stderr)
 
     package_list = result.stdout
 
-    logging.debug(f"Checking packages: {packages} in package list.")
     if app is not None:
         if elements is None:
             elements = {}  # Initialize elements if not provided
@@ -257,7 +253,7 @@ def query_packages(packages, elements=None, mode="install", app=None):
             l_num = 0
             for line in package_list.split('\n'):
                 l_num += 1
-                if config.PACKAGE_MANAGER_COMMAND_QUERY.startswith('dpkg'):
+                if config.PACKAGE_MANAGER_COMMAND_QUERY[0] == 'dpkg':
                     parts = line.strip().split()
                     if l_num < 6 or len(parts) < 2:  # skip header, etc.
                         continue
@@ -285,26 +281,25 @@ def query_packages(packages, elements=None, mode="install", app=None):
                 elif mode == "remove":
                     status = "Not Installed"
 
-            logging.debug(f"Setting {p}: {status}")
             elements[p] = status
 
             if app is not None and config.DIALOG == "curses":
                 app.report_dependencies(
-                    f"Checking Packages {(packages.index(p) + 1)}/{len(packages)}",  # noqa: E501
+                    f"Checking Package: {(packages.index(p) + 1)}/{len(packages)}",  # noqa: E501
                     100 * (packages.index(p) + 1) // len(packages),
                     elements,
                     dialog=config.use_python_dialog)
+            logging.debug(f"Setting Status of {p}: {status}")
 
-    txt = 'None'
     if mode == "install":
         if missing_packages:
             txt = f"Missing packages: {' '.join(missing_packages)}"
-        logging.info(f"Missing packages: {txt}")
+            logging.info(f"{txt}")
         return missing_packages, elements
     elif mode == "remove":
         if conflicting_packages:
             txt = f"Conflicting packages: {' '.join(conflicting_packages)}"
-        logging.info(f"Conflicting packages: {txt}")
+            logging.info(f"Conflicting packages: {txt}")
         return conflicting_packages, elements
 
 
@@ -319,12 +314,17 @@ def download_packages(packages, elements, app=None):
         superuser_stdin = ["doas", "-n"]
 
     if packages:
+        msg.status(f"Downloading Missing Packages: {packages}", app)
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_DOWNLOAD, package]  # noqa: E501
+            logging.debug(f"Downloading package: {package}")
+            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
-            status = "Downloaded" if result.returncode == 0 else "Failed"
+            if not isinstance(result, bool) and result.returncode == 0:
+                status = "Downloaded"
+            else:
+                status = "Failed"
             if elements is not None:
                 elements[index] = (package, status)
 
@@ -347,9 +347,11 @@ def install_packages(packages, elements, app=None):
         superuser_stdin = ["doas", "-n"]
 
     if packages:
+        msg.status(f"Installing Missing Packages: {packages}", app)
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_INSTALL, package]  # noqa: E501
+            logging.debug(f"Installing package: {package}")
+            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
@@ -377,9 +379,11 @@ def remove_packages(packages, elements, app=None):
         superuser_stdin = ["doas", "-n"]
 
     if packages:
+        msg.status(f"Removing Conflicting Packages: {packages}", app)
         total_packages = len(packages)
         for index, package in enumerate(packages):
-            command = superuser_stdin + [config.PACKAGE_MANAGER_COMMAND_REMOVE, package]  # noqa: E501
+            logging.debug(f"Removing package: {package}")
+            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
@@ -389,7 +393,7 @@ def remove_packages(packages, elements, app=None):
                     elements[index] = (package, "Failed")
             if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
                 app.report_dependencies(
-                    f"Removing Packages ({index + 1}/{total_packages})",
+                    f"Removing Conflicting Packages ({index + 1}/{total_packages})",
                     100 * (index + 1) // total_packages,
                     elements,
                     dialog=config.use_python_dialog)
@@ -441,12 +445,13 @@ def test_dialog_version():
 
 
 def preinstall_dependencies_ubuntu(app=None):
-    password = get_password(app)\
+    password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
     else:
         superuser_stdin = ["doas", "-n"]
     try:
+        logging.debug("Adding wine staging repositories…")
         run_command(superuser_stdin + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
         run_command(superuser_stdin + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
         url = "https://dl.winehq.org/wine-builds/winehq.key"
@@ -473,8 +478,10 @@ def preinstall_dependencies_steamos(app=None):
     else:
         superuser_stdin = ["doas", "-n"]
     try:
+        logging.debug("Disabling read only…")
         command = superuser_stdin + ["steamos-readonly", "disable"]
         run_command(command, input=password, verify=True)
+        logging.debug("Updating pacman keys…")
         command = superuser_stdin + ["pacman-key", "--init"]
         run_command(command, input=password, verify=True)
         command = superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
@@ -492,6 +499,7 @@ def postinstall_dependencies_steamos(app=None):
     else:
         superuser_stdin = ["doas", "-n"]
     try:
+        logging.debug("Updating DNS settings…")
         command = superuser_stdin + [
             config.SUPERUSER_COMMAND,
             "sed", '-i',
@@ -499,8 +507,10 @@ def postinstall_dependencies_steamos(app=None):
             '/etc/nsswitch.conf'
         ]
         run_command(command, input=password, verify=True)
+        logging.debug("Updating locales…")
         command = [config.SUPERUSER_COMMAND, "locale-gen"]
         run_command(command, input=password, verify=True)
+        logging.debug("Enabling avahi…")
         command = superuser_stdin + [
             "systemctl",
             "enable",
@@ -508,8 +518,10 @@ def postinstall_dependencies_steamos(app=None):
             "avahi-daemon"
         ]
         run_command(command, input=password, verify=True)
+        logging.debug("Enabling cups…")
         command = superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
         run_command(command, input=password, verify=True)
+        logging.debug("Enabling read only…")
         command = superuser_stdin + ["steamos-readonly", "enable"]
         run_command(command, input=password, verify=True)
     except subprocess.CalledProcessError as e:
@@ -519,16 +531,23 @@ def postinstall_dependencies_steamos(app=None):
 
 
 def preinstall_dependencies(app=None):
+    logging.debug(f"Performing pre-install dependencies…")
+    #TODO: Use a dict for distro derivatives so that we can add all Ubuntu derivatives here or in similar other places
     if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mint":
         # preinstall_dependencies_ubuntu()
         pass
     elif config.OS_NAME == "Steam":
         preinstall_dependencies_steamos(app)
+    else:
+        logging.debug(f"No pre-install dependencies required.")
 
 
 def postinstall_dependencies(app=None):
+    logging.debug(f"Performing post-install dependencies…")
     if config.OS_NAME == "Steam":
         postinstall_dependencies_steamos(app)
+    else:
+        logging.debug(f"No post-install dependencies required.")
 
 
 def install_dependencies(packages, badpackages, logos9_packages=None, app=None):  # noqa: E501
@@ -559,7 +578,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         app.report_dependencies("Checking Packages", 0, elements, dialog=config.use_python_dialog)  # noqa: E501
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
-        logging.debug("Querying packages...")
+        logging.debug("Querying packages…")
         missing_packages, elements = query_packages(package_list, elements, app=app)  # noqa: E501
         conflicting_packages, bad_elements = query_packages(bad_package_list, bad_elements, "remove",
                                                             app=app)  # noqa: E501
@@ -584,8 +603,7 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
 
         if app and config.DIALOG == 'tk':
             app.root.event_generate('<<StartIndeterminateProgress>>')
-            app.status_q.put("Installing pre-install dependencies…")
-            app.root.event_generate('<<UpdateStatus>>')
+            msg.status("Installing pre-install dependencies…", app)
         preinstall_dependencies(app)
 
         # libfuse: for AppImage use. This is the only known needed library.
@@ -598,20 +616,22 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         if missing_packages:
             if app and config.DIALOG == 'tk':
                 app.root.event_generate('<<StartIndeterminateProgress>>')
-                app.status_q.put("Downloading packages…")
-                app.root.event_generate('<<UpdateStatus>>')
+            msg.status("Downloading packages…", app)
             download_packages(missing_packages, elements, app)
             if app and config.DIALOG == 'tk':
                 app.root.event_generate('<<StartIndeterminateProgress>>')
-                app.status_q.put("Installing packages…")
-                app.root.event_generate('<<UpdateStatus>>')
+            msg.status("Installing packages…", app)
             install_packages(missing_packages, elements, app)
+        else:
+            logging.debug("No missing packages detected.")
 
         if conflicting_packages:
             # AppImage Launcher is the only known conflicting package.
             remove_packages(conflicting_packages, bad_elements, app)
             # config.REBOOT_REQUIRED = True
             # TODO: Verify with user before executing
+        else:
+            logging.debug("No conflicting packages detected.")
 
         postinstall_dependencies(app)
 
@@ -620,7 +640,9 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
 
     else:
         msg.logos_error(
-            f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the command(s) {missing_packages}. Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")  # noqa: E501
+            f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. "
+            f"Your computer is missing the command(s) {missing_packages}. "
+            f"Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")  # noqa: E501
 
 
 def have_lib(library, ld_library_path):

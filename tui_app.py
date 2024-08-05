@@ -408,7 +408,7 @@ class TUI():
             pass
         elif screen_id == 12:
             if choice:
-                wine.run_logos()
+                wine.run_logos(self)
                 self.switch_q.put(1)
         elif screen_id == 13:
             pass
@@ -523,7 +523,7 @@ class TUI():
                 # Without this delay, the reporting works too quickly and instead appears all at once.
                 time.sleep(0.1)
             else:
-                #TODO
+                msg.status(f"{text}", self)
                 pass
 
     def which_dialog_options(self, labels, dialog=False):

@@ -482,7 +482,7 @@ def get_wine_env():
     return wine_env
 
 
-def run_logos():
+def run_logos(app=None):
     logos_release = utils.convert_logos_release(config.current_logos_version)
     wine_release, _ = get_wine_release(config.WINE_EXE)
     
@@ -490,11 +490,11 @@ def run_logos():
     if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):
         txt = "Can't run Logos 10+ with Wine below 7.18."
         logging.critical(txt)
-        msg.status(txt)
+        msg.status(txt, app)
     if logos_release[0] > 29 and wine_release[0] < 9 and wine_release[1] < 10:
         txt = "Can't run Logos 30+ with Wine below 9.10."
         logging.critical(txt)
-        msg.status(txt)
+        msg.status(txt, app)
     else:
         run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
         run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
