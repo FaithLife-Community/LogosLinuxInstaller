@@ -97,6 +97,7 @@ RECOMMENDED_WINE64_APPIMAGE_FILENAME = None
 RECOMMENDED_WINE64_APPIMAGE_VERSION = None
 RECOMMENDED_WINE64_APPIMAGE_BRANCH = None
 SUPERUSER_COMMAND = None
+superuser_stdnin_command = None
 VERBUM_PATH = None
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
 WINETRICKS_VERSION = '20220411'

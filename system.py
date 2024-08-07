@@ -158,10 +158,13 @@ def get_superuser_command():
     else:
         if shutil.which('sudo'):
             config.SUPERUSER_COMMAND = "sudo"
+            config.superuser_stdnin_command = ["sudo", "-S"]
         elif shutil.which('doas'):
             config.SUPERUSER_COMMAND = "doas"
+            config.superuser_stdnin_command = ["doas", "-n"]
         elif shutil.which('pkexec'):
             config.SUPERUSER_COMMAND = "pkexec"
+            config.superuser_stdnin_command = ["sudo", "-S"]
         else:
             msg.logos_error("No superuser command found. Please install sudo or doas.")  # noqa: E501
     logging.debug(f"{config.SUPERUSER_COMMAND=}")
@@ -308,17 +311,13 @@ def download_packages(packages, elements, app=None):
         return
     #TODO: As can be seen in this commit, there is good potential for reusing this code block in install_dependencies().
     password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
 
     if packages:
         msg.status(f"Downloading Missing Packages: {packages}", app)
         total_packages = len(packages)
         for index, package in enumerate(packages):
             logging.debug(f"Downloading package: {package}")
-            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if not isinstance(result, bool) and result.returncode == 0:
@@ -341,17 +340,13 @@ def install_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
     password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
 
     if packages:
         msg.status(f"Installing Missing Packages: {packages}", app)
         total_packages = len(packages)
         for index, package in enumerate(packages):
             logging.debug(f"Installing package: {package}")
-            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
@@ -373,17 +368,13 @@ def remove_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
     password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
 
     if packages:
         msg.status(f"Removing Conflicting Packages: {packages}", app)
         total_packages = len(packages)
         for index, package in enumerate(packages):
             logging.debug(f"Removing package: {package}")
-            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
@@ -446,14 +437,10 @@ def test_dialog_version():
 
 def preinstall_dependencies_ubuntu(app=None):
     password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
     try:
         logging.debug("Adding wine staging repositories…")
-        run_command(superuser_stdin + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
-        run_command(superuser_stdin + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
+        run_command(config.superuser_stdnin_command + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
+        run_command(config.superuser_stdnin_command + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
         url = "https://dl.winehq.org/wine-builds/winehq.key"
         run_command(superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
                     verify=True)  # noqa: E501
@@ -461,9 +448,9 @@ def preinstall_dependencies_ubuntu(app=None):
         codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[
             1].strip()  # noqa: E501
         url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
-        run_command(superuser_stdin + ["wget", "-NP",  "/etc/apt/sources.list.d/", url], input=password, verify=True)  # noqa: E501
-        run_command(superuser_stdin + ["apt", "update"], input=password, verify=True)
-        run_command(superuser_stdin + ["apt", "install", "--install-recommends", "winehq-staging"], input=password,
+        run_command(config.superuser_stdnin_command + ["wget", "-NP",  "/etc/apt/sources.list.d/", url], input=password, verify=True)  # noqa: E501
+        run_command(config.superuser_stdnin_command + ["apt", "update"], input=password, verify=True)
+        run_command(config.superuser_stdnin_command + ["apt", "install", "--install-recommends", "winehq-staging"], input=password,
                     verify=True)  # noqa: E501
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
@@ -473,18 +460,14 @@ def preinstall_dependencies_ubuntu(app=None):
 
 def preinstall_dependencies_steamos(app=None):
     password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
     try:
         logging.debug("Disabling read only…")
-        command = superuser_stdin + ["steamos-readonly", "disable"]
+        command = config.superuser_stdnin_command + ["steamos-readonly", "disable"]
         run_command(command, input=password, verify=True)
         logging.debug("Updating pacman keys…")
-        command = superuser_stdin + ["pacman-key", "--init"]
+        command = config.superuser_stdnin_command + ["pacman-key", "--init"]
         run_command(command, input=password, verify=True)
-        command = superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
+        command = config.superuser_stdnin_command + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
         run_command(command, input=password, verify=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
@@ -494,13 +477,9 @@ def preinstall_dependencies_steamos(app=None):
 
 def postinstall_dependencies_steamos(app=None):
     password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
     try:
         logging.debug("Updating DNS settings…")
-        command = superuser_stdin + [
+        command = config.superuser_stdnin_command + [
             config.SUPERUSER_COMMAND,
             "sed", '-i',
             's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
@@ -511,7 +490,7 @@ def postinstall_dependencies_steamos(app=None):
         command = [config.SUPERUSER_COMMAND, "locale-gen"]
         run_command(command, input=password, verify=True)
         logging.debug("Enabling avahi…")
-        command = superuser_stdin + [
+        command = config.superuser_stdnin_command + [
             "systemctl",
             "enable",
             "--now",
@@ -519,10 +498,10 @@ def postinstall_dependencies_steamos(app=None):
         ]
         run_command(command, input=password, verify=True)
         logging.debug("Enabling cups…")
-        command = superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
+        command = config.superuser_stdnin_command + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
         run_command(command, input=password, verify=True)
         logging.debug("Enabling read only…")
-        command = superuser_stdin + ["steamos-readonly", "enable"]
+        command = config.superuser_stdnin_command + ["steamos-readonly", "enable"]
         run_command(command, input=password, verify=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
