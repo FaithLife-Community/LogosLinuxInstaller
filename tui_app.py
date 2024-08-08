@@ -516,16 +516,6 @@ class TUI():
         #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
         logging.console_log.append(text)
 
-    def report_dependencies(self, text, percent, elements, dialog):
-        if elements is not None:
-            if dialog:
-                self.screen_q.put(self.stack_tasklist(11, self.deps_q, self.deps_e, text, elements, percent, dialog=dialog))
-                # Without this delay, the reporting works too quickly and instead appears all at once.
-                time.sleep(0.1)
-            else:
-                msg.status(f"{text}", self)
-                pass
-
     def which_dialog_options(self, labels, dialog=False):
         options = []
         option_number = 1
