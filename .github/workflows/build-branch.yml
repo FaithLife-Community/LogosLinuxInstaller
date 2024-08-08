@@ -46,7 +46,7 @@ jobs:
     - name: Install dependencies
       run: |
         # apt-get install python3-tk
-        apt-get install dbus
+        sudo apt-get install dbus
         pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
