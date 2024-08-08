@@ -318,9 +318,9 @@ def download_packages(packages, elements, app=None):
     if packages:
         msg.status(f"Downloading Missing Packages: {packages}", app)
         total_packages = len(packages)
-        for index, package in enumerate(packages):
-            logging.debug(f"Downloading package: {package}")
-            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
+        for p in packages:
+            logging.debug(f"Downloading package: {p}")
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [p]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if not isinstance(result, bool) and result.returncode == 0:
@@ -328,12 +328,12 @@ def download_packages(packages, elements, app=None):
             else:
                 status = "Failed"
             if elements is not None:
-                elements[index] = (package, status)
+                elements[p] = status
 
             if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
                 app.report_dependencies(
-                    f"Downloading Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
+                    f"Downloading Packages ({packages.index(p) + 1}/{total_packages})",
+                    100 * (packages.index(p) + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
                 )
 
     app.password_e.clear()
@@ -347,20 +347,20 @@ def install_packages(packages, elements, app=None):
     if packages:
         msg.status(f"Installing Missing Packages: {packages}", app)
         total_packages = len(packages)
-        for index, package in enumerate(packages):
-            logging.debug(f"Installing package: {package}")
-            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
+        for p in packages:
+            logging.debug(f"Installing package: {p}")
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_INSTALL + [p]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
                 if result and result.returncode == 0:
-                    elements[index] = (package, "Installed")
+                    elements[p] = "Installed"
                 else:
-                    elements[index] = (package, "Failed")
+                    elements[p] = "Failed"
             if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
                 app.report_dependencies(
-                    f"Installing Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages,
+                    f"Installing Packages ({packages.index(p) + 1}/{total_packages})",
+                    100 * (packages.index(p) + 1) // total_packages,
                     elements,
                     dialog=config.use_python_dialog)
 
@@ -375,20 +375,20 @@ def remove_packages(packages, elements, app=None):
     if packages:
         msg.status(f"Removing Conflicting Packages: {packages}", app)
         total_packages = len(packages)
-        for index, package in enumerate(packages):
-            logging.debug(f"Removing package: {package}")
-            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
+        for p in packages:
+            logging.debug(f"Removing package: {p}")
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_REMOVE + [p]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
                 if result and result.returncode == 0:
-                    elements[index] = (package, "Removed")
+                    elements[p] = "Removed"
                 else:
-                    elements[index] = (package, "Failed")
+                    elements[p] = "Failed"
             if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
                 app.report_dependencies(
-                    f"Removing Conflicting Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages,
+                    f"Removing Conflicting Packages ({packages.index(p) + 1}/{total_packages})",
+                    100 * (packages.index(p) + 1) // total_packages,
                     elements,
                     dialog=config.use_python_dialog)
 
@@ -445,7 +445,7 @@ def preinstall_dependencies_ubuntu(app=None):
         run_command(config.superuser_stdnin_command + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
         run_command(config.superuser_stdnin_command + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
         url = "https://dl.winehq.org/wine-builds/winehq.key"
-        run_command(superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
+        run_command(config.superuser_stdnin_command + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
                     verify=True)  # noqa: E501
         lsb_release_output = run_command(["lsb_release", "-a"])
         codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[
