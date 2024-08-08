@@ -289,12 +289,6 @@ def query_packages(packages, elements=None, mode="install", app=None):
 
             elements[p] = status
 
-            if app is not None and config.DIALOG == "curses":
-                app.report_dependencies(
-                    f"Checking Package: {(packages.index(p) + 1)}/{len(packages)}",  # noqa: E501
-                    100 * (packages.index(p) + 1) // len(packages),
-                    elements,
-                    dialog=config.use_python_dialog)
             logging.debug(f"Setting Status of {p}: {status}")
 
     if mode == "install":
@@ -330,12 +324,6 @@ def download_packages(packages, elements, app=None):
             if elements is not None:
                 elements[p] = status
 
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Downloading Packages ({packages.index(p) + 1}/{total_packages})",
-                    100 * (packages.index(p) + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
-                )
-
     app.password_e.clear()
 
 
@@ -357,12 +345,6 @@ def install_packages(packages, elements, app=None):
                     elements[p] = "Installed"
                 else:
                     elements[p] = "Failed"
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Installing Packages ({packages.index(p) + 1}/{total_packages})",
-                    100 * (packages.index(p) + 1) // total_packages,
-                    elements,
-                    dialog=config.use_python_dialog)
 
     app.password_e.clear()
 
@@ -385,12 +367,6 @@ def remove_packages(packages, elements, app=None):
                     elements[p] = "Removed"
                 else:
                     elements[p] = "Failed"
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Removing Conflicting Packages ({packages.index(p) + 1}/{total_packages})",
-                    100 * (packages.index(p) + 1) // total_packages,
-                    elements,
-                    dialog=config.use_python_dialog)
 
     app.password_e.clear()
 
@@ -556,9 +532,6 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         for p in bad_package_list:
             bad_elements[p] = "Unchecked"
 
-    if config.DIALOG == "curses" and app is not None:
-        app.report_dependencies("Checking Packages", 0, elements, dialog=config.use_python_dialog)  # noqa: E501
-
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
         logging.debug("Querying packages…")
         missing_packages, elements = query_packages(package_list, elements, app=app)  # noqa: E501
@@ -654,10 +627,6 @@ def check_libs(libraries, app=None):
                 if config.DIALOG == "curses" and app is not None and elements is not None:  # noqa: E501
                     for p in libraries:
                         elements[p] = "Unchecked"
-
-                if config.DIALOG == "curses" and app is not None:
-                    app.report_dependencies("Checking Packages", 0, elements,
-                                            dialog=config.use_python_dialog)  # noqa: E501
 
                 install_packages(config.PACKAGES, elements, app=app)
             else:
