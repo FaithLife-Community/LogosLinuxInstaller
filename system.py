@@ -445,7 +445,7 @@ def preinstall_dependencies_ubuntu(app=None):
         run_command(config.superuser_stdnin_command + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
         run_command(config.superuser_stdnin_command + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
         url = "https://dl.winehq.org/wine-builds/winehq.key"
-        run_command(superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
+        run_command(config.superuser_stdnin_command + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
                     verify=True)  # noqa: E501
         lsb_release_output = run_command(["lsb_release", "-a"])
         codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[
