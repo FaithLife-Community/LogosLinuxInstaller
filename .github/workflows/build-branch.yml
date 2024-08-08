@@ -46,6 +46,7 @@ jobs:
     - name: Install dependencies
       run: |
         # apt-get install python3-tk
+        sudo apt-get install build-essential libpython3-dev libdbus-1-dev
         pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
