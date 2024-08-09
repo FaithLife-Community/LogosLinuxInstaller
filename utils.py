@@ -220,9 +220,9 @@ def check_dependencies(app=None):
     else:
         targetversion = 10
     msg.status(f"Checking Logos {str(targetversion)} dependencies…", app)
-    if app:
-        if config.DIALOG == "tk":
-            app.root.event_generate('<<UpdateStatus>>')
+    # if app:
+    #     if config.DIALOG == "tk":
+    #         app.root.event_generate('<<UpdateStatus>>')
 
     if targetversion == 10:
         system.install_dependencies(config.PACKAGES, config.BADPACKAGES, app=app)  # noqa: E501
