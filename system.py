@@ -156,12 +156,12 @@ def get_superuser_command():
         else:
             msg.logos_error("No superuser command found. Please install pkexec.")  # noqa: E501
     else:
-        if shutil.which('sudo'):
+        if shutil.which('pkexec'):
+            config.SUPERUSER_COMMAND = "pkexec"
+        elif shutil.which('sudo'):
             config.SUPERUSER_COMMAND = "sudo"
         elif shutil.which('doas'):
             config.SUPERUSER_COMMAND = "doas"
-        elif shutil.which('pkexec'):
-            config.SUPERUSER_COMMAND = "pkexec"
         else:
             msg.logos_error("No superuser command found. Please install sudo or doas.")  # noqa: E501
     logging.debug(f"{config.SUPERUSER_COMMAND=}")
