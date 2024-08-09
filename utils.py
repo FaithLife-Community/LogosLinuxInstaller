@@ -26,9 +26,10 @@ if system.have_dep("dialog"):
     import tui_dialog
 import wine
 
-#TODO: Move config commands to config.py
+# TODO: Move config commands to config.py
 
 from main import threads
+
 
 def get_calling_function_name():
     if 'inspect' in sys.modules:
@@ -220,9 +221,6 @@ def check_dependencies(app=None):
     else:
         targetversion = 10
     msg.status(f"Checking Logos {str(targetversion)} dependencies…", app)
-    if app:
-        if config.DIALOG == "tk":
-            app.root.event_generate('<<UpdateStatus>>')
 
     if targetversion == 10:
         system.install_dependencies(config.PACKAGES, config.BADPACKAGES, app=app)  # noqa: E501
@@ -268,7 +266,7 @@ def get_current_logos_version():
             logging.debug("Couldn't determine installed Logos version.")
             return None
     else:
-        logging.debug(f"Logos.deps.json not found.")
+        logging.debug("Logos.deps.json not found.")
 
 
 def convert_logos_release(logos_release):
@@ -283,7 +281,12 @@ def convert_logos_release(logos_release):
         release = 0
         point = 0
 
-    logos_release_arr = [int(ver_major), int(ver_minor), int(release), int(point)]
+    logos_release_arr = [
+        int(ver_major),
+        int(ver_minor),
+        int(release),
+        int(point),
+    ]
     return logos_release_arr
 
 
@@ -659,7 +662,10 @@ def find_appimage_files(release_version, app=None):
         appimage_paths = Path(d).rglob('wine*.appimage', case_sensitive=False)
         for p in appimage_paths:
             if p is not None and check_appimage(p):
-                output1, output2 = wine.check_wine_version_and_branch(release_version, p)
+                output1, output2 = wine.check_wine_version_and_branch(
+                    release_version,
+                    p,
+                )
                 if output1 is not None and output1:
                     appimages.append(str(p))
                 else:
@@ -699,7 +705,10 @@ def find_wine_binary_files(release_version):
             binaries.append(binary_path)
 
     for binary in binaries[:]:
-        output1, output2 = wine.check_wine_version_and_branch(release_version, binary)
+        output1, output2 = wine.check_wine_version_and_branch(
+            release_version,
+            binary,
+        )
         if output1 is not None and output1:
             continue
         else:
@@ -836,7 +845,12 @@ def grep(regexp, filepath):
 
 
 def start_thread(task, daemon_bool=True, *args):
-    thread = threading.Thread(name=f"{task}", target=task, daemon=daemon_bool, args=args)
+    thread = threading.Thread(
+        name=f"{task}",
+        target=task,
+        daemon=daemon_bool,
+        args=args
+    )
     threads.append(thread)
     thread.start()
     return thread
@@ -857,6 +871,6 @@ def untar_file(file_path, output_dir):
     try:
         with tarfile.open(file_path, 'r:gz') as tar:
             tar.extractall(path=output_dir)
-            logging.debug(f"Successfully extracted '{file_path}' to '{output_dir}'")
+            logging.debug(f"Successfully extracted '{file_path}' to '{output_dir}'")  # noqa: E501
     except tarfile.TarError as e:
         logging.error(f"Error extracting '{file_path}': {e}")

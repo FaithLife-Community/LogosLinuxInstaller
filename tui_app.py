@@ -275,8 +275,8 @@ class TUI():
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
             #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
             self.switch_q.put(1)
-        elif task == 'PASSWORD':
-            utils.start_thread(self.get_password(config.use_python_dialog))
+        # elif task == 'PASSWORD':
+        #     utils.start_thread(self.get_password(config.use_python_dialog))
 
     def choice_processor(self, stdscr, screen_id, choice):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
@@ -507,10 +507,10 @@ class TUI():
         self.menu_options = options
         self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
 
-    def get_password(self, dialog):
-        question = (f"Logos Linux Installer needs to run a command as root. "
-                    f"Please provide your password to provide escalation privileges.")
-        self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
+    # def get_password(self, dialog):
+    #     question = (f"Logos Linux Installer needs to run a command as root. "
+    #                 f"Please provide your password to provide escalation privileges.")
+    #     self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
 
     def report_waiting(self, text, dialog):
         #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
