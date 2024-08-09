@@ -1,10 +1,10 @@
-import getpass
-import keyring
+# import getpass
+# import keyring
 import logging
 import distro
 import os
-import pam
-import shlex
+# import pam
+# import shlex
 import shutil
 import subprocess
 import sys
@@ -13,10 +13,10 @@ import zipfile
 from pathlib import Path
 
 import config
-import gui
+# import gui
 import msg
 import network
-import utils
+# import utils
 
 
 #TODO: Add a Popen variant to run_command to replace functions in control.py and wine.py
@@ -99,25 +99,25 @@ def tl(library):
         return False
 
 
-def set_password(app=None):
-    p = pam.pam()
-    username = getpass.getuser()
-    utils.send_task(app, "PASSWORD")
-    app.password_e.wait()
-    password = app.password_q.get()
-    if p.authenticate(username, password):
-        keyring.set_password("Logos", username, password)
-        config.authenticated = True
-    else:
-        msg.status("Incorrect password. Try again.", app)
-        logging.debug("Incorrect password. Try again.")
+# def set_password(app=None):
+#     p = pam.pam()
+#     username = getpass.getuser()
+#     utils.send_task(app, "PASSWORD")
+#     app.password_e.wait()
+#     password = app.password_q.get()
+#     if p.authenticate(username, password):
+#         keyring.set_password("Logos", username, password)
+#         config.authenticated = True
+#     else:
+#         msg.status("Incorrect password. Try again.", app)
+#         logging.debug("Incorrect password. Try again.")
 
 
-def get_password(app=None):
-    while not config.authenticated:
-        set_password(app)
-    msg.status("I have the power!", app)
-    return keyring.get_password("Logos", getpass.getuser())
+# def get_password(app=None):
+#     while not config.authenticated:
+#         set_password(app)
+#     msg.status("I have the power!", app)
+#     return keyring.get_password("Logos", getpass.getuser())
 
 
 def get_dialog():
@@ -297,38 +297,38 @@ def query_packages(packages, elements=None, mode="install", app=None):
         return conflicting_packages, elements
 
 
-def download_packages(packages, elements, app=None):
-    if config.SKIP_DEPENDENCIES:
-        return
-    #TODO: As can be seen in this commit, there is good potential for reusing this code block in install_dependencies().
-    password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
+# def download_packages(packages, elements, app=None):
+#     if config.SKIP_DEPENDENCIES:
+#         return
+#     #TODO: As can be seen in this commit, there is good potential for reusing this code block in install_dependencies().
+#     password = get_password(app)
+#     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
+#         superuser_stdin = ["sudo", "-S"]
+#     else:
+#         superuser_stdin = ["doas", "-n"]
 
-    if packages:
-        msg.status(f"Downloading Missing Packages: {packages}", app)
-        total_packages = len(packages)
-        for index, package in enumerate(packages):
-            logging.debug(f"Downloading package: {package}")
-            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
-            result = run_command(command, input=password, retries=5, delay=15, verify=True)
+#     if packages:
+#         msg.status(f"Downloading Missing Packages: {packages}", app)
+#         total_packages = len(packages)
+#         for index, package in enumerate(packages):
+#             logging.debug(f"Downloading package: {package}")
+#             command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
+#             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
-            if not isinstance(result, bool) and result.returncode == 0:
-                status = "Downloaded"
-            else:
-                status = "Failed"
-            if elements is not None:
-                elements[index] = (package, status)
+#             if not isinstance(result, bool) and result.returncode == 0:
+#                 status = "Downloaded"
+#             else:
+#                 status = "Failed"
+#             if elements is not None:
+#                 elements[index] = (package, status)
 
-            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
-                app.report_dependencies(
-                    f"Downloading Packages ({index + 1}/{total_packages})",
-                    100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
-                )
+#             if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
+#                 app.report_dependencies(
+#                     f"Downloading Packages ({index + 1}/{total_packages})",
+#                     100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
+#                 )
 
-    app.password_e.clear()
+#     app.password_e.clear()
 
 
 def install_packages(packages, elements, app=None):
@@ -458,63 +458,76 @@ def test_dialog_version():
 
 
 def preinstall_dependencies_steamos(app=None):
-    # TODO: Needs to be reworked to only need 1 password prompt.
-    password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
+    # password = get_password(app)
+    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
+    #     superuser_stdin = ["sudo", "-S"]
+    # else:
+    #     superuser_stdin = ["doas", "-n"]
     try:
-        logging.debug("Disabling read only…")
-        command = superuser_stdin + ["steamos-readonly", "disable"]
-        run_command(command, input=password, verify=True)
-        logging.debug("Updating pacman keys…")
-        command = superuser_stdin + ["pacman-key", "--init"]
-        run_command(command, input=password, verify=True)
-        command = superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
-        run_command(command, input=password, verify=True)
+        logging.debug("Disabling read only, updating pacman keys…")
+        command = [
+            config.SUPERUSER_COMMAND, "steamos-readonly", "disable", "&&",
+            config.SUPERUSER_COMMAND, "pacman-key", "--init", "&&",
+            config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"
+        ]
+        # command = superuser_stdin + ["steamos-readonly", "disable"]
+        run_command(command, verify=True)
+        # logging.debug("Updating pacman keys…")
+        # command = superuser_stdin + ["pacman-key", "--init"]
+        # run_command(command, input=password, verify=True)
+        # command = superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
+        # run_command(command, input=password, verify=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
         logging.error(f"Command output: {e.output}")
-    app.password_e.clear()
+    # app.password_e.clear()
 
 
 def postinstall_dependencies_steamos(app=None):
-    password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
+    # password = get_password(app)
+    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
+    #     superuser_stdin = ["sudo", "-S"]
+    # else:
+    #     superuser_stdin = ["doas", "-n"]
     try:
-        logging.debug("Updating DNS settings…")
-        command = superuser_stdin + [
-            config.SUPERUSER_COMMAND,
-            "sed", '-i',
+        logging.debug("Updating DNS settings & locales, enabling services & read-only system…")  # noqa: E501
+        command = [
+            config.SUPERUSER_COMMAND, "sed", '-i',
             's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
-            '/etc/nsswitch.conf'
+            '/etc/nsswitch.conf', '&&',
+            config.SUPERUSER_COMMAND, "locale-gen", '&&',
+            config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon", "&&",  # noqa: E501
+            config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups", "&&",  # noqa: E501
+            config.SUPERUSER_COMMAND, "steamos-readonly", "enable",
         ]
-        run_command(command, input=password, verify=True)
-        logging.debug("Updating locales…")
-        command = [config.SUPERUSER_COMMAND, "locale-gen"]
-        run_command(command, input=password, verify=True)
-        logging.debug("Enabling avahi…")
-        command = superuser_stdin + [
-            "systemctl",
-            "enable",
-            "--now",
-            "avahi-daemon"
-        ]
-        run_command(command, input=password, verify=True)
-        logging.debug("Enabling cups…")
-        command = superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
-        run_command(command, input=password, verify=True)
-        logging.debug("Enabling read only…")
-        command = superuser_stdin + ["steamos-readonly", "enable"]
-        run_command(command, input=password, verify=True)
+        # command = superuser_stdin + [
+        #     config.SUPERUSER_COMMAND,
+        #     "sed", '-i',
+        #     's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
+        #     '/etc/nsswitch.conf'
+        # ]
+        # run_command(command, input=password, verify=True)
+        # logging.debug("Updating locales…")
+        # command = [config.SUPERUSER_COMMAND, "locale-gen"]
+        # run_command(command, input=password, verify=True)
+        # logging.debug("Enabling avahi…")
+        # command = superuser_stdin + [
+        #     "systemctl",
+        #     "enable",
+        #     "--now",
+        #     "avahi-daemon"
+        # ]
+        # run_command(command, input=password, verify=True)
+        # logging.debug("Enabling cups…")
+        # command = superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
+        # run_command(command, input=password, verify=True)
+        # logging.debug("Enabling read only…")
+        # command = superuser_stdin + ["steamos-readonly", "enable"]
+        run_command(command, verify=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred: {e}")
         logging.error(f"Command output: {e.output}")
-    app.password_e.clear()
+    # app.password_e.clear()
 
 
 def preinstall_dependencies(app=None):
