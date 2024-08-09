@@ -247,10 +247,10 @@ def status(text, app=None):
         if config.DIALOG == 'tk':
             app.status_q.put(text)
             app.root.event_generate('<<UpdateStatus>>')
-            logging.info(f"{text}")
         elif config.DIALOG == 'curses':
             app.status_q.put(f"{timestamp} {text}")
             app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)
+        logging.info(f"{text}")
     else:
         '''Prints message to stdout regardless of log level.'''
         logos_msg(text)

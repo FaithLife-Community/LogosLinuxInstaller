@@ -2,6 +2,7 @@ from tkinter import Toplevel
 from tkinter import BooleanVar
 from tkinter import font
 from tkinter import IntVar
+from tkinter import simpledialog
 from tkinter import StringVar
 from tkinter.ttk import Button
 from tkinter.ttk import Checkbutton
@@ -332,3 +333,22 @@ class ToolTip:
         if self.tooltip_visible:
             self.tooltip_window.destroy()
             self.tooltip_visible = False
+
+
+def input_prompt(root, title, prompt):
+    # Prompt for the password
+    input = simpledialog.askstring(title, prompt, show='*', parent=root)
+    return input
+
+class PromptGui(Frame):
+    def __init__(self, root, title="", prompt="", **kwargs):
+        super(PromptGui, self).__init__(root, **kwargs)
+        self.options = {"title": title, "prompt": prompt}
+        if title is not None:
+            self.options['title'] = title
+        if prompt is not None:
+            self.options['prompt'] = prompt
+
+    def draw_prompt(self):
+        store_button = Button(self.root, text="Store Password", command=lambda: input_prompt(self.root, self.options))
+        store_button.pack(pady=20)

@@ -693,6 +693,7 @@ class ControlWindow():
         self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
+        #TODO: Add reference to App here so the status message is sent to the GUI? See msg.status and wine.run_logos
         t = Thread(target=wine.run_logos)
         t.start()
 
