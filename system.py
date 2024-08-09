@@ -15,7 +15,7 @@ import network
 
 # TODO: Add a Popen variant to run_command to replace functions in control.py
 # and wine.py
-def run_command(command, retries=1, delay=0, verify=False, **kwargs):
+def run_command(command, retries=1, delay=0, **kwargs):
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
     capture_output = kwargs.get("capture_output", True)
@@ -198,14 +198,10 @@ def get_runmode():
         return 'script'
 
 
-def query_packages(packages, elements=None, mode="install", app=None):
+def query_packages(packages, mode="install", app=None):
     result = ""
-    if config.SKIP_DEPENDENCIES:
-        return
-
     missing_packages = []
     conflicting_packages = []
-
     command = config.PACKAGE_MANAGER_COMMAND_QUERY
 
     try:
@@ -213,17 +209,13 @@ def query_packages(packages, elements=None, mode="install", app=None):
     except Exception as e:
         logging.error(f"Error occurred while executing command: {e}")
         logging.error(result.stderr)
-
     package_list = result.stdout
 
+    status = {package: "Unchecked" for package in packages}
+
     if app is not None:
-        if elements is None:
-            elements = {}  # Initialize elements if not provided
-        elif isinstance(elements, list):
-            elements = {element[0]: element[1] for element in elements}
 
         for p in packages:
-            status = "Unchecked"
             l_num = 0
             for line in package_list.split('\n'):
                 l_num += 1
@@ -235,71 +227,36 @@ def query_packages(packages, elements=None, mode="install", app=None):
                     pkg = parts[1].split(':')[0]  # remove :arch if present
                     if pkg == p and state[1] == 'i':
                         if mode == 'install':
-                            status = "Installed"
+                            status[p] = "Installed"
                         elif mode == 'remove':
-                            status == 'Conflicting'
+                            status[p] = 'Conflicting'
                         break
                 else:
                     if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":  # noqa: E501
-                        status = "Installed"
+                        status[p] = "Installed"
                         break
                     elif line.strip().startswith(p) and mode == "remove":
                         conflicting_packages.append(p)
-                        status = "Conflicting"
+                        status[p] = "Conflicting"
                         break
 
-            if status == "Unchecked":
+            if status[p] == "Unchecked":
                 if mode == "install":
                     missing_packages.append(p)
-                    status = "Missing"
+                    status[p] = "Missing"
                 elif mode == "remove":
-                    status = "Not Installed"
-
-            elements[p] = status
-
-            logging.debug(f"Setting Status of {p}: {status}")
+                    status[p] = "Not Installed"
 
     if mode == "install":
         if missing_packages:
             txt = f"Missing packages: {' '.join(missing_packages)}"
             logging.info(f"{txt}")
-        return missing_packages, elements
+        return missing_packages
     elif mode == "remove":
         if conflicting_packages:
             txt = f"Conflicting packages: {' '.join(conflicting_packages)}"
             logging.info(f"Conflicting packages: {txt}")
-        return conflicting_packages, elements
-
-
-def install_packages(packages, elements, app=None):
-    if config.SKIP_DEPENDENCIES:
-        return
-    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":  # noqa: E501
-    #     superuser_stdin = ["sudo", "-S"]
-    # else:
-    #     superuser_stdin = ["doas", "-n"]
-
-    if packages:
-        msg.status(f"Installing Missing Packages: {packages}", app)
-        command = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_INSTALL, *packages]  # noqa: E501
-        # TODO: Handle non-zero exit status.
-        result = run_command(command)
-
-
-def remove_packages(packages, elements, app=None):
-    if config.SKIP_DEPENDENCIES:
-        return
-    # password = get_password(app)
-    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":  # noqa: E501
-    #     superuser_stdin = ["sudo", "-S"]
-    # else:
-    #     superuser_stdin = ["doas", "-n"]
-
-    if packages:
-        msg.status(f"Removing Conflicting Packages: {packages}", app)
-        command = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, *packages]  # noqa: E501
-        # TODO: Handle non-zero exit status.
-        result = run_command(command)
+        return conflicting_packages
 
 
 def have_dep(cmd):
@@ -345,126 +302,82 @@ def test_dialog_version():
         return None
 
 
-def preinstall_dependencies_steamos(app=None):
-    # password = get_password(app)
-    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":  # noqa: E501
-    #     superuser_stdin = ["sudo", "-S"]
-    # else:
-    #     superuser_stdin = ["doas", "-n"]
-    try:
-        logging.debug("Disabling read only, updating pacman keys…")
-        command = [
-            config.SUPERUSER_COMMAND, "steamos-readonly", "disable", "&&",
-            config.SUPERUSER_COMMAND, "pacman-key", "--init", "&&",
-            config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"
-        ]
-        run_command(command, verify=True)
-        # logging.debug("Updating pacman keys…")
-        # command = superuser_stdin + ["pacman-key", "--init"]
-        # run_command(command, input=password, verify=True)
-        # command = superuser_stdin + ["pacman-key", "--populate", "archlinux"]  # noqa: E501
-        # run_command(command, input=password, verify=True)
-    except subprocess.CalledProcessError as e:
-        logging.error(f"An error occurred: {e}")
-        logging.error(f"Command output: {e.output}")
+def preinstall_dependencies_steamos():
+    logging.debug("Disabling read only, updating pacman keys…")
+    command = [
+        config.SUPERUSER_COMMAND, "steamos-readonly", "disable", "&&",
+        config.SUPERUSER_COMMAND, "pacman-key", "--init", "&&",
+        config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"
+    ]
+    return command
 
 
-def postinstall_dependencies_steamos(app=None):
-    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":  # noqa: E501
-    #     superuser_stdin = ["sudo", "-S"]
-    # else:
-    #     superuser_stdin = ["doas", "-n"]
-    try:
-        logging.debug("Updating DNS settings & locales, enabling services & read-only system…")  # noqa: E501
-        command = [
-            config.SUPERUSER_COMMAND, "sed", '-i',
-            's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
-            '/etc/nsswitch.conf', '&&',
-            config.SUPERUSER_COMMAND, "locale-gen", '&&',
-            config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon", "&&",  # noqa: E501
-            config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups", "&&",  # noqa: E501
-            config.SUPERUSER_COMMAND, "steamos-readonly", "enable",
-        ]
-        # command = superuser_stdin + [
-        #     config.SUPERUSER_COMMAND,
-        #     "sed", '-i',
-        #     's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
-        #     '/etc/nsswitch.conf'
-        # ]
-        # run_command(command, input=password, verify=True)
-        # logging.debug("Updating locales…")
-        # command = [config.SUPERUSER_COMMAND, "locale-gen"]
-        # run_command(command, input=password, verify=True)
-        # logging.debug("Enabling avahi…")
-        # command = superuser_stdin + [
-        #     "systemctl",
-        #     "enable",
-        #     "--now",
-        #     "avahi-daemon"
-        # ]
-        # run_command(command, input=password, verify=True)
-        # logging.debug("Enabling cups…")
-        # command = superuser_stdin + ["systemctl", "enable", "--now", "cups"]  # noqa: E501
-        # run_command(command, input=password, verify=True)
-        # logging.debug("Enabling read only…")
-        # command = superuser_stdin + ["steamos-readonly", "enable"]
-        run_command(command, verify=True)
-    except subprocess.CalledProcessError as e:
-        logging.error(f"An error occurred: {e}")
-        logging.error(f"Command output: {e.output}")
+def postinstall_dependencies_steamos():
+    logging.debug("Updating DNS settings & locales, enabling services & read-only system…")  # noqa: E501
+    command = [
+        config.SUPERUSER_COMMAND, "sed", '-i',
+        's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
+        '/etc/nsswitch.conf', '&&',
+        config.SUPERUSER_COMMAND, "locale-gen", '&&',
+        config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon", "&&",  # noqa: E501
+        config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups", "&&",  # noqa: E501
+        config.SUPERUSER_COMMAND, "steamos-readonly", "enable",
+    ]
+    return command
 
 
 def preinstall_dependencies(app=None):
+    command = []
     logging.debug("Performing pre-install dependencies…")
     if config.OS_NAME == "Steam":
-        preinstall_dependencies_steamos(app)
+        command = preinstall_dependencies_steamos()
     else:
         logging.debug("No pre-install dependencies required.")
+    return command
 
 
 def postinstall_dependencies(app=None):
+    command = []
     logging.debug("Performing post-install dependencies…")
     if config.OS_NAME == "Steam":
         postinstall_dependencies_steamos(app)
     else:
         logging.debug("No post-install dependencies required.")
+    return command
 
 
-def install_dependencies(packages, badpackages, logos9_packages=None, app=None):  # noqa: E501
+def install_dependencies(packages, bad_packages, logos9_packages=None, app=None):  # noqa: E501
+    if config.SKIP_DEPENDENCIES:
+        return
+
+    command = []
+    preinstall_command = []
+    install_command = []
+    remove_command = []
+    postinstall_command = []
     missing_packages = {}
     conflicting_packages = {}
     package_list = []
-    elements = {}
-    bad_elements = {}
+    bad_package_list = []
 
     if packages:
         package_list = packages.split()
 
-    bad_package_list = []
-    if badpackages:
-        bad_package_list = badpackages.split()
+    if bad_packages:
+        bad_package_list = bad_packages.split()
 
     if logos9_packages:
         package_list.extend(logos9_packages.split())
 
-    if config.DIALOG == "curses" and app is not None and elements is not None:
-        for p in package_list:
-            elements[p] = "Unchecked"
-    if config.DIALOG == "curses" and app is not None and bad_elements is not None:  # noqa: E501
-        for p in bad_package_list:
-            bad_elements[p] = "Unchecked"
-
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
         logging.debug("Querying packages…")
-        missing_packages, elements = query_packages(
+        missing_packages = query_packages(
             package_list,
-            elements,
             app=app
         )
-        conflicting_packages, bad_elements = query_packages(
+        conflicting_packages = query_packages(
             bad_package_list,
-            bad_elements,
-            "remove",
+            mode="remove",
             app=app
         )
 
@@ -486,48 +399,69 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         # Do we need a TK continue question? I see we have a CLI and curses one
         # in msg.py
 
-        if app and config.DIALOG == 'tk':
-            app.root.event_generate('<<StartIndeterminateProgress>>')
-            msg.status("Installing pre-install dependencies…", app)
-        preinstall_dependencies(app)
+        preinstall_command = preinstall_dependencies()
 
         # libfuse: for AppImage use. This is the only known needed library.
         if config.OS_NAME == "fedora":
             fuse = "fuse"
         else:
             fuse = "libfuse"
-        check_libs([f"{fuse}"], app=app)
+
+        install_fuse = check_libs([f"{fuse}"], app=app)
+        if not install_fuse:
+            missing_packages.append(fuse)
 
         if missing_packages:
-            if app and config.DIALOG == 'tk':
-                app.root.event_generate('<<StartIndeterminateProgress>>')
-            # msg.status("Downloading packages…", app)
-            # download_packages(missing_packages, elements, app)
-            if app and config.DIALOG == 'tk':
-                app.root.event_generate('<<StartIndeterminateProgress>>')
-            msg.status("Installing packages…", app)
-            install_packages(missing_packages, elements, app)
+            install_command = config.PACKAGE_MANAGER_COMMAND_INSTALL + missing_packages  # noqa: E501
         else:
             logging.debug("No missing packages detected.")
 
         if conflicting_packages:
-            # AppImage Launcher is the only known conflicting package.
-            remove_packages(conflicting_packages, bad_elements, app)
-            # config.REBOOT_REQUIRED = True
             # TODO: Verify with user before executing
+            # AppImage Launcher is the only known conflicting package.
+            remove_command = config.PACKAGE_MANAGER_COMMAND_REMOVE + conflicting_packages  # noqa: E501
+            config.REBOOT_REQUIRED = True
+            logging.info("System reboot required.")
         else:
             logging.debug("No conflicting packages detected.")
 
-        postinstall_dependencies(app)
+        postinstall_command = postinstall_dependencies(app)
 
-        if config.REBOOT_REQUIRED:
-            reboot()
+        if preinstall_command:
+            command.extend(preinstall_command)
+        if install_command:
+            if preinstall_command:
+                command.append('&&')
+            command.extend(install_command)
+        if remove_command:
+            if preinstall_command or install_command:
+                command.append('&&')
+            command.extend(remove_command)
+        if postinstall_command:
+            if preinstall_command or install_command or remove_command:
+                command.append('&&')
+            command.extend(postinstall_command)
 
+        if app and config.DIALOG == 'tk':
+            app.root.event_generate('<<StartIndeterminateProgress>>')
+        msg.status("Installing dependencies…", app)
+        final_command = [f"{config.SUPERUSER_COMMAND}", 'sh', '-c'] + command
+        try:
+            logging.debug(f"Attempting to run this command: {final_command}")
+            run_command(final_command)
+        except subprocess.CalledProcessError as e:
+            logging.error(f"An error occurred: {e}")
+            logging.error(f"Command output: {e.output}")
     else:
         msg.logos_error(
             f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. "  # noqa: E501
             f"Your computer is missing the command(s) {missing_packages}. "
             f"Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")  # noqa: E501
+
+    # TODO: Verify with user before executing
+    if config.REBOOT_REQUIRED:
+        pass
+        #reboot()
 
 
 def have_lib(library, ld_library_path):
@@ -548,20 +482,10 @@ def check_libs(libraries, app=None):
         have_lib_result = have_lib(library, ld_library_path)
         if have_lib_result:
             logging.info(f"* {library} is installed!")
+            return True
         else:
-            if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-                # message = f"Your {config.OS_NAME} install is missing the library: {library}. To continue, the script will attempt to install the library by using {config.PACKAGE_MANAGER_COMMAND_INSTALL}. Proceed?"  # noqa: E501
-                # if msg.cli_continue_question(message, "", ""):
-                elements = {}
-
-                if config.DIALOG == "curses" and app is not None and elements is not None:  # noqa: E501
-                    for p in libraries:
-                        elements[p] = "Unchecked"
-
-                install_packages(config.PACKAGES, elements, app=app)
-            else:
-                msg.logos_error(
-                    f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. Your computer is missing the library: {library}. Please install the package associated with {library} for {config.OS_NAME}.")  # noqa: E501
+            logging.info(f"* {library} is not installed!")
+            return False
 
 
 def install_winetricks(
