@@ -342,7 +342,7 @@ def install_packages(packages, elements, app=None):
 
     if packages:
         msg.status(f"Installing Missing Packages: {packages}", app)
-        command = [config.SUPERUSER_COMMAND, config.PACKAGE_MANAGER_COMMAND_INSTALL, *packages]
+        command = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_INSTALL, *packages]  # noqa: E501
         result = run_command(command)
         # total_packages = len(packages)
         # for index, package in enumerate(packages):
@@ -370,7 +370,7 @@ def remove_packages(packages, elements, app=None):
 
     if packages:
         msg.status(f"Removing Conflicting Packages: {packages}", app)
-        command = [config.SUPERUSER_COMMAND, config.PACKAGE_MANAGER_COMMAND_REMOVE, *packages]
+        command = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, *packages]  # noqa: E501
         result = run_command(command)
         # total_packages = len(packages)
         # for index, package in enumerate(packages):
