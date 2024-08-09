@@ -109,7 +109,6 @@ def set_password(app=None):
         keyring.set_password("Logos", username, password)
         config.authenticated = True
     else:
-        logging.error(f"{p.reason} (return code: {p.code})")
         msg.status("Incorrect password. Try again.", app)
         logging.debug("Incorrect password. Try again.")
 
