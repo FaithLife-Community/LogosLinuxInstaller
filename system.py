@@ -312,9 +312,9 @@ def download_packages(packages, elements, app=None):
     if packages:
         msg.status(f"Downloading Missing Packages: {packages}", app)
         total_packages = len(packages)
-        for p in packages:
-            logging.debug(f"Downloading package: {p}")
-            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [p]  # noqa: E501
+        for index, package in enumerate(packages):
+            logging.debug(f"Downloading package: {package}")
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_DOWNLOAD + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if not isinstance(result, bool) and result.returncode == 0:
@@ -322,7 +322,13 @@ def download_packages(packages, elements, app=None):
             else:
                 status = "Failed"
             if elements is not None:
-                elements[p] = status
+                elements[index] = (package, status)
+
+            if app is not None and config.DIALOG == "curses" and elements is not None:  # noqa: E501
+                app.report_dependencies(
+                    f"Downloading Packages ({index + 1}/{total_packages})",
+                    100 * (index + 1) // total_packages, elements, dialog=config.use_python_dialog  # noqa: E501
+                )
 
     app.password_e.clear()
 
@@ -335,14 +341,14 @@ def install_packages(packages, elements, app=None):
     if packages:
         msg.status(f"Installing Missing Packages: {packages}", app)
         total_packages = len(packages)
-        for p in packages:
-            logging.debug(f"Installing package: {p}")
-            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_INSTALL + [p]  # noqa: E501
+        for index, package in enumerate(packages):
+            logging.debug(f"Installing package: {package}")
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
                 if result and result.returncode == 0:
-                    elements[p] = "Installed"
+                    elements[index] = (package, "Installed")
                 else:
                     elements[p] = "Failed"
 
@@ -357,14 +363,14 @@ def remove_packages(packages, elements, app=None):
     if packages:
         msg.status(f"Removing Conflicting Packages: {packages}", app)
         total_packages = len(packages)
-        for p in packages:
-            logging.debug(f"Removing package: {p}")
-            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_REMOVE + [p]  # noqa: E501
+        for index, package in enumerate(packages):
+            logging.debug(f"Removing package: {package}")
+            command = config.superuser_stdnin_command + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
             result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
             if elements is not None:
                 if result and result.returncode == 0:
-                    elements[p] = "Removed"
+                    elements[index] = (package, "Removed")
                 else:
                     elements[p] = "Failed"
 
