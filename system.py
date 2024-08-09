@@ -334,53 +334,57 @@ def download_packages(packages, elements, app=None):
 def install_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
-    password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
+    # password = get_password(app)
+    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
+    #     superuser_stdin = ["sudo", "-S"]
+    # else:
+    #     superuser_stdin = ["doas", "-n"]
 
     if packages:
         msg.status(f"Installing Missing Packages: {packages}", app)
-        total_packages = len(packages)
-        for index, package in enumerate(packages):
-            logging.debug(f"Installing package: {package}")
-            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
-            result = run_command(command, input=password, retries=5, delay=15, verify=True)
+        command = [config.SUPERUSER_COMMAND, config.PACKAGE_MANAGER_COMMAND_INSTALL, *packages]
+        result = run_command(command)
+        # total_packages = len(packages)
+        # for index, package in enumerate(packages):
+        #     logging.debug(f"Installing package: {package}")
+        #     command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_INSTALL + [package]  # noqa: E501
+        #     result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
-            if elements is not None:
-                if result and result.returncode == 0:
-                    elements[index] = (package, "Installed")
-                else:
-                    elements[p] = "Failed"
+        #     if elements is not None:
+        #         if result and result.returncode == 0:
+        #             elements[index] = (package, "Installed")
+        #         else:
+        #             elements[p] = "Failed"
 
-    app.password_e.clear()
+    # app.password_e.clear()
 
 
 def remove_packages(packages, elements, app=None):
     if config.SKIP_DEPENDENCIES:
         return
-    password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
+    # password = get_password(app)
+    # if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
+    #     superuser_stdin = ["sudo", "-S"]
+    # else:
+    #     superuser_stdin = ["doas", "-n"]
 
     if packages:
         msg.status(f"Removing Conflicting Packages: {packages}", app)
-        total_packages = len(packages)
-        for index, package in enumerate(packages):
-            logging.debug(f"Removing package: {package}")
-            command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
-            result = run_command(command, input=password, retries=5, delay=15, verify=True)
+        command = [config.SUPERUSER_COMMAND, config.PACKAGE_MANAGER_COMMAND_REMOVE, *packages]
+        result = run_command(command)
+        # total_packages = len(packages)
+        # for index, package in enumerate(packages):
+        #     logging.debug(f"Removing package: {package}")
+        #     command = superuser_stdin + config.PACKAGE_MANAGER_COMMAND_REMOVE + [package]  # noqa: E501
+        #     result = run_command(command, input=password, retries=5, delay=15, verify=True)
 
-            if elements is not None:
-                if result and result.returncode == 0:
-                    elements[index] = (package, "Removed")
-                else:
-                    elements[p] = "Failed"
+        #     if elements is not None:
+        #         if result and result.returncode == 0:
+        #             elements[index] = (package, "Removed")
+        #         else:
+        #             elements[p] = "Failed"
 
-    app.password_e.clear()
+    # app.password_e.clear()
 
 
 def have_dep(cmd):
@@ -426,34 +430,35 @@ def test_dialog_version():
         return None
 
 
-def preinstall_dependencies_ubuntu(app=None):
-    password = get_password(app)
-    if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
-        superuser_stdin = ["sudo", "-S"]
-    else:
-        superuser_stdin = ["doas", "-n"]
-    try:
-        logging.debug("Adding wine staging repositories…")
-        run_command(superuser_stdin + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
-        run_command(superuser_stdin + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
-        url = "https://dl.winehq.org/wine-builds/winehq.key"
-        run_command(superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
-                    verify=True)  # noqa: E501
-        lsb_release_output = run_command(["lsb_release", "-a"])
-        codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[
-            1].strip()  # noqa: E501
-        url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
-        run_command(superuser_stdin + ["wget", "-NP",  "/etc/apt/sources.list.d/", url], input=password, verify=True)  # noqa: E501
-        run_command(superuser_stdin + ["apt", "update"], input=password, verify=True)
-        run_command(superuser_stdin + ["apt", "install", "--install-recommends", "winehq-staging"], input=password,
-                    verify=True)  # noqa: E501
-    except subprocess.CalledProcessError as e:
-        logging.error(f"An error occurred: {e}")
-        logging.error(f"Command output: {e.output}")
-    app.password_e.clear()
+# def preinstall_dependencies_ubuntu(app=None):
+#     password = get_password(app)
+#     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
+#         superuser_stdin = ["sudo", "-S"]
+#     else:
+#         superuser_stdin = ["doas", "-n"]
+#     try:
+#         logging.debug("Adding wine staging repositories…")
+#         run_command(superuser_stdin + ["dpkg", "--add-architecture", "i386"], input=password, verify=True)  # noqa: E501
+#         run_command(superuser_stdin + ["mkdir", "-pm755", "/etc/apt/keyrings"], input=password, verify=True)  # noqa: E501
+#         url = "https://dl.winehq.org/wine-builds/winehq.key"
+#         run_command(superuser_stdin + ["wget", "-O", "/etc/apt/keyrings/winehq-archive.key", url], input=password,
+#                     verify=True)  # noqa: E501
+#         lsb_release_output = run_command(["lsb_release", "-a"])
+#         codename = [line for line in lsb_release_output.stdout.split('\n') if "Description" in line][0].split()[
+#             1].strip()  # noqa: E501
+#         url = f"https://dl.winehq.org/wine-builds/ubuntu/dists/{codename}/winehq-{codename}.sources"  # noqa: E501
+#         run_command(superuser_stdin + ["wget", "-NP",  "/etc/apt/sources.list.d/", url], input=password, verify=True)  # noqa: E501
+#         run_command(superuser_stdin + ["apt", "update"], input=password, verify=True)
+#         run_command(superuser_stdin + ["apt", "install", "--install-recommends", "winehq-staging"], input=password,
+#                     verify=True)  # noqa: E501
+#     except subprocess.CalledProcessError as e:
+#         logging.error(f"An error occurred: {e}")
+#         logging.error(f"Command output: {e.output}")
+#     app.password_e.clear()
 
 
 def preinstall_dependencies_steamos(app=None):
+    # TODO: Needs to be reworked to only need 1 password prompt.
     password = get_password(app)
     if config.SUPERUSER_COMMAND == "sudo" or config.SUPERUSER_COMMAND == "pkexec":
         superuser_stdin = ["sudo", "-S"]
@@ -513,15 +518,15 @@ def postinstall_dependencies_steamos(app=None):
 
 
 def preinstall_dependencies(app=None):
-    logging.debug(f"Performing pre-install dependencies…")
-    #TODO: Use a dict for distro derivatives so that we can add all Ubuntu derivatives here or in similar other places
+    logging.debug("Performing pre-install dependencies…")
+    # TODO: Use a dict for distro derivatives so that we can add all Ubuntu derivatives here or in similar other places
     if config.OS_NAME == "Ubuntu" or config.OS_NAME == "Linux Mint":
         # preinstall_dependencies_ubuntu()
         pass
     elif config.OS_NAME == "Steam":
         preinstall_dependencies_steamos(app)
     else:
-        logging.debug(f"No pre-install dependencies required.")
+        logging.debug("No pre-install dependencies required.")
 
 
 def postinstall_dependencies(app=None):
@@ -558,19 +563,27 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
 
     if config.PACKAGE_MANAGER_COMMAND_QUERY:
         logging.debug("Querying packages…")
-        missing_packages, elements = query_packages(package_list, elements, app=app)  # noqa: E501
-        conflicting_packages, bad_elements = query_packages(bad_package_list, bad_elements, "remove",
-                                                            app=app)  # noqa: E501
+        missing_packages, elements = query_packages(
+            package_list,
+            elements,
+            app=app
+        )
+        conflicting_packages, bad_elements = query_packages(
+            bad_package_list,
+            bad_elements,
+            "remove",
+            app=app
+        )
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if missing_packages and conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}) and will remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"  # noqa: E501
+            message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nand will remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}\nProceed?"  # noqa: E501
             # logging.critical(message)
         elif missing_packages:
-            message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the package(s): {missing_packages} by using ({config.PACKAGE_MANAGER_COMMAND_INSTALL}). Proceed?"  # noqa: E501
+            message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nProceed?"  # noqa: E501
             # logging.critical(message)
         elif conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the package(s): {conflicting_packages} by using ({config.PACKAGE_MANAGER_COMMAND_REMOVE}). Proceed?"  # noqa: E501
+            message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}\nProceed?"  # noqa: E501
             # logging.critical(message)
         else:
             logging.debug("No missing or conflicting dependencies found.")
@@ -595,8 +608,8 @@ def install_dependencies(packages, badpackages, logos9_packages=None, app=None):
         if missing_packages:
             if app and config.DIALOG == 'tk':
                 app.root.event_generate('<<StartIndeterminateProgress>>')
-            msg.status("Downloading packages…", app)
-            download_packages(missing_packages, elements, app)
+            # msg.status("Downloading packages…", app)
+            # download_packages(missing_packages, elements, app)
             if app and config.DIALOG == 'tk':
                 app.root.event_generate('<<StartIndeterminateProgress>>')
             msg.status("Installing packages…", app)
