@@ -245,6 +245,7 @@ def query_packages(packages, mode="install", app=None):
                     missing_packages.append(p)
                     status[p] = "Missing"
                 elif mode == "remove":
+                    conflicting_packages.append(p)
                     status[p] = "Not Installed"
 
     if mode == "install":
@@ -307,7 +308,7 @@ def preinstall_dependencies_steamos():
     command = [
         config.SUPERUSER_COMMAND, "steamos-readonly", "disable", "&&",
         config.SUPERUSER_COMMAND, "pacman-key", "--init", "&&",
-        config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux"
+        config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux",
     ]
     return command
 
@@ -340,7 +341,7 @@ def postinstall_dependencies(app=None):
     command = []
     logging.debug("Performing post-install dependencies…")
     if config.OS_NAME == "Steam":
-        postinstall_dependencies_steamos(app)
+        command = postinstall_dependencies_steamos()
     else:
         logging.debug("No post-install dependencies required.")
     return command
@@ -430,25 +431,28 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         if preinstall_command:
             command.extend(preinstall_command)
         if install_command:
-            if preinstall_command:
+            if command:
                 command.append('&&')
             command.extend(install_command)
         if remove_command:
-            if preinstall_command or install_command:
+            if command:
                 command.append('&&')
             command.extend(remove_command)
         if postinstall_command:
-            if preinstall_command or install_command or remove_command:
+            if command:
                 command.append('&&')
             command.extend(postinstall_command)
 
         if app and config.DIALOG == 'tk':
             app.root.event_generate('<<StartIndeterminateProgress>>')
         msg.status("Installing dependencies…", app)
-        final_command = [f"{config.SUPERUSER_COMMAND}", 'sh', '-c'] + command
+        final_command = [
+            f"{config.SUPERUSER_COMMAND}", 'sh', '-c', "'", *command, "'"
+        ]
         try:
-            logging.debug(f"Attempting to run this command: {final_command}")
-            run_command(final_command)
+            command_str = ' '.join(final_command)
+            logging.debug(f"Attempting to run this command: {command_str}")
+            run_command(command_str, shell=True)
         except subprocess.CalledProcessError as e:
             logging.error(f"An error occurred: {e}")
             logging.error(f"Command output: {e.output}")
