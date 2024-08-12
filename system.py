@@ -229,23 +229,22 @@ def query_packages(packages, mode="install", app=None):
                         if mode == 'install':
                             status[p] = "Installed"
                         elif mode == 'remove':
+                            conflicting_packages.append(p)
                             status[p] = 'Conflicting'
                         break
                 else:
                     if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":  # noqa: E501
                         status[p] = "Installed"
-                        break
                     elif line.strip().startswith(p) and mode == "remove":
                         conflicting_packages.append(p)
                         status[p] = "Conflicting"
-                        break
+                    break
 
             if status[p] == "Unchecked":
                 if mode == "install":
                     missing_packages.append(p)
                     status[p] = "Missing"
                 elif mode == "remove":
-                    conflicting_packages.append(p)
                     status[p] = "Not Installed"
 
     if mode == "install":
