@@ -215,12 +215,16 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     env = get_wine_env()
     if config.WINECMD_ENCODING is None:
         # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
-        registry_value = get_registry_value('HKCU\\Software\\Wine\\Fonts', 'Codepages')
+        registry_value = get_registry_value(
+            'HKCU\\Software\\Wine\\Fonts',
+            'Codepages'
+        )
         if registry_value is not None:
             codepages = registry_value.split(',')  # noqa: E501
             config.WINECMD_ENCODING = codepages[-1]
         else:
-            logging.error("wine.wine_proc: wine.get_registry_value returned None.")
+            m = "wine.wine_proc: wine.get_registry_value returned None."
+            logging.error(m)
     logging.debug(f"run_wine_proc: {winecmd}; {exe=}; {exe_args=}")
     wine_env_vars = {k: v for k, v in env.items() if k.startswith('WINE')}
     logging.debug(f"wine environment: {wine_env_vars}")
@@ -252,7 +256,7 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
                         if config.WINECMD_ENCODING is not None:
                             logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
                         else:
-                            logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")
+                            logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
         returncode = process.wait()
 
         if returncode != 0:
@@ -320,7 +324,7 @@ def installICUDataFiles(app=None):
         os.makedirs(icu_win_dir)
 
     shutil.copytree(icu_win_dir, f"{drive_c}/windows", dirs_exist_ok=True)
-    if app and hasattr(app, 'status_evt'):
+    if hasattr(app, 'status_evt'):
         app.status_q.put("ICU files copied.")
         app.root.event_generate(app.status_evt)
 
@@ -485,9 +489,9 @@ def get_wine_env():
 def run_logos(app=None):
     logos_release = utils.convert_logos_release(config.current_logos_version)
     wine_release, _ = get_wine_release(config.WINE_EXE)
-    
-    #TODO: Find a way to incorporate check_wine_version_and_branch()
-    if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):
+
+    # TODO: Find a way to incorporate check_wine_version_and_branch()
+    if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):  # noqa: E501
         txt = "Can't run Logos 10+ with Wine below 7.18."
         logging.critical(txt)
         msg.status(txt, app)
@@ -515,7 +519,7 @@ def run_indexing():
 def end_wine_processes():
     for process_name, process in processes.items():
         if isinstance(process, subprocess.Popen):
-            logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")
+            logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")  # noqa: E501
             try:
                 process.terminate()
                 process.wait(timeout=10)

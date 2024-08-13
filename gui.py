@@ -2,6 +2,7 @@ from tkinter import Toplevel
 from tkinter import BooleanVar
 from tkinter import font
 from tkinter import IntVar
+from tkinter import messagebox
 from tkinter import simpledialog
 from tkinter import StringVar
 from tkinter.ttk import Button
@@ -335,11 +336,6 @@ class ToolTip:
             self.tooltip_visible = False
 
 
-def input_prompt(root, title, prompt):
-    # Prompt for the password
-    input = simpledialog.askstring(title, prompt, show='*', parent=root)
-    return input
-
 class PromptGui(Frame):
     def __init__(self, root, title="", prompt="", **kwargs):
         super(PromptGui, self).__init__(root, **kwargs)
@@ -350,5 +346,30 @@ class PromptGui(Frame):
             self.options['prompt'] = prompt
 
     def draw_prompt(self):
-        store_button = Button(self.root, text="Store Password", command=lambda: input_prompt(self.root, self.options))
+        store_button = Button(
+            self.root,
+            text="Store Password",
+            command=lambda: input_prompt(self.root, self.options)
+        )
         store_button.pack(pady=20)
+
+
+def show_error(message, title="Fatal Error", detail=None, app=None, parent=None):  # noqa: E501
+    kwargs = {'message': message}
+    if parent and hasattr(app, parent):
+        kwargs['parent'] = app.__dict__.get(parent)
+    if detail:
+        kwargs['detail'] = detail
+    messagebox.showerror(title, **kwargs)
+    if hasattr(app, 'root'):
+        app.root.destroy()
+
+
+def ask_question(question, secondary):
+    return messagebox.askquestion(question, secondary)
+
+
+def input_prompt(root, title, prompt):
+    # Prompt for the password
+    input = simpledialog.askstring(title, prompt, show='*', parent=root)
+    return input

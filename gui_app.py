@@ -688,12 +688,13 @@ class ControlWindow():
 
     def run_installer(self, evt=None):
         classname = "LogosLinuxInstaller"
-        self.new_win = Toplevel()
-        InstallerWindow(self.new_win, self.root, class_=classname)
+        self.installer_win = Toplevel()
+        InstallerWindow(self.installer_win, self.root, class_=classname)
         self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
-        #TODO: Add reference to App here so the status message is sent to the GUI? See msg.status and wine.run_logos
+        # TODO: Add reference to App here so the status message is sent to the
+        # GUI? See msg.status and wine.run_logos
         t = Thread(target=wine.run_logos)
         t.start()
 
