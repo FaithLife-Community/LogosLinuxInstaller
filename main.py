@@ -13,6 +13,7 @@ import logging
 import msg
 import network
 import os
+import shutil
 import sys
 import system
 import tui_app
@@ -387,6 +388,17 @@ def main():
     # Print terminal banner
     logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
     logging.debug(f"Installer log file: {config.LOGOS_LOG}")
+
+    # Check for AppImageLauncher
+    if shutil.which('AppImageLauncher'):
+        question_text = "Remove AppImageLauncher?"
+        secondary = (
+            "LogosLinuxInstaller is not compatible with AppImageLauncher.\n"
+            "Remove AppImageLauncher now? A reboot will be required."
+        )
+        no_text = "User declined to remove AppImageLauncher."
+        msg.logos_continue_question(question_text, no_text, secondary)
+        system.remove_appimagelauncher()
 
     network.check_for_updates()
 

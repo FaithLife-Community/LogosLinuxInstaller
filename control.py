@@ -20,7 +20,7 @@ import msg
 import network
 import system
 import tui_curses
-import tui_app
+# import tui_app
 import utils
 # import wine
 
@@ -252,7 +252,7 @@ def remove_all_index_files(app=None):
                 logging.error(f"Error removing {file_to_remove}: {e}")
 
     msg.logos_msg("======= Removing all LogosBible index files done! =======")
-    if app and hasattr(app, 'status_evt'):
+    if hasattr(app, 'status_evt'):
         app.root.event_generate(app.status_evt)
     sys.exit(0)
 
@@ -291,7 +291,7 @@ def set_winetricks():
                         "1: Use local winetricks.",
                         "2: Download winetricks from the Internet"
                     ]
-                    winetricks_choice = tui_curses.menu(options, title, question_text)
+                    winetricks_choice = tui_curses.menu(options, title, question_text)  # noqa: E501
 
                     logging.debug(f"winetricks_choice: {winetricks_choice}")
                     if winetricks_choice.startswith("1"):

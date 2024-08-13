@@ -659,7 +659,7 @@ def find_appimage_files(release_version, app=None):
         raise RuntimeError("Python 3.12 or higher is required for .rglob() flag `case-sensitive` ")  # noqa: E501
 
     for d in directories:
-        appimage_paths = Path(d).rglob('wine*.appimage', case_sensitive=False)
+        appimage_paths = Path(d).glob('wine*.appimage', case_sensitive=False)
         for p in appimage_paths:
             if p is not None and check_appimage(p):
                 output1, output2 = wine.check_wine_version_and_branch(

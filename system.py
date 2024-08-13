@@ -52,7 +52,7 @@ def run_command(command, retries=1, delay=0, **kwargs):
             )
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error occurred while executing {command}: {e}")
+            logging.error(f"Error occurred while executing \"{command}\": {e}")
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
@@ -151,16 +151,21 @@ def get_package_manager():
         config.QUERY_PREFIX = '.i  '
         config.PACKAGES = "binutils cabextract fuse3 wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = "appimagelauncher"
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["dnf", "install", "-y"]
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["dnf", "install", "--downloadonly", "-y"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["dnf", "remove", "-y"]
-        config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "installed"]
+        # config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "installed"]
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["rpm", "-qa"]  # workaround
         config.QUERY_PREFIX = ''
-        config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
+        # config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = (
+            "fuse3 fuse3-libs "  # appimages
+            "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract "  # wine  # noqa: E501
+        )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = "appiamgelauncher"
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pamac", "install", "--no-upgrade", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pamac", "install", "--no-upgrade", "--download-only", "--no-confirm"]  # noqa: E501
@@ -169,9 +174,9 @@ def get_package_manager():
         config.QUERY_PREFIX = ''
         config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = "appimagelauncher"
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pacman", "-Syu", "--overwrite", r"*", "--noconfirm", "--needed"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pacman", "-Syu", "--overwrite", "\\*", "--noconfirm", "--needed"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pacman", "-Sw", "-y"]
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pacman", "-R", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["pacman", "-Q"]
@@ -179,9 +184,18 @@ def get_package_manager():
         if config.OS_NAME == "steamos":  # steamOS
             config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: #E501
         else:  # arch
-            config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
+            # config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
+            config.PACKAGES = (
+                "fuse2 fuse3 "  # appimages
+                "binutils cabextract wget libwbclient "  # wine
+                "openjpeg2 libxcomposite libxinerama "  # display
+                "ocl-icd vulkan-icd-loader "  # hardware
+                "alsa-plugins gst-plugins-base-libs libpulse openal "  # audio
+                "libva mpg123 v4l-utils "  # video
+                "libxslt sqlite "  # misc
+            )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = "appimagelauncher"
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
     # Add more conditions for other package managers as needed
 
     # Add logging output.
@@ -208,16 +222,18 @@ def query_packages(packages, mode="install", app=None):
         result = run_command(command)
     except Exception as e:
         logging.error(f"Error occurred while executing command: {e}")
-        logging.error(result.stderr)
+        logging.error(e.output)
     package_list = result.stdout
 
+    logging.debug(f"packages to check: {packages}")
     status = {package: "Unchecked" for package in packages}
 
     if app is not None:
-
         for p in packages:
+            logging.debug(f"Checking for: {p}")
             l_num = 0
             for line in package_list.split('\n'):
+                # logging.debug(f"{line=}")
                 l_num += 1
                 if config.PACKAGE_MANAGER_COMMAND_QUERY[0] == 'dpkg':
                     parts = line.strip().split()
@@ -234,11 +250,13 @@ def query_packages(packages, mode="install", app=None):
                         break
                 else:
                     if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":  # noqa: E501
+                        logging.debug(f"'{p}' installed: {line}")
                         status[p] = "Installed"
+                        break
                     elif line.strip().startswith(p) and mode == "remove":
                         conflicting_packages.append(p)
                         status[p] = "Conflicting"
-                    break
+                        break
 
             if status[p] == "Unchecked":
                 if mode == "install":
@@ -246,6 +264,9 @@ def query_packages(packages, mode="install", app=None):
                     status[p] = "Missing"
                 elif mode == "remove":
                     status[p] = "Not Installed"
+            logging.debug(f"{p} status: {status.get(p)}")
+
+    logging.debug(f"Packages status: {status}")
 
     if mode == "install":
         if missing_packages:
@@ -300,6 +321,23 @@ def test_dialog_version():
         return current_version > minimum_version
     else:
         return None
+
+
+def remove_appimagelauncher(app=None):
+    pkg = "appimagelauncher"
+    cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE]
+    cmd.append(pkg)
+    msg.status("Removing AppImageLauncher…", app)
+    try:
+        logging.debug(f"Running command: {cmd}")
+        run_command(cmd)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"An error occurred: {e}")
+        logging.error(f"Command output: {e.output}")
+        msg.logos_error("Failed to uninstall AppImageLauncher.")
+        sys.exit(1)
+    logging.info("System reboot is required.")
+    sys.exit()
 
 
 def preinstall_dependencies_steamos():
@@ -407,9 +445,10 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         else:
             fuse = "libfuse"
 
-        install_fuse = check_libs([f"{fuse}"], app=app)
-        if not install_fuse:
-            missing_packages.append(fuse)
+        fuse_lib_installed = check_libs([f"{fuse}"], app=app)
+        logging.debug(f"{fuse_lib_installed=}")
+        # if not fuse_lib_installed:
+        #     missing_packages.append(fuse)
 
         if missing_packages:
             install_command = config.PACKAGE_MANAGER_COMMAND_INSTALL + missing_packages  # noqa: E501
@@ -441,6 +480,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             if command:
                 command.append('&&')
             command.extend(postinstall_command)
+        if not command:  # nothing to run; avoid running empty pkexec command
+            return
 
         if app and config.DIALOG == 'tk':
             app.root.event_generate('<<StartIndeterminateProgress>>')
@@ -448,13 +489,33 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         final_command = [
             f"{config.SUPERUSER_COMMAND}", 'sh', '-c', "'", *command, "'"
         ]
-        try:
-            command_str = ' '.join(final_command)
-            logging.debug(f"Attempting to run this command: {command_str}")
-            run_command(command_str, shell=True)
-        except subprocess.CalledProcessError as e:
-            logging.error(f"An error occurred: {e}")
-            logging.error(f"Command output: {e.output}")
+        command_str = ' '.join(final_command)
+        # TODO: Fix fedora/arch handling.
+        if config.OS_NAME in ['fedora', 'arch']:
+            sudo_command = command_str.replace("pkexec", "sudo")
+            message = "The system needs to install/remove packages."
+            detail = (
+                "Please run the following command in a terminal, then restart "
+                f"LogosLinuxInstaller:\n{sudo_command}\n"
+            )
+            if hasattr(app, 'root'):
+                detail += "\nThe command has been copied to the clipboard."
+                app.root.clipboard_clear()
+                app.root.clipboard_append(sudo_command)
+                app.root.update()
+            msg.logos_error(
+                message,
+                detail=detail,
+                app=app,
+                parent='installer_win'
+            )
+        else:
+            try:
+                logging.debug(f"Attempting to run this command: {command_str}")
+                run_command(command_str, shell=True)
+            except subprocess.CalledProcessError as e:
+                logging.error(f"An error occurred: {e}")
+                logging.error(f"Command output: {e.output}")
     else:
         msg.logos_error(
             f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. "  # noqa: E501
@@ -464,7 +525,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
     # TODO: Verify with user before executing
     if config.REBOOT_REQUIRED:
         pass
-        #reboot()
+        # reboot()
 
 
 def have_lib(library, ld_library_path):

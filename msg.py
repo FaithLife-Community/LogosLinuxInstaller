@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 
 import config
+from gui import ask_question
+from gui import show_error
 
 logging.console_log = []
 
@@ -142,17 +144,25 @@ def logos_warn(message):
         logos_msg(message)
 
 
-def logos_error(message, secondary=None):
+def logos_error(message, secondary=None, detail=None, app=None, parent=None):
+    if detail is None:
+        message = f"{message}\n{detail}"
+    logging.critical(message)
     WIKI_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki"  # noqa: E501
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
-    if config.DIALOG == 'curses' and secondary != "info":
-        logging.critical(message)
+    if config.DIALOG == 'tk':
+        show_error(
+            message,
+            detail=f"{detail}\n{help_message}",
+            app=app,
+            parent=parent
+        )
+    elif config.DIALOG == 'curses' and secondary != "info":
         status(message)
         status(help_message)
     elif secondary != "info":
-        logging.critical(message)
         logos_msg(message)
     else:
         logos_msg(message)
@@ -163,13 +173,17 @@ def logos_error(message, secondary=None):
         except FileNotFoundError:  # no pid file when testing functions
             pass
         os.kill(os.getpgid(os.getpid()), signal.SIGKILL)
+
+    if hasattr(app, 'destroy'):
+        app.destroy()
     sys.exit(1)
 
 
-def cli_question(QUESTION_TEXT):
+def cli_question(question_text, secondary):
     while True:
         try:
-            yn = input(f"{QUESTION_TEXT} [Y/n]: ")
+            cli_msg(secondary)
+            yn = input(f"{question_text} [Y/n]: ")
         except KeyboardInterrupt:
             print()
             logos_error("Cancelled with Ctrl+C")
@@ -182,9 +196,14 @@ def cli_question(QUESTION_TEXT):
             logos_msg("Type Y[es] or N[o].")
 
 
-def cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
-    if not cli_question(QUESTION_TEXT):
-        logos_error(NO_TEXT, SECONDARY)
+def cli_continue_question(question_text, no_text, secondary):
+    if not cli_question(question_text, secondary):
+        logos_error(no_text)
+
+
+def gui_continue_question(question_text, no_text, secondary):
+    if ask_question(question_text, secondary) == 'no':
+        logos_error(no_text)
 
 
 def cli_acknowledge_question(QUESTION_TEXT, NO_TEXT):
@@ -204,11 +223,15 @@ def cli_ask_filepath(question_text):
     return answer.strip('"').strip("'")
 
 
-def logos_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY):
-    if config.DIALOG == 'curses':
+def logos_continue_question(question_text, no_text, secondary, app=None):
+    if config.DIALOG == 'tk':
+        gui_continue_question(question_text, no_text, secondary)
+    elif app is None:
+        cli_continue_question(question_text, no_text, secondary)
+    elif config.DIALOG == 'curses':
         pass
     else:
-        cli_continue_question(QUESTION_TEXT, NO_TEXT, SECONDARY)
+        logos_error(f"Unhandled question: {question_text}")
 
 
 def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):
@@ -249,7 +272,7 @@ def status(text, app=None):
             app.root.event_generate('<<UpdateStatus>>')
         elif config.DIALOG == 'curses':
             app.status_q.put(f"{timestamp} {text}")
-            app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)
+            app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
         logging.info(f"{text}")
     else:
         '''Prints message to stdout regardless of log level.'''
