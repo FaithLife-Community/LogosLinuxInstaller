@@ -60,6 +60,10 @@ class TUI():
         self.releases_e = threading.Event()
         self.release_q = Queue()
         self.release_e = threading.Event()
+        self.manualinstall_q = Queue()
+        self.manualinstall_e = threading.Event()
+        self.installdeps_q = Queue()
+        self.installdeps_e = threading.Event()
         self.installdir_q = Queue()
         self.installdir_e = threading.Event()
         self.wine_q = Queue()
@@ -72,6 +76,8 @@ class TUI():
         self.finished_e = threading.Event()
         self.config_q = Queue()
         self.config_e = threading.Event()
+        self.confirm_q = Queue()
+        self.confirm_e = threading.Event()
         self.password_q = Queue()
         self.password_e = threading.Event()
         self.appimage_q = Queue()
@@ -275,8 +281,6 @@ class TUI():
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
             #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
             self.switch_q.put(1)
-        # elif task == 'PASSWORD':
-        #     utils.start_thread(self.get_password(config.use_python_dialog))
 
     def choice_processor(self, stdscr, screen_id, choice):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
@@ -345,48 +349,54 @@ class TUI():
                 appimage_filename = choice
             config.SELECTED_APPIMAGE_FILENAME = appimage_filename
             utils.set_appimage_symlink()
+            self.menu_screen.choice = "Processing"
             self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
             self.appimage_e.set()
         elif screen_id == 2:
-            if str(choice).startswith("Logos"):
-                config.FLPRODUCT = "Logos"
-                self.product_q.put(config.FLPRODUCT)
-                self.product_e.set()
-            elif str(choice).startswith("Verbum"):
-                config.FLPRODUCT = "Verbum"
+            if choice:
+                if str(choice).startswith("Logos"):
+                    config.FLPRODUCT = "Logos"
+                elif str(choice).startswith("Verbum"):
+                    config.FLPRODUCT = "Verbum"
+                self.menu_screen.choice = "Processing"
                 self.product_q.put(config.FLPRODUCT)
                 self.product_e.set()
         elif screen_id == 3:
-            if "10" in choice:
-                config.TARGETVERSION = "10"
-                self.version_q.put(config.TARGETVERSION)
-                self.version_e.set()
-            elif "9" in choice:
-                config.TARGETVERSION = "9"
+            if choice:
+                if "10" in choice:
+                    config.TARGETVERSION = "10"
+                elif "9" in choice:
+                    config.TARGETVERSION = "9"
+                self.menu_screen.choice = "Processing"
                 self.version_q.put(config.TARGETVERSION)
                 self.version_e.set()
         elif screen_id == 4:
             if choice:
                 config.TARGET_RELEASE_VERSION = choice
+                self.menu_screen.choice = "Processing"
                 self.release_q.put(config.TARGET_RELEASE_VERSION)
                 self.release_e.set()
         elif screen_id == 5:
             if choice:
                 config.INSTALLDIR = choice
                 config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
+                self.menu_screen.choice = "Processing"
                 self.installdir_q.put(config.INSTALLDIR)
                 self.installdir_e.set()
         elif screen_id == 6:
             config.WINE_EXE = choice
             if choice:
+                self.menu_screen.choice = "Processing"
                 self.wine_q.put(config.WINE_EXE)
                 self.wine_e.set()
         elif screen_id == 7:
             winetricks_options = utils.get_winetricks_options()
             if choice.startswith("Download"):
+                self.menu_screen.choice = "Processing"
                 self.tricksbin_q.put("Download")
                 self.tricksbin_e.set()
             else:
+                self.menu_screen.choice = "Processing"
                 config.WINETRICKSBIN = winetricks_options[0]
                 self.tricksbin_q.put(config.WINETRICKSBIN)
                 self.tricksbin_e.set()
@@ -399,6 +409,7 @@ class TUI():
                     utils.write_config(config.CONFIG_FILE)
                 else:
                     logging.info("Config file left unchanged.")
+                self.menu_screen.choice = "Processing"
                 self.config_q.put(True)
                 self.config_e.set()
                 self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Finishing install…", dialog=config.use_python_dialog))
@@ -408,6 +419,7 @@ class TUI():
             pass
         elif screen_id == 12:
             if choice:
+                self.menu_screen.choice = "Processing"
                 wine.run_logos(self)
                 self.switch_q.put(1)
         elif screen_id == 13:
@@ -416,8 +428,28 @@ class TUI():
             pass
         elif screen_id == 15:
             if choice:
+                self.menu_screen.choice = "Processing"
                 self.password_q.put(choice)
                 self.password_e.set()
+        elif screen_id == 16:
+            if choice == "No":
+                self.menu_screen.choice = "Processing"
+                self.choice_q.put("Return to Main Menu")
+            else:
+                self.menu_screen.choice = "Processing"
+                self.confirm_e.set()
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
+                                                  "Installing dependencies…\n", wait=True,
+                                                  dialog=config.use_python_dialog))
+        elif screen_id == 17:
+            if choice == "Yes":
+                self.menu_screen.choice = "Processing"
+                self.manualinstall_e.set()
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
+                                                  "Installing dependencies…\n", wait=True,
+                                                  dialog=config.use_python_dialog))
+            else:
+                self.llirunning = False
 
     def switch_screen(self, dialog):
         if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0:
@@ -497,14 +529,15 @@ class TUI():
         text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
         percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
-        self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text, wait=True, percent=percent,
-                        dialog=dialog))
+        self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text,
+                                          wait=True, percent=percent, dialog=dialog))
 
     def get_config(self, dialog):
         question = f"Update config file at {config.CONFIG_FILE}?"
         labels = ["Yes", "No"]
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
+        #TODO: Switch to msg.logos_continue_message
         self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
 
     # def get_password(self, dialog):
@@ -598,13 +631,16 @@ class TUI():
             utils.append_unique(self.tui_screens,
                             tui_screen.PasswordScreen(self, screen_id, queue, event, question, default))
 
-    def stack_confirm(self, screen_id, queue, event, question, options, dialog=False):
+    def stack_confirm(self, screen_id, queue, event, question, no_text, secondary, options=["Yes", "No"], dialog=False):
         if dialog:
-            utils.append_unique(self.tui_screens,
-                            tui_screen.ConfirmDialog(self, screen_id, queue, event, question, options))
+            yes_label = options[0]
+            no_label = options[1]
+            utils.append_unique(self.tui_screens, tui_screen.ConfirmDialog(self, screen_id, queue, event,
+                                                                           question, no_text, secondary,
+                                                                           yes_label=yes_label, no_label=no_label))
         else:
-            #TODO: curses version
-            pass
+            utils.append_unique(self.tui_screens, tui_screen.ConfirmScreen(self, screen_id, queue, event,
+                                                                           question, no_text, secondary, options))
 
     def stack_text(self, screen_id, queue, event, text, wait=False, percent=None, dialog=False):
         if dialog:

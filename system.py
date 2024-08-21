@@ -52,7 +52,7 @@ def run_command(command, retries=1, delay=0, **kwargs):
             )
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error occurred while executing \"{command}\": {e}")
+            logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}")
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
@@ -332,8 +332,11 @@ def remove_appimagelauncher(app=None):
         logging.debug(f"Running command: {cmd}")
         run_command(cmd)
     except subprocess.CalledProcessError as e:
-        logging.error(f"An error occurred: {e}")
-        logging.error(f"Command output: {e.output}")
+        if e.returncode == 127:
+            logging.error("User cancelled appimagelauncher removal.")
+        else:
+            logging.error(f"An error occurred: {e}")
+            logging.error(f"Command output: {e.output}")
         msg.logos_error("Failed to uninstall AppImageLauncher.")
         sys.exit(1)
     logging.info("System reboot is required.")
@@ -388,6 +391,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
     if config.SKIP_DEPENDENCIES:
         return
 
+    install_deps_failed = False
+    manual_install_required = False
     command = []
     preinstall_command = []
     install_command = []
@@ -420,17 +425,32 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         )
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-        if missing_packages and conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires installing and removing some software. To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nand will remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}\nProceed?"  # noqa: E501
-            # logging.critical(message)
+        if config.OS_NAME in ['fedora', 'arch']:
+            message = False
+        elif missing_packages and conflicting_packages:
+            message = f"Your {config.OS_NAME} computer requires installing and removing some software.\nProceed?"  # noqa: E501
+            no_message = "User refused to install and remove software via the application"  # noqa: E501
+            secondary = f"To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nand will remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}"  # noqa: E501
         elif missing_packages:
-            message = f"Your {config.OS_NAME} computer requires installing some software. To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nProceed?"  # noqa: E501
-            # logging.critical(message)
+            message = f"Your {config.OS_NAME} computer requires installing some software.\nProceed?"  # noqa: E501
+            no_message = "User refused to install software via the application."  # noqa: E501
+            secondary = f"To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}"  # noqa: E501
         elif conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires removing some software. To continue, the program will attempt to remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}\nProceed?"  # noqa: E501
-            # logging.critical(message)
+            message = f"Your {config.OS_NAME} computer requires removing some software.\nProceed?"  # noqa: E501
+            no_message = "User refused to remove software via the application."  # noqa: E501
+            secondary = f"To continue, the program will attempt to remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}"  # noqa: E501
         else:
+            message = None
+
+        if message is None:
             logging.debug("No missing or conflicting dependencies found.")
+        elif not message:
+            logging.error("Your distro requires manual dependency installation.")
+        else:
+            msg.logos_continue_question(message, no_message, secondary, app)
+            if app:
+                if config.DIALOG == "curses":
+                    app.confirm_e.wait()
 
         # TODO: Need to send continue question to user based on DIALOG.
         # All we do above is create a message that we never send.
@@ -492,40 +512,75 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         command_str = ' '.join(final_command)
         # TODO: Fix fedora/arch handling.
         if config.OS_NAME in ['fedora', 'arch']:
+            manual_install_required = True
             sudo_command = command_str.replace("pkexec", "sudo")
-            message = "The system needs to install/remove packages."
+            message = "The system needs to install/remove packages, but it requires manual intervention."
             detail = (
                 "Please run the following command in a terminal, then restart "
                 f"LogosLinuxInstaller:\n{sudo_command}\n"
             )
-            if hasattr(app, 'root'):
-                detail += "\nThe command has been copied to the clipboard."
-                app.root.clipboard_clear()
-                app.root.clipboard_append(sudo_command)
-                app.root.update()
-            msg.logos_error(
-                message,
-                detail=detail,
-                app=app,
-                parent='installer_win'
-            )
-        else:
+            if app:
+                if config.DIALOG == "tk":
+                    if hasattr(app, 'root'):
+                        detail += "\nThe command has been copied to the clipboard."
+                        app.root.clipboard_clear()
+                        app.root.clipboard_append(sudo_command)
+                        app.root.update()
+                    msg.logos_error(
+                        message,
+                        detail=detail,
+                        app=app,
+                        parent='installer_win'
+                    )
+                install_deps_failed = True
+            else:
+                msg.logos_error(message + "\n" + detail)
+                install_deps_failed = True
+
+        if manual_install_required and app and config.DIALOG == "curses":
+            app.screen_q.put(app.stack_confirm(17, app.todo_q, app.todo_e,
+                                               f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\nLogosLinuxInstaller:\n{sudo_command}\n",  # noqa: E501
+                                               "User cancelled dependency installation.",  # noqa: E501
+                                               message,  # noqa: E501
+                                               options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))
+            app.manualinstall_e.wait()
+
+
+        if not install_deps_failed and not manual_install_required:
             try:
                 logging.debug(f"Attempting to run this command: {command_str}")
                 run_command(command_str, shell=True)
             except subprocess.CalledProcessError as e:
-                logging.error(f"An error occurred: {e}")
-                logging.error(f"Command output: {e.output}")
+                if e.returncode == 127:
+                    logging.error("User cancelled dependency installation.")
+                else:
+                    logging.error(f"An error occurred in install_dependencies(): {e}")
+                    logging.error(f"Command output: {e.output}")
+                install_deps_failed = True
     else:
         msg.logos_error(
             f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. "  # noqa: E501
             f"Your computer is missing the command(s) {missing_packages}. "
             f"Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")  # noqa: E501
 
-    # TODO: Verify with user before executing
     if config.REBOOT_REQUIRED:
-        pass
-        # reboot()
+        question = "Should the program reboot the host now?"  # noqa: E501
+        no_text = "The user has chosen not to reboot."
+        secondary = "The system has installed or removed a package that requires a reboot."
+        if msg.logos_continue_question(question, no_text, secondary):
+            reboot()
+        else:
+            logging.error("Cannot proceed until reboot. Exiting.")
+            sys.exit(1)
+
+    if install_deps_failed:
+        if app:
+            if config.DIALOG == "curses":
+                app.choice_q.put("Return to Main Menu")
+    else:
+        if app:
+            if config.DIALOG == "curses":
+                app.installdeps_e.set()
 
 
 def have_lib(library, ld_library_path):
