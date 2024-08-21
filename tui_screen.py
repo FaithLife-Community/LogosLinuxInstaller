@@ -130,6 +130,33 @@ class MenuScreen(CursesScreen):
         self.app.menu_options = new_options
 
 
+class ConfirmScreen(MenuScreen):
+    def __init__(self, app, screen_id, queue, event, question, no_text, secondary, options=["Yes", "No"]):
+        super().__init__(app, screen_id, queue, event, question, options,
+                         height=None, width=None, menu_height=8)
+        self.no_text = no_text
+        self.secondary = secondary
+
+    def __str__(self):
+        return f"Curses Confirm Screen"
+
+    def display(self):
+        self.stdscr.erase()
+        self.choice = tui_curses.MenuDialog(
+            self.app,
+            self.secondary + "\n" + self.question,
+            self.options
+        ).run()
+        if self.choice is not None and not self.choice == "" and not self.choice == "Processing":
+            config.current_option = 0
+            config.current_page = 0
+            if self.choice == "No":
+                logging.critical(self.no_text)
+            self.submit_choice_to_queue()
+        self.stdscr.noutrefresh()
+        curses.doupdate()
+
+
 class InputScreen(CursesScreen):
     def __init__(self, app, screen_id, queue, event, question, default):
         super().__init__(app, screen_id, queue, event)
@@ -272,11 +299,14 @@ class PasswordDialog(InputDialog):
             self.submit_choice_to_queue()
             utils.send_task(self.app, "INSTALLING_PW")
 
+
 class ConfirmDialog(DialogScreen):
-    def __init__(self, app, screen_id, queue, event, question, yes_label="Yes", no_label="No"):
+    def __init__(self, app, screen_id, queue, event, question, no_text, secondary, yes_label="Yes", no_label="No"):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
         self.question = question
+        self.no_text = no_text
+        self.secondary = secondary
         self.yes_label = yes_label
         self.no_label = no_label
 
@@ -286,7 +316,13 @@ class ConfirmDialog(DialogScreen):
     def display(self):
         if self.running == 0:
             self.running = 1
-            _, _, self.choice = tui_dialog.confirm(self.app, self.question, self.yes_label, self.no_label)
+            self.choice = tui_dialog.confirm(self.app, self.secondary + self.question,
+                                                   self.yes_label, self.no_label)
+            if self.choice == "cancel":
+                self.choice = self.no_label
+                logging.critical(self.no_text)
+            else:
+                self.choice = self.yes_label
             self.submit_choice_to_queue()
 
     def get_question(self):

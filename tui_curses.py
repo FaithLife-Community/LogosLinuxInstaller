@@ -10,8 +10,13 @@ import utils
 
 def wrap_text(app, text):
     # Turn text into wrapped text, line by line, centered
-    wrapped_text = textwrap.fill(text, app.window_width - 4)
-    lines = wrapped_text.split('\n')
+    if "\n" in text:
+        lines = text.splitlines()
+        wrapped_lines = [textwrap.fill(line, app.window_width - 4) for line in lines]
+        lines = '\n'.join(wrapped_lines)
+    else:
+        wrapped_text = textwrap.fill(text, app.window_width - 4)
+        lines = wrapped_text.split('\n')
     return lines
 
 
@@ -30,7 +35,10 @@ def title(app, title_text, title_start_y_adj):
 
 def text_centered(app, text, start_y=0):
     stdscr = app.get_menu_window()
-    text_lines = wrap_text(app, text)
+    if "\n" in text:
+        text_lines = wrap_text(app, text).splitlines()
+    else:
+        text_lines = wrap_text(app, text)
     text_start_y = start_y
     text_width = max(len(line) for line in text_lines)
     for i, line in enumerate(text_lines):

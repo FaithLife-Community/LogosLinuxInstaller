@@ -391,10 +391,11 @@ def main():
 
     # Check for AppImageLauncher
     if shutil.which('AppImageLauncher'):
-        question_text = "Remove AppImageLauncher?"
+        question_text = "Remove AppImageLauncher? A reboot will be required."
         secondary = (
+            "Your system currently has AppImageLauncher installed.\n"
             "LogosLinuxInstaller is not compatible with AppImageLauncher.\n"
-            "Remove AppImageLauncher now? A reboot will be required."
+            "For more information, see: https://github.com/FaithLife-Community/LogosLinuxInstaller/issues/114"
         )
         no_text = "User declined to remove AppImageLauncher."
         msg.logos_continue_question(question_text, no_text, secondary)

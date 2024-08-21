@@ -12,6 +12,7 @@ from pathlib import Path
 import config
 from gui import ask_question
 from gui import show_error
+import utils
 
 logging.console_log = []
 
@@ -144,6 +145,7 @@ def logos_warn(message):
         logos_msg(message)
 
 
+#TODO: I think detail is doing the same thing as secondary.
 def logos_error(message, secondary=None, detail=None, app=None, parent=None):
     if detail is None:
         message = f"{message}\n{detail}"
@@ -229,7 +231,7 @@ def logos_continue_question(question_text, no_text, secondary, app=None):
     elif app is None:
         cli_continue_question(question_text, no_text, secondary)
     elif config.DIALOG == 'curses':
-        pass
+        app.screen_q.put(app.stack_confirm(16, app.confirm_q, app.confirm_e, question_text, no_text, secondary, dialog=config.use_python_dialog))
     else:
         logos_error(f"Unhandled question: {question_text}")
 
