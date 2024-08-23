@@ -1,7 +1,10 @@
 # Changelog
 
+- 4.0.0-alpha.14
+	- Fix install routine [N. Marti, T. H. Wright]
+	- Fix #144, #154, #156
 - 4.0.0-alpha.13
-	- Fix #22. [T. Bleher, J. Goodman, N. Marti, S. Freilichtbuenhe, M. Malevic, T. Wright]
+	- Fix #22. [T. Bleher, J. Goodman, N. Marti, S. Freilichtbuenhe, M. Malevic, T. H. Wright]
 	- Fix package installer and TUI app. Also fix #135, #136, #140. [T. H. Wright, N. Marti]
 	- Introduce network.py and system.py
 - 4.0.0-alpha.12
