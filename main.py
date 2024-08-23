@@ -350,8 +350,6 @@ def main():
         system.get_dialog()
     else:
         config.DIALOG = config.DIALOG.lower()
-        if config.DIALOG == 'tk':
-            config.GUI = True
 
     if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:
         config.use_python_dialog = system.test_dialog_version()

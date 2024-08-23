@@ -99,7 +99,6 @@ def get_dialog():
         msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
 
     DIALOG = os.getenv('DIALOG')
-    config.GUI = False
     # Set config.DIALOG.
     if DIALOG is not None:
         DIALOG = DIALOG.lower()
@@ -110,9 +109,6 @@ def get_dialog():
         config.DIALOG = 'curses'
     else:
         config.DIALOG = 'tk'
-    # Set config.GUI.
-    if config.DIALOG == 'tk':
-        config.GUI = True
 
 
 def get_os():
