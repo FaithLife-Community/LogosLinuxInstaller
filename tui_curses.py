@@ -307,7 +307,7 @@ class MenuDialog(CursesDialog):
         self.stdscr.noutrefresh()
 
     def run(self):
-        #thread = utils.start_thread(self.input, False)
+        #thread = utils.start_thread(self.input, daemon_bool=False)
         #thread.join()
         self.draw()
         self.input()
