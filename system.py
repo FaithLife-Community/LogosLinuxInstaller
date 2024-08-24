@@ -52,7 +52,7 @@ def run_command(command, retries=1, delay=0, **kwargs):
             )
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}")
+            logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}")  # noqa: E501
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
@@ -441,7 +441,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         if message is None:
             logging.debug("No missing or conflicting dependencies found.")
         elif not message:
-            logging.error("Your distro requires manual dependency installation.")
+            m = "Your distro requires manual dependency installation."
+            logging.error(m)
         else:
             msg.logos_continue_question(message, no_message, secondary, app)
             if app:
@@ -510,7 +511,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         if config.OS_NAME in ['fedora', 'arch']:
             manual_install_required = True
             sudo_command = command_str.replace("pkexec", "sudo")
-            message = "The system needs to install/remove packages, but it requires manual intervention."
+            message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
             detail = (
                 "Please run the following command in a terminal, then restart "
                 f"LogosLinuxInstaller:\n{sudo_command}\n"
@@ -518,7 +519,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             if app:
                 if config.DIALOG == "tk":
                     if hasattr(app, 'root'):
-                        detail += "\nThe command has been copied to the clipboard."
+                        detail += "\nThe command has been copied to the clipboard."  # noqa: E501
                         app.root.clipboard_clear()
                         app.root.clipboard_append(sudo_command)
                         app.root.update()
@@ -534,13 +535,16 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                 install_deps_failed = True
 
         if manual_install_required and app and config.DIALOG == "curses":
-            app.screen_q.put(app.stack_confirm(17, app.todo_q, app.todo_e,
-                                               f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\nLogosLinuxInstaller:\n{sudo_command}\n",  # noqa: E501
-                                               "User cancelled dependency installation.",  # noqa: E501
-                                               message,  # noqa: E501
-                                               options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))
+            app.screen_q.put(
+                app.stack_confirm(
+                    17,
+                    app.todo_q,
+                    app.todo_e,
+                    f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\nLogosLinuxInstaller:\n{sudo_command}\n",  # noqa: E501
+                    "User cancelled dependency installation.",  # noqa: E501
+                    message,
+                    options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))  # noqa: E501
             app.manualinstall_e.wait()
-
 
         if not install_deps_failed and not manual_install_required:
             try:
@@ -550,7 +554,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                 if e.returncode == 127:
                     logging.error("User cancelled dependency installation.")
                 else:
-                    logging.error(f"An error occurred in install_dependencies(): {e}")
+                    logging.error(f"An error occurred in install_dependencies(): {e}")  # noqa: E501
                     logging.error(f"Command output: {e.output}")
                 install_deps_failed = True
     else:
@@ -562,7 +566,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
     if config.REBOOT_REQUIRED:
         question = "Should the program reboot the host now?"  # noqa: E501
         no_text = "The user has chosen not to reboot."
-        secondary = "The system has installed or removed a package that requires a reboot."
+        secondary = "The system has installed or removed a package that requires a reboot."  # noqa: E501
         if msg.logos_continue_question(question, no_text, secondary):
             reboot()
         else:

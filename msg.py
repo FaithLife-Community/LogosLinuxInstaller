@@ -73,7 +73,12 @@ def initialize_logging(stderr_log_level):
         log_parent.mkdir(parents=True)
 
     # Define logging handlers.
-    file_h = GzippedRotatingFileHandler(config.LOGOS_LOG, maxBytes=10*1024*1024, backupCount=5, encoding='UTF8')
+    file_h = GzippedRotatingFileHandler(
+        config.LOGOS_LOG,
+        maxBytes=10*1024*1024,
+        backupCount=5,
+        encoding='UTF8'
+    )
     file_h.name = "logfile"
     file_h.setLevel(logging.DEBUG)
     # stdout_h = logging.StreamHandler(sys.stdout)
@@ -287,5 +292,5 @@ def status(text, app=None):
             app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
         logging.info(f"{text}")
     else:
-        '''Prints message to stdout regardless of log level.'''
+        # Prints message to stdout regardless of log level.
         logos_msg(text)
