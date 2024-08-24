@@ -351,7 +351,7 @@ def main():
     else:
         config.DIALOG = config.DIALOG.lower()
 
-    if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:
+    if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:  # noqa: E501
         config.use_python_dialog = system.test_dialog_version()
 
         if config.use_python_dialog is None:
@@ -393,7 +393,7 @@ def main():
         secondary = (
             "Your system currently has AppImageLauncher installed.\n"
             "LogosLinuxInstaller is not compatible with AppImageLauncher.\n"
-            "For more information, see: https://github.com/FaithLife-Community/LogosLinuxInstaller/issues/114"
+            "For more information, see: https://github.com/FaithLife-Community/LogosLinuxInstaller/issues/114"  # noqa: E501
         )
         no_text = "User declined to remove AppImageLauncher."
         msg.logos_continue_question(question_text, no_text, secondary)

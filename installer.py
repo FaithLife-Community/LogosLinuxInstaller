@@ -11,11 +11,11 @@ import system
 import utils
 import wine
 
-#TODO: Fix install progress if user returns to main menu?
+# TODO: Fix install progress if user returns to main menu?
 # To replicate, start a TUI install, return/cancel on second step
 # Then launch a new install
 
-#TODO: Reimplement `--install-app`?
+# TODO: Reimplement `--install-app`?
 
 
 def ensure_product_choice(app=None):
@@ -32,7 +32,8 @@ def ensure_product_choice(app=None):
                 app.product_e.wait()
             config.FLPRODUCT = app.product_q.get()
         else:
-            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+            m = f"{utils.get_calling_function_name()}: --install-app is broken"
+            logging.critical(m)
 
     if config.FLPRODUCT == 'Logos':
         config.FLPRODUCTi = 'logos4'
@@ -59,7 +60,8 @@ def ensure_version_choice(app=None):
                 app.version_e.wait()
             config.TARGETVERSION = app.version_q.get()
         else:
-            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+            m = f"{utils.get_calling_function_name()}: --install-app is broken"
+            logging.critical(m)
 
     logging.debug(f"> {config.TARGETVERSION=}")
 
@@ -79,7 +81,8 @@ def ensure_release_choice(app=None):
             config.TARGET_RELEASE_VERSION = app.release_q.get()
             logging.debug(f"{config.TARGET_RELEASE_VERSION=}")
         else:
-            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+            m = f"{utils.get_calling_function_name()}: --install-app is broken"
+            logging.critical(m)
 
     logging.debug(f"> {config.TARGET_RELEASE_VERSION=}")
 
@@ -106,7 +109,8 @@ def ensure_install_dir_choice(app=None):
                 config.INSTALLDIR = app.installdir_q.get()
                 config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
         else:
-            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+            m = f"{utils.get_calling_function_name()}: --install-app is broken"
+            logging.critical(m)
 
     logging.debug(f"> {config.INSTALLDIR=}")
     logging.debug(f"> {config.APPDIR_BINDIR=}")
@@ -132,10 +136,12 @@ def ensure_wine_choice(app=None):
                 app.wine_e.wait()
             config.WINE_EXE = app.wine_q.get()
         else:
-            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+            m = f"{utils.get_calling_function_name()}: --install-app is broken"
+            logging.critical(m)
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
-    logging.debug(f"Preparing to process WINE_EXE. Currently set to: {config.WINE_EXE}.")
+    m = f"Preparing to process WINE_EXE. Currently set to: {config.WINE_EXE}."
+    logging.debug(m)
     if config.WINE_EXE.lower().endswith('.appimage'):
         config.SELECTED_APPIMAGE_FILENAME = config.WINE_EXE
     if not config.WINEBIN_CODE:
@@ -157,7 +163,7 @@ def ensure_winetricks_choice(app=None):
     logging.debug('- config.WINETRICKSBIN')
 
     if config.WINETRICKSBIN is None:
-    # Check if local winetricks version available; else, download it.
+        # Check if local winetricks version available; else, download it.
         config.WINETRICKSBIN = f"{config.APPDIR_BINDIR}/winetricks"
 
         if app:
@@ -166,7 +172,8 @@ def ensure_winetricks_choice(app=None):
                 app.tricksbin_e.wait()
             winetricksbin = app.tricksbin_q.get()
         else:
-            logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+            m = f"{utils.get_calling_function_name()}: --install-app is broken"
+            logging.critical(m)
 
         if not winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = winetricksbin
@@ -241,7 +248,7 @@ def ensure_install_dirs(app=None):
 
     if config.INSTALLDIR is None:
         config.INSTALLDIR = f"{os.getenv('HOME')}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin" #noqa: E501
+        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
 
     bin_dir = Path(config.APPDIR_BINDIR)
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -260,7 +267,8 @@ def ensure_install_dirs(app=None):
     if app:
         utils.send_task(app, 'INSTALLING')
     else:
-        logging.critical(f"{utils.get_calling_function_name()}: --install-app is broken")
+        m = f"{utils.get_calling_function_name()}: --install-app is broken"
+        logging.critical(m)
 
 
 def ensure_sys_deps(app=None):
@@ -337,7 +345,7 @@ def ensure_wine_executables(app=None):
         elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:  # noqa: E501
             appimage_filename = "none.AppImage"
         else:
-            msg.logos_error(f"WINEBIN_CODE error. WINEBIN_CODE is {config.WINEBIN_CODE}. Installation canceled!")
+            msg.logos_error(f"WINEBIN_CODE error. WINEBIN_CODE is {config.WINEBIN_CODE}. Installation canceled!")  # noqa: E501
 
         appimage_link.unlink(missing_ok=True)  # remove & replace
         appimage_link.symlink_to(f"./{appimage_filename}")
@@ -493,8 +501,11 @@ def ensure_winetricks_applied(app=None):
         usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
         sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            #FIXME: This command is failing.
-            reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
+            # FIXME: This command is failing.
+            reg_file = os.path.join(
+                config.WORKDIR,
+                'disable-winemenubuilder.reg'
+            )
             with open(reg_file, 'w') as f:
                 f.write(r'''REGEDIT4
 
@@ -518,7 +529,8 @@ def ensure_winetricks_applied(app=None):
                 args.insert(0, "-q")
             wine.winetricks_install(*args)
 
-        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
+        m = f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode."
+        msg.logos_msg(m)
         exe_args = [
             'add',
             f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
@@ -612,7 +624,10 @@ def ensure_launcher_executable(app=None):
         shutil.copy(sys.executable, launcher_exe)
         logging.debug(f"> File exists?: {launcher_exe}: {launcher_exe.is_file()}")  # noqa: E501
     else:
-        update_install_feedback(f"Running from source. Skipping launcher creation.", app=app)
+        update_install_feedback(
+            "Running from source. Skipping launcher creation.",
+            app=app
+        )
 
 
 def ensure_launcher_shortcuts(app=None):
@@ -633,8 +648,8 @@ def ensure_launcher_shortcuts(app=None):
 
         desktop_files = [
             (
-            f"{config.FLPRODUCT}Bible.desktop",
-            f"""[Desktop Entry]
+                f"{config.FLPRODUCT}Bible.desktop",
+                f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible
 Comment=A Bible Study Library with Built-In Tools
 Exec={config.INSTALLDIR}/LogosLinuxInstaller --run-installed-app
@@ -645,8 +660,8 @@ Categories=Education;
 """
             ),
             (
-            f"{config.FLPRODUCT}Bible-ControlPanel.desktop",
-            f"""[Desktop Entry]
+                f"{config.FLPRODUCT}Bible-ControlPanel.desktop",
+                f"""[Desktop Entry]
 Name={config.FLPRODUCT}Bible Control Panel
 Comment=Perform various tasks for {config.FLPRODUCT} app
 Exec={config.INSTALLDIR}/LogosLinuxInstaller
@@ -662,8 +677,11 @@ Categories=Education;
             fpath = Path.home() / '.local' / 'share' / 'applications' / f
             logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
     else:
-        logging.debug(f"Running from source. Skipping launcher creation.")
-        update_install_feedback(f"Running from source. Skipping launcher creation.", app=app)
+        logging.debug("Running from source. Skipping launcher creation.")
+        update_install_feedback(
+            "Running from source. Skipping launcher creation.",
+            app=app
+        )
 
 
 def update_install_feedback(text, app=None):
