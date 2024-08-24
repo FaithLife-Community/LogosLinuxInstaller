@@ -258,23 +258,23 @@ class TUI():
 
     def task_processor(self, evt=None, task=None):
         if task == 'FLPRODUCT':
-            utils.start_thread(self.get_product(config.use_python_dialog))
+            utils.start_thread(self.get_product, config.use_python_dialog)
         elif task == 'TARGETVERSION':
-            utils.start_thread(self.get_version(config.use_python_dialog))
+            utils.start_thread(self.get_version, config.use_python_dialog)
         elif task == 'TARGET_RELEASE_VERSION':
-            utils.start_thread(self.get_release(config.use_python_dialog))
+            utils.start_thread(self.get_release, config.use_python_dialog)
         elif task == 'INSTALLDIR':
-            utils.start_thread(self.get_installdir(config.use_python_dialog))
+            utils.start_thread(self.get_installdir, config.use_python_dialog)
         elif task == 'WINE_EXE':
-            utils.start_thread(self.get_wine(config.use_python_dialog))
+            utils.start_thread(self.get_wine, config.use_python_dialog)
         elif task == 'WINETRICKSBIN':
-            utils.start_thread(self.get_winetricksbin(config.use_python_dialog))
+            utils.start_thread(self.get_winetricksbin, config.use_python_dialog)
         elif task == 'INSTALLING':
-            utils.start_thread(self.get_waiting(config.use_python_dialog))
+            utils.start_thread(self.get_waiting, config.use_python_dialog)
         elif task == 'INSTALLING_PW':
-            utils.start_thread(self.get_waiting(config.use_python_dialog, screen_id=15))
+            utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
         elif task == 'CONFIG':
-            utils.start_thread(self.get_config(config.use_python_dialog))
+            utils.start_thread(self.get_config, config.use_python_dialog)
         elif task == 'DONE':
             self.subtitle = f"Logos Version: {config.current_logos_version}"
             self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
@@ -296,7 +296,7 @@ class TUI():
             elif choice.startswith("Install"):
                 config.INSTALL_STEPS_COUNT = 0
                 config.INSTALL_STEP = 0
-                utils.start_thread(installer.ensure_launcher_shortcuts, True, self)
+                utils.start_thread(installer.ensure_launcher_shortcuts, daemon_bool=True, app=self)
             elif choice.startswith("Update Logos Linux Installer"):
                 utils.update_to_latest_lli_release()
             elif choice == f"Run {config.FLPRODUCT}":
@@ -480,7 +480,7 @@ class TUI():
         self.screen_q.put(self.stack_text(10, self.version_q, self.version_e, "Waiting to acquire Logos versions…", wait=True, dialog=dialog))
         self.version_e.wait()
         question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
-        utils.start_thread(network.get_logos_releases, True, self)
+        utils.start_thread(network.get_logos_releases, daemon_bool=True, app=self)
         self.releases_e.wait()
 
         if config.TARGETVERSION == '10':
@@ -525,6 +525,9 @@ class TUI():
         self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
 
     def get_waiting(self, dialog, screen_id=8):
+        # FIXME: I think TUI install with existing config file fails here b/c
+        # the config file already defines the needed variable, so the event
+        # self.tricksbin_e is never triggered.
         self.tricksbin_e.wait()
         text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
