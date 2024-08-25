@@ -8,7 +8,7 @@ This repository contains a Python program for installing and maintaining FaithLi
 
 This program is created and maintained by the FaithLife Community and is licensed under the MIT License.
 
-## Logos Linux Installer
+## LogosLinuxInstaller
 
 The main program is a distributable executable and contains Python itself and all necessary Python packages.
 
@@ -21,62 +21,33 @@ To access the GUI version of the program, double click the executable in your fi
 The program can also be run from source and should be run from a Python virtual environment.
 See below.
 
-By default the program installs Logos, but you can pass the `-C|--control-panel` optarg to access the Control Panel, which allows you to install Logos or do various maintenance functions on your install.
-In time, you should be able to use the program to restore a backup.
+## Install Guide (for users)
 
-```
-Usage: ./LogosLinuxInstaller.sh
-Installs ${FLPRODUCT} Bible Software with Wine on Linux.
+For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
 
-Options:
-    -h   --help                 Prints this help message and exit.
-    -v   --version              Prints version information and exit.
-    -V   --verbose              Enable extra CLI verbosity.
-    -D   --debug                Makes Wine print out additional info.
-    -C   --control-panel        Open the Control Panel app.
-    -c   --config               Use the Logos on Linux config file when
-                                setting environment variables. Defaults to:
-                                \$HOME/.config/Logos_on_Linux/Logos_on_Linux.conf
-                                Optionally can accept a config file provided by
-                                the user.
-    -b   --custom-binary-path   Set a custom path to search for wine binaries
-                                during the install.
-    -F   --skip-fonts           Skips installing corefonts and tahoma.
-    -s   --shortcut			    Create or update the Logos shortcut, located in
-                                HOME/.local/share/applications.
-    -d   --dirlink              Create a symlink to the Windows Logos directory
-                                in your Logos on Linux install dir.
-                                The symlink's name will be 'installation_dir'.
-    -e   --edit-config          Edit the Logos on Linux config file.
-    -i   --indexing             Run the Logos indexer in the
-                                background.
-    --remove-all-index          Removes all index and library catalog files.
-    --remove-library-catalog    Removes all library catalog files.
-    -l   --logs                 Turn Logos logs on or off.
-    -L   --delete-install-log   Delete the installation log file.
-    -R   --check-resources      Check Logos's resource usage while running.
-    -b   --backup               Saves Logos data to the config's
-                                backup location.
-    -r   --restore              Restores Logos data from the config's
-                                backup location.
-    -f   --force-root           Sets LOGOS_FORCE_ROOT to true, which permits
-                                the root user to run the script.
-    -P   --passive              Install Logos non-interactively .
-    -k   --make-skel            Make a skeleton install only.
-```
-
-## Installation
-
-This section is a WIP.
-
-You can either run the program from the CLI for a CLI-only install, or you can double click the icon in your file browser or on your desktop for a GUI install. Then, follow the prompts.
-
-## Installing/running from Source
+## Installing/running from Source (for developers)
 
 You can clone the repo and install the app from source. To do so, you will need to ensure a few prerequisites:
-1. Install Python 3.12 and Tcl/Tk
+1. Install build dependencies
 1. Clone this repository
+1. Build/install Python 3.12 and Tcl/Tk
 1. Set up a virtual environment
+
+### Install build dependencies
+
+e.g. for debian-based systems:
+```
+sudo apt-get install git build-essential gdb lcov pkg-config \
+    libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
+    libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
+    lzma lzma-dev python3-tk tk-dev uuid-dev zlib1g-dev
+```
+*See Python's [Build dependencies](https://devguide.python.org/getting-started/setup-building/index.html#build-dependencies) section for further info.*
+
+### Clone this repository
+```
+git clone 'https://github.com/FaithLife-Community/LogosLinuxInstaller.git'
+```
 
 ### Install Python 3.12 and Tcl/Tk
 Your system might already include Python 3.12 built with Tcl/Tk. This will verify
@@ -92,18 +63,12 @@ following guide or the script provided in `scripts/ensure-python.sh`. This is
 because the app is built using 3.12 and might have errors if run with other
 versions.
 
-**Install build dependencies**
-
-e.g. for debian-based systems:
+**Install & build python 3.12 using the script:**
 ```
-$ sudo apt-get install git build-essential gdb lcov pkg-config \
-      libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
-      libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
-      lzma lzma-dev tk-dev uuid-dev zlib1g-dev
+./LogosLinuxInstaller/scripts/ensure-python.sh
 ```
-*See Python's [Build dependencies](https://devguide.python.org/getting-started/setup-building/index.html#build-dependencies) section for further info.*
 
-**Install & build python 3.12**
+**Install & build python 3.12 manually:**
 ```
 $ ver=$(wget -qO- https://www.python.org/ftp/python/ | grep -oE '3\.12\.[0-9]+' | sort -u | tail -n1)
 $ wget "https://www.python.org/ftp/python/${ver}/Python-${ver}.tar.xz"
@@ -116,11 +81,10 @@ Python-3.12$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 --version
 Python 3.12.5
 $ cd ~
 ```
-Both methods install python into /opt to avoid interfering with system python installations.
+Both methods install python into `/opt` to avoid interfering with system python installations.
 
-### Clone this repository
+### Enter the repository folder
 ```
-$ git clone 'https://github.com/FaithLife-Community/LogosLinuxInstaller.git' --depth=1
 $ cd LogosLinuxInstaller
 LogosLinuxInstaller$
 ```
@@ -128,6 +92,14 @@ LogosLinuxInstaller$
 ### Set up and use a virtual environment
 Use the following guide or the provided script at `scripts/ensure-venv.sh` to set
 up a virtual environment for running and/or building locally.
+
+**Using the script:**
+```
+./scrips/ensure-venv.sh
+```
+
+**Manual setup:**
+
 ```
 LogosLinuxInstaller$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 -m venv env # create a virtual env folder called "env" using python3.12's path
 LogosLinuxInstaller$ echo "LD_LIBRARY_PATH=/opt/lib" >> env/bin/activate # tell python where to find libs
@@ -140,9 +112,7 @@ Python 3.12.5
 (env) LogosLinuxInstaller$ ./main.py --help # run the script
 ```
 
-## Install Guide
-
-For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
+## Install guide (possibly outdated)
 
 NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
 
