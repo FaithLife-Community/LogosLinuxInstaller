@@ -21,7 +21,7 @@ echo "Warning: You will likely need to install build dependencies for your syste
 echo "e.g. Debian 12 requires:"
 echo "build-essential gdb lcov pkg-config libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev lzma lzma-dev tk-dev uuid-dev zlib1g-dev"
 read -r -p "Continue? [Y/n] " ans
-if [[ ${ans,,} != 'y' ]]; then
+if [[ ${ans,,} != 'y' && $ans != '' ]]; then
     exit 1
 fi
 
