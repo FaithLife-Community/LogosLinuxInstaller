@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-python_ver='3.12.1'
+python_ver=$(wget -qO- https://www.python.org/ftp/python/ | grep -oE '3\.12\.[0-9]+' | sort -u | tail -n1)
 prefix=/opt
 venv=./env
 
@@ -28,6 +28,9 @@ if [[ -d "$venv" ]]; then
 fi
 
 # Initialize venv.
+if [[ $prefix == '/opt' ]]; then
+    LD_LIBRARY_PATH=${prefix}/lib
+fi
 "$python_exec_path" -m venv "$venv"
 echo "LD_LIBRARY_PATH=${prefix}/lib" >> "${venv}/bin/activate"
 echo 'export LD_LIBRARY_PATH' >> "${venv}/bin/activate"

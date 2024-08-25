@@ -83,32 +83,44 @@ Your system might already include Python 3.12 built with Tcl/Tk. This will verif
 the installation:
 ```
 $ python3 --version
-Python 3.12.1
+Python 3.12.5
 $ python3 -m tkinter # should open a basic Tk window
 ```
-If your Python version is < 3.12, then you might want to install 3.12 and tcl/tk using
-your system's package manager or compile it from source using the following guide 
-or the script provided in `scripts/ensure-python.sh`. This is because the app is
-built using 3.12 and might have errors if run with other versions.
+If your Python version is < 3.12, then you might want to install 3.12 and tcl/tk
+using your system's package manager or compile it from source using the
+following guide or the script provided in `scripts/ensure-python.sh`. This is
+because the app is built using 3.12 and might have errors if run with other
+versions.
+
+**Install build dependencies**
+
+e.g. for debian-based systems:
 ```
-# install build dependencies; e.g. for debian-based systems:
-$ apt install build-essential tcl-dev tk-dev libreadline-dev
-# install & build python 3.12
-$ wget 'https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz'
-$ tar xf Python-3.12.1.tar.xz
-$ cd Python-3.12.1
-Python-3.12.1$ ./configure --prefix=/opt --enable-shared
-Python-3.12.1$ make
-Python-3.12.1$ sudo make install
-Python-3.12.1$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 --version
-Python 3.12.1
+$ sudo apt-get install git build-essential gdb lcov pkg-config \
+      libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
+      libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
+      lzma lzma-dev tk-dev uuid-dev zlib1g-dev
 ```
-The script `scripts/ensure-python.sh` is not yet fully tested. Feedback is welcome!
+*See Python's [Build dependencies](https://devguide.python.org/getting-started/setup-building/index.html#build-dependencies) section for further info.*
+
+**Install & build python 3.12**
+```
+$ ver=$(wget -qO- https://www.python.org/ftp/python/ | grep -oE '3\.12\.[0-9]+' | sort -u | tail -n1)
+$ wget "https://www.python.org/ftp/python/${ver}/Python-${ver}.tar.xz"
+$ tar xf Python-${ver}.tar.xz
+$ cd Python-${ver}
+Python-3.12$ ./configure --prefix=/opt --enable-shared
+Python-3.12$ make
+Python-3.12$ sudo make install
+Python-3.12$ LD_LIBRARY_PATH=/opt/lib /opt/bin/python3.12 --version
+Python 3.12.5
+$ cd ~
+```
 Both methods install python into /opt to avoid interfering with system python installations.
 
 ### Clone this repository
 ```
-$ git clone 'https://github.com/FaithLife-Community/LogosLinuxInstaller.git'
+$ git clone 'https://github.com/FaithLife-Community/LogosLinuxInstaller.git' --depth=1
 $ cd LogosLinuxInstaller
 LogosLinuxInstaller$
 ```
@@ -122,7 +134,7 @@ LogosLinuxInstaller$ echo "LD_LIBRARY_PATH=/opt/lib" >> env/bin/activate # tell 
 LogosLinuxInstaller$ echo "export LD_LIBRARY_PATH" >> env/bin/activate
 LogosLinuxInstaller$ source env/bin/activate # activate the env
 (env) LogosLinuxInstaller$ python --version # verify python version
-Python 3.12.1
+Python 3.12.5
 (env) LogosLinuxInstaller$ python -m tkinter # verify that tkinter test window opens
 (env) LogosLinuxInstaller$ pip install -r requirements.txt # install python packages
 (env) LogosLinuxInstaller$ ./main.py --help # run the script
