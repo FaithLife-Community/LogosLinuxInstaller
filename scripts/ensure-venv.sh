@@ -29,7 +29,7 @@ fi
 
 # Initialize venv.
 if [[ $prefix == '/opt' ]]; then
-    LD_LIBRARY_PATH=${prefix}/lib
+    export LD_LIBRARY_PATH=${prefix}/lib
 fi
 "$python_exec_path" -m venv "$venv"
 echo "LD_LIBRARY_PATH=${prefix}/lib" >> "${venv}/bin/activate"
