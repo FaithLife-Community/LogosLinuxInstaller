@@ -26,8 +26,8 @@ extended_config = {
     'DEBUG': False,
     'DELETE_LOG': None,
     'DIALOG': None,
-    'LOGOS_LOG': os.path.expanduser("~/.local/state/Logos_on_Linux/Logos_on_Linux.log"),  # noqa: E501
-    'wine_log': os.path.expanduser("~/.local/state/Logos_on_Linux/wine.log"),  # noqa: #E501
+    'LOGOS_LOG': os.path.expanduser("~/.local/state/FaithLife-Community/Logos_on_Linux.log"),  # noqa: E501
+    'wine_log': os.path.expanduser("~/.local/state/FaithLife-Community/wine.log"),  # noqa: #E501
     'LOGOS_EXE': None,
     'LOGOS_EXECUTABLE': None,
     'LOGOS_VERSION': None,
@@ -56,7 +56,7 @@ ACTION = 'app'
 APPIMAGE_FILE_PATH = None
 authenticated = False
 BADPACKAGES = None
-DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")  # noqa: E501
+DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json")  # noqa: E501
 GUI = None
 INSTALL_STEP = 0
 INSTALL_STEPS_COUNT = 0
