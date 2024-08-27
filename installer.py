@@ -140,7 +140,7 @@ def ensure_wine_choice(app=None):
     logging.debug('- config.WINE_EXE')
     logging.debug('- config.WINEBIN_CODE')
 
-    if config.WINE_EXE is None:
+    if utils.get_wine_exe_path() is None:
         network.set_recommended_appimage_config()
         if app:
             utils.send_task(app, 'WINE_EXE')
@@ -152,22 +152,22 @@ def ensure_wine_choice(app=None):
             logging.critical(m)
     else:
         if config.DIALOG == 'curses':
-            app.set_wine(config.WINE_EXE)
+            app.set_wine(utils.get_wine_exe_path())
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
-    m = f"Preparing to process WINE_EXE. Currently set to: {config.WINE_EXE}."
+    m = f"Preparing to process WINE_EXE. Currently set to: {utils.get_wine_exe_path()}."
     logging.debug(m)
-    if config.WINE_EXE.lower().endswith('.appimage'):
-        config.SELECTED_APPIMAGE_FILENAME = config.WINE_EXE
+    if str(utils.get_wine_exe_path()).lower().endswith('.appimage'):
+        config.SELECTED_APPIMAGE_FILENAME = str(utils.get_wine_exe_path())
     if not config.WINEBIN_CODE:
-        config.WINEBIN_CODE = utils.get_winebin_code_and_desc(config.WINE_EXE)[0]  # noqa: E501
+        config.WINEBIN_CODE = utils.get_winebin_code_and_desc(utils.get_wine_exe_path())[0]  # noqa: E501
 
     logging.debug(f"> {config.SELECTED_APPIMAGE_FILENAME=}")
     logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_URL=}")
     logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME=}")
     logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_FILENAME=}")
     logging.debug(f"> {config.WINEBIN_CODE=}")
-    logging.debug(f"> {config.WINE_EXE=}")
+    logging.debug(f"> {utils.get_wine_exe_path()=}")
 
 
 def ensure_winetricks_choice(app=None):
@@ -309,7 +309,7 @@ def ensure_appimage_download(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_sys_deps(app=app)
     config.INSTALL_STEP += 1
-    if config.TARGETVERSION != '9' and not config.WINE_EXE.lower().endswith('appimage'):  # noqa: E501
+    if config.TARGETVERSION != '9' and not str(utils.get_wine_exe_path()).lower().endswith('appimage'):  # noqa: E501
         return
     update_install_feedback(
         "Ensuring wine AppImage is downloaded…",
@@ -345,7 +345,7 @@ def ensure_wine_executables(app=None):
     logging.debug('- wineserver')
 
     # Add APPDIR_BINDIR to PATH.
-    if not os.access(config.WINE_EXE, os.X_OK):
+    if not os.access(utils.get_wine_exe_path(), os.X_OK):
         appdir_bindir = Path(config.APPDIR_BINDIR)
         os.environ['PATH'] = f"{config.APPDIR_BINDIR}:{os.getenv('PATH')}"
         # Ensure AppImage symlink.
@@ -479,7 +479,7 @@ def ensure_wineprefix_init(app=None):
                 f"{config.INSTALLDIR}/data",
             )
         else:
-            if config.WINE_EXE:
+            if utils.get_wine_exe_path():
                 wine.initializeWineBottle()
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
@@ -556,7 +556,7 @@ def ensure_winetricks_applied(app=None):
             "/t", "REG_SZ",
             "/d", "vista", "/f",
             ]
-        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+        wine.run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
     logging.debug("> Done.")
 
 

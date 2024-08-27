@@ -178,7 +178,7 @@ def initializeWineBottle(app=None):
     # Avoid wine-mono window
     orig_overrides = config.WINEDLLOVERRIDES
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree="
-    run_wine_proc(config.WINE_EXE, exe='wineboot', exe_args=['--init'])
+    run_wine_proc(str(utils.get_wine_exe_path()), exe='wineboot', exe_args=['--init'])
     config.WINEDLLOVERRIDES = orig_overrides
     light_wineserver_wait()
 
@@ -187,7 +187,7 @@ def wine_reg_install(REG_FILE):
     msg.logos_msg(f"Installing registry file: {REG_FILE}")
     env = get_wine_env()
     result = system.run_command(
-        [config.WINE_EXE, "regedit.exe", REG_FILE],
+        [str(utils.get_wine_exe_path()), "regedit.exe", REG_FILE],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
@@ -207,8 +207,8 @@ def install_msi():
     exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
         exe_args.append('/passive')
-    logging.info(f"Running: {config.WINE_EXE} msiexec {' '.join(exe_args)}")
-    run_wine_proc(config.WINE_EXE, exe="msiexec", exe_args=exe_args)
+    logging.info(f"Running: {utils.get_wine_exe_path()} msiexec {' '.join(exe_args)}")
+    run_wine_proc(str(utils.get_wine_exe_path()), exe="msiexec", exe_args=exe_args)
 
 
 def run_wine_proc(winecmd, exe=None, exe_args=list()):
@@ -225,6 +225,8 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
         else:
             m = "wine.wine_proc: wine.get_registry_value returned None."
             logging.error(m)
+    if isinstance(winecmd, Path):
+        winecmd = str(winecmd)
     logging.debug(f"run_wine_proc: {winecmd}; {exe=}; {exe_args=}")
     wine_env_vars = {k: v for k, v in env.items() if k.startswith('WINE')}
     logging.debug(f"wine environment: {wine_env_vars}")
@@ -332,7 +334,7 @@ def installICUDataFiles(app=None):
 def get_registry_value(reg_path, name):
     value = None
     env = get_wine_env()
-    cmd = [config.WINE_EXE, 'reg', 'query', reg_path, '/v', name]
+    cmd = [str(utils.get_wine_exe_path()), 'reg', 'query', reg_path, '/v', name]
     err_msg = f"Failed to get registry value: {reg_path}\\{name}"
     try:
         result = system.run_command(
@@ -397,7 +399,7 @@ def switch_logging(action=None, app=None):
         'add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled',
         '/t', 'REG_DWORD', '/d', value, '/f'
     ]
-    run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+    run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
     run_wine_proc(config.WINESERVER_EXE, exe_args=['-w'])
     config.LOGS = state
     if app is not None:
@@ -455,14 +457,14 @@ def get_wine_branch(binary):
 
 def get_wine_env():
     wine_env = os.environ.copy()
-    winepath = Path(config.WINE_EXE)
+    winepath = utils.get_wine_exe_path()
     if winepath.name != 'wine64':  # AppImage
         # Winetricks commands can fail if 'wine64' is not explicitly defined.
         # https://github.com/Winetricks/winetricks/issues/2084#issuecomment-1639259359
         winepath = winepath.parent / 'wine64'
     wine_env_defaults = {
         'WINE': str(winepath),
-        'WINE_EXE': config.WINE_EXE,
+        'WINE_EXE': str(utils.get_wine_exe_path()),
         'WINEDEBUG': config.WINEDEBUG,
         'WINEDLLOVERRIDES': config.WINEDLLOVERRIDES,
         'WINELOADER': str(winepath),
@@ -488,7 +490,7 @@ def get_wine_env():
 
 def run_logos(app=None):
     logos_release = utils.convert_logos_release(config.current_logos_version)
-    wine_release, _ = get_wine_release(config.WINE_EXE)
+    wine_release, _ = get_wine_release(str(utils.get_wine_exe_path()))
 
     # TODO: Find a way to incorporate check_wine_version_and_branch()
     if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):  # noqa: E501
@@ -500,7 +502,7 @@ def run_logos(app=None):
         logging.critical(txt)
         msg.status(txt, app)
     else:
-        run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
+        run_wine_proc(str(utils.get_wine_exe_path()), exe=config.LOGOS_EXE)
         run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 
@@ -512,7 +514,7 @@ def run_indexing():
                 break
 
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
-    run_wine_proc(config.WINE_EXE, exe=logos_indexer_exe)
+    run_wine_proc(str(utils.get_wine_exe_path()), exe=logos_indexer_exe)
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 

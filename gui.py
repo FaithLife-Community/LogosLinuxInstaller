@@ -15,6 +15,7 @@ from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
 import config
+import utils
 
 
 class InstallerGui(Frame):
@@ -30,7 +31,7 @@ class InstallerGui(Frame):
         self.targetversion = config.TARGETVERSION
         self.logos_release_version = config.TARGET_RELEASE_VERSION
         self.default_config_path = config.DEFAULT_CONFIG_PATH
-        self.wine_exe = config.WINE_EXE
+        self.wine_exe = utils.get_wine_exe_path()
         self.winetricksbin = config.WINETRICKSBIN
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:

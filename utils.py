@@ -64,8 +64,8 @@ def set_runtime_config():
     # Set runtime variables that are dependent on ones from config file.
     if config.INSTALLDIR and not config.WINEPREFIX:
         config.WINEPREFIX = f"{config.INSTALLDIR}/data/wine64_bottle"
-    if config.WINE_EXE and not config.WINESERVER_EXE:
-        bin_dir = Path(config.WINE_EXE).parent
+    if get_wine_exe_path() and not config.WINESERVER_EXE:
+        bin_dir = Path(get_wine_exe_path()).parent
         config.WINESERVER_EXE = str(bin_dir / 'wineserver')
     if config.FLPRODUCT and config.WINEPREFIX and not config.LOGOS_EXE:
         config.LOGOS_EXE = find_installed_product()
@@ -85,6 +85,10 @@ def write_config(config_file_path):
 
     try:
         for key, value in config_data.items():
+            if key == "WINE_EXE":
+                # We store the value of WINE_EXE as relative path if it is in the install directory.
+                if value is not None:
+                    value = get_relative_path(get_config_var(value), config.INSTALLDIR)
             if isinstance(value, Path):
                 config_data[key] = str(value)
         with open(config_file_path, 'w') as config_file:
@@ -328,6 +332,8 @@ def get_winebin_code_and_desc(binary):
     # tell the GUI user that a particular AppImage/binary is recommended.
     # Below is my best guess for how to do this with the single element array…
     # Does it work?
+    if isinstance(binary, Path):
+        binary = str(binary)
     if binary == f"{config.APPDIR_BINDIR}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":  # noqa: E501
         code = "Recommended"
     elif binary.lower().endswith('.appimage'):
@@ -548,8 +554,8 @@ def compare_logos_linux_installer_version():
 
 def compare_recommended_appimage_version():
     wine_release = []
-    if config.WINE_EXE is not None:
-        wine_release, error_message = wine.get_wine_release(config.WINE_EXE)
+    if get_wine_exe_path() is not None:
+        wine_release, error_message = wine.get_wine_release(get_wine_exe_path())
         if wine_release is not None and wine_release is not False:
             current_version = '.'.join([str(n) for n in wine_release[:2]])
             logging.debug(f"Current wine release: {current_version}")
@@ -876,3 +882,53 @@ def untar_file(file_path, output_dir):
             logging.debug(f"Successfully extracted '{file_path}' to '{output_dir}'")  # noqa: E501
     except tarfile.TarError as e:
         logging.error(f"Error extracting '{file_path}': {e}")
+
+
+def is_relative_path(path):
+    if isinstance(path, str):
+        path = Path(path)
+    return not path.is_absolute()
+
+
+def get_relative_path(path, base_path):
+    if is_relative_path(path):
+        return path
+    else:
+        if isinstance(path, Path):
+            path = str(path)
+        if path.startswith(base_path):
+            return path[len(base_path):].lstrip(os.sep)
+        else:
+            return path
+
+
+def create_dynamic_path(path, base_path):
+    if is_relative_path(path):
+        if isinstance(path, str):
+            path = Path(path)
+        if isinstance(path, str):
+            base_path = Path(base_path)
+        return base_path / path
+    else:
+        return Path(path)
+
+
+def get_config_var(var):
+    if var is not None:
+        if callable(var):
+            return var()
+        return var
+    else:
+        return None
+
+
+def get_wine_exe_path(path=None):
+    if path is not None:
+        path = get_relative_path(get_config_var(path), config.INSTALLDIR)
+        return Path(create_dynamic_path(path, config.INSTALLDIR))
+    else:
+        if config.WINE_EXE is not None:
+            path = get_relative_path(get_config_var(config.WINE_EXE), config.INSTALLDIR)
+            return Path(create_dynamic_path(path, config.INSTALLDIR))
+        else:
+            return None
