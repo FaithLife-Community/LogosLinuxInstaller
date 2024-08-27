@@ -518,9 +518,8 @@ class TUI():
         self.screen_q.put(self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length, dialog=dialog))
 
     def set_wine(self, choice):
-        config.WINE_EXE = choice
+        self.wine_q.put(utils.get_relative_path(utils.get_config_var(choice), config.INSTALLDIR))
         self.menu_screen.choice = "Processing"
-        self.wine_q.put(config.WINE_EXE)
         self.wine_e.set()
 
     def get_winetricksbin(self, dialog):
