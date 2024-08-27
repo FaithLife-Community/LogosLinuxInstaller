@@ -34,6 +34,9 @@ def ensure_product_choice(app=None):
         else:
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
+    else:
+        if config.DIALOG == 'curses':
+            app.set_product(config.FLPRODUCT)
 
     if config.FLPRODUCT == 'Logos':
         config.FLPRODUCTi = 'logos4'
@@ -62,6 +65,9 @@ def ensure_version_choice(app=None):
         else:
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
+    else:
+        if config.DIALOG == 'curses':
+            app.set_version(config.TARGETVERSION)
 
     logging.debug(f"> {config.TARGETVERSION=}")
 
@@ -83,6 +89,9 @@ def ensure_release_choice(app=None):
         else:
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
+    else:
+        if config.DIALOG == 'curses':
+            app.set_release(config.TARGET_RELEASE_VERSION)
 
     logging.debug(f"> {config.TARGET_RELEASE_VERSION=}")
 
@@ -111,6 +120,9 @@ def ensure_install_dir_choice(app=None):
         else:
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
+    else:
+        if config.DIALOG == 'curses':
+            app.set_installdir(config.INSTALLDIR)
 
     logging.debug(f"> {config.INSTALLDIR=}")
     logging.debug(f"> {config.APPDIR_BINDIR=}")
@@ -138,6 +150,9 @@ def ensure_wine_choice(app=None):
         else:
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
+    else:
+        if config.DIALOG == 'curses':
+            app.set_wine(config.WINE_EXE)
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
     m = f"Preparing to process WINE_EXE. Currently set to: {config.WINE_EXE}."
@@ -177,6 +192,9 @@ def ensure_winetricks_choice(app=None):
 
         if not winetricksbin.startswith('Download'):
             config.WINETRICKSBIN = winetricksbin
+    else:
+        if config.DIALOG == 'curses':
+            app.set_winetricksbin(config.WINETRICKSBIN)
 
     logging.debug(f"> {config.WINETRICKSBIN=}")
 
