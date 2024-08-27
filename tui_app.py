@@ -354,52 +354,22 @@ class TUI():
             self.appimage_e.set()
         elif screen_id == 2:
             if choice:
-                if str(choice).startswith("Logos"):
-                    config.FLPRODUCT = "Logos"
-                elif str(choice).startswith("Verbum"):
-                    config.FLPRODUCT = "Verbum"
-                self.menu_screen.choice = "Processing"
-                self.product_q.put(config.FLPRODUCT)
-                self.product_e.set()
+                self.set_product(choice)
         elif screen_id == 3:
             if choice:
-                if "10" in choice:
-                    config.TARGETVERSION = "10"
-                elif "9" in choice:
-                    config.TARGETVERSION = "9"
-                self.menu_screen.choice = "Processing"
-                self.version_q.put(config.TARGETVERSION)
-                self.version_e.set()
+                self.set_version(choice)
         elif screen_id == 4:
             if choice:
-                config.TARGET_RELEASE_VERSION = choice
-                self.menu_screen.choice = "Processing"
-                self.release_q.put(config.TARGET_RELEASE_VERSION)
-                self.release_e.set()
+                self.set_release(choice)
         elif screen_id == 5:
             if choice:
-                config.INSTALLDIR = choice
-                config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
-                self.menu_screen.choice = "Processing"
-                self.installdir_q.put(config.INSTALLDIR)
-                self.installdir_e.set()
+                self.set_installdir(choice)
         elif screen_id == 6:
-            config.WINE_EXE = choice
             if choice:
-                self.menu_screen.choice = "Processing"
-                self.wine_q.put(config.WINE_EXE)
-                self.wine_e.set()
+                self.set_wine(choice)
         elif screen_id == 7:
-            winetricks_options = utils.get_winetricks_options()
-            if choice.startswith("Download"):
-                self.menu_screen.choice = "Processing"
-                self.tricksbin_q.put("Download")
-                self.tricksbin_e.set()
-            else:
-                self.menu_screen.choice = "Processing"
-                config.WINETRICKSBIN = winetricks_options[0]
-                self.tricksbin_q.put(config.WINETRICKSBIN)
-                self.tricksbin_e.set()
+            if choice:
+                self.set_winetricksbin(choice)
         elif screen_id == 8:
             pass
         elif screen_id == 9:
@@ -467,6 +437,15 @@ class TUI():
         self.menu_options = options
         self.screen_q.put(self.stack_menu(2, self.product_q, self.product_e, question, options, dialog=dialog))
 
+    def set_product(self, choice):
+        if str(choice).startswith("Logos"):
+            config.FLPRODUCT = "Logos"
+        elif str(choice).startswith("Verbum"):
+            config.FLPRODUCT = "Verbum"
+        self.menu_screen.choice = "Processing"
+        self.product_q.put(config.FLPRODUCT)
+        self.product_e.set()
+
     def get_version(self, dialog):
         self.product_e.wait()
         question = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
@@ -474,6 +453,15 @@ class TUI():
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
         self.screen_q.put(self.stack_menu(3, self.version_q, self.version_e, question, options, dialog=dialog))
+
+    def set_version(self, choice):
+        if "10" in choice:
+            config.TARGETVERSION = "10"
+        elif "9" in choice:
+            config.TARGETVERSION = "9"
+        self.menu_screen.choice = "Processing"
+        self.version_q.put(config.TARGETVERSION)
+        self.version_e.set()
 
     def get_release(self, dialog):
         labels = []
@@ -495,11 +483,24 @@ class TUI():
         self.menu_options = options
         self.screen_q.put(self.stack_menu(4, self.release_q, self.release_e, question, options, dialog=dialog))
 
+    def set_release(self, choice):
+        config.TARGET_RELEASE_VERSION = choice
+        self.menu_screen.choice = "Processing"
+        self.release_q.put(config.TARGET_RELEASE_VERSION)
+        self.release_e.set()
+
     def get_installdir(self, dialog):
         self.release_e.wait()
         default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
         question = f"Where should {config.FLPRODUCT} files be installed to? [{default}]: "  # noqa: E501
         self.screen_q.put(self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=dialog))
+
+    def set_installdir(self, choice):
+        config.INSTALLDIR = choice
+        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
+        self.menu_screen.choice = "Processing"
+        self.installdir_q.put(config.INSTALLDIR)
+        self.installdir_e.set()
 
     def get_wine(self, dialog):
         self.installdir_e.wait()
@@ -516,6 +517,12 @@ class TUI():
         self.menu_options = options
         self.screen_q.put(self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length, dialog=dialog))
 
+    def set_wine(self, choice):
+        config.WINE_EXE = choice
+        self.menu_screen.choice = "Processing"
+        self.wine_q.put(config.WINE_EXE)
+        self.wine_e.set()
+
     def get_winetricksbin(self, dialog):
         self.wine_e.wait()
         winetricks_options = utils.get_winetricks_options()
@@ -523,6 +530,16 @@ class TUI():
         options = self.which_dialog_options(winetricks_options, dialog)
         self.menu_options = options
         self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
+
+    def set_winetricksbin(self, choice):
+        if choice.startswith("Download"):
+            self.tricksbin_q.put("Download")
+        else:
+            winetricks_options = utils.get_winetricks_options()
+            config.WINETRICKSBIN = winetricks_options[0]
+            self.tricksbin_q.put(config.WINETRICKSBIN)
+        self.menu_screen.choice = "Processing"
+        self.tricksbin_e.set()
 
     def get_waiting(self, dialog, screen_id=8):
         # FIXME: I think TUI install with existing config file fails here b/c
