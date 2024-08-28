@@ -226,9 +226,9 @@ def gui_continue_question(question_text, no_text, secondary):
         logos_error(no_text)
 
 
-def cli_acknowledge_question(QUESTION_TEXT, NO_TEXT):
-    if not cli_question(QUESTION_TEXT):
-        logos_msg(NO_TEXT)
+def cli_acknowledge_question(question_text, no_text, secondary):
+    if not cli_question(question_text, secondary):
+        logos_msg(no_text)
         return False
     else:
         return True
@@ -264,11 +264,11 @@ def logos_continue_question(question_text, no_text, secondary, app=None):
         logos_error(f"Unhandled question: {question_text}")
 
 
-def logos_acknowledge_question(question_text, no_text):
+def logos_acknowledge_question(question_text, no_text, secondary):
     if config.DIALOG == 'curses':
         pass
     else:
-        return cli_acknowledge_question(question_text, no_text)
+        return cli_acknowledge_question(question_text, no_text, secondary)
 
 
 def get_progress_str(percent):
