@@ -738,6 +738,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             app.manualinstall_e.wait()
 
         if not install_deps_failed and not manual_install_required:
+            if config.DIALOG == 'cli':
+                command_str = command_str.replace("pkexec", "sudo")
             try:
                 logging.debug(f"Attempting to run this command: {command_str}")
                 run_command(command_str, shell=True)

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+
+import cli
 import config
 import control
 import curses
@@ -239,7 +241,7 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'install_app': installer.ensure_launcher_shortcuts,
+        'install_app': run_cli,
         'run_installed_app': logos.LogosManager().start,
         'run_indexing': logos.LogosManager().index,
         'remove_library_catalog': control.remove_library_catalog,
@@ -283,6 +285,10 @@ def parse_args(args, parser):
     if config.ACTION is None:
         config.ACTION = run_control_panel
     logging.debug(f"{config.ACTION=}")
+
+
+def run_cli():
+    cli.command_line_interface()
 
 
 def run_control_panel():

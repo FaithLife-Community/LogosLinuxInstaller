@@ -546,11 +546,15 @@ def get_logos_releases(app=None):
     filtered_releases = releases
 
     if app:
-        app.releases_q.put(filtered_releases)
         if config.DIALOG == 'tk':
+            app.releases_q.put(filtered_releases)
             app.root.event_generate(app.release_evt)
         elif config.DIALOG == 'curses':
+            app.releases_q.put(filtered_releases)
             app.releases_e.set()
+        elif config.DIALOG == 'cli':
+            app.input_q.put((f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?: ", filtered_releases))
+            app.event.set()
     return filtered_releases
 
 

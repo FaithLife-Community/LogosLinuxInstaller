@@ -425,8 +425,10 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
 
     logging.debug(f"{wine_binary_options=}")
     if app:
-        app.wines_q.put(wine_binary_options)
-        app.root.event_generate(app.wine_evt)
+        if config.DIALOG != "cli":
+            app.wines_q.put(wine_binary_options)
+            if config.DIALOG == 'tk':
+                app.root.event_generate(app.wine_evt)
     return wine_binary_options
 
 

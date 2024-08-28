@@ -68,7 +68,7 @@ class TUI:
         self.installdeps_e = threading.Event()
         self.installdir_q = Queue()
         self.installdir_e = threading.Event()
-        self.wine_q = Queue()
+        self.wines_q = Queue()
         self.wine_e = threading.Event()
         self.tricksbin_q = Queue()
         self.tricksbin_e = threading.Event()
@@ -362,7 +362,7 @@ class TUI:
             utils.start_thread(self.get_wine, config.use_python_dialog)
         elif task == 'WINETRICKSBIN':
             utils.start_thread(self.get_winetricksbin, config.use_python_dialog)
-        elif task == 'INSTALLING':
+        elif task == 'INSTALL' or task == 'INSTALLING':
             utils.start_thread(self.get_waiting, config.use_python_dialog)
         elif task == 'INSTALLING_PW':
             utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
@@ -754,10 +754,7 @@ class TUI:
         utils.start_thread(network.get_logos_releases, daemon_bool=True, app=self)
         self.releases_e.wait()
 
-        if config.TARGETVERSION == '10':
-            labels = self.releases_q.get()
-        elif config.TARGETVERSION == '9':
-            labels = self.releases_q.get()
+        labels = self.releases_q.get()
 
         if labels is None:
             msg.logos_error("Failed to fetch TARGET_RELEASE_VERSION.")
@@ -787,7 +784,7 @@ class TUI:
 
     def get_wine(self, dialog):
         self.installdir_e.wait()
-        self.screen_q.put(self.stack_text(10, self.wine_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog))
+        self.screen_q.put(self.stack_text(10, self.wines_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog))
         question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
         labels = utils.get_wine_options(
             utils.find_appimage_files(config.TARGET_RELEASE_VERSION),
@@ -798,10 +795,10 @@ class TUI:
         max_length += len(str(len(labels))) + 10
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
-        self.screen_q.put(self.stack_menu(6, self.wine_q, self.wine_e, question, options, width=max_length, dialog=dialog))
+        self.screen_q.put(self.stack_menu(6, self.wines_q, self.wine_e, question, options, width=max_length, dialog=dialog))
 
     def set_wine(self, choice):
-        self.wine_q.put(utils.get_relative_path(utils.get_config_var(choice), config.INSTALLDIR))
+        self.wines_q.put(utils.get_relative_path(utils.get_config_var(choice), config.INSTALLDIR))
         self.menu_screen.choice = "Processing"
         self.wine_e.set()
 
