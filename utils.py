@@ -518,6 +518,8 @@ def install_premade_wine_bottle(srcdir, appdir):
 
 
 def compare_logos_linux_installer_version():
+    status = None
+    message = None
     if (
         config.LLI_CURRENT_VERSION is not None
         and config.LLI_LATEST_VERSION is not None
@@ -553,6 +555,8 @@ def compare_logos_linux_installer_version():
 
 
 def compare_recommended_appimage_version():
+    status = None
+    message = None
     wine_release = []
     if get_wine_exe_path() is not None:
         wine_release, error_message = wine.get_wine_release(get_wine_exe_path())
@@ -624,9 +628,9 @@ def is_appimage(file_path):
         appimage_check = elf_sig == b'ELF' and ai_sig == b'AI'
         appimage_type = int.from_bytes(v_sig)
 
-        return (appimage_check, appimage_type)
+        return appimage_check, appimage_type
     else:
-        return (False, None)
+        return False, None
 
 
 def check_appimage(filestr):
