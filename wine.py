@@ -116,11 +116,11 @@ def check_wine_version_and_branch(release_version, test_binary):
     # commits in time.
     if config.TARGETVERSION == "10":
         if utils.check_logos_release_version(release_version, 30, 1):
-            WINE_MINIMUM = [7, 18]
+            wine_minimum = [7, 18]
         else:
-            WINE_MINIMUM = [9, 10]
+            wine_minimum = [9, 10]
     elif config.TARGETVERSION == "9":
-        WINE_MINIMUM = [7, 0]
+        wine_minimum = [7, 0]
     else:
         raise ValueError("TARGETVERSION not set.")
 
@@ -152,8 +152,8 @@ def check_wine_version_and_branch(release_version, test_binary):
                     return True, "None"
             elif wine_release[2] != 'staging':
                 return False, "Needs to be Staging release"
-            elif wine_release[1] < WINE_MINIMUM[1]:
-                reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(WINE_MINIMUM)}"  # noqa: E501
+            elif wine_release[1] < wine_minimum[1]:
+                reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(wine_minimum)}"  # noqa: E501
                 return False, reason
         elif wine_release[0] == 8:
             if wine_release[1] < 1:
@@ -183,11 +183,11 @@ def initializeWineBottle(app=None):
     light_wineserver_wait()
 
 
-def wine_reg_install(REG_FILE):
-    msg.logos_msg(f"Installing registry file: {REG_FILE}")
+def wine_reg_install(reg_file):
+    msg.logos_msg(f"Installing registry file: {reg_file}")
     env = get_wine_env()
     result = system.run_command(
-        [str(utils.get_wine_exe_path()), "regedit.exe", REG_FILE],
+        [str(utils.get_wine_exe_path()), "regedit.exe", reg_file],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
@@ -195,9 +195,9 @@ def wine_reg_install(REG_FILE):
         capture_output=False
     )
     if result is None or result.returncode != 0:
-        msg.logos_error(f"Failed to install reg file: {REG_FILE}")
+        msg.logos_error(f"Failed to install reg file: {reg_file}")
     elif result.returncode == 0:
-        logging.info(f"{REG_FILE} installed.")
+        logging.info(f"{reg_file} installed.")
     light_wineserver_wait()
 
 
@@ -507,15 +507,19 @@ def run_logos(app=None):
 
 
 def run_indexing():
+    logos_indexer_exe = None
     for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
         for f in files:
             if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
                 logos_indexer_exe = os.path.join(root, f)
                 break
 
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
-    run_wine_proc(str(utils.get_wine_exe_path()), exe=logos_indexer_exe)
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+    if logos_indexer_exe is not None:
+        run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
+        run_wine_proc(str(utils.get_wine_exe_path()), exe=logos_indexer_exe)
+        run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+    else:
+        logging.error("LogosIndexer.exe not found.")
 
 
 def end_wine_processes():

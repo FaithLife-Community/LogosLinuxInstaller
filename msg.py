@@ -224,10 +224,10 @@ def cli_acknowledge_question(QUESTION_TEXT, NO_TEXT):
 def cli_ask_filepath(question_text):
     try:
         answer = input(f"{question_text} ")
+        return answer.strip('"').strip("'")
     except KeyboardInterrupt:
         print()
         logos_error("Cancelled with Ctrl+C")
-    return answer.strip('"').strip("'")
 
 
 def logos_continue_question(question_text, no_text, secondary, app=None):
@@ -251,11 +251,11 @@ def logos_continue_question(question_text, no_text, secondary, app=None):
         logos_error(f"Unhandled question: {question_text}")
 
 
-def logos_acknowledge_question(QUESTION_TEXT, NO_TEXT):
+def logos_acknowledge_question(question_text, no_text):
     if config.DIALOG == 'curses':
         pass
     else:
-        return cli_acknowledge_question(QUESTION_TEXT, NO_TEXT)
+        return cli_acknowledge_question(question_text, no_text)
 
 
 def get_progress_str(percent):

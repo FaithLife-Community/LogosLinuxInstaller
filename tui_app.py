@@ -1,9 +1,7 @@
 import logging
 import os
-import sys
 import signal
 import threading
-import time
 import curses
 from pathlib import Path
 from queue import Queue
@@ -23,14 +21,12 @@ console_message = ""
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
 
-class TUI():
+
+class TUI:
     def __init__(self, stdscr):
         self.stdscr = stdscr
-        #if config.current_logos_version is not None:
         self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.subtitle = f"Logos Version: {config.current_logos_version}"
-        #else:
-        #    self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.console_message = "Starting TUI…"
         self.llirunning = True
         self.active_progress = False
@@ -217,8 +213,6 @@ class TUI():
 
                     self.active_screen.display()
 
-                    #if (not isinstance(self.active_screen, tui_screen.TextScreen)
-                    #        and not isinstance(self.active_screen, tui_screen.TextDialog)):
                     if self.choice_q.qsize() > 0:
                         self.choice_processor(
                             self.menu_window,
@@ -278,8 +272,7 @@ class TUI():
         elif task == 'DONE':
             self.subtitle = f"Logos Version: {config.current_logos_version}"
             self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
-            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
-            #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
+            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))  # Force the main menu dialog
             self.switch_q.put(1)
 
     def choice_processor(self, stdscr, screen_id, choice):
@@ -629,41 +622,45 @@ class TUI():
     def stack_menu(self, screen_id, queue, event, question, options, height=None, width=None, menu_height=8, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                            tui_screen.MenuDialog(self, screen_id, queue, event, question, options, height, width, menu_height))
+                                tui_screen.MenuDialog(self, screen_id, queue, event, question, options,
+                                                      height, width, menu_height))
         else:
             utils.append_unique(self.tui_screens,
-                            tui_screen.MenuScreen(self, screen_id, queue, event, question, options, height, width, menu_height))
+                                tui_screen.MenuScreen(self, screen_id, queue, event, question, options,
+                                                      height, width, menu_height))
 
     def stack_input(self, screen_id, queue, event, question, default, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                            tui_screen.InputDialog(self, screen_id, queue, event, question, default))
+                                tui_screen.InputDialog(self, screen_id, queue, event, question, default))
         else:
             utils.append_unique(self.tui_screens,
-                            tui_screen.InputScreen(self, screen_id, queue, event, question, default))
+                                tui_screen.InputScreen(self, screen_id, queue, event, question, default))
 
     def stack_password(self, screen_id, queue, event, question, default="", dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                            tui_screen.PasswordDialog(self, screen_id, queue, event, question, default))
+                                tui_screen.PasswordDialog(self, screen_id, queue, event, question, default))
         else:
             utils.append_unique(self.tui_screens,
-                            tui_screen.PasswordScreen(self, screen_id, queue, event, question, default))
+                                tui_screen.PasswordScreen(self, screen_id, queue, event, question, default))
 
     def stack_confirm(self, screen_id, queue, event, question, no_text, secondary, options=["Yes", "No"], dialog=False):
         if dialog:
             yes_label = options[0]
             no_label = options[1]
-            utils.append_unique(self.tui_screens, tui_screen.ConfirmDialog(self, screen_id, queue, event,
-                                                                           question, no_text, secondary,
-                                                                           yes_label=yes_label, no_label=no_label))
+            utils.append_unique(self.tui_screens,
+                                tui_screen.ConfirmDialog(self, screen_id, queue, event, question, no_text, secondary,
+                                                         yes_label=yes_label, no_label=no_label))
         else:
-            utils.append_unique(self.tui_screens, tui_screen.ConfirmScreen(self, screen_id, queue, event,
-                                                                           question, no_text, secondary, options))
+            utils.append_unique(self.tui_screens,
+                                tui_screen.ConfirmScreen(self, screen_id, queue, event, question, no_text, secondary,
+                                                         options))
 
     def stack_text(self, screen_id, queue, event, text, wait=False, percent=None, dialog=False):
         if dialog:
-            utils.append_unique(self.tui_screens, tui_screen.TextDialog(self, screen_id, queue, event, text, wait, percent))
+            utils.append_unique(self.tui_screens,
+                                tui_screen.TextDialog(self, screen_id, queue, event, text, wait, percent))
         else:
             utils.append_unique(self.tui_screens, tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
 
@@ -679,19 +676,21 @@ class TUI():
     def stack_buildlist(self, screen_id, queue, event, question, options, height=None, width=None, list_height=None, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                            tui_screen.BuildListDialog(self, screen_id, queue, event, question, options, height, width, list_height))
+                            tui_screen.BuildListDialog(self, screen_id, queue, event, question, options,
+                                                       height, width, list_height))
         else:
             # TODO
             pass
 
-    def stack_checklist(self, screen_id, queue, event, question, options, height=None, width=None, list_height=None, dialog=False):
+    def stack_checklist(self, screen_id, queue, event, question, options,
+                        height=None, width=None, list_height=None, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                            tui_screen.CheckListDialog(self, screen_id, queue, event, question, options, height, width, list_height))
+                                tui_screen.CheckListDialog(self, screen_id, queue, event, question, options,
+                                                           height, width, list_height))
         else:
             # TODO
             pass
-
 
     def update_tty_dimensions(self):
         self.window_height, self.window_width = self.stdscr.getmaxyx()

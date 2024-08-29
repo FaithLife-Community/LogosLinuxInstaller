@@ -19,7 +19,6 @@ import control
 import gui
 import installer
 import network
-import os
 import system
 import utils
 import wine

@@ -38,7 +38,6 @@ extended_config = {
     'SKIP_WINETRICKS': False,
     'use_python_dialog': None,
     'VERBOSE': False,
-    'WINE_EXE': None,
     'WINEBIN_CODE': None,
     'WINEDEBUG': "fixme-all,err-all",
     'WINEDLLOVERRIDES': '',

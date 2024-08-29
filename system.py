@@ -98,13 +98,13 @@ def get_dialog():
     if not os.environ.get('DISPLAY'):
         msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
 
-    DIALOG = os.getenv('DIALOG')
+    dialog = os.getenv('DIALOG')
     # Set config.DIALOG.
-    if DIALOG is not None:
-        DIALOG = DIALOG.lower()
-        if DIALOG not in ['curses', 'tk']:
+    if dialog is not None:
+        dialog = dialog.lower()
+        if dialog not in ['curses', 'tk']:
             msg.logos_error("Valid values for DIALOG are 'curses' or 'tk'.")
-        config.DIALOG = DIALOG
+        config.DIALOG = dialog
     elif sys.__stdin__.isatty():
         config.DIALOG = 'curses'
     else:
@@ -321,8 +321,7 @@ def test_dialog_version():
 
 def remove_appimagelauncher(app=None):
     pkg = "appimagelauncher"
-    cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE]
-    cmd.append(pkg)
+    cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, pkg]
     msg.status("Removing AppImageLauncher…", app)
     try:
         logging.debug(f"Running command: {cmd}")
@@ -389,6 +388,9 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
 
     install_deps_failed = False
     manual_install_required = False
+    message = None
+    no_message = None
+    secondary = None
     command = []
     preinstall_command = []
     install_command = []
@@ -423,6 +425,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
         if config.OS_NAME in ['fedora', 'arch']:
             message = False
+            no_message = False
+            secondary = False
         elif missing_packages and conflicting_packages:
             message = f"Your {config.OS_NAME} computer requires installing and removing some software.\nProceed?"  # noqa: E501
             no_message = "User refused to install and remove software via the application"  # noqa: E501

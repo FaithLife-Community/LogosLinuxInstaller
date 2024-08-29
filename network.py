@@ -154,59 +154,59 @@ def cli_download(uri, destination):
 
 
 def logos_reuse_download(
-    SOURCEURL,
-    FILE,
-    TARGETDIR,
+    sourceurl,
+    file,
+    targetdir,
     app=None,
 ):
-    DIRS = [
+    dirs = [
         config.INSTALLDIR,
         os.getcwd(),
         config.MYDOWNLOADS,
     ]
-    FOUND = 1
-    for i in DIRS:
+    found = 1
+    for i in dirs:
         if i is not None:
-            logging.debug(f"Checking {i} for {FILE}.")
-            file_path = Path(i) / FILE
+            logging.debug(f"Checking {i} for {file}.")
+            file_path = Path(i) / file
             if os.path.isfile(file_path):
-                logging.info(f"{FILE} exists in {i}. Verifying properties.")
+                logging.info(f"{file} exists in {i}. Verifying properties.")
                 if verify_downloaded_file(
-                    SOURCEURL,
+                    sourceurl,
                     file_path,
                     app=app,
                 ):
-                    logging.info(f"{FILE} properties match. Using it…")
-                    msg.logos_msg(f"Copying {FILE} into {TARGETDIR}")
+                    logging.info(f"{file} properties match. Using it…")
+                    msg.logos_msg(f"Copying {file} into {targetdir}")
                     try:
-                        shutil.copy(os.path.join(i, FILE), TARGETDIR)
+                        shutil.copy(os.path.join(i, file), targetdir)
                     except shutil.SameFileError:
                         pass
-                    FOUND = 0
+                    found = 0
                     break
                 else:
                     logging.info(f"Incomplete file: {file_path}.")
-    if FOUND == 1:
-        file_path = os.path.join(config.MYDOWNLOADS, FILE)
+    if found == 1:
+        file_path = os.path.join(config.MYDOWNLOADS, file)
         if config.DIALOG == 'tk' and app:
             # Ensure progress bar.
             app.stop_indeterminate_progress()
             # Start download.
             net_get(
-                SOURCEURL,
+                sourceurl,
                 target=file_path,
                 app=app,
             )
         else:
-            cli_download(SOURCEURL, file_path)
+            cli_download(sourceurl, file_path)
         if verify_downloaded_file(
-            SOURCEURL,
+            sourceurl,
             file_path,
             app=app,
         ):
-            msg.logos_msg(f"Copying: {FILE} into: {TARGETDIR}")
+            msg.logos_msg(f"Copying: {file} into: {targetdir}")
             try:
-                shutil.copy(os.path.join(config.MYDOWNLOADS, FILE), TARGETDIR)
+                shutil.copy(os.path.join(config.MYDOWNLOADS, file), targetdir)
             except shutil.SameFileError:
                 pass
         else:
@@ -322,10 +322,10 @@ def net_get(url, target=None, app=None, evt=None, q=None):
 
 def verify_downloaded_file(url, file_path, app=None, evt=None):
     if app:
-        msg.status(f"Verifying {file_path}…", app)
         if config.DIALOG == "tk":
             app.root.event_generate('<<StartIndeterminateProgress>>')
-            app.status_q.put(f"Verifying {file_path}…")
+        msg.status(f"Verifying {file_path}…", app)
+        if config.DIALOG == "tk":
             app.root.event_generate('<<UpdateStatus>>')
     res = False
     txt = f"{file_path} is the wrong size."
