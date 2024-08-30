@@ -105,14 +105,39 @@ class TUI:
         curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLUE)
         curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_BLUE)
+        curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
+
+    def set_curses_colors_logos(self):
         self.stdscr.bkgd(' ', curses.color_pair(3))
         self.main_window.bkgd(' ', curses.color_pair(3))
         self.menu_window.bkgd(' ', curses.color_pair(3))
 
+    def set_curses_colors_light(self):
+        self.stdscr.bkgd(' ', curses.color_pair(6))
+        self.main_window.bkgd(' ', curses.color_pair(6))
+        self.menu_window.bkgd(' ', curses.color_pair(6))
+
+    def set_curses_colors_dark(self):
+        self.stdscr.bkgd(' ', curses.color_pair(7))
+        self.main_window.bkgd(' ', curses.color_pair(7))
+        self.menu_window.bkgd(' ', curses.color_pair(7))
+
     def init_curses(self):
         try:
             if curses.has_colors():
-                self.set_curses_style()
+                if config.curses_colors is None or config.curses_colors == "Logos":
+                    config.curses_colors = "Logos"
+                    self.set_curses_style()
+                    self.set_curses_colors_logos()
+                elif config.curses_colors == "Light":
+                    config.curses_colors = "Light"
+                    self.set_curses_style()
+                    self.set_curses_colors_light()
+                elif config.curses_colors == "Dark":
+                    config.curses_colors = "Dark"
+                    self.set_curses_style()
+                    self.set_curses_colors_dark()
 
             curses.curs_set(0)
             curses.noecho()
@@ -295,7 +320,6 @@ class TUI:
             15: self.password_prompt,
             16: self.install_dependencies_confirm,
             17: self.manual_install_confirm,
-            # Add more screen_id mappings as needed
         }
 
         # Capture menu exiting before processing in the rest of the handler
@@ -364,6 +388,20 @@ class TUI:
             wine.installICUDataFiles()
         elif choice.endswith("Logging"):
             wine.switch_logging()
+        elif choice == "Change Color Scheme":
+            if config.curses_colors == "Logos":
+                config.curses_colors = "Light"
+                self.set_curses_colors_light()
+            elif config.curses_colors == "Light":
+                config.curses_colors = "Dark"
+                self.set_curses_colors_dark()
+            else:
+                config.curses_colors = "Logos"
+                config.curses_colors = "Logos"
+                self.set_curses_colors_logos()
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            utils.write_config(config.CONFIG_FILE)
 
     def custom_appimage_select(self, choice):
         #FIXME
@@ -686,6 +724,11 @@ class TUI:
 
         label = "Enable Logging" if config.LOGS == "DISABLED" else "Disable Logging"
         labels.append(label)
+
+        labels_options = [
+            "Change Color Scheme"
+        ]
+        labels.extend(labels_options)
 
         labels.append("Exit")
 
