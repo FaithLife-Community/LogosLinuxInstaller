@@ -56,6 +56,7 @@ def spinner(app, index, start_y=0):
     i = (i + 1) % len(spinner_chars)
     return i
 
+
 #FIXME: Display flickers.
 def confirm(app, question_text, height=None, width=None):
     stdscr = app.get_menu_window()
@@ -237,13 +238,14 @@ class MenuDialog(CursesDialog):
                             self.stdscr.addstr(y, x, line, curses.A_REVERSE)
                         else:
                             self.stdscr.addstr(y, x, line)
+                menu_bottom = y
 
                 if type(option) is list:
                     options_start_y += (len(option_lines))
 
         # Display pagination information
         page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
-        self.stdscr.addstr(self.app.menu_window_height - 1, 2, page_info, curses.A_BOLD)
+        self.stdscr.addstr(max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, curses.A_BOLD)
 
     def do_menu_up(self):
         if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:
