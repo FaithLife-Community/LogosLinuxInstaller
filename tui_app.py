@@ -276,143 +276,218 @@ class TUI:
             self.switch_q.put(1)
 
     def choice_processor(self, stdscr, screen_id, choice):
+        screen_actions = {
+            0: self.main_menu_select,
+            1: self.custom_appimage_select,
+            2: self.product_select,
+            3: self.version_select,
+            4: self.release_select,
+            5: self.installdir_select,
+            6: self.wine_select,
+            7: self.winetricksbin_select,
+            8: self.waiting,
+            9: self.config_update_select,
+            10: self.waiting_releases,
+            11: self.waiting,  # Unused
+            12: self.run_logos,
+            13: self.waiting_finish,
+            14: self.waiting_resize,
+            15: self.password_prompt,
+            16: self.install_dependencies_confirm,
+            17: self.manual_install_confirm,
+            # Add more screen_id mappings as needed
+        }
+
+        # Capture menu exiting before processing in the rest of the handler
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
             self.switch_q.put(1)
             #FIXME: There is some kind of graphical glitch that activates on returning to Main Menu,
             # but not from all submenus.
             # Further, there appear to be issues with how the program exits on Ctrl+C as part of this.
-        elif screen_id == 0:
-            if choice is None or choice == "Exit":
-                msg.logos_warn("Exiting installation.")
-                self.tui_screens = []
-                self.llirunning = False
-            elif choice.startswith("Install"):
-                config.INSTALL_STEPS_COUNT = 0
-                config.INSTALL_STEP = 0
-                utils.start_thread(installer.ensure_launcher_shortcuts, daemon_bool=True, app=self)
-            elif choice.startswith("Update Logos Linux Installer"):
-                utils.update_to_latest_lli_release()
-            elif choice == f"Run {config.FLPRODUCT}":
-                self.active_screen.running = 0
-                self.active_screen.choice = "Processing"
-                self.screen_q.put(self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog))
-                self.choice_q.put("0")
-            elif choice == "Run Indexing":
-                wine.run_indexing()
-            elif choice == "Remove Library Catalog":
-                control.remove_library_catalog()
-            elif choice == "Remove All Index Files":
-                control.remove_all_index_files()
-            elif choice == "Edit Config":
-                control.edit_config()
-            elif choice == "Install Dependencies":
-                utils.check_dependencies()
-            elif choice == "Back up Data":
-                control.backup()
-            elif choice == "Restore Data":
-                control.restore()
-            elif choice == "Update to Latest AppImage":
-                utils.update_to_latest_recommended_appimage()
-            elif choice == "Set AppImage":
-                # TODO: Allow specifying the AppImage File
-                appimages = utils.find_appimage_files(utils.which_release())
-                appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in
-                                    appimages]  # noqa: E501
-                appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
-                self.menu_options = appimage_choices
-                question = "Which AppImage should be used?"
-                self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
-            elif choice == "Download or Update Winetricks":
-                control.set_winetricks()
-            elif choice == "Run Winetricks":
-                wine.run_winetricks()
-            elif choice == "Install d3dcompiler":
-                wine.installD3DCompiler()
-            elif choice == "Install Fonts":
-                wine.installFonts()
-            elif choice == "Install ICU":
-                wine.installICUDataFiles()
-            elif choice.endswith("Logging"):
-                wine.switch_logging()
-        elif screen_id == 1:
-            #FIXME
-            if choice == "Input Custom AppImage":
-                appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
-            else:
-                appimage_filename = choice
-            config.SELECTED_APPIMAGE_FILENAME = appimage_filename
-            utils.set_appimage_symlink()
+
+        action = screen_actions.get(screen_id)
+        if action:
+            action(choice)
+        else:
+            pass
+
+    def main_menu_select(self, choice):
+        if choice is None or choice == "Exit":
+            msg.logos_warn("Exiting installation.")
+            self.tui_screens = []
+            self.llirunning = False
+        elif choice.startswith("Install"):
+            config.INSTALL_STEPS_COUNT = 0
+            config.INSTALL_STEP = 0
+            utils.start_thread(installer.ensure_launcher_shortcuts, True, self)
+        elif choice.startswith("Update Logos Linux Installer"):
+            utils.update_to_latest_lli_release()
+        elif choice == f"Run {config.FLPRODUCT}":
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            self.screen_q.put(self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog))
+            self.choice_q.put("0")
+        elif choice == "Run Indexing":
+            wine.run_indexing()
+        elif choice == "Remove Library Catalog":
+            control.remove_library_catalog()
+        elif choice == "Remove All Index Files":
+            control.remove_all_index_files()
+        elif choice == "Edit Config":
+            control.edit_config()
+        elif choice == "Install Dependencies":
+            utils.check_dependencies()
+        elif choice == "Back up Data":
+            control.backup()
+        elif choice == "Restore Data":
+            control.restore()
+        elif choice == "Update to Latest AppImage":
+            utils.update_to_latest_recommended_appimage()
+        elif choice == "Set AppImage":
+            # TODO: Allow specifying the AppImage File
+            appimages = utils.find_appimage_files(utils.which_release())
+            appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in
+                                appimages]  # noqa: E501
+            appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
+            self.menu_options = appimage_choices
+            question = "Which AppImage should be used?"
+            self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
+        elif choice == "Download or Update Winetricks":
+            control.set_winetricks()
+        elif choice == "Run Winetricks":
+            wine.run_winetricks()
+        elif choice == "Install d3dcompiler":
+            wine.installD3DCompiler()
+        elif choice == "Install Fonts":
+            wine.installFonts()
+        elif choice == "Install ICU":
+            wine.installICUDataFiles()
+        elif choice.endswith("Logging"):
+            wine.switch_logging()
+
+    def custom_appimage_select(self, choice):
+        #FIXME
+        if choice == "Input Custom AppImage":
+            appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
+        else:
+            appimage_filename = choice
+        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        utils.set_appimage_symlink()
+        self.menu_screen.choice = "Processing"
+        self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
+        self.appimage_e.set()
+
+    def product_select(self, choice):
+        if choice:
+            if str(choice).startswith("Logos"):
+                config.FLPRODUCT = "Logos"
+            elif str(choice).startswith("Verbum"):
+                config.FLPRODUCT = "Verbum"
             self.menu_screen.choice = "Processing"
-            self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
-            self.appimage_e.set()
-        elif screen_id == 2:
-            if choice:
-                self.set_product(choice)
-        elif screen_id == 3:
-            if choice:
-                self.set_version(choice)
-        elif screen_id == 4:
-            if choice:
-                self.set_release(choice)
-        elif screen_id == 5:
-            if choice:
-                self.set_installdir(choice)
-        elif screen_id == 6:
-            if choice:
-                self.set_wine(choice)
-        elif screen_id == 7:
-            if choice:
-                self.set_winetricksbin(choice)
-        elif screen_id == 8:
-            pass
-        elif screen_id == 9:
-            if choice:
-                if choice == "Yes":
-                    logging.info("Updating config file.")
-                    utils.write_config(config.CONFIG_FILE)
-                else:
-                    logging.info("Config file left unchanged.")
+            self.product_q.put(config.FLPRODUCT)
+            self.product_e.set()
+
+    def version_select(self, choice):
+        if choice:
+            if "10" in choice:
+                config.TARGETVERSION = "10"
+            elif "9" in choice:
+                config.TARGETVERSION = "9"
+            self.menu_screen.choice = "Processing"
+            self.version_q.put(config.TARGETVERSION)
+            self.version_e.set()
+
+    def release_select(self, choice):
+        if choice:
+            config.TARGET_RELEASE_VERSION = choice
+            self.menu_screen.choice = "Processing"
+            self.release_q.put(config.TARGET_RELEASE_VERSION)
+            self.release_e.set()
+
+    def installdir_select(self, choice):
+        if choice:
+            config.INSTALLDIR = choice
+            config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
+            self.menu_screen.choice = "Processing"
+            self.installdir_q.put(config.INSTALLDIR)
+            self.installdir_e.set()
+
+
+    def wine_select(self, choice):
+        config.WINE_EXE = choice
+        if choice:
+            self.menu_screen.choice = "Processing"
+            self.wine_q.put(config.WINE_EXE)
+            self.wine_e.set()
+
+
+    def winetricksbin_select(self, choice):
+        winetricks_options = utils.get_winetricks_options()
+        if choice.startswith("Download"):
+            self.menu_screen.choice = "Processing"
+            self.tricksbin_q.put("Download")
+            self.tricksbin_e.set()
+        else:
+            self.menu_screen.choice = "Processing"
+            config.WINETRICKSBIN = winetricks_options[0]
+            self.tricksbin_q.put(config.WINETRICKSBIN)
+            self.tricksbin_e.set()
+
+    def waiting(self, choice):
+        pass
+
+    def config_update_select(self, choice):
+        if choice:
+            if choice == "Yes":
+                logging.info("Updating config file.")
+                utils.write_config(config.CONFIG_FILE)
+            else:
+                logging.info("Config file left unchanged.")
+            self.menu_screen.choice = "Processing"
+            self.config_q.put(True)
+            self.config_e.set()
+            self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Finishing install…", dialog=config.use_python_dialog))
+
+    def waiting_releases(self, choice):
+        pass
+
+    def run_logos(self, choice):
+        if choice:
+            self.menu_screen.choice = "Processing"
+            wine.run_logos(self)
+            self.switch_q.put(1)
+
+    def waiting_finish(self, choice):
+        pass
+
+    def waiting_resize(self, choice):
+        pass
+
+    def password_prompt(self, choice):
+        if choice:
+            self.menu_screen.choice = "Processing"
+            self.password_q.put(choice)
+            self.password_e.set()
+
+    def install_dependencies_confirm(self, choice):
+        if choice:
+            if choice == "No":
                 self.menu_screen.choice = "Processing"
-                self.config_q.put(True)
-                self.config_e.set()
-                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Finishing install…", dialog=config.use_python_dialog))
-        elif screen_id == 10:
-            pass
-        elif screen_id == 11:
-            pass
-        elif screen_id == 12:
-            if choice:
+                self.choice_q.put("Return to Main Menu")
+            else:
                 self.menu_screen.choice = "Processing"
-                wine.run_logos(self)
-                self.switch_q.put(1)
-        elif screen_id == 13:
-            pass
-        elif screen_id == 14:
-            pass
-        elif screen_id == 15:
-            if choice:
+                self.confirm_e.set()
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
+                                                  "Installing dependencies…\n", wait=True,
+                                                  dialog=config.use_python_dialog))
+    def manual_install_confirm(self, choice):
+        if choice:
+            if choice == "Continue":
                 self.menu_screen.choice = "Processing"
-                self.password_q.put(choice)
-                self.password_e.set()
-        elif screen_id == 16:
-            if choice:
-                if choice == "No":
-                    self.menu_screen.choice = "Processing"
-                    self.choice_q.put("Return to Main Menu")
-                else:
-                    self.menu_screen.choice = "Processing"
-                    self.confirm_e.set()
-                    self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
-                                                      "Installing dependencies…\n", wait=True,
-                                                      dialog=config.use_python_dialog))
-        elif screen_id == 17:
-            if choice:
-                if choice == "Continue":
-                    self.menu_screen.choice = "Processing"
-                    self.manualinstall_e.set()
-                    self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
-                                                      "Installing dependencies…\n", wait=True,
-                                                      dialog=config.use_python_dialog))
+                self.manualinstall_e.set()
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
+                                                  "Installing dependencies…\n", wait=True,
+                                                  dialog=config.use_python_dialog))
 
     def switch_screen(self, dialog):
         if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0:
