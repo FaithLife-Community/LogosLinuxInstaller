@@ -395,24 +395,24 @@ class TUI:
                 self.password_q.put(choice)
                 self.password_e.set()
         elif screen_id == 16:
-            if choice == "No":
-                self.menu_screen.choice = "Processing"
-                self.choice_q.put("Return to Main Menu")
-            else:
-                self.menu_screen.choice = "Processing"
-                self.confirm_e.set()
-                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
-                                                  "Installing dependencies…\n", wait=True,
-                                                  dialog=config.use_python_dialog))
+            if choice:
+                if choice == "No":
+                    self.menu_screen.choice = "Processing"
+                    self.choice_q.put("Return to Main Menu")
+                else:
+                    self.menu_screen.choice = "Processing"
+                    self.confirm_e.set()
+                    self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
+                                                      "Installing dependencies…\n", wait=True,
+                                                      dialog=config.use_python_dialog))
         elif screen_id == 17:
-            if choice == "Yes":
-                self.menu_screen.choice = "Processing"
-                self.manualinstall_e.set()
-                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
-                                                  "Installing dependencies…\n", wait=True,
-                                                  dialog=config.use_python_dialog))
-            else:
-                self.llirunning = False
+            if choice:
+                if choice == "Continue":
+                    self.menu_screen.choice = "Processing"
+                    self.manualinstall_e.set()
+                    self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
+                                                      "Installing dependencies…\n", wait=True,
+                                                      dialog=config.use_python_dialog))
 
     def switch_screen(self, dialog):
         if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0:
