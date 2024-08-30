@@ -182,7 +182,7 @@ class TUI:
 
             self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
             self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e,
-                                                     "Main Menu", self.set_tui_menu_options(dialog=False))
+                                                     "Main Menu", self.set_main_menu_options(dialog=False))
             #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu",
             #                                         self.set_tui_menu_options(dialog=True))
             self.refresh()
@@ -342,7 +342,8 @@ class TUI:
         elif task == 'DONE':
             self.subtitle = f"Logos Version: {config.current_logos_version}"
             self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
-            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))  # Force the main menu dialog
+            self.menu_screen.set_options(self.set_main_menu_options(dialog=False))
+            #self.menu_screen.set_options(self.set_main_menu_options(dialog=True))
             self.switch_q.put(1)
 
     def choice_processor(self, stdscr, screen_id, choice):
@@ -358,13 +359,14 @@ class TUI:
             8: self.waiting,
             9: self.config_update_select,
             10: self.waiting_releases,
-            11: self.waiting,  # Unused
+            11: self.winetricks_menu_select,  # Unused
             12: self.run_logos,
             13: self.waiting_finish,
             14: self.waiting_resize,
             15: self.password_prompt,
             16: self.install_dependencies_confirm,
             17: self.manual_install_confirm,
+            18: self.utilities_menu_select
         }
 
         # Capture menu exiting before processing in the rest of the handler
@@ -398,7 +400,35 @@ class TUI:
             self.choice_q.put("0")
         elif choice == "Run Indexing":
             wine.run_indexing()
-        elif choice == "Remove Library Catalog":
+        elif choice.startswith("Winetricks"):
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu", self.set_winetricks_menu_options(), dialog=config.use_python_dialog))
+            self.choice_q.put("0")
+        elif choice.startswith("Utilities"):
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            self.screen_q.put(self.stack_menu(18, self.todo_q, self.todo_e, "Utilities Menu", self.set_utilities_menu_options(), dialog=config.use_python_dialog))
+            self.choice_q.put("0")
+        elif choice == "Change Color Scheme":
+            self.change_color_scheme()
+            msg.status("Changing color scheme", self)
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            utils.write_config(config.CONFIG_FILE)
+
+    def winetricks_menu_select(self, choice):
+        if choice == "Download or Update Winetricks":
+            control.set_winetricks()
+        elif choice == "Run Winetricks":
+            wine.run_winetricks()
+        elif choice == "Install d3dcompiler":
+            wine.installD3DCompiler()
+        elif choice == "Install Fonts":
+            wine.installFonts()
+
+    def utilities_menu_select(self, choice):
+        if choice == "Remove Library Catalog":
             control.remove_library_catalog()
         elif choice == "Remove All Index Files":
             control.remove_all_index_files()
@@ -421,24 +451,10 @@ class TUI:
             self.menu_options = appimage_choices
             question = "Which AppImage should be used?"
             self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
-        elif choice == "Download or Update Winetricks":
-            control.set_winetricks()
-        elif choice == "Run Winetricks":
-            wine.run_winetricks()
-        elif choice == "Install d3dcompiler":
-            wine.installD3DCompiler()
-        elif choice == "Install Fonts":
-            wine.installFonts()
         elif choice == "Install ICU":
             wine.installICUDataFiles()
         elif choice.endswith("Logging"):
             wine.switch_logging()
-        elif choice == "Change Color Scheme":
-            self.change_color_scheme()
-            msg.status("Changing color scheme", self)
-            self.active_screen.running = 0
-            self.active_screen.choice = "Processing"
-            utils.write_config(config.CONFIG_FILE)
 
     def custom_appimage_select(self, choice):
         #FIXME
@@ -720,7 +736,7 @@ class TUI:
                 options.append(label)
         return options
 
-    def set_tui_menu_options(self, dialog=False):
+    def set_main_menu_options(self, dialog=False):
         labels = []
         if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
             logging.debug("Checking if Logos Linux Installers needs updated.")  # noqa: E501
@@ -737,29 +753,17 @@ class TUI:
         if utils.file_exists(config.LOGOS_EXE):
             labels_default = [
                 f"Run {config.FLPRODUCT}",
-                "Run Indexing",
-                "Remove Library Catalog",
-                "Remove All Index Files",
-                "Edit Config",
-                "Back up Data",
-                "Restore Data",
+                "Run Indexing"
             ]
         else:
             labels_default = ["Install Logos Bible Software"]
         labels.extend(labels_default)
 
         labels_support = [
-            "Install Dependencies",
-            "Download or Update Winetricks",
-            "Run Winetricks",
-            "Install d3dcompiler",
-            "Install Fonts",
-            "Install ICU"
+            "Utilities →",
+            "Winetricks →"
         ]
         labels.extend(labels_support)
-
-        label = "Enable Logging" if config.LOGS == "DISABLED" else "Disable Logging"
-        labels.append(label)
 
         labels_options = [
             "Change Color Scheme"
@@ -767,6 +771,49 @@ class TUI:
         labels.extend(labels_options)
 
         labels.append("Exit")
+
+        options = self.which_dialog_options(labels, dialog=False)
+
+        return options
+
+    def set_winetricks_menu_options(self, dialog=False):
+        labels = []
+        labels_support = [
+            "Download or Update Winetricks",
+            "Run Winetricks",
+            "Install d3dcompiler",
+            "Install Fonts"
+        ]
+        labels.extend(labels_support)
+
+        labels.append("Return to Main Menu")
+
+        options = self.which_dialog_options(labels, dialog=False)
+
+        return options
+
+    def set_utilities_menu_options(self, dialog=False):
+        labels = []
+        if utils.file_exists(config.LOGOS_EXE):
+            labels_catalog = [
+            "Remove Library Catalog",
+            "Remove All Index Files",
+            "Install ICU"
+            ]
+            labels.extend(labels_catalog)
+
+        labels_utilities = [
+            "Install Dependencies",
+            "Edit Config",
+            "Back up Data",
+            "Restore Data",
+        ]
+        labels.extend(labels_utilities)
+
+        label = "Enable Logging" if config.LOGS == "DISABLED" else "Disable Logging"
+        labels.append(label)
+
+        labels.append("Return to Main Menu")
 
         options = self.which_dialog_options(labels, dialog=False)
 
