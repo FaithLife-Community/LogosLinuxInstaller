@@ -80,21 +80,28 @@ class TUI:
         self.appimage_e = threading.Event()
 
         # Window and Screen Management
+        self.tui_screens = []
+        self.menu_options = []
         self.window_height = 0
         self.window_width = 0
         self.update_tty_dimensions()
-        self.main_window_height = 9
-        self.menu_window_height = 6 + config.options_per_page
-        self.tui_screens = []
-        self.menu_options = []
+        self.main_window_ratio = 0.25
+        self.main_window_min = 4
+        self.menu_window_ratio = 0.75
+        self.menu_window_min = 3
+        self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
+        self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
+        config.console_log_lines = max(self.main_window_height - 3, 1)
+        config.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
-        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 9, 0)
+        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
         self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
         self.console = None
         self.menu_screen = None
         self.active_screen = None
 
-    def set_curses_style(self):
+    @staticmethod
+    def set_curses_style():
         curses.start_color()
         curses.use_default_colors()
         curses.init_color(curses.COLOR_BLUE, 0, 510, 1000) # Logos Blue
@@ -123,6 +130,30 @@ class TUI:
         self.main_window.bkgd(' ', curses.color_pair(7))
         self.menu_window.bkgd(' ', curses.color_pair(7))
 
+    def change_color_scheme(self):
+        if config.curses_colors == "Logos":
+            config.curses_colors = "Light"
+            self.set_curses_colors_light()
+        elif config.curses_colors == "Light":
+            config.curses_colors = "Dark"
+            self.set_curses_colors_dark()
+        else:
+            config.curses_colors = "Logos"
+            config.curses_colors = "Logos"
+            self.set_curses_colors_logos()
+
+    def clear(self):
+        self.stdscr.clear()
+        self.main_window.clear()
+        self.menu_window.clear()
+        self.resize_window.clear()
+
+    def refresh(self):
+        self.main_window.noutrefresh()
+        self.menu_window.noutrefresh()
+        self.resize_window.noutrefresh()
+        curses.doupdate()
+
     def init_curses(self):
         try:
             if curses.has_colors():
@@ -149,10 +180,7 @@ class TUI:
                                                      "Main Menu", self.set_tui_menu_options(dialog=False))
             #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu",
             #                                         self.set_tui_menu_options(dialog=True))
-
-            self.main_window.noutrefresh()
-            self.menu_window.noutrefresh()
-            curses.doupdate()
+            self.refresh()
         except curses.error as e:
             logging.error(f"Curses error in init_curses: {e}")
         except Exception as e:
@@ -163,9 +191,6 @@ class TUI:
     def end_curses(self):
         try:
             self.stdscr.keypad(False)
-            self.stdscr.clear()
-            self.main_window.clear()
-            self.menu_window.clear()
             curses.nocbreak()
             curses.echo()
         except curses.error as e:
@@ -180,21 +205,23 @@ class TUI:
         self.llirunning = False
         curses.endwin()
 
+    def set_window_height(self):
+        self.update_tty_dimensions()
+        self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
+        self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
+        config.console_log_lines = max(self.main_window_height - (self.main_window_min - 1), 1)
+        config.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
+        self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
+        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
+        self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
+
     def resize_curses(self):
         config.resizing = True
         curses.endwin()
-        self.menu_window.clear()
-        self.menu_window.refresh()
-        self.update_tty_dimensions()
-        available_height = self.window_height - self.menu_window_height - 6
-        config.options_per_page = max(available_height, 3)
-        self.menu_window_height = 6 + config.options_per_page
-        self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
-        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, 9, 0)
-        self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
+        self.clear()
+        self.set_window_height()
         self.init_curses()
-        self.menu_window.refresh()
-        self.menu_window.clear()
+        self.refresh()
         msg.status("Resizing window.", self)
         config.resizing = False
 
@@ -207,18 +234,18 @@ class TUI:
                 self.choice_q.put("Return to Main Menu")
         else:
             if self.active_screen.get_screen_id == 14:
-                if self.window_height >= 18:
+                self.update_tty_dimensions()
+                if self.window_height > 9:
                     self.switch_q.put(1)
 
     def draw_resize_screen(self):
+        self.clear()
         title_lines = tui_curses.wrap_text(self, "Screen too small.")
         self.resize_window = curses.newwin(len(title_lines), curses.COLS, 0, 0)
-        self.resize_window.erase()
         for i, line in enumerate(title_lines):
             if i < self.window_height:
                 self.resize_window.addstr(i + 0, 2, line, curses.A_BOLD)
-        self.resize_window.noutrefresh()
-        curses.doupdate()
+        self.refresh()
 
     def display(self):
         signal.signal(signal.SIGWINCH, self.signal_resize)
@@ -228,7 +255,7 @@ class TUI:
         self.active_screen = self.menu_screen
 
         while self.llirunning:
-            if self.window_height >= (self.main_window_height + self.menu_window_height):
+            if self.window_height >= 10:
                 if not config.resizing:
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
                         self.main_window.erase()
@@ -258,9 +285,7 @@ class TUI:
                         self.active_screen = self.tui_screens[-1]
 
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
-                        self.main_window.noutrefresh()
-                        self.menu_window.noutrefresh()
-                        curses.doupdate()
+                        self.refresh()
             else:
                 self.draw_resize_screen()
 
@@ -389,16 +414,8 @@ class TUI:
         elif choice.endswith("Logging"):
             wine.switch_logging()
         elif choice == "Change Color Scheme":
-            if config.curses_colors == "Logos":
-                config.curses_colors = "Light"
-                self.set_curses_colors_light()
-            elif config.curses_colors == "Light":
-                config.curses_colors = "Dark"
-                self.set_curses_colors_dark()
-            else:
-                config.curses_colors = "Logos"
-                config.curses_colors = "Logos"
-                self.set_curses_colors_logos()
+            self.change_color_scheme()
+            msg.status("Changing color scheme", self)
             self.active_screen.running = 0
             self.active_screen.choice = "Processing"
             utils.write_config(config.CONFIG_FILE)
@@ -450,14 +467,12 @@ class TUI:
             self.installdir_q.put(config.INSTALLDIR)
             self.installdir_e.set()
 
-
     def wine_select(self, choice):
         config.WINE_EXE = choice
         if choice:
             self.menu_screen.choice = "Processing"
             self.wine_q.put(config.WINE_EXE)
             self.wine_e.set()
-
 
     def winetricksbin_select(self, choice):
         winetricks_options = utils.get_winetricks_options()
@@ -518,6 +533,7 @@ class TUI:
                 self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
                                                   "Installing dependencies…\n", wait=True,
                                                   dialog=config.use_python_dialog))
+
     def manual_install_confirm(self, choice):
         if choice:
             if choice == "Continue":
@@ -534,7 +550,7 @@ class TUI:
             self.menu_screen.choice = "Processing"
             self.menu_screen.running = 0
         if isinstance(self.active_screen, tui_screen.CursesScreen):
-            self.stdscr.clear()
+            self.clear()
 
     def get_product(self, dialog):
         question = "Choose which FaithLife product the script should install:"  # noqa: E501

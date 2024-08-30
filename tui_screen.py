@@ -83,7 +83,7 @@ class ConsoleScreen(CursesScreen):
         tui_curses.title(self.app, self.subtitle, subtitle_start + 1)
 
         self.stdscr.addstr(3, 2, f"---Console---")
-        recent_messages = logging.console_log[-6:]
+        recent_messages = logging.console_log[-config.console_log_lines:]
         for i, message in enumerate(recent_messages, 1):
             message_lines = tui_curses.wrap_text(self.app, message)
             for j, line in enumerate(message_lines):
