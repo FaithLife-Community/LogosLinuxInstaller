@@ -118,22 +118,68 @@ def get_wine_release(binary):
         return False, f"Error: {e}"
 
 
-def check_wine_version_and_branch(release_version, test_binary):
+def check_wine_rules(wine_release, release_version):
     # Does not check for Staging. Will not implement: expecting merging of
     # commits in time.
     if config.TARGETVERSION == "10":
         if utils.check_logos_release_version(release_version, 30, 1):
-            wine_minimum = [7, 18]
+            required_wine_minimum = [7, 18]
         else:
-            wine_minimum = [9, 10]
+            required_wine_minimum = [9, 10]
     elif config.TARGETVERSION == "9":
-        wine_minimum = [7, 0]
+        required_wine_minimum = [7, 0]
     else:
         raise ValueError("TARGETVERSION not set.")
 
-    # Check if the binary is executable. If so, check if TESTBINARY's version
-    # is ≥ WINE_MINIMUM, or if it is Proton or a link to a Proton binary, else
-    # remove.
+    rules = [
+        {
+            "major": 7,
+            "proton": True,  # Proton release tend to use the x.0 release, but can include changes found in devel/staging  # noqa: E501
+            "minor_bad": [],  # exceptions to minimum
+            "allowed_releases": ["staging"]
+        },
+        {
+            "major": 8,
+            "proton": False,
+            "minor_bad": [0],
+            "allowed_releases": ["staging"],
+            "devel_allowed": 16,  # devel permissible at this point
+        },
+        {
+            "major": 9,
+            "proton": False,
+            "minor_bad": [],
+            "allowed_releases": ["devel", "staging"],
+        },
+    ]
+
+    major_min, minor_min = required_wine_minimum
+    major, minor, release_type = wine_release
+    for rule in rules:
+        if major == rule["major"]:
+            # Verify release is allowed
+            if release_type not in rule["allowed_releases"]:
+                if minor >= rule.get("devel_allowed", float('inf')):
+                    if release_type != "staging":
+                        return False, (f"Wine release needs to be devel or staging. "
+                                       f"Current release: {release_type}.")
+                else:
+                    return False, (f"Wine release needs to be {rule["allowed_releases"]}. "
+                                   f"Current release: {release_type}.")
+            # Verify version is allowed
+            if minor in rule.get("minor_bad", []):
+                return False, f"Wine version {major}.{minor} will not work."
+            if major < major_min:
+                return False, (f"Wine version {major}.{minor} is "
+                               f"below minimum required ({major_min}.{minor_min}).")
+            elif major == major_min and minor < minor_min:
+                if not rule["proton"]:
+                    return False, (f"Wine version {major}.{minor} is "
+                                   f"below minimum required ({major_min}.{minor_min}).")
+    return True, "None"  # Whether the release is allowed and the error message
+
+
+def check_wine_version_and_branch(release_version, test_binary):
     if not os.path.exists(test_binary):
         reason = "Binary does not exist."
         return False, reason
@@ -142,39 +188,17 @@ def check_wine_version_and_branch(release_version, test_binary):
         reason = "Binary is not executable."
         return False, reason
 
-    wine_release = []
     wine_release, error_message = get_wine_release(test_binary)
 
-    if wine_release is not False and error_message is not None:
-        if wine_release[2] == 'stable':
-            return False, "Can't use Stable release"
-        elif wine_release[0] < 7:
-            return False, "Version is < 7.0"
-        elif wine_release[0] == 7:
-            if (
-                "Proton" in test_binary
-                or ("Proton" in os.path.realpath(test_binary) if os.path.islink(test_binary) else False)  # noqa: E501
-            ):
-                if wine_release[1] == 0:
-                    return True, "None"
-            elif wine_release[2] != 'staging':
-                return False, "Needs to be Staging release"
-            elif wine_release[1] < wine_minimum[1]:
-                reason = f"{'.'.join(wine_release)} is below minimum required, {'.'.join(wine_minimum)}"  # noqa: E501
-                return False, reason
-        elif wine_release[0] == 8:
-            if wine_release[1] < 1:
-                return False, "Version is 8.0"
-            elif wine_release[1] < 16:
-                if wine_release[2] != 'staging':
-                    return False, "Version < 8.16 needs to be Staging release"
-        elif wine_release[0] == 9:
-            if wine_release[1] < 10:
-                return False, "Version < 9.10"
-        elif wine_release[0] > 9:
-            pass
-    else:
+    if wine_release is False and error_message is not None:
         return False, error_message
+
+    result, message = check_wine_rules(wine_release, release_version)
+    if not result:
+        return result, message
+
+    if wine_release[0] > 9:
+        pass
 
     return True, "None"
 
