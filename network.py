@@ -503,7 +503,10 @@ def get_logos_releases(app=None):
 
     msg.logos_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
-    url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
+    if config.logos_release_channel is None or config.logos_release_channel == "stable":
+        url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
+    elif config.logos_release_channel == "beta":
+        url = f"https://clientservices.logos.com/update/v1/feed/logos10/beta.xml"  # noqa: E501
 
     response_xml_bytes = net_get(url)
     # if response_xml is None and None not in [q, app]:
