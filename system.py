@@ -13,9 +13,8 @@ import msg
 import network
 
 
-# TODO: Add a Popen variant to run_command to replace functions in control.py
-# and wine.py
-def run_command(command, retries=1, delay=0, **kwargs):
+# TODO: Replace functions in control.py and wine.py with Popen command.
+def run_command(command, retries=1, delay=0, wait=True, **kwargs):
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
     capture_output = kwargs.get("capture_output", True)
@@ -86,7 +85,10 @@ def run_command(command, retries=1, delay=0, **kwargs):
                 pipesize=pipesize,
                 process_group=process_group
             )
-            return result
+            if wait:
+                return result
+            else:
+                return None
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}")  # noqa: E501
             if "lock" in str(e):
@@ -96,6 +98,93 @@ def run_command(command, retries=1, delay=0, **kwargs):
                 raise e
         except Exception as e:
             logging.error(f"An unexpected error occurred when running {command}: {e}")  # noqa: E501
+            return None
+
+    logging.error(f"Failed to execute after {retries} attempts: '{command}'")
+    return None
+
+
+def popen_command(command, retries=1, delay=0, wait=True, **kwargs):
+    shell = kwargs.get("shell", False)
+    env = kwargs.get("env", None)
+    cwd = kwargs.get("cwd", None)
+    stdin = kwargs.get("stdin", None)
+    stdout = kwargs.get("stdout", None)
+    stderr = kwargs.get("stderr", None)
+    bufsize = kwargs.get("bufsize", -1)
+    executable = kwargs.get("executable", None)
+    pass_fds = kwargs.get("pass_fds", ())
+    preexec_fn = kwargs.get("preexec_fn", None)
+    close_fds = kwargs.get("close_fds", True)
+    universal_newlines = kwargs.get("universal_newlines", None)
+    startupinfo = kwargs.get("startupinfo", None)
+    creationflags = kwargs.get("creationflags", 0)
+    restore_signals = kwargs.get("restore_signals", True)
+    start_new_session = kwargs.get("start_new_session", False)
+    user = kwargs.get("user", None)
+    group = kwargs.get("group", None)
+    extra_groups = kwargs.get("extra_groups", None)
+    umask = kwargs.get("umask", -1)
+    pipesize = kwargs.get("pipesize", -1)
+    process_group = kwargs.get("process_group", None)
+    encoding = kwargs.get("encoding", None)
+    errors = kwargs.get("errors", None)
+    text = kwargs.get("text", None)
+
+    if retries < 1:
+        retries = 1
+
+    if isinstance(command, str) and not shell:
+        command = command.split()
+
+    for attempt in range(retries):
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=shell,
+                env=env,
+                cwd=cwd,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                bufsize=bufsize,
+                executable=executable,
+                pass_fds=pass_fds,
+                preexec_fn=preexec_fn,
+                close_fds=close_fds,
+                universal_newlines=universal_newlines,
+                startupinfo=startupinfo,
+                creationflags=creationflags,
+                restore_signals=restore_signals,
+                start_new_session=start_new_session,
+                user=user,
+                group=group,
+                extra_groups=extra_groups,
+                umask=umask,
+                pipesize=pipesize,
+                process_group=process_group,
+                encoding=encoding,
+                errors=errors,
+                text=text
+            )
+
+            if wait:
+                stdout, stderr = process.communicate(timeout=kwargs.get("timeout", None))
+                if process.returncode != 0:
+                    raise subprocess.CalledProcessError(process.returncode, command, output=stdout, stderr=stderr)
+                return stdout, stderr
+            else:
+                return process
+
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error occurred in popen_command() while executing \"{command}\": {e}")
+            if "lock" in str(e):
+                logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")
+                time.sleep(delay)
+            else:
+                raise e
+        except Exception as e:
+            logging.error(f"An unexpected error occurred when running {command}: {e}")
             return None
 
     logging.error(f"Failed to execute after {retries} attempts: '{command}'")
