@@ -27,6 +27,24 @@ def run_command(command, retries=1, delay=0, **kwargs):
     stdin = kwargs.get("stdin", None)
     stdout = kwargs.get("stdout", None)
     stderr = kwargs.get("stderr", None)
+    timeout = kwargs.get("timeout", None)
+    bufsize = kwargs.get("bufsize", -1)
+    executable = kwargs.get("executable", None)
+    pass_fds = kwargs.get("pass_fds", ())
+    errors = kwargs.get("errors", None)
+    preexec_fn = kwargs.get("preexec_fn", None)
+    close_fds = kwargs.get("close_fds", True)
+    universal_newlines = kwargs.get("universal_newlines", None)
+    startupinfo = kwargs.get("startupinfo", None)
+    creationflags = kwargs.get("creationflags", 0)
+    restore_signals = kwargs.get("restore_signals", True)
+    start_new_session = kwargs.get("start_new_session", False)
+    user = kwargs.get("user", None)
+    group = kwargs.get("group", None)
+    extra_groups = kwargs.get("extra_groups", None)
+    umask = kwargs.get("umask", -1)
+    pipesize = kwargs.get("pipesize", -1)
+    process_group = kwargs.get("process_group", None)
 
     if retries < 1:
         retries = 1
@@ -49,6 +67,24 @@ def run_command(command, retries=1, delay=0, **kwargs):
                 encoding=encoding,
                 cwd=cwd,
                 env=env,
+                timeout=timeout,
+                bufsize=bufsize,
+                executable=executable,
+                errors=errors,
+                pass_fds=pass_fds,
+                preexec_fn=preexec_fn,
+                close_fds=close_fds,
+                universal_newlines=universal_newlines,
+                startupinfo=startupinfo,
+                creationflags=creationflags,
+                restore_signals=restore_signals,
+                start_new_session=start_new_session,
+                user=user,
+                group=group,
+                extra_groups=extra_groups,
+                umask=umask,
+                pipesize=pipesize,
+                process_group=process_group
             )
             return result
         except subprocess.CalledProcessError as e:
