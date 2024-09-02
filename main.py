@@ -3,6 +3,9 @@ import argparse
 import config
 import control
 import curses
+
+import logos
+
 try:
     import dialog  # noqa: F401
 except ImportError:
@@ -20,8 +23,7 @@ import tui_app
 import utils
 import wine
 
-processes = {}
-threads = []
+from config import processes, threads
 
 
 def get_parser():
@@ -238,8 +240,8 @@ def parse_args(args, parser):
     # Set ACTION function.
     actions = {
         'install_app': installer.ensure_launcher_shortcuts,
-        'run_installed_app': wine.run_logos,
-        'run_indexing': wine.run_indexing,
+        'run_installed_app': logos.LogosManager().start,
+        'run_indexing': logos.LogosManager().index,
         'remove_library_catalog': control.remove_library_catalog,
         'remove_index_files': control.remove_all_index_files,
         'edit_config': control.edit_config,
@@ -251,10 +253,10 @@ def parse_args(args, parser):
         'set_appimage': utils.set_appimage_symlink,
         'get_winetricks': control.set_winetricks,
         'run_winetricks': wine.run_winetricks,
-        'install_d3d_compiler': wine.installD3DCompiler,
-        'install_fonts': wine.installFonts,
-        'install_icu': wine.installICUDataFiles,
-        'toggle_app_logging': wine.switch_logging,
+        'install_d3d_compiler': wine.install_d3d_compiler,
+        'install_fonts': wine.install_fonts,
+        'install_icu': wine.install_icu_data_files,
+        'toggle_app_logging': logos.LogosManager().switch_logging,
         'create_shortcuts': installer.ensure_launcher_shortcuts,
         'remove_install_dir': control.remove_install_dir,
     }

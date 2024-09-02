@@ -1,11 +1,9 @@
 import logging
 import os
-import psutil
 import re
 import shutil
 import signal
 import subprocess
-import time
 from pathlib import Path
 
 import config
@@ -17,60 +15,62 @@ import utils
 from main import processes
 
 
-def get_pids_using_file(file_path, mode=None):
-    # Make list (set) of pids using 'directory'.
-    pids = set()
-    for proc in psutil.process_iter(['pid', 'open_files']):
-        try:
-            if mode is not None:
-                paths = [f.path for f in proc.open_files() if f.mode == mode]
-            else:
-                paths = [f.path for f in proc.open_files()]
-            if len(paths) > 0 and file_path in paths:
-                pids.add(proc.pid)
-        except psutil.AccessDenied:
-            pass
-    return pids
+def set_logos_paths():
+    config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'
+    config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'
+    config.logos_indexing_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'
+    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
+        for f in files:
+            if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
+                config.logos_indexer_exe = os.path.join(root, f)
+                break
 
 
-def wait_on(command):
-    env = get_wine_env()
+def get_wine_user():
+    path = config.LOGOS_EXE
+    normalized_path = os.path.normpath(path)
+    path_parts = normalized_path.split(os.sep)
+    config.wine_user = path_parts[path_parts.index('users') + 1]
+
+
+def check_wineserver():
     try:
-        # Start the process in the background
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=env,
-            text=True
-        )
-        msg.logos_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
-        time.sleep(1.0)
-        while process.poll() is None:
-            msg.logos_progress()
-            time.sleep(0.5)
-        print()
-
-        # Process has finished, check the result
-        stdout, stderr = process.communicate()
-
-        if process.returncode == 0:
-            logging.info(f"\"{' '.join(command)}\" has ended properly.")
-        else:
-            logging.error(f"Error: {stderr}")
-
+        process = run_wine_proc(config.WINESERVER, exe_args=["-p"])
+        return process.returncode == 0
     except Exception as e:
-        logging.critical(f"{e}")
+        return False
+
+
+def wineserver_kill():
+    if check_wineserver():
+        run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
+
+
+def wineserver_wait():
+    if check_wineserver():
+        run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 
 def light_wineserver_wait():
     command = [f"{config.WINESERVER_EXE}", "-w"]
-    wait_on(command)
+    system.wait_on(command)
 
 
 def heavy_wineserver_wait():
     utils.wait_process_using_dir(config.WINEPREFIX)
-    wait_on([f"{config.WINESERVER_EXE}", "-w"])
+    system.wait_on([f"{config.WINESERVER_EXE}", "-w"])
+
+
+def end_wine_processes():
+    for process_name, process in processes.items():
+        if isinstance(process, subprocess.Popen):
+            logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")  # noqa: E501
+            try:
+                process.terminate()
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
 
 
 def get_wine_release(binary):
@@ -242,32 +242,35 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
 
     logging.debug(f"subprocess cmd: '{' '.join(command)}'")
     try:
-        process = subprocess.Popen(
+        process = system.popen_command(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=env
         )
-        if exe is not None and isinstance(process, subprocess.Popen):
-            processes[exe] = process
-        with process.stdout:
-            for line in iter(process.stdout.readline, b''):
-                if winecmd.endswith('winetricks'):
-                    logging.debug(line.decode('cp437').rstrip())
-                else:
-                    try:
-                        logging.info(line.decode().rstrip())
-                    except UnicodeDecodeError:
-                        if config.WINECMD_ENCODING is not None:
-                            logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
+        if process is not None:
+            if exe is not None and isinstance(process, subprocess.Popen):
+                config.processes[exe] = process
+            if process.poll() is None:
+                with process.stdout:
+                    for line in iter(process.stdout.readline, b''):
+                        if winecmd.endswith('winetricks'):
+                            logging.debug(line.decode('cp437').rstrip())
                         else:
-                            logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
-
-        returncode = process.wait()
-
-        if returncode != 0:
-            logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
-            msg.logos_error(f"\"{command}\" failed with exit code: {process.returncode}")  # noqa: E501
+                            try:
+                                logging.info(line.decode().rstrip())
+                            except UnicodeDecodeError:
+                                if config.WINECMD_ENCODING is not None:
+                                    logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
+                                else:
+                                    logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
+            # returncode = process.wait()
+            #
+            # if returncode != 0:
+            #     logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
+            return process
+        else:
+            return None
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Exception running '{' '.join(command)}': {e}")
@@ -277,7 +280,7 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
 
 def run_winetricks(cmd=None):
     run_wine_proc(config.WINETRICKSBIN, exe=cmd)
-    run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+    wineserver_wait()
 
 
 def run_winetricks_cmd(*args):
@@ -289,14 +292,14 @@ def run_winetricks_cmd(*args):
     heavy_wineserver_wait()
 
 
-def installD3DCompiler():
+def install_d3d_compiler():
     cmd = ['d3dcompiler_47']
     if config.WINETRICKS_UNATTENDED is None:
         cmd.insert(0, '-q')
     run_winetricks_cmd(*cmd)
 
 
-def installFonts():
+def install_fonts():
     msg.logos_msg("Configuring fonts…")
     fonts = ['corefonts', 'tahoma']
     if not config.SKIP_FONTS:
@@ -328,7 +331,7 @@ def set_win_version(exe, windows_version):
         run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
 
 
-def installICUDataFiles(app=None):
+def install_icu_data_files(app=None):
     releases_url = "https://api.github.com/repos/FaithLife-Community/icu/releases"  # noqa: E501
     json_data = network.get_latest_release_data(releases_url)
     icu_url = network.get_latest_release_url(json_data)
@@ -391,60 +394,6 @@ def get_registry_value(reg_path, name):
     else:
         logging.critical(err_msg)
     return value
-
-
-def get_app_logging_state(app=None):
-    state = 'DISABLED'
-    current_value = get_registry_value(
-        'HKCU\\Software\\Logos4\\Logging',
-        'Enabled'
-    )
-    if current_value == '0x1':
-        state = 'ENABLED'
-    if app is not None:
-        app.logging_q.put(state)
-        logging.debug(f"Current app logging state: {state} ({current_value})")
-        app.root.event_generate(app.logging_event)
-    return state
-
-
-def switch_logging(action=None, app=None):
-    logging.debug(f"switch_logging; {action=}; {app=}")
-    state_disabled = 'DISABLED'
-    value_disabled = '0000'
-    state_enabled = 'ENABLED'
-    value_enabled = '0001'
-    if action == 'disable':
-        value = value_disabled
-        state = state_disabled
-    elif action == 'enable':
-        value = value_enabled
-        state = state_enabled
-    else:
-        current_state = get_app_logging_state()
-        logging.debug(f"app logging {current_state=}")
-        if current_state == state_enabled:
-            value = value_disabled
-            state = state_disabled
-        else:
-            value = value_enabled
-            state = state_enabled
-
-    logging.info(f"Setting app logging to '{state}'.")
-    exe_args = [
-        'add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled',
-        '/t', 'REG_DWORD', '/d', value, '/f'
-    ]
-    run_wine_proc(
-        str(utils.get_wine_exe_path().parent / 'wine64'),
-        exe='reg',
-        exe_args=exe_args
-    )
-    light_wineserver_wait()
-    config.LOGS = state
-    if app is not None:
-        app.logging_q.put(state)
-        app.root.event_generate(app.logging_event)
 
 
 def get_mscoree_winebranch(mscoree_file):
@@ -531,49 +480,3 @@ def get_wine_env():
     updated_env = {k: wine_env.get(k) for k in wine_env_defaults.keys()}
     logging.debug(f"Wine env: {updated_env}")
     return wine_env
-
-
-def run_logos(app=None):
-    logos_release = utils.convert_logos_release(config.current_logos_version)
-    wine_release, _ = get_wine_release(str(utils.get_wine_exe_path()))
-
-    # TODO: Find a way to incorporate check_wine_version_and_branch()
-    if 30 > logos_release[0] > 9 and (wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):  # noqa: E501
-        txt = "Can't run Logos 10+ with Wine below 7.18."
-        logging.critical(txt)
-        msg.status(txt, app)
-    if logos_release[0] > 29 and wine_release[0] < 9 and wine_release[1] < 10:
-        txt = "Can't run Logos 30+ with Wine below 9.10."
-        logging.critical(txt)
-        msg.status(txt, app)
-    else:
-        run_wine_proc(str(utils.get_wine_exe_path()), exe=config.LOGOS_EXE)
-        run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
-
-
-def run_indexing():
-    logos_indexer_exe = None
-    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
-        for f in files:
-            if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
-                logos_indexer_exe = os.path.join(root, f)
-                break
-
-    if logos_indexer_exe is not None:
-        run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
-        run_wine_proc(str(utils.get_wine_exe_path()), exe=logos_indexer_exe)
-        run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
-    else:
-        logging.error("LogosIndexer.exe not found.")
-
-
-def end_wine_processes():
-    for process_name, process in processes.items():
-        if isinstance(process, subprocess.Popen):
-            logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")  # noqa: E501
-            try:
-                process.terminate()
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()

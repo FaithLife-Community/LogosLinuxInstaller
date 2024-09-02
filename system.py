@@ -8,13 +8,15 @@ import time
 import zipfile
 from pathlib import Path
 
+import psutil
+
 import config
 import msg
 import network
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.
-def run_command(command, retries=1, delay=0, wait=True, **kwargs):
+def run_command(command, retries=1, delay=0, **kwargs):
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
     capture_output = kwargs.get("capture_output", True)
@@ -85,10 +87,7 @@ def run_command(command, retries=1, delay=0, wait=True, **kwargs):
                 pipesize=pipesize,
                 process_group=process_group
             )
-            if wait:
-                return result
-            else:
-                return None
+            return result
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}")  # noqa: E501
             if "lock" in str(e):
@@ -104,7 +103,7 @@ def run_command(command, retries=1, delay=0, wait=True, **kwargs):
     return None
 
 
-def popen_command(command, retries=1, delay=0, wait=True, **kwargs):
+def popen_command(command, retries=1, delay=0, **kwargs):
     shell = kwargs.get("shell", False)
     env = kwargs.get("env", None)
     cwd = kwargs.get("cwd", None)
@@ -167,14 +166,7 @@ def popen_command(command, retries=1, delay=0, wait=True, **kwargs):
                 errors=errors,
                 text=text
             )
-
-            if wait:
-                stdout, stderr = process.communicate(timeout=kwargs.get("timeout", None))
-                if process.returncode != 0:
-                    raise subprocess.CalledProcessError(process.returncode, command, output=stdout, stderr=stderr)
-                return stdout, stderr
-            else:
-                return process
+            return process
 
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred in popen_command() while executing \"{command}\": {e}")
@@ -189,6 +181,69 @@ def popen_command(command, retries=1, delay=0, wait=True, **kwargs):
 
     logging.error(f"Failed to execute after {retries} attempts: '{command}'")
     return None
+
+
+def wait_on(command):
+    try:
+        # Start the process in the background
+        # TODO: Convert to use popen_command()
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        msg.logos_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
+        time.sleep(1.0)
+        while process.poll() is None:
+            msg.logos_progress()
+            time.sleep(0.5)
+        print()
+
+        # Process has finished, check the result
+        stdout, stderr = process.communicate()
+
+        if process.returncode == 0:
+            logging.info(f"\"{' '.join(command)}\" has ended properly.")
+        else:
+            logging.error(f"Error: {stderr}")
+
+    except Exception as e:
+        logging.critical(f"{e}")
+
+
+def get_pids(query):
+    results = []
+    for process in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if process.info['cmdline'] is not None and query in process.info['cmdline']:
+                results.append(process)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    return results
+
+
+def get_logos_pids():
+    config.processes[config.LOGOS_EXE] = get_pids(config.LOGOS_EXE)
+    config.processes[config.login_window_cmd] = get_pids(config.login_window_cmd)
+    config.processes[config.logos_cef_cmd] = get_pids(config.logos_cef_cmd)
+    config.processes[config.logos_indexer_exe] = get_pids(config.logos_indexer_exe)
+
+
+def get_pids_using_file(file_path, mode=None):
+    # Make list (set) of pids using 'directory'.
+    pids = set()
+    for proc in psutil.process_iter(['pid', 'open_files']):
+        try:
+            if mode is not None:
+                paths = [f.path for f in proc.open_files() if f.mode == mode]
+            else:
+                paths = [f.path for f in proc.open_files()]
+            if len(paths) > 0 and file_path in paths:
+                pids.add(proc.pid)
+        except psutil.AccessDenied:
+            pass
+    return pids
 
 
 def reboot():
