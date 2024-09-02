@@ -100,6 +100,7 @@ SUPERUSER_COMMAND = None
 VERBUM_PATH = None
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
 WINETRICKS_VERSION = '20220411'
+wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 install_finished = False
 console_log = []
@@ -110,6 +111,13 @@ current_page = 0
 total_pages = 0
 options_per_page = 8
 resizing = False
+processes = {}
+threads = []
+login_window_cmd = None
+logos_cef_cmd = None
+logos_indexing_cmd = None
+logos_indexer_exe = None
+check_if_indexing = None
 
 
 def get_config_file_dict(config_file_path):

@@ -537,15 +537,73 @@ def ensure_icu_data_files(app=None):
 
     icu_license_path = f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/LICENSE-ICU.txt"  # noqa: E501
     if not utils.file_exists(icu_license_path):
-        wine.installICUDataFiles(app=app)
+        wine.install_icu_data_files(app=app)
     logging.debug('> ICU data files installed')
+
+
+def ensure_winetricks_applied(app=None):
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_icu_data_files(app=app)
+    config.INSTALL_STEP += 1
+    status = "Ensuring winetricks & other settings are applied…"
+    update_install_feedback(status, app=app)
+    logging.debug('- disable winemenubuilder')
+    logging.debug('- settings renderer=gdi')
+    logging.debug('- corefonts')
+    logging.debug('- tahoma')
+    logging.debug('- settings fontsmooth=rgb')
+    logging.debug('- d3dcompiler_47')
+
+    if not config.SKIP_WINETRICKS:
+        usr_reg = None
+        sys_reg = None
+        workdir = Path(f"{config.WORKDIR}")
+        workdir.mkdir(parents=True, exist_ok=True)
+        usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
+        sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
+        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
+            #FIXME: This command is failing.
+            reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
+            with open(reg_file, 'w') as f:
+                f.write(r'''REGEDIT4
+
+[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
+"winemenubuilder.exe"=""
+''')
+            wine.wine_reg_install(reg_file)
+
+        if not utils.grep(r'"renderer"="gdi"', usr_reg):
+            wine.winetricks_install("-q", "settings", "renderer=gdi")
+
+        if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
+            wine.install_fonts()
+
+        if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
+            wine.install_d3d_compiler()
+
+        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
+            args = ["settings", "win10"]
+            if not config.WINETRICKS_UNATTENDED:
+                args.insert(0, "-q")
+            wine.winetricks_install(*args)
+
+        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Windows 10 Mode.")
+        exe_args = [
+            'add',
+            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
+            "/v", "Version",
+            "/t", "REG_SZ",
+            "/d", "win10", "/f",
+            ]
+        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+    logging.debug("> Done.")
 
 
 def ensure_product_installed(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_icu_data_files(app=app)
     config.INSTALL_STEP += 1
-    update_install_feedback("Ensuring product is installed…", app=app)
+    update_install_feedback(f"Ensuring {config.FLPRODUCT} is installed…", app=app)
 
     if not utils.find_installed_product():
         wine.install_msi()

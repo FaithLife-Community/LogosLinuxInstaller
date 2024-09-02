@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tarfile
 import threading
+import time
 import tkinter as tk
 from packaging import version
 from pathlib import Path
@@ -27,8 +28,6 @@ if system.have_dep("dialog"):
 import wine
 
 # TODO: Move config commands to config.py
-
-from main import threads
 
 
 def get_calling_function_name():
@@ -901,8 +900,7 @@ def start_thread(task, *args, daemon_bool=True, **kwargs):
         args=args,
         kwargs=kwargs
     )
-    logging.debug(f"Starting thread: {task=}; {daemon_bool=} {args=}; {kwargs=}")  # noqa: E501
-    threads.append(thread)
+    config.threads.append(thread)
     thread.start()
     return thread
 
@@ -985,3 +983,17 @@ def get_wine_exe_path(path=None):
             return wine_exe_path
         else:
             return None
+
+
+def stopwatch(start_time=None, interval=10.0):
+    if start_time is None:
+        start_time = time.time()
+
+    current_time = time.time()
+    elapsed_time = current_time - start_time
+
+    if elapsed_time >= interval:
+        last_log_time = current_time
+        return True, last_log_time
+    else:
+        return False, start_time

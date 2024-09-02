@@ -2,6 +2,7 @@ import logging
 import os
 import signal
 import threading
+import time
 import curses
 import time
 from pathlib import Path
@@ -10,6 +11,7 @@ from queue import Queue
 import config
 import control
 import installer
+import logos
 import msg
 import network
 import system
@@ -20,9 +22,8 @@ import wine
 
 console_message = ""
 
+
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
-
-
 class TUI:
     def __init__(self, stdscr):
         self.stdscr = stdscr
@@ -34,6 +35,7 @@ class TUI:
         self.console_message = "Starting TUI…"
         self.llirunning = True
         self.active_progress = False
+        self.logos = logos.LogosManager(app=self)
 
         # Queues
         self.main_thread = threading.Thread()
@@ -230,7 +232,7 @@ class TUI:
         self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"
         self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"
         self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
-        self.menu_screen.set_options(self.set_main_menu_options(dialog=False))
+        self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
         #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
         self.switch_q.put(1)
         self.refresh()
@@ -279,6 +281,8 @@ class TUI:
         msg.initialize_curses_logging()
         msg.status(self.console_message, self)
         self.active_screen = self.menu_screen
+        last_time = time.time()
+        self.logos.monitor()
 
         while self.llirunning:
             if self.window_height >= 10 and self.window_width >= 35:
@@ -306,6 +310,11 @@ class TUI:
                         self.active_screen = self.menu_screen
                     else:
                         self.active_screen = self.tui_screens[-1]
+
+                    run_monitor, last_time = utils.stopwatch(last_time, 2.5)
+                    if run_monitor:
+                        self.logos.monitor()
+                        self.task_processor(self, task="PID")
 
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
                         self.refresh()
@@ -348,6 +357,8 @@ class TUI:
             utils.start_thread(self.get_config, config.use_python_dialog)
         elif task == 'DONE':
             self.update_main_window_contents()
+        elif task == 'PID':
+            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
 
     def choice_processor(self, stdscr, screen_id, choice):
         screen_actions = {
@@ -415,10 +426,22 @@ class TUI:
             utils.update_to_latest_lli_release()
         elif choice == f"Run {config.FLPRODUCT}":
             self.reset_screen()
-            self.screen_q.put(self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog))
-            self.choice_q.put("0")
+            self.logos.start()
+            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
+            self.switch_q.put(1)
+        elif choice == f"Stop {config.FLPRODUCT}":
+            self.reset_screen()
+            self.logos.stop()
+            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
+            self.switch_q.put(1)
         elif choice == "Run Indexing":
-            wine.run_indexing()
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            self.logos.index()
+        elif choice == "Remove Library Catalog":
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            control.remove_library_catalog()
         elif choice.startswith("Winetricks"):
             self.reset_screen()
             self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu", self.set_winetricks_menu_options(), dialog=config.use_python_dialog))
@@ -614,12 +637,6 @@ class TUI:
 
     def waiting_releases(self, choice):
         pass
-
-    def run_logos(self, choice):
-        if choice:
-            self.menu_screen.choice = "Processing"
-            wine.run_logos(self)
-            self.switch_q.put(1)
 
     def waiting_finish(self, choice):
         pass
@@ -842,9 +859,23 @@ class TUI:
                 logging.error(f"{error_message}")
 
         if utils.file_exists(config.LOGOS_EXE):
+            if self.logos.logos_state == logos.State.RUNNING:
+                run = f"Stop {config.FLPRODUCT}"
+            elif self.logos.logos_state == logos.State.STOPPED:
+                run = f"Run {config.FLPRODUCT}"
+
+            if self.logos.indexing_state == logos.State.RUNNING:
+                indexing = f"Stop Indexing"
+            elif self.logos.indexing_state == logos.State.STOPPED:
+                indexing = f"Run Indexing"
             labels_default = [
-                f"Run {config.FLPRODUCT}",
-                "Run Indexing"
+                run,
+                indexing,
+                "Remove Library Catalog",
+                "Remove All Index Files",
+                "Edit Config",
+                "Back up Data",
+                "Restore Data",
             ]
         else:
             labels_default = ["Install Logos Bible Software"]
