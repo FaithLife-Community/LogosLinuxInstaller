@@ -325,8 +325,8 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
         if config.DIALOG == "tk":
             app.root.event_generate('<<StartIndeterminateProgress>>')
         msg.status(f"Verifying {file_path}…", app)
-        if config.DIALOG == "tk":
-            app.root.event_generate('<<UpdateStatus>>')
+        # if config.DIALOG == "tk":
+        #     app.root.event_generate('<<UpdateStatus>>')
     res = False
     txt = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
