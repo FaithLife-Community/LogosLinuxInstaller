@@ -528,8 +528,7 @@ class TUI:
             self.tricksbin_q.put("Download")
         else:
             winetricks_options = utils.get_winetricks_options()
-            config.WINETRICKSBIN = winetricks_options[0]
-            self.tricksbin_q.put(config.WINETRICKSBIN)
+            self.tricksbin_q.put(winetricks_options[0])
         self.menu_screen.choice = "Processing"
         self.tricksbin_e.set()
 

@@ -640,4 +640,5 @@ def install_winetricks(
                 z.extract(zi, path=installdir)
                 break
     os.chmod(f"{installdir}/winetricks", 0o755)
+    config.WINETRICKSBIN = f"{installdir}/winetricks"
     logging.debug("Winetricks installed.")
