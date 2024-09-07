@@ -177,24 +177,15 @@ def ensure_winetricks_choice(app=None):
     update_install_feedback("Choose winetricks binary…", app=app)
     logging.debug('- config.WINETRICKSBIN')
 
-    if config.WINETRICKSBIN is None:
-        # Check if local winetricks version available; else, download it.
-        config.WINETRICKSBIN = f"{config.APPDIR_BINDIR}/winetricks"
-
-        if app:
+    if app:
+        if config.WINETRICKSBIN is None:
             utils.send_task(app, 'WINETRICKSBIN')
             if config.DIALOG == 'curses':
                 app.tricksbin_e.wait()
-            winetricksbin = app.tricksbin_q.get()
-        else:
-            m = f"{utils.get_calling_function_name()}: --install-app is broken"
-            logging.critical(m)
-
-        if not winetricksbin.startswith('Download'):
-            config.WINETRICKSBIN = winetricksbin
+            config.WINETRICKSBIN = app.tricksbin_q.get()
     else:
-        if config.DIALOG == 'curses':
-            app.set_winetricksbin(config.WINETRICKSBIN)
+        m = f"{utils.get_calling_function_name()}: --install-app is broken"
+        logging.critical(m)
 
     logging.debug(f"> {config.WINETRICKSBIN=}")
 
@@ -392,7 +383,7 @@ def ensure_winetricks_executable(app=None):
         app=app
     )
 
-    if not os.access(config.WINETRICKSBIN, os.X_OK):
+    if config.WINETRICKSBIN.startswith('Download') or not os.access(config.WINETRICKSBIN, os.X_OK):
         tricksbin = Path(config.WINETRICKSBIN)
         tricksbin.unlink(missing_ok=True)
         # The choice of System winetricks was made previously. Here we are only
