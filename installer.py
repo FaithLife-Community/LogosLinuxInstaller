@@ -481,16 +481,15 @@ def ensure_wineprefix_init(app=None):
 
 def ensure_winetricks_applied(app=None):
     config.INSTALL_STEPS_COUNT += 1
-    ensure_wineprefix_init(app=app)
+    ensure_icu_data_files(app=app)
     config.INSTALL_STEP += 1
     status = "Ensuring winetricks & other settings are applied…"
     update_install_feedback(status, app=app)
     logging.debug('- disable winemenubuilder')
-    logging.debug('- settings win10')
     logging.debug('- settings renderer=gdi')
-    logging.debug('- settings fontsmooth=rgb')
-    logging.debug('- tahoma')
     logging.debug('- corefonts')
+    logging.debug('- tahoma')
+    logging.debug('- settings fontsmooth=rgb')
     logging.debug('- d3dcompiler_47')
 
     if not config.SKIP_WINETRICKS:
@@ -500,27 +499,19 @@ def ensure_winetricks_applied(app=None):
         workdir.mkdir(parents=True, exist_ok=True)
         usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
         sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
-            reg_file.write_text(r'''REGEDIT4
+            #FIXME: This command is failing.
+            reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
+            with open(reg_file, 'w') as f:
+                f.write(r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
             wine.wine_reg_install(reg_file)
 
-        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
-            # args = ["-q", "settings", "win10"]
-            # if not config.WINETRICKS_UNATTENDED:
-            #     args.insert(0, "-q")
-            wine.winetricks_install("-q", "settings", "win10")
-
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
-            wine.winetricks_install("-q", "settings", "renderer=gdi")
-
-        if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
-            wine.winetricks_install("-q", "settings", "fontsmooth=rgb")
+            wine.set_renderer("gdi")
 
         if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
             wine.installFonts()
@@ -528,20 +519,11 @@ def ensure_winetricks_applied(app=None):
         if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
             wine.installD3DCompiler()
 
-        m = f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode."
-        msg.logos_msg(m)
-        exe_args = [
-            'add',
-            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
-            "/v", "Version",
-            "/t", "REG_SZ",
-            "/d", "vista", "/f",
-            ]
-        wine.run_wine_proc(
-            str(utils.get_wine_exe_path()),
-            exe='reg',
-            exe_args=exe_args
-        )
+        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
+            wine.set_win_version("logos", "win10")
+
+        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
+        wine.set_win_version_indexer("vista")
     logging.debug("> Done.")
 
 

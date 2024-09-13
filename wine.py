@@ -280,7 +280,7 @@ def run_winetricks(cmd=None):
     run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
 
 
-def winetricks_install(*args):
+def run_winetricks_cmd(*args):
     cmd = [*args]
     msg.logos_msg(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
@@ -293,7 +293,7 @@ def installD3DCompiler():
     cmd = ['d3dcompiler_47']
     if config.WINETRICKS_UNATTENDED is None:
         cmd.insert(0, '-q')
-    winetricks_install(*cmd)
+    run_winetricks_cmd(*cmd)
 
 
 def installFonts():
@@ -304,9 +304,28 @@ def installFonts():
             args = [f]
             if config.WINETRICKS_UNATTENDED:
                 args.insert(0, '-q')
-            winetricks_install(*args)
+            run_winetricks_cmd(*args)
 
-    winetricks_install('-q', 'settings', 'fontsmooth=rgb')
+    run_winetricks_cmd('-q', 'settings', 'fontsmooth=rgb')
+
+
+def set_renderer(renderer):
+    run_winetricks_cmd("-q", "settings", f"renderer={renderer}")
+
+
+def set_win_version(exe, windows_version):
+    if exe == "logos":
+        run_winetricks_cmd('-q', 'settings', f'{windows_version}')
+    elif exe == "indexer":
+        reg = f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe"  # noqa: E501
+        exe_args = [
+            'add',
+            reg,
+            "/v", "Version",
+            "/t", "REG_SZ",
+            "/d", f"{windows_version}", "/f",
+            ]
+        run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
 
 
 def installICUDataFiles(app=None):
