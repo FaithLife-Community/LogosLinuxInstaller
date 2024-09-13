@@ -369,14 +369,17 @@ class TUI:
             8: self.waiting,
             9: self.config_update_select,
             10: self.waiting_releases,
-            11: self.winetricks_menu_select,  # Unused
+            11: self.winetricks_menu_select,
             12: self.run_logos,
             13: self.waiting_finish,
             14: self.waiting_resize,
             15: self.password_prompt,
             16: self.install_dependencies_confirm,
             17: self.manual_install_confirm,
-            18: self.utilities_menu_select
+            18: self.utilities_menu_select,
+            19: self.renderer_select,
+            20: self.win_ver_logos_select,
+            21: self.win_ver_index_select
         }
 
         # Capture menu exiting before processing in the rest of the handler
@@ -392,6 +395,14 @@ class TUI:
         else:
             pass
 
+    def reset_screen(self):
+        self.active_screen.running = 0
+        self.active_screen.choice = "Processing"
+
+    def go_to_main_menu(self):
+        self.menu_screen.choice = "Processing"
+        self.choice_q.put("Return to Main Menu")
+
     def main_menu_select(self, choice):
         if choice is None or choice == "Exit":
             msg.logos_warn("Exiting installation.")
@@ -404,27 +415,23 @@ class TUI:
         elif choice.startswith("Update Logos Linux Installer"):
             utils.update_to_latest_lli_release()
         elif choice == f"Run {config.FLPRODUCT}":
-            self.active_screen.running = 0
-            self.active_screen.choice = "Processing"
+            self.reset_screen()
             self.screen_q.put(self.stack_text(12, self.todo_q, self.todo_e, "Logos is running…", dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice == "Run Indexing":
             wine.run_indexing()
         elif choice.startswith("Winetricks"):
-            self.active_screen.running = 0
-            self.active_screen.choice = "Processing"
+            self.reset_screen()
             self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu", self.set_winetricks_menu_options(), dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice.startswith("Utilities"):
-            self.active_screen.running = 0
-            self.active_screen.choice = "Processing"
+            self.reset_screen()
             self.screen_q.put(self.stack_menu(18, self.todo_q, self.todo_e, "Utilities Menu", self.set_utilities_menu_options(), dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice == "Change Color Scheme":
             self.change_color_scheme()
             msg.status("Changing color scheme", self)
-            self.active_screen.running = 0
-            self.active_screen.choice = "Processing"
+            self.reset_screen()
             utils.write_config(config.CONFIG_FILE)
 
     def winetricks_menu_select(self, choice):
@@ -436,6 +443,27 @@ class TUI:
             wine.installD3DCompiler()
         elif choice == "Install Fonts":
             wine.installFonts()
+        elif choice == "Set Renderer":
+            self.reset_screen()
+            self.screen_q.put(self.stack_menu(19, self.todo_q, self.todo_e,
+                                              "Choose Renderer",
+                                              self.set_renderer_menu_options(),
+                                              dialog=config.use_python_dialog))
+            self.choice_q.put("0")
+        elif choice == "Set Windows Version for Logos":
+            self.reset_screen()
+            self.screen_q.put(self.stack_menu(20, self.todo_q, self.todo_e,
+                                              "Set Windows Version for Logos",
+                                              self.set_win_ver_menu_options(),
+                                              dialog=config.use_python_dialog))
+            self.choice_q.put("0")
+        elif choice == "Set Windows Version for Indexer":
+            self.reset_screen()
+            self.screen_q.put(self.stack_menu(21, self.todo_q, self.todo_e,
+                                              "Set Windows Version for Indexer",
+                                              self.set_win_ver_menu_options(),
+                                              dialog=config.use_python_dialog))
+            self.choice_q.put("0")
 
     def utilities_menu_select(self, choice):
         if choice == "Remove Library Catalog":
@@ -550,10 +578,10 @@ class TUI:
     def config_update_select(self, choice):
         if choice:
             if choice == "Yes":
-                logging.info("Updating config file.")
+                msg.status("Updating config file.", self)
                 utils.write_config(config.CONFIG_FILE)
             else:
-                logging.info("Config file left unchanged.")
+                msg.status("Config file left unchanged.", self)
             self.menu_screen.choice = "Processing"
             self.config_q.put(True)
             self.config_e.set()
@@ -583,14 +611,34 @@ class TUI:
     def install_dependencies_confirm(self, choice):
         if choice:
             if choice == "No":
-                self.menu_screen.choice = "Processing"
-                self.choice_q.put("Return to Main Menu")
+                self.go_to_main_menu()
             else:
                 self.menu_screen.choice = "Processing"
                 self.confirm_e.set()
                 self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
                                                   "Installing dependencies…\n", wait=True,
                                                   dialog=config.use_python_dialog))
+
+    def renderer_select(self, choice):
+        if choice in ["gdi", "gl", "vulkan"]:
+            self.reset_screen()
+            wine.set_renderer(choice)
+            msg.status(f"Changed renderer to {choice}.", self)
+            self.go_to_main_menu()
+
+    def win_ver_logos_select(self, choice):
+        if choice in ["vista", "win7", "win8", "win10", "win11"]:
+            self.reset_screen()
+            wine.set_win_version("logos", choice)
+            msg.status(f"Changed Windows version for Logos to {choice}.", self)
+            self.go_to_main_menu()
+
+    def win_ver_index_select(self, choice):
+        if choice in ["vista", "win7", "win8", "win10", "win11"]:
+            self.reset_screen()
+            wine.set_win_version("indexer", choice)
+            msg.status(f"Changed Windows version for Indexer to {choice}.", self)
+            self.go_to_main_menu()
 
     def manual_install_confirm(self, choice):
         if choice:
@@ -804,7 +852,42 @@ class TUI:
             "Download or Update Winetricks",
             "Run Winetricks",
             "Install d3dcompiler",
-            "Install Fonts"
+            "Install Fonts",
+            "Set Renderer",
+            "Set Windows Version for Logos",
+            "Set Windows Version for Indexer"
+        ]
+        labels.extend(labels_support)
+
+        labels.append("Return to Main Menu")
+
+        options = self.which_dialog_options(labels, dialog=False)
+
+        return options
+
+    def set_renderer_menu_options(self, dialog=False):
+        labels = []
+        labels_support = [
+            "gdi",
+            "gl",
+            "vulkan"
+        ]
+        labels.extend(labels_support)
+
+        labels.append("Return to Main Menu")
+
+        options = self.which_dialog_options(labels, dialog=False)
+
+        return options
+
+    def set_win_ver_menu_options(self, dialog=False):
+        labels = []
+        labels_support = [
+            "vista",
+            "win7",
+            "win8",
+            "win10",
+            "win11"
         ]
         labels.extend(labels_support)
 
