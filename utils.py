@@ -255,6 +255,23 @@ def file_exists(file_path):
         return False
 
 
+def change_release_channel():
+    if config.logos_release_channel == "stable":
+        config.logos_release_channel = "beta"
+        update_config_file(
+            config.CONFIG_FILE,
+            'logos_release_channel',
+            "beta"
+        )
+    else:
+        config.logos_release_channel = "stable"
+        update_config_file(
+            config.CONFIG_FILE,
+            'logos_release_channel',
+            "stable"
+        )
+
+
 def get_current_logos_version():
     path_regex = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"  # noqa: E501
     file_paths = glob.glob(path_regex)

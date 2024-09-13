@@ -25,8 +25,11 @@ console_message = ""
 class TUI:
     def __init__(self, stdscr):
         self.stdscr = stdscr
-        self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
-        self.subtitle = f"Logos Version: {config.current_logos_version}"
+        #if config.current_logos_version is not None:
+        self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION}"
+        self.subtitle = f"Logos Version: {config.current_logos_version}. Channel: {config.logos_release_channel}"
+        #else:
+        #    self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.console_message = "Starting TUI…"
         self.llirunning = True
         self.active_progress = False
@@ -225,14 +228,23 @@ class TUI:
         resize_lines = tui_curses.wrap_text(self, "Screen too small.")
         self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
 
+    def update_main_window_contents(self):
+        self.clear()
+        self.subtitle = f"Logos Version: {config.current_logos_version}. Channel: {config.logos_release_channel}"
+        self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
+        self.menu_screen.set_options(self.set_main_menu_options(dialog=False))
+        #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
+        self.switch_q.put(1)
+        self.refresh()
+
     def resize_curses(self):
         config.resizing = True
         curses.endwin()
-        self.clear()
         self.set_window_height()
+        self.clear()
         self.init_curses()
         self.refresh()
-        msg.status("Resizing window.", self)
+        msg.status("Window resized.", self)
         config.resizing = False
 
     def signal_resize(self, signum, frame):
@@ -340,11 +352,7 @@ class TUI:
         elif task == 'CONFIG':
             utils.start_thread(self.get_config, config.use_python_dialog)
         elif task == 'DONE':
-            self.subtitle = f"Logos Version: {config.current_logos_version}"
-            self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
-            self.menu_screen.set_options(self.set_main_menu_options(dialog=False))
-            #self.menu_screen.set_options(self.set_main_menu_options(dialog=True))
-            self.switch_q.put(1)
+            self.update_main_window_contents()
 
     def choice_processor(self, stdscr, screen_id, choice):
         screen_actions = {
@@ -434,6 +442,11 @@ class TUI:
             control.remove_all_index_files()
         elif choice == "Edit Config":
             control.edit_config()
+        elif choice == "Change Release Channel":
+            self.active_screen.running = 0
+            self.active_screen.choice = "Processing"
+            utils.change_release_channel()
+            self.update_main_window_contents()
         elif choice == "Install Dependencies":
             utils.check_dependencies()
         elif choice == "Back up Data":
@@ -805,6 +818,7 @@ class TUI:
         labels_utilities = [
             "Install Dependencies",
             "Edit Config",
+            "Change Release Channel",
             "Back up Data",
             "Restore Data",
         ]
