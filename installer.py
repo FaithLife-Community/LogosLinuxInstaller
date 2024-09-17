@@ -155,7 +155,7 @@ def ensure_wine_choice(app=None):
             app.set_wine(utils.get_wine_exe_path())
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
-    m = f"Preparing to process WINE_EXE. Currently set to: {utils.get_wine_exe_path()}."
+    m = f"Preparing to process WINE_EXE. Currently set to: {utils.get_wine_exe_path()}."  # noqa: E501
     logging.debug(m)
     if str(utils.get_wine_exe_path()).lower().endswith('.appimage'):
         config.SELECTED_APPIMAGE_FILENAME = str(utils.get_wine_exe_path())
@@ -257,11 +257,11 @@ def ensure_install_dirs(app=None):
 
     if config.INSTALLDIR is None:
         config.INSTALLDIR = f"{os.getenv('HOME')}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
 
+    config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
     bin_dir = Path(config.APPDIR_BINDIR)
     bin_dir.mkdir(parents=True, exist_ok=True)
-    logging.debug(f"> {bin_dir} exists: {bin_dir.is_dir()}")
+    logging.debug(f"> {bin_dir} exists?: {bin_dir.is_dir()}")
 
     logging.debug(f"> {config.INSTALLDIR=}")
     logging.debug(f"> {config.APPDIR_BINDIR=}")
@@ -366,12 +366,15 @@ def ensure_wine_executables(app=None):
             p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
 
     # Set WINESERVER_EXE.
-    config.WINESERVER_EXE = shutil.which('wineserver')
+    config.WINESERVER_EXE = f"{config.APPDIR_BINDIR}/wineserver"
 
+    # PATH is modified if wine appimage isn't found, but it's not modified
+    # during a restarted installation, so shutil.which doesn't find the
+    # executables in that case.
     logging.debug(f"> {config.WINESERVER_EXE=}")
-    logging.debug(f"> wine path: {shutil.which('wine')}")
-    logging.debug(f"> wine64 path: {shutil.which('wine64')}")
-    logging.debug(f"> wineserver path: {shutil.which('wineserver')}")
+    logging.debug(f"> wine path: {config.APPDIR_BINDIR}/wine")
+    logging.debug(f"> wine64 path: {config.APPDIR_BINDIR}/wine64")
+    logging.debug(f"> wineserver path: {config.APPDIR_BINDIR}/wineserver")
 
 
 def ensure_winetricks_executable(app=None):
@@ -383,18 +386,15 @@ def ensure_winetricks_executable(app=None):
         app=app
     )
 
-    if config.WINETRICKSBIN.startswith('Download') or not os.access(config.WINETRICKSBIN, os.X_OK):
-        tricksbin = Path(config.WINETRICKSBIN)
-        tricksbin.unlink(missing_ok=True)
-        # The choice of System winetricks was made previously. Here we are only
-        # concerned about whether the downloaded winetricks is usable.
+    if config.WINETRICKSBIN is None or config.WINETRICKSBIN.startswith('Download'):  # noqa: E501
+        config.WINETRICKSBIN = f"{config.APPDIR_BINDIR}/winetricks"  # default
+    if not os.access(config.WINETRICKSBIN, os.X_OK):
+        # Either previous system winetricks is no longer accessible, or the
+        # or the user has chosen to download it.
         msg.logos_msg("Downloading winetricks from the Internet…")
-        system.install_winetricks(
-            tricksbin.parent,
-            app=app
-        )
-    if config.WINETRICKSBIN:
-        logging.debug(f"> {config.WINETRICKSBIN} is executable?: {os.access(config.WINETRICKSBIN, os.X_OK)}")  # noqa: E501
+        system.install_winetricks(config.APPDIR_BINDIR, app=app)
+
+    logging.debug(f"> {config.WINETRICKSBIN} is executable?: {os.access(config.WINETRICKSBIN, os.X_OK)}")  # noqa: E501
     return 0
 
 
@@ -463,21 +463,91 @@ def ensure_wineprefix_init(app=None):
     update_install_feedback("Ensuring wineprefix is initialized…", app=app)
 
     init_file = Path(f"{config.WINEPREFIX}/system.reg")
+    logging.debug(f"{init_file=}")
     if not init_file.is_file():
+        logging.debug(f"{init_file} does not exist")
         if config.TARGETVERSION == '9':
             utils.install_premade_wine_bottle(
                 config.MYDOWNLOADS,
                 f"{config.INSTALLDIR}/data",
             )
         else:
-            if utils.get_wine_exe_path():
-                wine.initializeWineBottle()
+            # if utils.get_wine_exe_path():
+            #     wine.initializeWineBottle()
+            logging.debug("Initializing wineprefix.")
+            wine.initializeWineBottle()
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
+
+
+def ensure_winetricks_applied(app=None):
+    config.INSTALL_STEPS_COUNT += 1
+    ensure_wineprefix_init(app=app)
+    config.INSTALL_STEP += 1
+    status = "Ensuring winetricks & other settings are applied…"
+    update_install_feedback(status, app=app)
+    logging.debug('- disable winemenubuilder')
+    logging.debug('- settings win10')
+    logging.debug('- settings renderer=gdi')
+    logging.debug('- settings fontsmooth=rgb')
+    logging.debug('- tahoma')
+    logging.debug('- corefonts')
+    logging.debug('- d3dcompiler_47')
+
+    if not config.SKIP_WINETRICKS:
+        usr_reg = None
+        sys_reg = None
+        workdir = Path(f"{config.WORKDIR}")
+        workdir.mkdir(parents=True, exist_ok=True)
+        usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
+        sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
+
+        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
+            reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
+            reg_file.write_text(r'''REGEDIT4
+
+[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
+"winemenubuilder.exe"=""
+''')
+            wine.wine_reg_install(reg_file)
+
+        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
+            # args = ["-q", "settings", "win10"]
+            # if not config.WINETRICKS_UNATTENDED:
+            #     args.insert(0, "-q")
+            wine.winetricks_install("-q", "settings", "win10")
+
+        if not utils.grep(r'"renderer"="gdi"', usr_reg):
+            wine.winetricks_install("-q", "settings", "renderer=gdi")
+
+        if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
+            wine.winetricks_install("-q", "settings", "fontsmooth=rgb")
+
+        if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
+            wine.installFonts()
+
+        if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
+            wine.installD3DCompiler()
+
+        m = f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode."
+        msg.logos_msg(m)
+        exe_args = [
+            'add',
+            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
+            "/v", "Version",
+            "/t", "REG_SZ",
+            "/d", "vista", "/f",
+            ]
+        wine.run_wine_proc(
+            str(utils.get_wine_exe_path()),
+            exe='reg',
+            exe_args=exe_args
+        )
+    logging.debug("> Done.")
 
 
 def ensure_icu_data_files(app=None):
     config.INSTALL_STEPS_COUNT += 1
-    ensure_wineprefix_init(app=app)
+    ensure_winetricks_applied(app=app)
     config.INSTALL_STEP += 1
     status = "Ensuring ICU data files are installed…"
     update_install_feedback(status, app=app)
@@ -489,71 +559,9 @@ def ensure_icu_data_files(app=None):
     logging.debug('> ICU data files installed')
 
 
-def ensure_winetricks_applied(app=None):
-    config.INSTALL_STEPS_COUNT += 1
-    ensure_icu_data_files(app=app)
-    config.INSTALL_STEP += 1
-    status = "Ensuring winetricks & other settings are applied…"
-    update_install_feedback(status, app=app)
-    logging.debug('- disable winemenubuilder')
-    logging.debug('- settings renderer=gdi')
-    logging.debug('- corefonts')
-    logging.debug('- tahoma')
-    logging.debug('- settings fontsmooth=rgb')
-    logging.debug('- d3dcompiler_47')
-
-    if not config.SKIP_WINETRICKS:
-        usr_reg = None
-        sys_reg = None
-        workdir = Path(f"{config.WORKDIR}")
-        workdir.mkdir(parents=True, exist_ok=True)
-        usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
-        sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            # FIXME: This command is failing.
-            reg_file = os.path.join(
-                config.WORKDIR,
-                'disable-winemenubuilder.reg'
-            )
-            with open(reg_file, 'w') as f:
-                f.write(r'''REGEDIT4
-
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"winemenubuilder.exe"=""
-''')
-            wine.wine_reg_install(reg_file)
-
-        if not utils.grep(r'"renderer"="gdi"', usr_reg):
-            wine.winetricks_install("-q", "settings", "renderer=gdi")
-
-        if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
-            wine.installFonts()
-
-        if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
-            wine.installD3DCompiler()
-
-        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
-            args = ["settings", "win10"]
-            if not config.WINETRICKS_UNATTENDED:
-                args.insert(0, "-q")
-            wine.winetricks_install(*args)
-
-        m = f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode."
-        msg.logos_msg(m)
-        exe_args = [
-            'add',
-            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
-            "/v", "Version",
-            "/t", "REG_SZ",
-            "/d", "vista", "/f",
-            ]
-        wine.run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
-    logging.debug("> Done.")
-
-
 def ensure_product_installed(app=None):
     config.INSTALL_STEPS_COUNT += 1
-    ensure_winetricks_applied(app=app)
+    ensure_icu_data_files(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Ensuring product is installed…", app=app)
 

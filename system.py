@@ -23,7 +23,7 @@ def run_command(command, retries=1, delay=0, **kwargs):
     env = kwargs.get("env", None)
     cwd = kwargs.get("cwd", None)
     encoding = kwargs.get("encoding", None)
-    input = kwargs.get("input", None)
+    cmdinput = kwargs.get("input", None)
     stdin = kwargs.get("stdin", None)
     stdout = kwargs.get("stdout", None)
     stderr = kwargs.get("stderr", None)
@@ -42,13 +42,13 @@ def run_command(command, retries=1, delay=0, **kwargs):
                 text=text,
                 shell=shell,
                 capture_output=capture_output,
-                input=input,
+                input=cmdinput,
                 stdin=stdin,
                 stdout=stdout,
                 stderr=stderr,
                 encoding=encoding,
                 cwd=cwd,
-                env=env
+                env=env,
             )
             return result
         except subprocess.CalledProcessError as e:
@@ -145,7 +145,8 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["apt", "remove", "-y"]
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["dpkg", "-l"]
         config.QUERY_PREFIX = '.i  '
-        config.PACKAGES = "binutils cabextract fuse3 wget winbind"
+        # NOTE: in 24.04 "p7zip-full" pkg is transitional toward "7zip"
+        config.PACKAGES = "binutils cabextract fuse3 p7zip-full wget winbind"
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('dnf') is not None:  # rhel, fedora
@@ -159,6 +160,7 @@ def get_package_manager():
         config.PACKAGES = (
             "fuse3 fuse3-libs "  # appimages
             "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract "  # wine  # noqa: E501
+            "p7zip-plugins "  # winetricks
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
@@ -168,7 +170,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pamac", "remove", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["pamac", "list", "-i"]
         config.QUERY_PREFIX = ''
-        config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "patch wget sed grep gawk cabextract p7zip samba bc libxml2 curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
@@ -184,6 +186,7 @@ def get_package_manager():
             config.PACKAGES = (
                 "fuse2 fuse3 "  # appimages
                 "binutils cabextract wget libwbclient "  # wine
+                "7-zip-full "  # winetricks
                 "openjpeg2 libxcomposite libxinerama "  # display
                 "ocl-icd vulkan-icd-loader "  # hardware
                 "alsa-plugins gst-plugins-base-libs libpulse openal "  # audio
@@ -321,7 +324,7 @@ def test_dialog_version():
 
 def remove_appimagelauncher(app=None):
     pkg = "appimagelauncher"
-    cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, pkg]
+    cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, pkg]  # noqa: E501
     msg.status("Removing AppImageLauncher…", app)
     try:
         logging.debug(f"Running command: {cmd}")
@@ -502,7 +505,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                 command.append('&&')
             command.extend(postinstall_command)
         if not command:  # nothing to run; avoid running empty pkexec command
-            logging.debug(f"No dependency install required.")
+            logging.debug("No dependency install required.")
             if app:
                 if config.DIALOG == "curses":
                     app.installdeps_e.set()
