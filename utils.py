@@ -86,9 +86,13 @@ def write_config(config_file_path):
     try:
         for key, value in config_data.items():
             if key == "WINE_EXE":
-                # We store the value of WINE_EXE as relative path if it is in the install directory.
+                # We store the value of WINE_EXE as relative path if it is in
+                # the install directory.
                 if value is not None:
-                    value = get_relative_path(get_config_var(value), config.INSTALLDIR)
+                    value = get_relative_path(
+                        get_config_var(value),
+                        config.INSTALLDIR
+                    )
             if isinstance(value, Path):
                 config_data[key] = str(value)
         with open(config_file_path, 'w') as config_file:
@@ -558,8 +562,9 @@ def compare_recommended_appimage_version():
     status = None
     message = None
     wine_release = []
-    if get_wine_exe_path() is not None:
-        wine_release, error_message = wine.get_wine_release(get_wine_exe_path())
+    wine_exe_path = get_wine_exe_path()
+    if wine_exe_path is not None:
+        wine_release, error_message = wine.get_wine_release(wine_exe_path)
         if wine_release is not None and wine_release is not False:
             current_version = '.'.join([str(n) for n in wine_release[:2]])
             logging.debug(f"Current wine release: {current_version}")
@@ -900,6 +905,7 @@ def get_relative_path(path, base_path):
     else:
         if isinstance(path, Path):
             path = str(path)
+        base_path = str(base_path)
         if path.startswith(base_path):
             return path[len(base_path):].lstrip(os.sep)
         else:
@@ -910,10 +916,12 @@ def create_dynamic_path(path, base_path):
     if is_relative_path(path):
         if isinstance(path, str):
             path = Path(path)
-        if isinstance(path, str):
+        if isinstance(base_path, str):
             base_path = Path(base_path)
+        logging.debug(f"dynamic_path: {base_path / path}")
         return base_path / path
     else:
+        logging.debug(f"dynamic_path: {Path(path)}")
         return Path(path)
 
 
@@ -929,10 +937,17 @@ def get_config_var(var):
 def get_wine_exe_path(path=None):
     if path is not None:
         path = get_relative_path(get_config_var(path), config.INSTALLDIR)
-        return Path(create_dynamic_path(path, config.INSTALLDIR))
+        wine_exe_path = Path(create_dynamic_path(path, config.INSTALLDIR))
+        logging.debug(f"{wine_exe_path=}")
+        return wine_exe_path
     else:
         if config.WINE_EXE is not None:
-            path = get_relative_path(get_config_var(config.WINE_EXE), config.INSTALLDIR)
-            return Path(create_dynamic_path(path, config.INSTALLDIR))
+            path = get_relative_path(
+                get_config_var(config.WINE_EXE),
+                config.INSTALLDIR
+            )
+            wine_exe_path = Path(create_dynamic_path(path, config.INSTALLDIR))
+            logging.debug(f"{wine_exe_path=}")
+            return wine_exe_path
         else:
             return None

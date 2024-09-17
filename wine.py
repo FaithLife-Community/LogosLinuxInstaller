@@ -34,12 +34,14 @@ def get_pids_using_file(file_path, mode=None):
 
 
 def wait_on(command):
+    env = get_wine_env()
     try:
         # Start the process in the background
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=env,
             text=True
         )
         msg.logos_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
@@ -174,25 +176,25 @@ def check_wine_version_and_branch(release_version, test_binary):
 
 def initializeWineBottle(app=None):
     msg.logos_msg("Initializing wine bottle...")
-
+    wine_exe = str(utils.get_wine_exe_path().parent / 'wine64')
+    logging.debug(f"{wine_exe=}")
     # Avoid wine-mono window
     orig_overrides = config.WINEDLLOVERRIDES
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree="
-    run_wine_proc(str(utils.get_wine_exe_path()), exe='wineboot', exe_args=['--init'])
+    logging.debug(f"Running: {wine_exe} wineboot --init")
+    run_wine_proc(wine_exe, exe='wineboot', exe_args=['--init'], init=True)
     config.WINEDLLOVERRIDES = orig_overrides
     light_wineserver_wait()
+    logging.debug("Wine init complete.")
 
 
 def wine_reg_install(reg_file):
+    reg_file = str(reg_file)
     msg.logos_msg(f"Installing registry file: {reg_file}")
-    env = get_wine_env()
-    result = system.run_command(
-        [str(utils.get_wine_exe_path()), "regedit.exe", reg_file],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=env,
-        cwd=config.WORKDIR,
-        capture_output=False
+    result = run_wine_proc(
+        str(utils.get_wine_exe_path().parent / 'wine64'),
+        exe="regedit.exe",
+        exe_args=[reg_file]
     )
     if result is None or result.returncode != 0:
         msg.logos_error(f"Failed to install reg file: {reg_file}")
@@ -204,17 +206,20 @@ def wine_reg_install(reg_file):
 def install_msi():
     msg.logos_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
     # Execute the .MSI
+    wine_exe = str(utils.get_wine_exe_path().parent / 'wine64')
     exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
     if config.PASSIVE is True:
         exe_args.append('/passive')
-    logging.info(f"Running: {utils.get_wine_exe_path()} msiexec {' '.join(exe_args)}")
-    run_wine_proc(str(utils.get_wine_exe_path()), exe="msiexec", exe_args=exe_args)
+    logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
+    run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
 
 
-def run_wine_proc(winecmd, exe=None, exe_args=list()):
+def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
+    logging.debug("Getting wine environment.")
     env = get_wine_env()
-    if config.WINECMD_ENCODING is None:
+    if not init and config.WINECMD_ENCODING is None:
         # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
+        logging.debug("Getting wine system's cmd.exe encoding.")
         registry_value = get_registry_value(
             'HKCU\\Software\\Wine\\Fonts',
             'Codepages'
@@ -228,16 +233,14 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
     if isinstance(winecmd, Path):
         winecmd = str(winecmd)
     logging.debug(f"run_wine_proc: {winecmd}; {exe=}; {exe_args=}")
-    wine_env_vars = {k: v for k, v in env.items() if k.startswith('WINE')}
-    logging.debug(f"wine environment: {wine_env_vars}")
 
     command = [winecmd]
     if exe is not None:
         command.append(exe)
     if exe_args:
         command.extend(exe_args)
-    logging.debug(f"subprocess cmd: '{' '.join(command)}'")
 
+    logging.debug(f"subprocess cmd: '{' '.join(command)}'")
     try:
         process = subprocess.Popen(
             command,
@@ -259,13 +262,17 @@ def run_wine_proc(winecmd, exe=None, exe_args=list()):
                             logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
                         else:
                             logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
+
         returncode = process.wait()
 
         if returncode != 0:
             logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
+            msg.logos_error(f"\"{command}\" failed with exit code: {process.returncode}")  # noqa: E501
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Exception running '{' '.join(command)}': {e}")
+
+    return process
 
 
 def run_winetricks(cmd=None):
@@ -332,14 +339,23 @@ def installICUDataFiles(app=None):
 
 
 def get_registry_value(reg_path, name):
+    # NOTE: Can't use run_wine_proc here because of infinite recursion while
+    # trying to determine WINECMD_ENCODING.
     value = None
     env = get_wine_env()
-    cmd = [str(utils.get_wine_exe_path()), 'reg', 'query', reg_path, '/v', name]
+
+    cmd = [
+        str(utils.get_wine_exe_path().parent / 'wine64'),
+        'reg', 'query', reg_path, '/v', name,
+    ]
     err_msg = f"Failed to get registry value: {reg_path}\\{name}"
+    encoding = config.WINECMD_ENCODING
+    if encoding is None:
+        encoding = 'UTF-8'
     try:
         result = system.run_command(
             cmd,
-            encoding=config.WINECMD_ENCODING,
+            encoding=encoding,
             env=env
         )
     except subprocess.CalledProcessError as e:
@@ -399,8 +415,12 @@ def switch_logging(action=None, app=None):
         'add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled',
         '/t', 'REG_DWORD', '/d', value, '/f'
     ]
-    run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
-    run_wine_proc(config.WINESERVER_EXE, exe_args=['-w'])
+    run_wine_proc(
+        str(utils.get_wine_exe_path().parent / 'wine64'),
+        exe='reg',
+        exe_args=exe_args
+    )
+    light_wineserver_wait()
     config.LOGS = state
     if app is not None:
         app.logging_q.put(state)
@@ -464,17 +484,20 @@ def get_wine_env():
         winepath = winepath.parent / 'wine64'
     wine_env_defaults = {
         'WINE': str(winepath),
-        'WINE_EXE': str(utils.get_wine_exe_path()),
         'WINEDEBUG': config.WINEDEBUG,
         'WINEDLLOVERRIDES': config.WINEDLLOVERRIDES,
         'WINELOADER': str(winepath),
         'WINEPREFIX': config.WINEPREFIX,
-        'WINETRICKS_SUPER_QUIET': '',
+        'WINESERVER': config.WINESERVER_EXE,
+        # The following seems to cause some winetricks commands to fail; e.g.
+        # 'winetricks settings win10' exits with ec = 1 b/c it fails to find
+        # %ProgramFiles%, %AppData%, etc.
+        # 'WINETRICKS_SUPER_QUIET': '',
     }
     for k, v in wine_env_defaults.items():
         wine_env[k] = v
-    if config.LOG_LEVEL > logging.INFO:
-        wine_env['WINETRICKS_SUPER_QUIET'] = "1"
+    # if config.LOG_LEVEL > logging.INFO:
+    #     wine_env['WINETRICKS_SUPER_QUIET'] = "1"
 
     # Config file takes precedence over the above variables.
     cfg = config.get_config_file_dict(config.CONFIG_FILE)
@@ -485,6 +508,8 @@ def get_wine_env():
             if key in wine_env_defaults.keys():
                 wine_env[key] = value
 
+    updated_env = {k: wine_env.get(k) for k in wine_env_defaults.keys()}
+    logging.debug(f"Wine env: {updated_env}")
     return wine_env
 
 
