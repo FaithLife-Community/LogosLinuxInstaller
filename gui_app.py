@@ -366,7 +366,7 @@ class InstallerWindow():
         self.gui.logos_release_version = self.gui.releasevar.get()
         self.gui.release_dropdown.selection_clear()
         if evt:  # manual override
-            config.TARGET_RELEASE_VERSION = None
+            config.TARGET_RELEASE_VERSION = self.gui.logos_release_version
             logging.debug(f"User changed TARGET_RELEASE_VERSION to '{self.gui.logos_release_version}'")  # noqa: E501
 
             config.INSTALLDIR = None
@@ -443,7 +443,12 @@ class InstallerWindow():
 
             self.start_ensure_config()
         else:
-            self.wine_q.put(utils.get_relative_path(utils.get_config_var(self.gui.wine_exe), config.INSTALLDIR))
+            self.wine_q.put(
+                utils.get_relative_path(
+                    utils.get_config_var(self.gui.wine_exe),
+                    config.INSTALLDIR
+                )
+            )
 
     def set_winetricks(self, evt=None):
         self.gui.winetricksbin = self.gui.tricksvar.get()
