@@ -86,7 +86,12 @@ class TUI:
         self.window_width = 0
         self.update_tty_dimensions()
         self.main_window_ratio = 0.25
-        self.main_window_min = 4
+        if logging.console_log:
+            min_console_height = len(tui_curses.wrap_text(self, logging.console_log[-1]))
+        else:
+            min_console_height = 2
+        self.main_window_min = len(tui_curses.wrap_text(self, self.title)) + len(
+            tui_curses.wrap_text(self, self.subtitle)) + min_console_height
         self.menu_window_ratio = 0.75
         self.menu_window_min = 3
         self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
@@ -207,13 +212,18 @@ class TUI:
 
     def set_window_height(self):
         self.update_tty_dimensions()
+        curses.resizeterm(self.window_height, self.window_width)
+        self.main_window_min = len(tui_curses.wrap_text(self, self.title)) + len(
+            tui_curses.wrap_text(self, self.subtitle)) + 3
+        self.menu_window_min = 3
         self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
         self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
         config.console_log_lines = max(self.main_window_height - (self.main_window_min - 1), 1)
         config.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
-        self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
+        resize_lines = tui_curses.wrap_text(self, "Screen too small.")
+        self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
 
     def resize_curses(self):
         config.resizing = True
@@ -237,14 +247,20 @@ class TUI:
                 self.update_tty_dimensions()
                 if self.window_height > 9:
                     self.switch_q.put(1)
+                elif self.window_width > 34:
+                    self.switch_q.put(1)
 
     def draw_resize_screen(self):
         self.clear()
-        title_lines = tui_curses.wrap_text(self, "Screen too small.")
-        self.resize_window = curses.newwin(len(title_lines), curses.COLS, 0, 0)
-        for i, line in enumerate(title_lines):
+        if self.window_width > 10:
+            margin = config.margin
+        else:
+            margin = 0
+        resize_lines = tui_curses.wrap_text(self, "Screen too small.")
+        self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
+        for i, line in enumerate(resize_lines):
             if i < self.window_height:
-                self.resize_window.addstr(i + 0, 2, line, curses.A_BOLD)
+                self.resize_window.addnstr(i + 0, 2, line, self.window_width, curses.A_BOLD)
         self.refresh()
 
     def display(self):
@@ -286,8 +302,12 @@ class TUI:
 
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
                         self.refresh()
-            else:
+            elif self.window_width >= 10:
+                if self.window_width < 10:
+                    config.margin = 1  # Avoid drawing errors on very small screens
                 self.draw_resize_screen()
+            elif self.window_width < 10:
+                config.margin = 0  # Avoid drawing errors on very small screens
 
     def run(self):
         try:

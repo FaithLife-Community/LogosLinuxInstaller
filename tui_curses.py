@@ -12,10 +12,10 @@ def wrap_text(app, text):
     # Turn text into wrapped text, line by line, centered
     if "\n" in text:
         lines = text.splitlines()
-        wrapped_lines = [textwrap.fill(line, app.window_width - 4) for line in lines]
+        wrapped_lines = [textwrap.fill(line, app.window_width - (config.margin * 2)) for line in lines]
         lines = '\n'.join(wrapped_lines)
     else:
-        wrapped_text = textwrap.fill(text, app.window_width - 4)
+        wrapped_text = textwrap.fill(text, app.window_width - (config.margin * 2))
         lines = wrapped_text.split('\n')
     return lines
 
@@ -27,7 +27,7 @@ def title(app, title_text, title_start_y_adj):
     last_index = 0
     for i, line in enumerate(title_lines):
         if i < app.window_height:
-            stdscr.addstr(i + title_start_y_adj, 2, line, curses.A_BOLD)
+            stdscr.addnstr(i + title_start_y_adj, 2, line, app.window_width, curses.A_BOLD)
         last_index = i
 
     return last_index
@@ -44,7 +44,7 @@ def text_centered(app, text, start_y=0):
     for i, line in enumerate(text_lines):
         if text_start_y + i < app.window_height:
             x = app.window_width // 2 - text_width // 2
-            stdscr.addstr(text_start_y + i, x, line)
+            stdscr.addnstr(text_start_y + i, x, line, app.window_width)
 
     return text_start_y, text_lines
 
@@ -74,7 +74,7 @@ def confirm(app, question_text, height=None, width=None):
         elif key.lower() == 'n':
             return False
 
-        stdscr.addstr(y, 0, "Type Y[es] or N[o]. ")
+        stdscr.addnstr(y, 0, "Type Y[es] or N[o]. ", app.window_width)
 
 
 class CursesDialog:
@@ -119,7 +119,7 @@ class UserInputDialog(CursesDialog):
         self.stdscr.refresh()
 
     def input(self):
-        self.stdscr.addstr(self.question_start_y + len(self.question_lines) + 2, 10, self.user_input)
+        self.stdscr.addnstr(self.question_start_y + len(self.question_lines) + 2, 10, self.user_input, self.app.window_width)
         key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.user_input))
 
         try:
@@ -162,7 +162,7 @@ class PasswordDialog(UserInputDialog):
             return self.user_input
 
     def input(self):
-        self.stdscr.addstr(self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation)
+        self.stdscr.addnstr(self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation, self.app.window_width)
         key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.obfuscation))
 
         try:
@@ -235,9 +235,9 @@ class MenuDialog(CursesDialog):
                     x = max(0, self.app.window_width // 2 - len(line) // 2)
                     if y < self.app.menu_window_height:
                         if index == config.current_option:
-                            self.stdscr.addstr(y, x, line, curses.A_REVERSE)
+                            self.stdscr.addnstr(y, x, line, self.app.window_width, curses.A_REVERSE)
                         else:
-                            self.stdscr.addstr(y, x, line)
+                            self.stdscr.addnstr(y, x, line, self.app.window_width)
                 menu_bottom = y
 
                 if type(option) is list:
@@ -245,7 +245,7 @@ class MenuDialog(CursesDialog):
 
         # Display pagination information
         page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
-        self.stdscr.addstr(max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, curses.A_BOLD)
+        self.stdscr.addnstr(max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
 
     def do_menu_up(self):
         if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:
