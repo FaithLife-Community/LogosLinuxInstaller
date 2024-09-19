@@ -89,8 +89,8 @@ class TUI:
         self.window_width = 0
         self.update_tty_dimensions()
         self.main_window_ratio = 0.25
-        if logging.console_log:
-            min_console_height = len(tui_curses.wrap_text(self, logging.console_log[-1]))
+        if config.console_log:
+            min_console_height = len(tui_curses.wrap_text(self, config.console_log[-1]))
         else:
             min_console_height = 2
         self.main_window_min = len(tui_curses.wrap_text(self, self.title)) + len(
@@ -273,7 +273,7 @@ class TUI:
         self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
         for i, line in enumerate(resize_lines):
             if i < self.window_height:
-                self.resize_window.addnstr(i + 0, 2, line, self.window_width, curses.A_BOLD)
+                self.resize_window.addnstr(i, margin, line, self.window_width - config.margin, curses.A_BOLD)
         self.refresh()
 
     def display(self):
@@ -284,7 +284,8 @@ class TUI:
         self.active_screen = self.menu_screen
 
         while self.llirunning:
-            if self.window_height >= 10:
+            if self.window_height >= 10 and self.window_width >= 35:
+                config.margin = 2
                 if not config.resizing:
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
                         self.main_window.erase()
@@ -744,7 +745,7 @@ class TUI:
 
     def report_waiting(self, text, dialog):
         #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
-        logging.console_log.append(text)
+        config.console_log.append(text)
 
     def which_dialog_options(self, labels, dialog=False):
         options = []

@@ -871,7 +871,7 @@ def get_downloaded_file_path(filename):
 
 
 def send_task(app, task):
-    logging.debug(f"{task=}")
+    #logging.debug(f"{task=}")
     app.todo_q.put(task)
     if config.DIALOG == 'tk':
         app.root.event_generate('<<ToDo>>')
