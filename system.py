@@ -505,8 +505,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                 command.append('&&')
             command.extend(postinstall_command)
         if not command:  # nothing to run; avoid running empty pkexec command
-            logging.debug("No dependency install required.")
             if app:
+                msg.status("All dependencies are met.", app)
                 if config.DIALOG == "curses":
                     app.installdeps_e.set()
             return

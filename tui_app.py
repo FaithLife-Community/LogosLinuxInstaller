@@ -3,6 +3,7 @@ import os
 import signal
 import threading
 import curses
+import time
 from pathlib import Path
 from queue import Queue
 
@@ -150,6 +151,13 @@ class TUI:
             config.curses_colors = "Logos"
             self.set_curses_colors_logos()
 
+    def update_windows(self):
+        if isinstance(self.active_screen, tui_screen.CursesScreen):
+            self.main_window.erase()
+            self.menu_window.erase()
+            self.stdscr.timeout(100)
+            self.console.display()
+
     def clear(self):
         self.stdscr.clear()
         self.main_window.clear()
@@ -287,11 +295,7 @@ class TUI:
             if self.window_height >= 10 and self.window_width >= 35:
                 config.margin = 2
                 if not config.resizing:
-                    if isinstance(self.active_screen, tui_screen.CursesScreen):
-                        self.main_window.erase()
-                        self.menu_window.erase()
-                        self.stdscr.timeout(100)
-                        self.console.display()
+                    self.update_windows()
 
                     self.active_screen.display()
 
@@ -436,13 +440,20 @@ class TUI:
 
     def winetricks_menu_select(self, choice):
         if choice == "Download or Update Winetricks":
+            self.reset_screen()
             control.set_winetricks()
+            self.go_to_main_menu()
         elif choice == "Run Winetricks":
+            self.reset_screen()
             wine.run_winetricks()
+            self.go_to_main_menu()
         elif choice == "Install d3dcompiler":
+            self.reset_screen()
             wine.installD3DCompiler()
         elif choice == "Install Fonts":
+            self.reset_screen()
             wine.installFonts()
+            self.go_to_main_menu()
         elif choice == "Set Renderer":
             self.reset_screen()
             self.screen_q.put(self.stack_menu(19, self.todo_q, self.todo_e,
@@ -467,10 +478,15 @@ class TUI:
 
     def utilities_menu_select(self, choice):
         if choice == "Remove Library Catalog":
+            self.reset_screen()
             control.remove_library_catalog()
+            self.go_to_main_menu()
         elif choice == "Remove All Index Files":
+            self.reset_screen()
             control.remove_all_index_files()
+            self.go_to_main_menu()
         elif choice == "Edit Config":
+            self.reset_screen()
             control.edit_config()
             self.go_to_main_menu()
         elif choice == "Change Logos Release Channel":
@@ -485,13 +501,23 @@ class TUI:
             self.update_main_window_contents()
             self.go_to_main_menu()
         elif choice == "Install Dependencies":
-            utils.check_dependencies()
+            self.reset_screen()
+            msg.status("Checking dependencies…", self)
+            self.update_windows()
+            utils.check_dependencies(self)
+            self.go_to_main_menu()
         elif choice == "Back up Data":
+            self.reset_screen()
             control.backup()
+            self.go_to_main_menu()
         elif choice == "Restore Data":
+            self.reset_screen()
             control.restore()
+            self.go_to_main_menu()
         elif choice == "Update to Latest AppImage":
+            self.reset_screen()
             utils.update_to_latest_recommended_appimage()
+            self.go_to_main_menu()
         elif choice == "Set AppImage":
             # TODO: Allow specifying the AppImage File
             appimages = utils.find_appimage_files(utils.which_release())
@@ -502,9 +528,13 @@ class TUI:
             question = "Which AppImage should be used?"
             self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
         elif choice == "Install ICU":
+            self.reset_screen()
             wine.installICUDataFiles()
+            self.go_to_main_menu()
         elif choice.endswith("Logging"):
+            self.reset_screen()
             wine.switch_logging()
+            self.go_to_main_menu()
 
     def custom_appimage_select(self, choice):
         #FIXME
