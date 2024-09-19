@@ -102,6 +102,8 @@ WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee
 WINETRICKS_VERSION = '20220411'
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 install_finished = False
+console_log = []
+margin = 2
 console_log_lines = 1
 current_option = 0
 current_page = 0

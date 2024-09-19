@@ -13,8 +13,6 @@ import config
 from gui import ask_question
 from gui import show_error
 
-logging.console_log = []
-
 
 class GzippedRotatingFileHandler(RotatingFileHandler):
     def doRollover(self):
@@ -37,6 +35,19 @@ class GzippedRotatingFileHandler(RotatingFileHandler):
                     with gzip.open(gz_last_log, 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
                 os.remove(last_log)
+
+
+class DeduplicateFilter(logging.Filter):
+    def __init__(self):
+        super().__init__()
+        self.last_log = None
+
+    def filter(self, record):
+        current_message = record.getMessage()
+        if current_message == self.last_log:
+            return False
+        self.last_log = current_message
+        return True
 
 
 def get_log_level_name(level):
@@ -81,11 +92,13 @@ def initialize_logging(stderr_log_level):
     )
     file_h.name = "logfile"
     file_h.setLevel(logging.DEBUG)
+    file_h.addFilter(DeduplicateFilter())
     # stdout_h = logging.StreamHandler(sys.stdout)
     # stdout_h.setLevel(stdout_log_level)
     stderr_h = logging.StreamHandler(sys.stderr)
     stderr_h.name = "terminal"
     stderr_h.setLevel(stderr_log_level)
+    stderr_h.addFilter(DeduplicateFilter())
     handlers = [
         file_h,
         # stdout_h,
@@ -281,16 +294,29 @@ def progress(percent, app=None):
 
 
 def status(text, app=None):
+    def strip_timestamp(msg, timestamp_length=20):
+        return msg[timestamp_length:]
+
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     """Handles status messages for both TUI and GUI."""
     if app is not None:
         if config.DIALOG == 'tk':
             app.status_q.put(text)
             app.root.event_generate('<<UpdateStatus>>')
+            logging.info(f"{text}")
         elif config.DIALOG == 'curses':
-            app.status_q.put(f"{timestamp} {text}")
-            app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
-        logging.info(f"{text}")
+            if len(config.console_log) > 0:
+                last_msg = strip_timestamp(config.console_log[-1])
+                if last_msg != text:
+                    app.status_q.put(f"{timestamp} {text}")
+                    app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
+                    logging.info(f"{text}")
+            else:
+                app.status_q.put(f"{timestamp} {text}")
+                app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
+                logging.info(f"{text}")
+        else:
+            logging.info(f"{text}")
     else:
         # Prints message to stdout regardless of log level.
         logos_msg(text)
