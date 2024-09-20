@@ -125,6 +125,7 @@ def get_wine_release(binary):
 def check_wine_rules(wine_release, release_version):
     # Does not check for Staging. Will not implement: expecting merging of
     # commits in time.
+    logging.debug(f"Checking {wine_release} for {release_version}.")
     if config.TARGETVERSION == "10":
         if utils.check_logos_release_version(release_version, 30, 1):
             required_wine_minimum = [7, 18]
@@ -133,7 +134,7 @@ def check_wine_rules(wine_release, release_version):
     elif config.TARGETVERSION == "9":
         required_wine_minimum = [7, 0]
     else:
-        raise ValueError("TARGETVERSION not set.")
+        raise ValueError(f"Invalid TARGETVERSION: {config.TARGETVERSION} ({type(config.TARGETVERSION)})")
 
     rules = [
         {
@@ -159,28 +160,35 @@ def check_wine_rules(wine_release, release_version):
 
     major_min, minor_min = required_wine_minimum
     major, minor, release_type = wine_release
+    result = True, "None"  # Whether the release is allowed and the error message
     for rule in rules:
         if major == rule["major"]:
             # Verify release is allowed
             if release_type not in rule["allowed_releases"]:
                 if minor >= rule.get("devel_allowed", float('inf')):
                     if release_type != "staging":
-                        return False, (f"Wine release needs to be devel or staging. "
+                        result = False, (f"Wine release needs to be devel or staging. "
                                        f"Current release: {release_type}.")
+                        break
                 else:
-                    return False, (f"Wine release needs to be {rule["allowed_releases"]}. "
+                    result = False, (f"Wine release needs to be {rule["allowed_releases"]}. "
                                    f"Current release: {release_type}.")
+                    break
             # Verify version is allowed
             if minor in rule.get("minor_bad", []):
-                return False, f"Wine version {major}.{minor} will not work."
+                result = False, f"Wine version {major}.{minor} will not work."
+                break
             if major < major_min:
-                return False, (f"Wine version {major}.{minor} is "
+                result = False, (f"Wine version {major}.{minor} is "
                                f"below minimum required ({major_min}.{minor_min}).")
+                break
             elif major == major_min and minor < minor_min:
                 if not rule["proton"]:
-                    return False, (f"Wine version {major}.{minor} is "
+                    result = False, (f"Wine version {major}.{minor} is "
                                    f"below minimum required ({major_min}.{minor_min}).")
-    return True, "None"  # Whether the release is allowed and the error message
+                    break
+    logging.debug(f"Result: {result}")
+    return result
 
 
 def check_wine_version_and_branch(release_version, test_binary):
