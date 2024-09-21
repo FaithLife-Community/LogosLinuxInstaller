@@ -162,7 +162,7 @@ def check_wine_rules(wine_release, release_version):
             # Verify release is allowed
             if release_type not in rule["allowed_releases"]:
                 if minor >= rule.get("devel_allowed", float('inf')):
-                    if release_type != "staging":
+                    if release_type not in ["staging", "devel"]:
                         result = False, (f"Wine release needs to be devel or staging. "
                                        f"Current release: {release_type}.")
                         break
