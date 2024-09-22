@@ -242,35 +242,36 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
 
     logging.debug(f"subprocess cmd: '{' '.join(command)}'")
     try:
-        process = system.popen_command(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            env=env
-        )
-        if process is not None:
-            if exe is not None and isinstance(process, subprocess.Popen):
-                config.processes[exe] = process
-            if process.poll() is None:
-                with process.stdout:
-                    for line in iter(process.stdout.readline, b''):
-                        if winecmd.endswith('winetricks'):
-                            logging.debug(line.decode('cp437').rstrip())
-                        else:
-                            try:
-                                logging.info(line.decode().rstrip())
-                            except UnicodeDecodeError:
-                                if config.WINECMD_ENCODING is not None:
-                                    logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
-                                else:
-                                    logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
-            # returncode = process.wait()
-            #
-            # if returncode != 0:
-            #     logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
-            return process
-        else:
-            return None
+        with open(config.wine_log, 'a') as wine_log:
+            process = system.popen_command(
+                command,
+                stdout=wine_log,
+                stderr=wine_log,
+                env=env
+            )
+            if process is not None:
+                if exe is not None and isinstance(process, subprocess.Popen):
+                    config.processes[exe] = process
+                if process.poll() is None and process.stdout is not None:
+                    with process.stdout:
+                        for line in iter(process.stdout.readline, b''):
+                            if winecmd.endswith('winetricks'):
+                                logging.debug(line.decode('cp437').rstrip())
+                            else:
+                                try:
+                                    logging.info(line.decode().rstrip())
+                                except UnicodeDecodeError:
+                                    if config.WINECMD_ENCODING is not None:
+                                        logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
+                                    else:
+                                        logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
+                # returncode = process.wait()
+                #
+                # if returncode != 0:
+                #     logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
+                return process
+            else:
+                return None
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Exception running '{' '.join(command)}': {e}")
