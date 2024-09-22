@@ -27,6 +27,7 @@ extended_config = {
     'DELETE_LOG': None,
     'DIALOG': None,
     'LOGOS_LOG': os.path.expanduser("~/.local/state/Logos_on_Linux/Logos_on_Linux.log"),  # noqa: E501
+    'wine_log': os.path.expanduser("~/.local/state/Logos_on_Linux/wine.log"),  # noqa: #E501
     'LOGOS_EXE': None,
     'LOGOS_EXECUTABLE': None,
     'LOGOS_VERSION': None,
