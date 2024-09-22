@@ -13,25 +13,25 @@ This program is created and maintained by the FaithLife Community and is license
 The main program is a distributable executable and contains Python itself and all necessary Python packages.
 
 When running the program, it will attempt to determine your operating system and package manager.
-It will then attempt to install all needed system dependencies during the install of Logos.
-When the install is finished, it will place two shortcuts on your computer: one will launch Logos directly; the other will launch the Control Panel.
+It will then attempt to install all needed system dependencies during the installation of Logos.
+When the installation is finished, it will place two shortcuts on your computer: one will launch Logos directly; the other will launch the Control Panel.
 
-To access the GUI version of the program, double click the executable in your file browser or on your desktop, and then follow the prompts.
+To access the GUI version of the program, double-click the executable in your file browser or on your desktop, and then follow the prompts.
 
 The program can also be run from source and should be run from a Python virtual environment.
 See below.
 
 ## Install Guide (for users)
 
-For an install guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
+For an installation guide with pictures and video, see the wiki's [Install Guide](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/Install-Guide).
 
 ## Installing/running from Source (for developers)
 
 You can clone the repo and install the app from source. To do so, you will need to ensure a few prerequisites:
 1. Install build dependencies
-1. Clone this repository
-1. Build/install Python 3.12 and Tcl/Tk
-1. Set up a virtual environment
+2. Clone this repository
+3. Build/install Python 3.12 and Tcl/Tk
+4. Set up a virtual environment
 
 ### Install build dependencies
 
@@ -95,7 +95,7 @@ up a virtual environment for running and/or building locally.
 
 **Using the script:**
 ```
-./scrips/ensure-venv.sh
+./scripts/ensure-venv.sh
 ```
 
 **Manual setup:**
