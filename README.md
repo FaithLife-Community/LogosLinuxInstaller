@@ -112,6 +112,15 @@ Python 3.12.5
 (env) LogosLinuxInstaller$ ./main.py --help # run the script
 ```
 
+### Building using docker
+
+```
+$ git clone 'https://github.com/FaithLife-Community/LogosLinuxInstaller.git'
+$ cd LogosLinuxInstaller
+# docker build -t logosinstaller .
+# docker run --rm -v $(pwd):/usr/src/app logosinstaller
+```
+
 ## Install guide (possibly outdated)
 
 NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
