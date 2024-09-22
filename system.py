@@ -193,7 +193,7 @@ def wait_on(command):
             stderr=subprocess.PIPE,
             text=True
         )
-        msg.logos_msg(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
+        msg.status(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
         time.sleep(1.0)
         while process.poll() is None:
             msg.logos_progress()
@@ -366,7 +366,7 @@ def get_package_manager():
             config.PACKAGES = (
                 "fuse2 fuse3 "  # appimages
                 "binutils cabextract wget libwbclient "  # wine
-                "7-zip-full "  # winetricks
+                "p7zip "  # winetricks
                 "openjpeg2 libxcomposite libxinerama "  # display
                 "ocl-icd vulkan-icd-loader "  # hardware
                 "alsa-plugins gst-plugins-base-libs libpulse openal "  # audio
@@ -775,11 +775,18 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
 
 
 def have_lib(library, ld_library_path):
-    roots = ['/usr/lib', '/lib']
+    available_library_paths = ['/usr/lib', '/lib']
     if ld_library_path is not None:
-        roots = [*ld_library_path.split(':'), *roots]
+        available_library_paths = [*ld_library_path.split(':'), *available_library_paths]
+        roots = [root for root in available_library_paths if not Path(root).is_symlink()]
+        logging.debug(f"Library Paths: {roots}")
     for root in roots:
-        libs = [lib for lib in Path(root).rglob(f"{library}*")]
+        libs = []
+        logging.debug(f"Have lib? Checking {root}")
+        for lib in Path(root).rglob(f"{library}*"):
+            logging.debug(f"DEV: {lib}")
+            libs.append(lib)
+            break
         if len(libs) > 0:
             logging.debug(f"'{library}' found at '{libs[0]}'")
             return True
@@ -803,7 +810,7 @@ def install_winetricks(
         app=None,
         version=config.WINETRICKS_VERSION,
 ):
-    msg.logos_msg(f"Installing winetricks v{version}…")
+    msg.status(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
     zip_name = f"{version}.zip"
     network.logos_reuse_download(

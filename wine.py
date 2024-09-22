@@ -175,7 +175,7 @@ def check_wine_version_and_branch(release_version, test_binary):
 
 
 def initializeWineBottle(app=None):
-    msg.logos_msg("Initializing wine bottle...")
+    msg.status("Initializing wine bottle…")
     wine_exe = str(utils.get_wine_exe_path().parent / 'wine64')
     logging.debug(f"{wine_exe=}")
     # Avoid wine-mono window
@@ -190,7 +190,7 @@ def initializeWineBottle(app=None):
 
 def wine_reg_install(reg_file):
     reg_file = str(reg_file)
-    msg.logos_msg(f"Installing registry file: {reg_file}")
+    msg.status(f"Installing registry file: {reg_file}")
     result = run_wine_proc(
         str(utils.get_wine_exe_path().parent / 'wine64'),
         exe="regedit.exe",
@@ -203,8 +203,8 @@ def wine_reg_install(reg_file):
     light_wineserver_wait()
 
 
-def install_msi():
-    msg.logos_msg(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.")
+def install_msi(app=None):
+    msg.status(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.", app)
     # Execute the .MSI
     wine_exe = str(utils.get_wine_exe_path().parent / 'wine64')
     exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
@@ -212,6 +212,9 @@ def install_msi():
         exe_args.append('/passive')
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
     run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
+    if app:
+        if config.DIALOG == "curses":
+            app.install_logos_e.set()
 
 
 def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
@@ -286,7 +289,7 @@ def run_winetricks(cmd=None):
 
 def run_winetricks_cmd(*args):
     cmd = [*args]
-    msg.logos_msg(f"Running winetricks \"{args[-1]}\"")
+    msg.status(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
@@ -301,7 +304,7 @@ def install_d3d_compiler():
 
 
 def install_fonts():
-    msg.logos_msg("Configuring fonts…")
+    msg.status("Configuring fonts…")
     fonts = ['corefonts', 'tahoma']
     if not config.SKIP_FONTS:
         for f in fonts:
@@ -359,6 +362,10 @@ def install_icu_data_files(app=None):
     if hasattr(app, 'status_evt'):
         app.status_q.put("ICU files copied.")
         app.root.event_generate(app.status_evt)
+
+    if app:
+        if config.DIALOG == "curses":
+            app.install_icu_e.set()
 
 
 def get_registry_value(reg_path, name):

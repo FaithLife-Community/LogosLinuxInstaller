@@ -45,6 +45,7 @@ class FileProps(Props):
     def get_md5(self):
         if self.path is None:
             return
+        logging.debug("This may take a while…")
         md5 = hashlib.md5()
         with self.path.open('rb') as f:
             for chunk in iter(lambda: f.read(4096), b''):
@@ -118,10 +119,9 @@ class UrlProps(Props):
         return self.md5
 
 
-def cli_download(uri, destination):
+def cli_download(uri, destination, app=None):
     message = f"Downloading '{uri}' to '{destination}'"
-    logging.info(message)
-    msg.logos_msg(message)
+    msg.status(message)
 
     # Set target.
     if destination != destination.rstrip('/'):
@@ -177,7 +177,7 @@ def logos_reuse_download(
                     app=app,
                 ):
                     logging.info(f"{file} properties match. Using it…")
-                    msg.logos_msg(f"Copying {file} into {targetdir}")
+                    msg.status(f"Copying {file} into {targetdir}")
                     try:
                         shutil.copy(os.path.join(i, file), targetdir)
                     except shutil.SameFileError:
@@ -198,13 +198,13 @@ def logos_reuse_download(
                 app=app,
             )
         else:
-            cli_download(sourceurl, file_path)
+            cli_download(sourceurl, file_path, app=app)
         if verify_downloaded_file(
             sourceurl,
             file_path,
             app=app,
         ):
-            msg.logos_msg(f"Copying: {file} into: {targetdir}")
+            msg.status(f"Copying: {file} into: {targetdir}")
             try:
                 shutil.copy(os.path.join(config.MYDOWNLOADS, file), targetdir)
             except shutil.SameFileError:
@@ -352,6 +352,9 @@ def same_md5(url, file_path):
     if url_md5 is None:  # skip MD5 check if not provided with URL
         res = True
     else:
+        # TODO: Figure out why this is taking a long time.
+        # On 20240922, I ran into an issue such that it would take
+        # upwards of 6.5 minutes to complete
         file_md5 = FileProps(file_path).get_md5()
         logging.debug(f"{file_md5=}")
         res = url_md5 == file_md5
@@ -504,7 +507,7 @@ def get_logos_releases(app=None):
             app.root.event_generate(app.release_evt)
         return downloaded_releases
 
-    msg.logos_msg(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
+    msg.status(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
     if config.logos_release_channel is None or config.logos_release_channel == "stable":
         url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501

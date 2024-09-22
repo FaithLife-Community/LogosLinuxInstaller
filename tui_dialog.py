@@ -6,7 +6,7 @@ except ImportError:
     pass
 
 
-def text(app, text, height=None, width=None, title=None, backtitle=None, colors=True):
+def text(screen, text, height=None, width=None, title=None, backtitle=None, colors=True):
     dialog = Dialog()
     dialog.autowidgetsize = True
     options = {'colors': colors}
@@ -21,9 +21,9 @@ def text(app, text, height=None, width=None, title=None, backtitle=None, colors=
     dialog.infobox(text, **options)
 
 
-def progress_bar(app, text, percent, height=None, width=None, title=None, backtitle=None, colors=True):
-    dialog = Dialog()
-    dialog.autowidgetsize = True
+def progress_bar(screen, text, percent, height=None, width=None, title=None, backtitle=None, colors=True):
+    screen.dialog = Dialog()
+    screen.dialog.autowidgetsize = True
     options = {'colors': colors}
     if height is not None:
         options['height'] = height
@@ -34,23 +34,21 @@ def progress_bar(app, text, percent, height=None, width=None, title=None, backti
     if backtitle is not None:
         options['backtitle'] = backtitle
 
-    dialog.gauge_start(text=text, percent=percent, **options)
+    screen.dialog.gauge_start(text=text, percent=percent, **options)
 
 
 #FIXME: Not working. See tui_screen.py#262.
-def update_progress_bar(app, percent, text='', update_text=False):
-    dialog = Dialog()
-    dialog.autowidgetsize = True
-    dialog.gauge_update(percent, text, update_text)
+def update_progress_bar(screen, percent, text='', update_text=False):
+    screen.dialog.autowidgetsize = True
+    screen.dialog.gauge_update(percent, text, update_text)
 
 
-def stop_progress_bar(app):
-    dialog = Dialog()
-    dialog.autowidgetsize = True
-    dialog.gauge_stop()
+def stop_progress_bar(screen):
+    screen.dialog.autowidgetsize = True
+    screen.dialog.gauge_stop()
 
 
-def tasklist_progress_bar(app, text, percent, elements, height=None, width=None, title=None, backtitle=None, colors=None):
+def tasklist_progress_bar(screen, text, percent, elements, height=None, width=None, title=None, backtitle=None, colors=None):
     dialog = Dialog()
     dialog.autowidgetsize = True
     options = {'colors': colors}
@@ -74,7 +72,7 @@ def tasklist_progress_bar(app, text, percent, elements, height=None, width=None,
         raise
 
 
-def input(app, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
+def input(screen, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
     dialog = Dialog()
     dialog.autowidgetsize = True
     options = {'colors': colors}
@@ -90,7 +88,7 @@ def input(app, question_text, height=None, width=None, init="",  title=None, bac
     return code, input
 
 
-def password(app, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
+def password(screen, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
     dialog = Dialog()
     dialog.autowidgetsize = True
     options = {'colors': colors}
@@ -106,7 +104,7 @@ def password(app, question_text, height=None, width=None, init="",  title=None, 
     return code, password
 
 
-def confirm(app, question_text, yes_label="Yes", no_label="No",
+def confirm(screen, question_text, yes_label="Yes", no_label="No",
             height=None, width=None, title=None, backtitle=None, colors=True):
     dialog = Dialog()
     dialog.autowidgetsize = True
@@ -123,7 +121,7 @@ def confirm(app, question_text, yes_label="Yes", no_label="No",
     return check  # Returns "ok" or "cancel"
 
 
-def directory_picker(app, path_dir, height=None, width=None, title=None, backtitle=None, colors=True):
+def directory_picker(screen, path_dir, height=None, width=None, title=None, backtitle=None, colors=True):
     str_dir = str(path_dir)
 
     try:
@@ -148,7 +146,7 @@ def directory_picker(app, path_dir, height=None, width=None, title=None, backtit
     return path
 
 
-def menu(app, question_text, choices, height=None, width=None, menu_height=8, title=None, backtitle=None, colors=True):
+def menu(screen, question_text, choices, height=None, width=None, menu_height=8, title=None, backtitle=None, colors=True):
     tag_to_description = {tag: description for tag, description in choices}
     dialog = Dialog(dialog="dialog")
     dialog.autowidgetsize = True
@@ -168,7 +166,7 @@ def menu(app, question_text, choices, height=None, width=None, menu_height=8, ti
         return None, None, "Return to Main Menu"
 
 
-def buildlist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=True):
+def buildlist(screen, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=True):
     # items is an interable of (tag, item, status)
     dialog = Dialog(dialog="dialog")
     dialog.autowidgetsize = True
@@ -190,7 +188,7 @@ def buildlist(app, text, items=[], height=None, width=None, list_height=None, ti
         return None
 
 
-def checklist(app, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=True):
+def checklist(screen, text, items=[], height=None, width=None, list_height=None, title=None, backtitle=None, colors=True):
     # items is an iterable of (tag, item, status)
     dialog = Dialog(dialog="dialog")
     dialog.autowidgetsize = True
