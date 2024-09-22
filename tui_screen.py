@@ -345,6 +345,7 @@ class TextDialog(DialogScreen):
         self.backtitle = backtitle
         self.colors = colors
         self.lastpercent = 0
+        self.dialog = ""
 
     def __str__(self):
         return f"PyDialog Text Screen"
@@ -352,7 +353,6 @@ class TextDialog(DialogScreen):
     def display(self):
         if self.running == 0:
             if self.wait:
-                self.running = 1
                 if config.INSTALL_STEPS_COUNT > 0:
                     self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
                 else:
@@ -362,22 +362,23 @@ class TextDialog(DialogScreen):
                 self.lastpercent = self.percent
             else:
                 tui_dialog.text(self, self.text)
+            self.running = 1
         elif self.running == 1:
             if self.wait:
                 if config.INSTALL_STEPS_COUNT > 0:
                     self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
                 else:
                     self.percent = 0
-                # tui_dialog.update_progress_bar(self, self.percent, self.text, True)
+
                 if self.lastpercent != self.percent:
-                    tui_dialog.progress_bar(self, self.text, self.percent)
+                    self.lastpercent = self.percent
+                    tui_dialog.update_progress_bar(self, self.percent, self.text, True)
+                    #tui_dialog.progress_bar(self, self.text, self.percent)
 
                 if self.percent == 100:
                     tui_dialog.stop_progress_bar(self)
                     self.running = 2
                     self.wait = False
-
-        time.sleep(0.1)
 
     def get_text(self):
         return self.text

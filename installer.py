@@ -347,7 +347,7 @@ def ensure_wine_executables(app=None):
             # Ensure appimage is copied to appdir_bindir.
             downloaded_file = utils.get_downloaded_file_path(appimage_filename)  # noqa: E501
             if not appimage_file.is_file():
-                msg.logos_msg(f"Copying: {downloaded_file} into: {str(appdir_bindir)}")  # noqa: E501
+                msg.status(f"Copying: {downloaded_file} into: {str(appdir_bindir)}")  # noqa: E501
                 shutil.copy(downloaded_file, str(appdir_bindir))
             os.chmod(appimage_file, 0o755)
             appimage_filename = appimage_file.name
@@ -391,7 +391,7 @@ def ensure_winetricks_executable(app=None):
     if not os.access(config.WINETRICKSBIN, os.X_OK):
         # Either previous system winetricks is no longer accessible, or the
         # or the user has chosen to download it.
-        msg.logos_msg("Downloading winetricks from the Internet…")
+        msg.status("Downloading winetricks from the Internet…")
         system.install_winetricks(config.APPDIR_BINDIR, app=app)
 
     logging.debug(f"> {config.WINETRICKSBIN} is executable?: {os.access(config.WINETRICKSBIN, os.X_OK)}")  # noqa: E501
@@ -500,7 +500,6 @@ def ensure_winetricks_applied(app=None):
         usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
         sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            #FIXME: This command is failing.
             reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
             with open(reg_file, 'w') as f:
                 f.write(r'''REGEDIT4
@@ -522,8 +521,8 @@ def ensure_winetricks_applied(app=None):
         if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
             wine.set_win_version("logos", "win10")
 
-        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
-        wine.set_win_version("indexer", "vista")
+        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Win10 Mode.")
+        wine.set_win_version("indexer", "win10")
     logging.debug("> Done.")
 
 
@@ -538,65 +537,12 @@ def ensure_icu_data_files(app=None):
     icu_license_path = f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/LICENSE-ICU.txt"  # noqa: E501
     if not utils.file_exists(icu_license_path):
         wine.install_icu_data_files(app=app)
+
+    if app:
+        if config.DIALOG == "curses":
+            app.install_icu_e.wait()
+
     logging.debug('> ICU data files installed')
-
-
-def ensure_winetricks_applied(app=None):
-    config.INSTALL_STEPS_COUNT += 1
-    ensure_icu_data_files(app=app)
-    config.INSTALL_STEP += 1
-    status = "Ensuring winetricks & other settings are applied…"
-    update_install_feedback(status, app=app)
-    logging.debug('- disable winemenubuilder')
-    logging.debug('- settings renderer=gdi')
-    logging.debug('- corefonts')
-    logging.debug('- tahoma')
-    logging.debug('- settings fontsmooth=rgb')
-    logging.debug('- d3dcompiler_47')
-
-    if not config.SKIP_WINETRICKS:
-        usr_reg = None
-        sys_reg = None
-        workdir = Path(f"{config.WORKDIR}")
-        workdir.mkdir(parents=True, exist_ok=True)
-        usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
-        sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            #FIXME: This command is failing.
-            reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
-            with open(reg_file, 'w') as f:
-                f.write(r'''REGEDIT4
-
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"winemenubuilder.exe"=""
-''')
-            wine.wine_reg_install(reg_file)
-
-        if not utils.grep(r'"renderer"="gdi"', usr_reg):
-            wine.winetricks_install("-q", "settings", "renderer=gdi")
-
-        if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
-            wine.install_fonts()
-
-        if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
-            wine.install_d3d_compiler()
-
-        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
-            args = ["settings", "win10"]
-            if not config.WINETRICKS_UNATTENDED:
-                args.insert(0, "-q")
-            wine.winetricks_install(*args)
-
-        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Windows 10 Mode.")
-        exe_args = [
-            'add',
-            f"HKCU\\Software\\Wine\\AppDefaults\\{config.FLPRODUCT}Indexer.exe",  # noqa: E501
-            "/v", "Version",
-            "/t", "REG_SZ",
-            "/d", "win10", "/f",
-            ]
-        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
-    logging.debug("> Done.")
 
 
 def ensure_product_installed(app=None):
@@ -607,6 +553,9 @@ def ensure_product_installed(app=None):
 
     if not utils.find_installed_product():
         wine.install_msi()
+        if app:
+            if config.DIALOG == "curses":
+                app.install_logos_e.wait()
         config.LOGOS_EXE = utils.find_installed_product()
         config.current_logos_version = config.TARGET_RELEASE_VERSION
 

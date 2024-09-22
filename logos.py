@@ -63,8 +63,7 @@ class LogosManager:
                 self.monitor_indexing()
                 self.monitor_logos()
             except Exception as e:
-                logging.debug(f"DEV: {e}")
-            logging.debug(f"DEV: {self.logos_state}")
+                pass
 
     def start(self):
         self.logos_state = State.STARTING
@@ -92,7 +91,6 @@ class LogosManager:
             self.logos_state = State.RUNNING
 
     def stop(self):
-        logging.debug(f"DEV: Stopping")
         self.logos_state = State.STOPPING
         if self.app:
             pids = []

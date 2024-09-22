@@ -84,6 +84,10 @@ class TUI:
         self.password_e = threading.Event()
         self.appimage_q = Queue()
         self.appimage_e = threading.Event()
+        self.install_icu_q = Queue()
+        self.install_icu_e = threading.Event()
+        self.install_logos_q = Queue()
+        self.install_logos_e = threading.Event()
 
         # Window and Screen Management
         self.tui_screens = []
@@ -311,10 +315,11 @@ class TUI:
                     else:
                         self.active_screen = self.tui_screens[-1]
 
-                    run_monitor, last_time = utils.stopwatch(last_time, 2.5)
-                    if run_monitor:
-                        self.logos.monitor()
-                        self.task_processor(self, task="PID")
+                    if not isinstance(self.active_screen, tui_screen.DialogScreen):
+                        run_monitor, last_time = utils.stopwatch(last_time, 2.5)
+                        if run_monitor:
+                            self.logos.monitor()
+                            self.task_processor(self, task="PID")
 
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
                         self.refresh()
@@ -847,14 +852,14 @@ class TUI:
     def set_main_menu_options(self, dialog=False):
         labels = []
         if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
-            logging.debug("Checking if Logos Linux Installers needs updated.")  # noqa: E501
+            logging.debug("Checking if Logos Linux Installer needs updated.")  # noqa: E501
             status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
             if status == 0:
                 labels.append("Update Logos Linux Installer")
             elif status == 1:
-                logging.warning("Logos Linux Installer is up-to-date.")
+                logging.debug("Logos Linux Installer is up-to-date.")
             elif status == 2:
-                logging.warning("Logos Linux Installer is newer than the latest release.")  # noqa: E501
+                logging.debug("Logos Linux Installer is newer than the latest release.")  # noqa: E501
             else:
                 logging.error(f"{error_message}")
 

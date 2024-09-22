@@ -293,7 +293,7 @@ def progress(percent, app=None):
         logos_msg(get_progress_str(percent))  # provisional
 
 
-def status(text, app=None):
+def status(text, app=None, end='\n'):
     def strip_timestamp(msg, timestamp_length=20):
         return msg[timestamp_length:]
 
@@ -319,4 +319,4 @@ def status(text, app=None):
             logging.info(f"{text}")
     else:
         # Prints message to stdout regardless of log level.
-        logos_msg(text)
+        logos_msg(text, end=end)
