@@ -143,7 +143,7 @@ def die_if_running():
             elif config.DIALOG == "curses":
                 confirm = tui_dialog.confirm("Confirmation", message)
             else:
-                confirm = msg.cli_question(message)
+                confirm = msg.cli_question(message, "")
 
             if confirm:
                 os.kill(int(pid), signal.SIGKILL)
