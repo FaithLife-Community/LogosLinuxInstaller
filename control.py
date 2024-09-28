@@ -66,7 +66,7 @@ def backup_and_restore(mode='backup', app=None):
         pass  # user confirms in GUI
     else:
         verb = 'Use' if mode == 'backup' else 'Restore backup from'
-        if not msg.cli_question(f"{verb} existing backups folder \"{config.BACKUPDIR}\"?"):  # noqa: E501
+        if not msg.cli_question(f"{verb} existing backups folder \"{config.BACKUPDIR}\"?", ""):  # noqa: E501
             answer = None
             while answer is None or (mode == 'restore' and not answer.is_dir()):  # noqa: E501
                 answer = msg.cli_ask_filepath("Give backups folder path:")
@@ -82,7 +82,7 @@ def backup_and_restore(mode='backup', app=None):
         else:
             # Offer to restore the most recent backup.
             config.RESTOREDIR = utils.get_latest_folder(config.BACKUPDIR)
-            if not msg.cli_question(f"Restore most-recent backup?: {config.RESTOREDIR}"):  # noqa: E501
+            if not msg.cli_question(f"Restore most-recent backup?: {config.RESTOREDIR}", ""):  # noqa: E501
                 config.RESTOREDIR = msg.cli_ask_filepath("Path to backup set that you want to restore:")  # noqa: E501
         config.RESTOREDIR = Path(config.RESTOREDIR).expanduser().resolve()
         source_dir_base = config.RESTOREDIR
@@ -214,7 +214,7 @@ def remove_install_dir():
     # FIXME: msg.cli_question needs additional arg
     if (
         folder.is_dir()
-        and msg.cli_question(f"Delete \"{folder}\" and all its contents?")
+        and msg.cli_question(f"Delete \"{folder}\" and all its contents?", "")
     ):
         shutil.rmtree(folder)
         logging.warning(f"Deleted folder and all its contents: {folder}")

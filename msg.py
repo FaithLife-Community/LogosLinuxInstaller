@@ -199,7 +199,7 @@ def logos_error(message, secondary=None, detail=None, app=None, parent=None):
     sys.exit(1)
 
 
-def cli_question(question_text, secondary):
+def cli_question(question_text, secondary=""):
     while True:
         try:
             cli_msg(secondary)
