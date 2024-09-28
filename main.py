@@ -316,7 +316,7 @@ def run_control_panel():
             raise e
 
 
-def main():
+def set_config():
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
@@ -354,6 +354,8 @@ def main():
     if config.LOG_LEVEL != current_log_level:
         msg.update_log_level(config.LOG_LEVEL)
 
+
+def set_dialog():
     # Set DIALOG and GUI variables.
     if config.DIALOG is None:
         system.get_dialog()
@@ -374,28 +376,8 @@ def main():
             config.use_python_dialog = False
     logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
 
-    # Log persistent config.
-    utils.log_current_persistent_config()
 
-    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
-    # can be run in conjunction with other actions, so it gets special
-    # treatment here once config is set.
-    if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
-        control.delete_log_file_contents()
-
-    # Run desired action (requested function, defaulting to installer)
-    # Run safety checks.
-    # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
-    # self-update when updating LLI as it asks for a confirmation in the CLI.
-    # Disabled until it can be fixed. Avoid running multiple instances of the
-    # program.
-    # utils.die_if_running()
-    utils.die_if_root()
-
-    # Print terminal banner
-    logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
-    logging.debug(f"Installer log file: {config.LOGOS_LOG}")
-
+def check_incompatibilities():
     # Check for AppImageLauncher
     if shutil.which('AppImageLauncher'):
         question_text = "Remove AppImageLauncher? A reboot will be required."
@@ -408,8 +390,9 @@ def main():
         msg.logos_continue_question(question_text, no_text, secondary)
         system.remove_appimagelauncher()
 
-    network.check_for_updates()
 
+def run():
+    # Run desired action (requested function, defaulting to installer)
     # Check if app is installed.
     install_required = [
         'backup',
@@ -438,6 +421,38 @@ def main():
     else:
         logging.info("Starting Control Panel")
         run_control_panel()
+
+
+def main():
+    set_config()
+    set_dialog()
+
+    # Log persistent config.
+    utils.log_current_persistent_config()
+
+    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
+    # can be run in conjunction with other actions, so it gets special
+    # treatment here once config is set.
+    if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
+        control.delete_log_file_contents()
+
+    # Run safety checks.
+    # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
+    # self-update when updating LLI as it asks for a confirmation in the CLI.
+    # Disabled until it can be fixed. Avoid running multiple instances of the
+    # program.
+    # utils.die_if_running()
+    utils.die_if_root()
+
+    # Print terminal banner
+    logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
+    logging.debug(f"Installer log file: {config.LOGOS_LOG}")
+
+    check_incompatibilities()
+
+    network.check_for_updates()
+
+    run()
 
 
 def close():
