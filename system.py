@@ -344,6 +344,15 @@ def get_package_manager():
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
+    elif shutil.which('zypper') is not None:  # manjaro
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["zypper", "--non-interactive", "install"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["zypper", "download"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["zypper", "--non-interactive", "remove"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["zypper", "se", "-si"]
+        config.QUERY_PREFIX = 'i  | '
+        config.PACKAGES = "fuse patch wget sed grep gawk cabextract 7zip samba curl"  # noqa: E501
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pamac", "install", "--no-upgrade", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pamac", "install", "--no-upgrade", "--download-only", "--no-confirm"]  # noqa: E501
