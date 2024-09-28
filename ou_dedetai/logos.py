@@ -88,6 +88,8 @@ class LogosManager:
         if not good_wine:
             msg.logos_error(reason, app=self)
         else:
+            if reason is not None:
+                logging.debug(f"Warning: Wine Check: {reason}")
             wine.wineserver_kill()
             app = self.app
             if config.DIALOG == 'tk':
