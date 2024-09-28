@@ -320,7 +320,7 @@ def get_package_manager():
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
-    elif shutil.which('zypper') is not None:  # manjaro
+    elif shutil.which('zypper') is not None:  # opensuse
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["zypper", "--non-interactive", "install"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["zypper", "download"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["zypper", "--non-interactive", "remove"]  # noqa: E501
@@ -331,6 +331,22 @@ def get_package_manager():
             "samba wget "  # wine
             "7zip "  # winetricks
             "curl gawk grep "  # other
+        )
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
+    elif shutil.which('apk') is not None:  # alpine
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["apk", "--no-interactive", "add"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["apk", "--no-interactive", "fetch"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["apk", "--no-interactive", "del"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["apk", "list", "-i"]
+        config.QUERY_PREFIX = ''
+        config.PACKAGES = (
+            "bash bash-completion"  # bash support
+            "gcompat"  # musl to glibc
+            "fuse-common fuse"  # appimages
+            "wget curl"  # network
+            "7zip"  # winetricks
+            "samba sed grep gawk bash bash-completion"  # other
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
@@ -544,6 +560,19 @@ def postinstall_dependencies_steamos():
     return command
 
 
+def postinstall_dependencies_alpine():
+    user = os.getlogin()
+    command = [
+        config.SUPERUSER_COMMAND, "modprobe", "fuse", "&&",
+        config.SUPERUSER_COMMAND, "rc-update", "add", "fuse", "boot", "&&",
+        config.SUPERUSER_COMMAND, "sed", "-i", "'s/#user_allow_other/user_allow_other/g'", "/etc/fuse.conf", "&&",
+        config.SUPERUSER_COMMAND, "addgroup", "fuse", "&&",
+        config.SUPERUSER_COMMAND, "adduser", f"{user}", "fuse", "&&",
+        config.SUPERUSER_COMMAND, "rc-service", "fuse", "restart",
+    ]
+    return command
+
+
 def preinstall_dependencies(app=None):
     command = []
     logging.debug("Performing pre-install dependencies…")
@@ -559,6 +588,8 @@ def postinstall_dependencies(app=None):
     logging.debug("Performing post-install dependencies…")
     if config.OS_NAME == "Steam":
         command = postinstall_dependencies_steamos()
+    if config.OS_NAME == "alpine":
+        command = postinstall_dependencies_alpine()
     else:
         logging.debug("No post-install dependencies required.")
     return command
@@ -582,6 +613,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
     conflicting_packages = {}
     package_list = []
     bad_package_list = []
+    bad_os = ['fedora', 'arch', 'alpine']
 
     if packages:
         package_list = packages.split()
@@ -605,7 +637,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         )
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-        if config.OS_NAME in ['fedora', 'arch']:
+        if config.OS_NAME in bad_os:
             message = False
             no_message = False
             secondary = False
@@ -682,7 +714,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             app.root.event_generate('<<StartIndeterminateProgress>>')
         msg.status("Installing dependencies…", app)
         final_command = [
-            f"{config.SUPERUSER_COMMAND}", 'sh', '-c', "'", *command, "'"
+            f"{config.SUPERUSER_COMMAND}", 'sh', '-c', '"', *command, '"'
         ]
         command_str = ' '.join(final_command)
         # TODO: Fix fedora/arch handling.
