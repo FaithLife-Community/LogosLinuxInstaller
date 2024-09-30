@@ -36,6 +36,7 @@ def get_wine_user():
 def check_wineserver():
     try:
         process = run_wine_proc(config.WINESERVER, exe_args=["-p"])
+        process.wait()
         return process.returncode == 0
     except Exception as e:
         return False
@@ -43,12 +44,14 @@ def check_wineserver():
 
 def wineserver_kill():
     if check_wineserver():
-        run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
+        process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
+        process.wait()
 
 
 def wineserver_wait():
     if check_wineserver():
-        run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+        process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+        process.wait()
 
 
 def light_wineserver_wait():
@@ -69,8 +72,8 @@ def end_wine_processes():
                 process.terminate()
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+                os.killpg(process.pid, signal.SIGTERM)
+                os.waitpid(-process.pid, 0)
 
 
 def get_wine_release(binary):
@@ -182,23 +185,22 @@ def initializeWineBottle(app=None):
     orig_overrides = config.WINEDLLOVERRIDES
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree="
     logging.debug(f"Running: {wine_exe} wineboot --init")
-    run_wine_proc(wine_exe, exe='wineboot', exe_args=['--init'], init=True)
+    process = run_wine_proc(wine_exe, exe='wineboot', exe_args=['--init'], init=True)
     config.WINEDLLOVERRIDES = orig_overrides
-    light_wineserver_wait()
-    logging.debug("Wine init complete.")
+    return process
 
 
 def wine_reg_install(reg_file):
     reg_file = str(reg_file)
     msg.status(f"Installing registry file: {reg_file}")
-    result = run_wine_proc(
+    process = run_wine_proc(
         str(utils.get_wine_exe_path().parent / 'wine64'),
         exe="regedit.exe",
         exe_args=[reg_file]
     )
-    if result is None or result.returncode != 0:
+    if process is None or process.returncode != 0:
         msg.logos_error(f"Failed to install reg file: {reg_file}")
-    elif result.returncode == 0:
+    elif process.returncode == 0:
         logging.info(f"{reg_file} installed.")
     light_wineserver_wait()
 
@@ -211,7 +213,8 @@ def install_msi(app=None):
     if config.PASSIVE is True:
         exe_args.append('/passive')
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
-    run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
+    process = run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
+    process.wait()
     if app:
         if config.DIALOG == "curses":
             app.install_logos_e.set()
@@ -250,7 +253,8 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
                 command,
                 stdout=wine_log,
                 stderr=wine_log,
-                env=env
+                env=env,
+                start_new_session=True
             )
             if process is not None:
                 if exe is not None and isinstance(process, subprocess.Popen):
@@ -283,7 +287,8 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
 
 
 def run_winetricks(cmd=None):
-    run_wine_proc(config.WINETRICKSBIN, exe=cmd)
+    process = run_wine_proc(config.WINETRICKSBIN, exe=cmd)
+    os.waitpid(-process.pid, 0)
     wineserver_wait()
 
 
@@ -291,7 +296,8 @@ def run_winetricks_cmd(*args):
     cmd = [*args]
     msg.status(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
-    run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
+    process = run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
+    os.waitpid(-process.pid, 0)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     heavy_wineserver_wait()
 
@@ -313,7 +319,13 @@ def install_fonts():
                 args.insert(0, '-q')
             run_winetricks_cmd(*args)
 
-    run_winetricks_cmd('-q', 'settings', 'fontsmooth=rgb')
+
+def install_font_smoothing():
+    msg.status("Setting font smoothing…")
+    args = ['settings', 'fontsmooth=rgb']
+    if config.WINETRICKS_UNATTENDED:
+        args.insert(0, '-q')
+    run_winetricks_cmd(*args)
 
 
 def set_renderer(renderer):
@@ -332,7 +344,8 @@ def set_win_version(exe, windows_version):
             "/t", "REG_SZ",
             "/d", f"{windows_version}", "/f",
             ]
-        run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
+        process = run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
+        os.waitpid(-process.pid, 0)
 
 
 def install_icu_data_files(app=None):
