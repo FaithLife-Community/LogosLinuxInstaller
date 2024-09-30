@@ -481,7 +481,7 @@ def ensure_wineprefix_init(app=None):
 
 def ensure_winetricks_applied(app=None):
     config.INSTALL_STEPS_COUNT += 1
-    ensure_icu_data_files(app=app)
+    ensure_wineprefix_init(app=app)
     config.INSTALL_STEP += 1
     status = "Ensuring winetricks & other settings are applied…"
     update_install_feedback(status, app=app)
