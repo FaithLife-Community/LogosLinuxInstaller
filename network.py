@@ -405,7 +405,10 @@ def get_latest_release_version_tag_name(json_data):
 
 
 def set_logoslinuxinstaller_latest_release_config():
-    releases_url = "https://api.github.com/repos/FaithLife-Community/LogosLinuxInstaller/releases"  # noqa: E501
+    if config.lli_release_channel is None or config.llie_release_channel == "stable":
+        releases_url = "https://api.github.com/repos/FaithLife-Community/LogosLinuxInstaller/releases"  # noqa: E501
+    else:
+        releases_url = "https://api.github.com/repos/FaithLife-Community/test-builds/releases"
     json_data = get_latest_release_data(releases_url)
     logoslinuxinstaller_url = get_latest_release_url(json_data)
     logoslinuxinstaller_tag_name = get_latest_release_version_tag_name(json_data)  # noqa: E501
