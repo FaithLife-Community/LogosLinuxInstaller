@@ -255,7 +255,7 @@ def file_exists(file_path):
         return False
 
 
-def change_release_channel():
+def change_logos_release_channel():
     if config.logos_release_channel == "stable":
         config.logos_release_channel = "beta"
         update_config_file(
@@ -268,6 +268,23 @@ def change_release_channel():
         update_config_file(
             config.CONFIG_FILE,
             'logos_release_channel',
+            "stable"
+        )
+
+
+def change_lli_release_channel():
+    if config.lli_release_channel == "stable":
+        config.logos_release_channel = "dev"
+        update_config_file(
+            config.CONFIG_FILE,
+            'lli_release_channel',
+            "dev"
+        )
+    else:
+        config.lli_release_channel = "stable"
+        update_config_file(
+            config.CONFIG_FILE,
+            'lli_release_channel',
             "stable"
         )
 
