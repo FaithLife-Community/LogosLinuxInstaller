@@ -475,7 +475,10 @@ def ensure_wineprefix_init(app=None):
             # if utils.get_wine_exe_path():
             #     wine.initializeWineBottle()
             logging.debug("Initializing wineprefix.")
-            wine.initializeWineBottle()
+            process = wine.initializeWineBottle()
+            os.waitpid(-process.pid, 0)
+            wine.light_wineserver_wait()
+            logging.debug("Wine init complete.")
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 
@@ -503,15 +506,21 @@ def ensure_winetricks_applied(app=None):
             reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
             with open(reg_file, 'w') as f:
                 f.write(r'''REGEDIT4
-
+                
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
             wine.wine_reg_install(reg_file)
 
+        msg.status("Setting Renderer to GDI…", app)
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
             wine.set_renderer("gdi")
 
+        msg.status("Setting Font Smooting to RGB…", app)
+        if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
+            wine.install_font_smoothing()
+
+        msg.status("Installing fonts…", app)
         if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
             wine.installFonts()
 
@@ -523,6 +532,7 @@ def ensure_winetricks_applied(app=None):
 
         msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Win10 Mode.")
         wine.set_win_version("indexer", "win10")
+        wine.light_wineserver_wait()
     logging.debug("> Done.")
 
 

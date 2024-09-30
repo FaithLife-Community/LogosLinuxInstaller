@@ -882,13 +882,14 @@ def grep(regexp, filepath):
     fp = Path(filepath)
     found = False
     ct = 0
-    with fp.open() as f:
-        for line in f:
-            ct += 1
-            text = line.rstrip()
-            if re.search(regexp, text):
-                logging.debug(f"{filepath}:{ct}:{text}")
-                found = True
+    if fp.exists():
+        with fp.open() as f:
+            for line in f:
+                ct += 1
+                text = line.rstrip()
+                if re.search(regexp, text):
+                    logging.debug(f"{filepath}:{ct}:{text}")
+                    found = True
     return found
 
 
