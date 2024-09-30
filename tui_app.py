@@ -26,8 +26,8 @@ class TUI:
     def __init__(self, stdscr):
         self.stdscr = stdscr
         #if config.current_logos_version is not None:
-        self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION}"
-        self.subtitle = f"Logos Version: {config.current_logos_version}. Channel: {config.logos_release_channel}"
+        self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"
+        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"
         #else:
         #    self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
         self.console_message = "Starting TUI…"
@@ -230,7 +230,8 @@ class TUI:
 
     def update_main_window_contents(self):
         self.clear()
-        self.subtitle = f"Logos Version: {config.current_logos_version}. Channel: {config.logos_release_channel}"
+        self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"
+        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"
         self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
         self.menu_screen.set_options(self.set_main_menu_options(dialog=False))
         #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
@@ -442,11 +443,18 @@ class TUI:
             control.remove_all_index_files()
         elif choice == "Edit Config":
             control.edit_config()
-        elif choice == "Change Release Channel":
-            self.active_screen.running = 0
-            self.active_screen.choice = "Processing"
-            utils.change_release_channel()
+            self.go_to_main_menu()
+        elif choice == "Change Logos Release Channel":
+            self.reset_screen()
+            utils.change_logos_release_channel()
             self.update_main_window_contents()
+            self.go_to_main_menu()
+        elif choice == "Change Logos on Linux Release Channel":
+            self.reset_screen()
+            utils.change_lli_release_channel()
+            network.set_logoslinuxinstaller_latest_release_config()
+            self.update_main_window_contents()
+            self.go_to_main_menu()
         elif choice == "Install Dependencies":
             utils.check_dependencies()
         elif choice == "Back up Data":
@@ -818,7 +826,8 @@ class TUI:
         labels_utilities = [
             "Install Dependencies",
             "Edit Config",
-            "Change Release Channel",
+            "Change Logos Release Channel",
+            "Change Logos on Linux Release Channel",
             "Back up Data",
             "Restore Data",
         ]
