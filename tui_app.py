@@ -86,9 +86,15 @@ class TUI:
         # Window and Screen Management
         self.tui_screens = []
         self.menu_options = []
-        self.window_height = 0
-        self.window_width = 0
+        self.window_height = self.window_width = self.console = self.menu_screen = self.active_screen = None
+        self.main_window_ratio = self.main_window_ratio = self.menu_window_ratio = self.main_window_min = None
+        self.menu_window_min = self.main_window_height = self.menu_window_height = self.main_window = None
+        self.menu_window = self.resize_window = None
+        self.set_window_dimensions()
+
+    def set_window_dimensions(self):
         self.update_tty_dimensions()
+        curses.resizeterm(self.window_height, self.window_width)
         self.main_window_ratio = 0.25
         if config.console_log:
             min_console_height = len(tui_curses.wrap_text(self, config.console_log[-1]))
@@ -100,14 +106,12 @@ class TUI:
         self.menu_window_min = 3
         self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
         self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
-        config.console_log_lines = max(self.main_window_height - 3, 1)
+        config.console_log_lines = max(self.main_window_height - self.main_window_min, 1)
         config.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
-        self.resize_window = curses.newwin(2, curses.COLS, 0, 0)
-        self.console = None
-        self.menu_screen = None
-        self.active_screen = None
+        resize_lines = tui_curses.wrap_text(self, "Screen too small.")
+        self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
 
     @staticmethod
     def set_curses_style():
@@ -221,21 +225,6 @@ class TUI:
         self.llirunning = False
         curses.endwin()
 
-    def set_window_height(self):
-        self.update_tty_dimensions()
-        curses.resizeterm(self.window_height, self.window_width)
-        self.main_window_min = len(tui_curses.wrap_text(self, self.title)) + len(
-            tui_curses.wrap_text(self, self.subtitle)) + 3
-        self.menu_window_min = 3
-        self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
-        self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
-        config.console_log_lines = max(self.main_window_height - (self.main_window_min - 1), 1)
-        config.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
-        self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
-        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
-        resize_lines = tui_curses.wrap_text(self, "Screen too small.")
-        self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
-
     def update_main_window_contents(self):
         self.clear()
         self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"
@@ -249,7 +238,7 @@ class TUI:
     def resize_curses(self):
         config.resizing = True
         curses.endwin()
-        self.set_window_height()
+        self.set_window_dimensions()
         self.clear()
         self.init_curses()
         self.refresh()
@@ -388,16 +377,17 @@ class TUI:
 
         # Capture menu exiting before processing in the rest of the handler
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
+            self.reset_screen()
             self.switch_q.put(1)
             #FIXME: There is some kind of graphical glitch that activates on returning to Main Menu,
             # but not from all submenus.
             # Further, there appear to be issues with how the program exits on Ctrl+C as part of this.
-
-        action = screen_actions.get(screen_id)
-        if action:
-            action(choice)
         else:
-            pass
+            action = screen_actions.get(screen_id)
+            if action:
+                action(choice)
+            else:
+                pass
 
     def reset_screen(self):
         self.active_screen.running = 0
@@ -413,6 +403,7 @@ class TUI:
             self.tui_screens = []
             self.llirunning = False
         elif choice.startswith("Install"):
+            self.reset_screen()
             config.INSTALL_STEPS_COUNT = 0
             config.INSTALL_STEP = 0
             utils.start_thread(
@@ -802,10 +793,6 @@ class TUI:
         self.tricksbin_e.set()
 
     def get_waiting(self, dialog, screen_id=8):
-        # FIXME: I think TUI install with existing config file fails here b/c
-        # the config file already defines the needed variable, so the event
-        # self.tricksbin_e is never triggered.
-        self.tricksbin_e.wait()
         text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
         percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
