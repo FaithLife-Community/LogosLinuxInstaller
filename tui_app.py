@@ -415,7 +415,11 @@ class TUI:
         elif choice.startswith("Install"):
             config.INSTALL_STEPS_COUNT = 0
             config.INSTALL_STEP = 0
-            utils.start_thread(installer.ensure_launcher_shortcuts, True, self)
+            utils.start_thread(
+                installer.ensure_launcher_shortcuts,
+                daemon_bool=True,
+                app=self,
+            )
         elif choice.startswith("Update Logos Linux Installer"):
             utils.update_to_latest_lli_release()
         elif choice == f"Run {config.FLPRODUCT}":
