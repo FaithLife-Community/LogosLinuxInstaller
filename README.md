@@ -121,6 +121,8 @@ $ cd LogosLinuxInstaller
 # docker run --rm -v $(pwd):/usr/src/app logosinstaller
 ```
 
+The built binary will now be in `./dist/LogosLinuxInstaller`.
+
 ## Install guide (possibly outdated)
 
 NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
