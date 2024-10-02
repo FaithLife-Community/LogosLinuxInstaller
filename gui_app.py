@@ -642,9 +642,8 @@ class ControlWindow():
         self.update_run_winetricks_button()
 
         self.logging_q = Queue()
-        self.logging_event = '<<InitLoggingButton>>'
-        self.root.bind(self.logging_event, self.initialize_logging_button)
-        self.root.bind('<<UpdateLoggingButton>>', self.update_logging_button)
+        self.logging_event = '<<UpdateLoggingButton>>'
+        self.root.bind(self.logging_event, self.update_logging_button)
         self.status_q = Queue()
         self.status_evt = '<<UpdateStatus>>'
         self.root.bind(self.status_evt, self.update_status_text)
@@ -864,8 +863,10 @@ class ControlWindow():
         self.gui.statusvar.set('')
         self.gui.progress.stop()
         self.gui.progress.state(['disabled'])
-        state = self.logging_q.get()
-        self.gui.loggingstatevar.set(state[:-1].title())
+        new_state = self.reverse_logging_state_value(self.logging_q.get())
+        new_text = new_state[:-1].title()
+        logging.debug(f"Updating app logging button text to: {new_text}")
+        self.gui.loggingstatevar.set(new_text)
         self.gui.logging_button.state(['!disabled'])
 
     def update_app_button(self, evt=None):
