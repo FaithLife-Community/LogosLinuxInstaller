@@ -393,7 +393,7 @@ def get_registry_value(reg_path, name):
     return value
 
 
-def get_app_logging_state(app=None, init=False):
+def get_app_logging_state(app=None):
     state = 'DISABLED'
     current_value = get_registry_value(
         'HKCU\\Software\\Logos4\\Logging',
