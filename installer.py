@@ -523,7 +523,7 @@ def ensure_winetricks_applied(app=None):
             wine.set_win_version("logos", "win10")
 
         msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Vista Mode.")
-        wine.set_win_version_indexer("vista")
+        wine.set_win_version("indexer", "vista")
     logging.debug("> Done.")
 
 
