@@ -325,7 +325,7 @@ def set_win_version(exe, windows_version):
             "/t", "REG_SZ",
             "/d", f"{windows_version}", "/f",
             ]
-        run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+        run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
 
 
 def installICUDataFiles(app=None):
