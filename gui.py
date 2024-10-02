@@ -123,27 +123,36 @@ class InstallerGui(Frame):
         self.progress = Progressbar(self, variable=self.progressvar)
 
         # Place widgets.
-        self.product_label.grid(column=0, row=0, sticky='nws', pady=2)
-        self.product_dropdown.grid(column=1, row=0, sticky='w', pady=2)
-        self.version_dropdown.grid(column=2, row=0, sticky='w', pady=2)
-        self.release_label.grid(column=0, row=1, sticky='w', pady=2)
-        self.release_dropdown.grid(column=1, row=1, sticky='w', pady=2)
-        self.release_check_button.grid(column=2, row=1, sticky='w', pady=2)
-        self.wine_label.grid(column=0, row=2, sticky='w', pady=2)
-        self.wine_dropdown.grid(column=1, row=2, columnspan=3, sticky='we', pady=2)  # noqa: E501
-        self.wine_check_button.grid(column=4, row=2, sticky='e', pady=2)
-        self.tricks_label.grid(column=0, row=3, sticky='w', pady=2)
-        self.tricks_dropdown.grid(column=1, row=3, sticky='we', pady=2)
-        self.fonts_label.grid(column=0, row=4, sticky='nws', pady=2)
-        self.fonts_checkbox.grid(column=1, row=4, sticky='w', pady=2)
-        self.skipdeps_label.grid(column=2, row=4, sticky='nws', pady=2)
-        self.skipdeps_checkbox.grid(column=3, row=4, sticky='w', pady=2)
-        self.cancel_button.grid(column=3, row=5, sticky='e', pady=2)
-        self.okay_button.grid(column=4, row=5, sticky='e', pady=2)
+        row = 0
+        self.product_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.product_dropdown.grid(column=1, row=row, sticky='w', pady=2)
+        self.version_dropdown.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.release_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.release_dropdown.grid(column=1, row=row, sticky='w', pady=2)
+        self.release_check_button.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.wine_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.wine_dropdown.grid(column=1, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        self.wine_check_button.grid(column=4, row=row, sticky='e', pady=2)
+        row += 1
+        self.tricks_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.tricks_dropdown.grid(column=1, row=row, sticky='we', pady=2)
+        row += 1
+        self.fonts_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.fonts_checkbox.grid(column=1, row=row, sticky='w', pady=2)
+        self.skipdeps_label.grid(column=2, row=row, sticky='nws', pady=2)
+        self.skipdeps_checkbox.grid(column=3, row=row, sticky='w', pady=2)
+        row += 1
+        self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
+        self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
+        row += 1
         # Status area
-        s1.grid(column=0, row=6, columnspan=5, sticky='we')
-        self.status_label.grid(column=0, row=7, columnspan=5, sticky='w', pady=2)  # noqa: E501
-        self.progress.grid(column=0, row=8, columnspan=5, sticky='we', pady=2)
+        s1.grid(column=0, row=row, columnspan=5, sticky='we')
+        row += 1
+        self.status_label.grid(column=0, row=row, columnspan=5, sticky='w', pady=2)  # noqa: E501
+        row += 1
+        self.progress.grid(column=0, row=row, columnspan=5, sticky='we', pady=2)
 
 
 class ControlGui(Frame):
