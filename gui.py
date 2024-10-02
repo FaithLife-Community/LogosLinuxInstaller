@@ -152,7 +152,7 @@ class InstallerGui(Frame):
         row += 1
         self.status_label.grid(column=0, row=row, columnspan=5, sticky='w', pady=2)  # noqa: E501
         row += 1
-        self.progress.grid(column=0, row=row, columnspan=5, sticky='we', pady=2)
+        self.progress.grid(column=0, row=row, columnspan=5, sticky='we', pady=2)  # noqa: E501
 
 
 class ControlGui(Frame):
