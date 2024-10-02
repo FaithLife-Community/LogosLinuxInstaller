@@ -642,7 +642,8 @@ class ControlWindow():
         self.update_run_winetricks_button()
 
         self.logging_q = Queue()
-        self.root.bind('<<InitLoggingButton>>', self.initialize_logging_button)
+        self.logging_event = '<<InitLoggingButton>>'
+        self.root.bind(self.logging_event, self.initialize_logging_button)
         self.root.bind('<<UpdateLoggingButton>>', self.update_logging_button)
         self.status_q = Queue()
         self.status_evt = '<<UpdateStatus>>'
