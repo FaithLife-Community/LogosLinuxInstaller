@@ -358,6 +358,7 @@ def installICUDataFiles(app=None):
 
 
 def get_registry_value(reg_path, name):
+    logging.debug(f"Get value for: {reg_path=}; {name=}")
     # NOTE: Can't use run_wine_proc here because of infinite recursion while
     # trying to determine WINECMD_ENCODING.
     value = None
@@ -385,6 +386,7 @@ def get_registry_value(reg_path, name):
         for line in result.stdout.splitlines():
             if line.strip().startswith(name):
                 value = line.split()[-1].strip()
+                logging.debug(f"Registry value: {value}")
                 break
     else:
         logging.critical(err_msg)
@@ -401,14 +403,13 @@ def get_app_logging_state(app=None, init=False):
         state = 'ENABLED'
     if app is not None:
         app.logging_q.put(state)
-        if init:
-            app.root.event_generate('<<InitLoggingButton>>')
-        else:
-            app.root.event_generate('<<UpdateLoggingButton>>')
+        logging.debug(f"Current app logging state: {state} ({current_value})")
+        app.root.event_generate(app.logging_event)
     return state
 
 
 def switch_logging(action=None, app=None):
+    logging.debug(f"switch_logging; {action=}; {app=}")
     state_disabled = 'DISABLED'
     value_disabled = '0000'
     state_enabled = 'ENABLED'
