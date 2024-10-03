@@ -102,18 +102,13 @@ def backup_and_restore(mode='backup', app=None):
 
     # Get source transfer size.
     q = queue.Queue()
-    t = threading.Thread(
-        target=utils.get_folder_group_size,
-        args=[src_dirs, q],
-        daemon=True
-    )
     m = "Calculating backup size"
     if app is not None:
         app.status_q.put(m)
         app.root.event_generate('<<StartIndeterminateProgress>>')
-        app.root.event_generate('<<UpdateStatus>>')
+        app.root.event_generate(app.status_evt)
     msg.status(m, end='')
-    t.start()
+    t = utils.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
             msg.logos_progress()
@@ -177,11 +172,6 @@ def backup_and_restore(mode='backup', app=None):
         msg.logos_error(f"Backup already exists: {dst_dir}")
 
     # Run file transfer.
-    t = threading.Thread(
-        target=copy_data,
-        args=(src_dirs, dst_dir),
-        daemon=True
-    )
     if mode == 'restore':
         m = f"Restoring backup from {str(source_dir_base)}"
     else:
@@ -190,9 +180,9 @@ def backup_and_restore(mode='backup', app=None):
     msg.status(m)
     if app is not None:
         app.status_q.put(m)
-        app.root.event_generate('<<UpdateStatus>>')
+        app.root.event_generate(app.status_evt)
     dst_dir_size = utils.get_path_size(dst_dir)
-    t.start()
+    t = utils.start_thread(copy_data, src_dirs, dst_dir)
     try:
         while t.is_alive():
             progress = utils.get_copy_progress(

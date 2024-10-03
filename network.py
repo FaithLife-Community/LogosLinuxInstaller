@@ -138,10 +138,8 @@ def cli_download(uri, destination, app=None):
 
     # Download from uri in thread while showing progress bar.
     cli_queue = queue.Queue()
-    args = [uri]
     kwargs = {'q': cli_queue, 'target': target}
-    t = threading.Thread(target=net_get, args=args, kwargs=kwargs, daemon=True)
-    t.start()
+    t = utils.start_thread(net_get, uri, **kwargs)
     try:
         while t.is_alive():
             if cli_queue.empty():
