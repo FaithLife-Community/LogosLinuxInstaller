@@ -200,8 +200,11 @@ def wine_reg_install(reg_file):
         exe="regedit.exe",
         exe_args=[reg_file]
     )
+    process.wait()
     if process is None or process.returncode != 0:
-        msg.logos_error(f"Failed to install reg file: {reg_file}")
+        failed = "Failed to install reg file"
+        logging.debug(f"{failed}. {process=}")
+        msg.logos_error(f"{failed}: {reg_file}")
     elif process.returncode == 0:
         logging.info(f"{reg_file} installed.")
     light_wineserver_wait()

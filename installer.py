@@ -502,15 +502,16 @@ def ensure_winetricks_applied(app=None):
         workdir.mkdir(parents=True, exist_ok=True)
         usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
         sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-        #FIXME: This is failing (20241002).
-#         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-#             reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
-#             reg_file.write_text(r'''REGEDIT4
-#
-# [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-# "winemenubuilder.exe"=""
-# ''')
-#            wine.wine_reg_install(reg_file)
+        # FIXME: This is failing (20241002).
+        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
+            msg.status("Disabling winemenubuilder…", app)
+            reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
+            reg_file.write_text(r'''REGEDIT4
+
+[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
+"winemenubuilder.exe"=""
+''')
+            wine.wine_reg_install(reg_file)
 
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
             msg.status("Setting Renderer to GDI…", app)
