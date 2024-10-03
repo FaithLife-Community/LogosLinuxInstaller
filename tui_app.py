@@ -203,7 +203,7 @@ class TUI:
 
             self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
             self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e,
-                                                     "Main Menu", self.set_main_menu_options(dialog=False))
+                                                         "Main Menu", self.set_tui_menu_options(dialog=False))
             #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu",
             #                                         self.set_tui_menu_options(dialog=True))
             self.refresh()
@@ -241,9 +241,17 @@ class TUI:
         self.switch_q.put(1)
         self.refresh()
 
+    #ERR: On a sudden resize, the Curses menu is not properly resized,
+    # and we are not currently dynamically passing the menu options based
+    # on the current screen, but rather always passing the tui menu options.
+    # To replicate, open Terminator, run LLI full screen, then his Ctrl+A.
+    # The menu should survive, but the size does not resize to the new screen,
+    # even though the resize signal is sent. See tui_curses, line #251 and
+    # tui_screen, line #98.
     def resize_curses(self):
         config.resizing = True
         curses.endwin()
+        self.update_tty_dimensions()
         self.set_window_dimensions()
         self.clear()
         self.init_curses()
@@ -379,7 +387,7 @@ class TUI:
             9: self.config_update_select,
             10: self.waiting_releases,
             11: self.winetricks_menu_select,
-            12: self.run_logos,
+            12: self.logos.start,
             13: self.waiting_finish,
             14: self.waiting_resize,
             15: self.password_prompt,
@@ -849,7 +857,7 @@ class TUI:
                 options.append(label)
         return options
 
-    def set_main_menu_options(self, dialog=False):
+    def set_tui_menu_options(self, dialog=False):
         labels = []
         if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
             logging.debug("Checking if Logos Linux Installer needs updated.")  # noqa: E501
@@ -875,12 +883,7 @@ class TUI:
                 indexing = f"Run Indexing"
             labels_default = [
                 run,
-                indexing,
-                "Remove Library Catalog",
-                "Remove All Index Files",
-                "Edit Config",
-                "Back up Data",
-                "Restore Data",
+                indexing
             ]
         else:
             labels_default = ["Install Logos Bible Software"]

@@ -476,7 +476,7 @@ def ensure_wineprefix_init(app=None):
             #     wine.initializeWineBottle()
             logging.debug("Initializing wineprefix.")
             process = wine.initializeWineBottle()
-            os.waitpid(-process.pid, 0)
+            wine.wait_pid(process)
             wine.light_wineserver_wait()
             logging.debug("Wine init complete.")
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
@@ -502,15 +502,15 @@ def ensure_winetricks_applied(app=None):
         workdir.mkdir(parents=True, exist_ok=True)
         usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
         sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            reg_file = os.path.join(config.WORKDIR, 'disable-winemenubuilder.reg')
-            with open(reg_file, 'w') as f:
-                f.write(r'''REGEDIT4
-                
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"winemenubuilder.exe"=""
-''')
-            wine.wine_reg_install(reg_file)
+        #FIXME: This is failing (20241002).
+#         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
+#             reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
+#             reg_file.write_text(r'''REGEDIT4
+#
+# [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
+# "winemenubuilder.exe"=""
+# ''')
+#            wine.wine_reg_install(reg_file)
 
         msg.status("Setting Renderer to GDI…", app)
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
@@ -522,15 +522,15 @@ def ensure_winetricks_applied(app=None):
 
         msg.status("Installing fonts…", app)
         if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
-            wine.installFonts()
+            wine.install_fonts()
 
         if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
-            wine.installD3DCompiler()
+            wine.install_d3d_compiler()
 
         if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
             wine.set_win_version("logos", "win10")
 
-        msg.logos_msg(f"Setting {config.FLPRODUCT}Bible Indexing to Win10 Mode.")
+        msg.logos_msg(f"Setting {config.FLPRODUCT} Bible Indexing to Win10 Mode.")
         wine.set_win_version("indexer", "win10")
         wine.light_wineserver_wait()
     logging.debug("> Done.")
@@ -562,10 +562,8 @@ def ensure_product_installed(app=None):
     update_install_feedback(f"Ensuring {config.FLPRODUCT} is installed…", app=app)
 
     if not utils.find_installed_product():
-        wine.install_msi()
-        if app:
-            if config.DIALOG == "curses":
-                app.install_logos_e.wait()
+        process = wine.install_msi()
+        wine.wait_pid(process)
         config.LOGOS_EXE = utils.find_installed_product()
         config.current_logos_version = config.TARGET_RELEASE_VERSION
 

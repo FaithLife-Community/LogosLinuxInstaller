@@ -245,7 +245,10 @@ class MenuDialog(CursesDialog):
 
         # Display pagination information
         page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
-        self.stdscr.addnstr(max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
+        try:
+            self.stdscr.addnstr(max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
+        except curses.error:
+            signal.signal(signal.SIGWINCH, self.app.signal_resize)
 
     def do_menu_up(self):
         if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:

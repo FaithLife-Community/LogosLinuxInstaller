@@ -48,6 +48,8 @@ def wineserver_kill():
         process.wait()
 
 
+#TODO: Review these three commands. The top is the newest and should be preserved.
+# Can the other two be refactored out?
 def wineserver_wait():
     if check_wineserver():
         process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
@@ -73,7 +75,7 @@ def end_wine_processes():
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM)
-                os.waitpid(-process.pid, 0)
+                wait_pid(process)
 
 
 def get_wine_release(binary):
@@ -214,10 +216,11 @@ def install_msi(app=None):
         exe_args.append('/passive')
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
     process = run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
-    process.wait()
-    if app:
-        if config.DIALOG == "curses":
-            app.install_logos_e.set()
+    return process
+
+
+def wait_pid(process):
+    os.waitpid(-process.pid, 0)
 
 
 def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
@@ -288,16 +291,15 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
 
 def run_winetricks(cmd=None):
     process = run_wine_proc(config.WINETRICKSBIN, exe=cmd)
-    os.waitpid(-process.pid, 0)
+    wait_pid(process)
     wineserver_wait()
-
 
 def run_winetricks_cmd(*args):
     cmd = [*args]
     msg.status(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     process = run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
-    os.waitpid(-process.pid, 0)
+    wait_pid(process)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     heavy_wineserver_wait()
 
@@ -345,7 +347,7 @@ def set_win_version(exe, windows_version):
             "/d", f"{windows_version}", "/f",
             ]
         process = run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
-        os.waitpid(-process.pid, 0)
+        wait_pid(process)
 
 
 def install_icu_data_files(app=None):
