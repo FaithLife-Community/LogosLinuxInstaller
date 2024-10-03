@@ -337,7 +337,7 @@ class InstallerWindow():
 
     def start_releases_check(self):
         # Disable button; clear list.
-        self.gui.release_check_button.logos_state(['disabled'])
+        self.gui.release_check_button.state(['disabled'])
         # self.gui.releasevar.set('')
         self.gui.release_dropdown['values'] = []
         # Setup queue, signal, thread.
@@ -448,7 +448,7 @@ class InstallerWindow():
         self.start_releases_check()
 
     def on_wine_check_released(self, evt=None):
-        self.gui.wine_check_button.logos_state(['disabled'])
+        self.gui.wine_check_button.state(['disabled'])
         self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
 
     def set_skip_fonts(self, evt=None):
@@ -475,21 +475,21 @@ class InstallerWindow():
         utils.start_thread(installer.ensure_launcher_shortcuts, app=self)
 
     def start_indeterminate_progress(self, evt=None):
-        self.gui.progress.logos_state(['!disabled'])
+        self.gui.progress.state(['!disabled'])
         self.gui.progressvar.set(0)
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
 
     def stop_indeterminate_progress(self, evt=None):
         self.gui.progress.stop()
-        self.gui.progress.logos_state(['disabled'])
+        self.gui.progress.state(['disabled'])
         self.gui.progress.config(mode='determinate')
         self.gui.progressvar.set(0)
         self.gui.statusvar.set('')
 
     def update_release_check_progress(self, evt=None):
         self.stop_indeterminate_progress()
-        self.gui.release_check_button.logos_state(['!disabled'])
+        self.gui.release_check_button.state(['!disabled'])
         if not self.releases_q.empty():
             self.gui.release_dropdown['values'] = self.releases_q.get()
             self.gui.releasevar.set(self.gui.release_dropdown['values'][0])
@@ -512,7 +512,7 @@ class InstallerWindow():
             self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
         self.set_wine()
         self.stop_indeterminate_progress()
-        self.gui.wine_check_button.logos_state(['!disabled'])
+        self.gui.wine_check_button.state(['!disabled'])
 
     def update_file_check_progress(self, evt=None):
         self.gui.progress.stop()
@@ -551,7 +551,7 @@ class InstallerWindow():
             text="Exit",
             command=self.on_cancel_released,
         )
-        self.gui.okay_button.logos_state(['!disabled'])
+        self.gui.okay_button.state(['!disabled'])
         self.root.event_generate('<<InstallFinished>>')
         self.win.destroy()
         return 0
@@ -592,7 +592,7 @@ class ControlWindow():
             text=self.gui.loggingstatevar.get(),
             command=self.switch_logging
         )
-        self.gui.logging_button.logos_state(['disabled'])
+        self.gui.logging_button.state(['disabled'])
 
         self.gui.config_button.config(command=control.edit_config)
         self.gui.deps_button.config(command=self.install_deps)
@@ -605,12 +605,12 @@ class ControlWindow():
             command=self.update_to_latest_appimage
         )
         if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
-            self.gui.latest_appimage_button.logos_state(['disabled'])
+            self.gui.latest_appimage_button.state(['disabled'])
             gui.ToolTip(
                 self.gui.latest_appimage_button,
                 "This button is disabled. The configured install was not created using an AppImage."  # noqa: E501
             )
-            self.gui.set_appimage_button.logos_state(['disabled'])
+            self.gui.set_appimage_button.state(['disabled'])
             gui.ToolTip(
                 self.gui.set_appimage_button,
                 "This button is disabled. The configured install was not created using an AppImage."  # noqa: E501
@@ -669,7 +669,7 @@ class ControlWindow():
         if utils.find_installed_product():
             self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
             self.gui.app_button.config(command=self.run_logos)
-            self.gui.get_winetricks_button.logos_state(['!disabled'])
+            self.gui.get_winetricks_button.state(['!disabled'])
         else:
             self.gui.app_button.config(command=self.run_installer)
 
@@ -691,7 +691,7 @@ class ControlWindow():
     def on_action_radio_clicked(self, evt=None):
         logging.debug("gui_app.ControlPanel.on_action_radio_clicked START")
         if utils.app_is_installed():
-            self.gui.actions_button.logos_state(['!disabled'])
+            self.gui.actions_button.state(['!disabled'])
             if self.gui.actionsvar.get() == 'run-indexing':
                 self.actioncmd = self.run_indexing
             elif self.gui.actionsvar.get() == 'remove-library-catalog':
@@ -733,7 +733,7 @@ class ControlWindow():
                 return
 
         # Prepare progress bar.
-        self.gui.progress.logos_state(['!disabled'])
+        self.gui.progress.state(['!disabled'])
         self.gui.progress.config(mode='determinate')
         self.gui.progressvar.set(0)
         # Start backup thread.
@@ -805,32 +805,32 @@ class ControlWindow():
         }
         self.gui.statusvar.set(f"Switching app logging to '{desired_state}d'…")
         self.start_indeterminate_progress()
-        self.gui.progress.logos_state(['!disabled'])
+        self.gui.progress.state(['!disabled'])
         self.gui.progress.start()
-        self.gui.logging_button.logos_state(['disabled'])
+        self.gui.logging_button.state(['disabled'])
         t = threading.Thread(target=self.logos.switch_logging, kwargs=kwargs)
         t.start()
 
     def initialize_logging_button(self, evt=None):
         self.gui.statusvar.set('')
         self.gui.progress.stop()
-        self.gui.progress.logos_state(['disabled'])
+        self.gui.progress.state(['disabled'])
         state = self.reverse_logging_state_value(self.logging_q.get())
         self.gui.loggingstatevar.set(state[:-1].title())
-        self.gui.logging_button.logos_state(['!disabled'])
+        self.gui.logging_button.state(['!disabled'])
 
     def update_logging_button(self, evt=None):
         self.gui.statusvar.set('')
         self.gui.progress.stop()
-        self.gui.progress.logos_state(['disabled'])
+        self.gui.progress.state(['disabled'])
         new_state = self.reverse_logging_state_value(self.logging_q.get())
         new_text = new_state[:-1].title()
         logging.debug(f"Updating app logging button text to: {new_text}")
         self.gui.loggingstatevar.set(new_text)
-        self.gui.logging_button.logos_state(['!disabled'])
+        self.gui.logging_button.state(['!disabled'])
 
     def update_app_button(self, evt=None):
-        self.gui.app_button.logos_state(['!disabled'])
+        self.gui.app_button.state(['!disabled'])
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
         self.configure_app_button()
         self.update_run_winetricks_button()
@@ -854,7 +854,7 @@ class ControlWindow():
             gui.ToolTip(self.gui.update_lli_button, msg)
         self.clear_status_text()
         self.stop_indeterminate_progress()
-        self.gui.update_lli_button.logos_state([state])
+        self.gui.update_lli_button.state([state])
 
     def update_latest_appimage_button(self, evt=None):
         status, reason = utils.compare_recommended_appimage_version()
@@ -871,14 +871,14 @@ class ControlWindow():
             gui.ToolTip(self.gui.latest_appimage_button, msg)
         self.clear_status_text()
         self.stop_indeterminate_progress()
-        self.gui.latest_appimage_button.logos_state([state])
+        self.gui.latest_appimage_button.state([state])
 
     def update_run_winetricks_button(self, evt=None):
         if utils.file_exists(config.WINETRICKSBIN):
             state = '!disabled'
         else:
             state = 'disabled'
-        self.gui.run_winetricks_button.logos_state([state])
+        self.gui.run_winetricks_button.state([state])
 
     def reverse_logging_state_value(self, state):
         if state == 'DISABLED':
@@ -917,14 +917,14 @@ class ControlWindow():
         self.gui.statusvar.set(self.status_q.get())
 
     def start_indeterminate_progress(self, evt=None):
-        self.gui.progress.logos_state(['!disabled'])
+        self.gui.progress.state(['!disabled'])
         self.gui.progressvar.set(0)
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
 
     def stop_indeterminate_progress(self, evt=None):
         self.gui.progress.stop()
-        self.gui.progress.logos_state(['disabled'])
+        self.gui.progress.state(['disabled'])
         self.gui.progress.config(mode='determinate')
         self.gui.progressvar.set(0)
 
