@@ -4,7 +4,6 @@
 #   - https://github.com/thw26/LogosLinuxInstaller/blob/master/LogosLinuxInstaller.sh  # noqa: E501
 
 import logging
-import threading
 from pathlib import Path
 from queue import Queue
 
@@ -655,15 +654,9 @@ class ControlWindow():
 
         # Start function to determine app logging state.
         if utils.app_is_installed():
-            t = threading.Thread(
-                target=self.logos.get_app_logging_state,
-                kwargs={'app': self, 'init': True},
-                daemon=True,
-            )
-            t.start()
             self.gui.statusvar.set('Getting current app logging status…')
             self.start_indeterminate_progress()
-            utils.start_thread(wine.get_app_logging_state, app=self)
+            utils.start_thread(self.logos.get_app_logging_state)
 
     def configure_app_button(self, evt=None):
         if utils.find_installed_product():
@@ -680,10 +673,7 @@ class ControlWindow():
         self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
-        # TODO: Add reference to App here so the status message is sent to the
-        # GUI? See msg.status and wine.run_logos
-        t = threading.Thread(target=self.logos.start)
-        t.start()
+        utils.start_thread(self.logos.start)
 
     def run_action_cmd(self, evt=None):
         self.actioncmd()
@@ -702,8 +692,7 @@ class ControlWindow():
                 self.actioncmd = self.install_icu
 
     def run_indexing(self, evt=None):
-        t = threading.Thread(target=self.logos.index)
-        t.start()
+        utils.start_thread(self.logos.index)
 
     def remove_library_catalog(self, evt=None):
         control.remove_library_catalog()
@@ -714,12 +703,7 @@ class ControlWindow():
 
     def install_icu(self, evt=None):
         self.gui.statusvar.set("Installing ICU files…")
-        t = threading.Thread(
-            target=wine.install_icu_data_files,
-            kwargs={'app': self},
-            daemon=True,
-        )
-        t.start()
+        utils.start_thread(wine.install_icu_data_files, app=self)
 
     def run_backup(self, evt=None):
         # Get backup folder.
@@ -798,18 +782,15 @@ class ControlWindow():
 
     def switch_logging(self, evt=None):
         desired_state = self.gui.loggingstatevar.get()
-        # new_state = 'Enable' if prev_state == 'Disable' else 'Disable'
-        kwargs = {
-            'action': desired_state.lower(),
-            'app': self,
-        }
         self.gui.statusvar.set(f"Switching app logging to '{desired_state}d'…")
         self.start_indeterminate_progress()
         self.gui.progress.state(['!disabled'])
         self.gui.progress.start()
         self.gui.logging_button.state(['disabled'])
-        t = threading.Thread(target=self.logos.switch_logging, kwargs=kwargs)
-        t.start()
+        utils.start_thread(
+            self.logos.switch_logging,
+            action=desired_state.lower()
+        )
 
     def initialize_logging_button(self, evt=None):
         self.gui.statusvar.set('')
