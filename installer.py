@@ -562,7 +562,10 @@ def ensure_product_installed(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_icu_data_files(app=app)
     config.INSTALL_STEP += 1
-    update_install_feedback(f"Ensuring {config.FLPRODUCT} is installed…", app=app)
+    update_install_feedback(
+        f"Ensuring {config.FLPRODUCT} is installed…",
+        app=app
+    )
 
     if not utils.find_installed_product():
         process = wine.install_msi()

@@ -16,9 +16,9 @@ from main import processes
 
 
 def set_logos_paths():
-    config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'
-    config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'
-    config.logos_indexing_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'
+    config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
+    config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'  # noqa: E501
+    config.logos_indexing_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'  # noqa: E501
     for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
         for f in files:
             if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
@@ -38,7 +38,7 @@ def check_wineserver():
         process = run_wine_proc(config.WINESERVER, exe_args=["-p"])
         process.wait()
         return process.returncode == 0
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -48,8 +48,8 @@ def wineserver_kill():
         process.wait()
 
 
-#TODO: Review these three commands. The top is the newest and should be preserved.
-# Can the other two be refactored out?
+# TODO: Review these three commands. The top is the newest and should be
+# preserved. Can the other two be refactored out?
 def wineserver_wait():
     if check_wineserver():
         process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
@@ -187,7 +187,12 @@ def initializeWineBottle(app=None):
     orig_overrides = config.WINEDLLOVERRIDES
     config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree="
     logging.debug(f"Running: {wine_exe} wineboot --init")
-    process = run_wine_proc(wine_exe, exe='wineboot', exe_args=['--init'], init=True)
+    process = run_wine_proc(
+        wine_exe,
+        exe='wineboot',
+        exe_args=['--init'],
+        init=True
+    )
     config.WINEDLLOVERRIDES = orig_overrides
     return process
 
@@ -297,6 +302,7 @@ def run_winetricks(cmd=None):
     wait_pid(process)
     wineserver_wait()
 
+
 def run_winetricks_cmd(*args):
     cmd = [*args]
     msg.status(f"Running winetricks \"{args[-1]}\"")
@@ -349,7 +355,11 @@ def set_win_version(exe, windows_version):
             "/t", "REG_SZ",
             "/d", f"{windows_version}", "/f",
             ]
-        process = run_wine_proc(str(utils.get_wine_exe_path()), exe='reg', exe_args=exe_args)
+        process = run_wine_proc(
+            str(utils.get_wine_exe_path()),
+            exe='reg',
+            exe_args=exe_args
+        )
         wait_pid(process)
 
 

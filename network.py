@@ -6,7 +6,6 @@ import queue
 import requests
 import shutil
 import sys
-import threading
 from base64 import b64encode
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -406,10 +405,10 @@ def get_latest_release_version_tag_name(json_data):
 
 
 def set_logoslinuxinstaller_latest_release_config():
-    if config.lli_release_channel is None or config.lli_release_channel == "stable":
+    if config.lli_release_channel is None or config.lli_release_channel == "stable":  # noqa: E501
         releases_url = "https://api.github.com/repos/FaithLife-Community/LogosLinuxInstaller/releases"  # noqa: E501
     else:
-        releases_url = "https://api.github.com/repos/FaithLife-Community/test-builds/releases"
+        releases_url = "https://api.github.com/repos/FaithLife-Community/test-builds/releases"  # noqa: E501
     json_data = get_latest_release_data(releases_url)
     logoslinuxinstaller_url = get_latest_release_url(json_data)
     logoslinuxinstaller_tag_name = get_latest_release_version_tag_name(json_data)  # noqa: E501
@@ -507,10 +506,10 @@ def get_logos_releases(app=None):
 
     msg.status(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
-    if config.logos_release_channel is None or config.logos_release_channel == "stable":
+    if config.logos_release_channel is None or config.logos_release_channel == "stable":  # noqa: E501
         url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
     elif config.logos_release_channel == "beta":
-        url = f"https://clientservices.logos.com/update/v1/feed/logos10/beta.xml"  # noqa: E501
+        url = "https://clientservices.logos.com/update/v1/feed/logos10/beta.xml"  # noqa: E501
 
     response_xml_bytes = net_get(url)
     # if response_xml is None and None not in [q, app]:
