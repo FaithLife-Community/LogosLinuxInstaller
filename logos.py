@@ -67,11 +67,14 @@ class LogosManager:
 
     def start(self):
         self.logos_state = State.STARTING
-        logos_release = utils.convert_logos_release(config.current_logos_version)
-        wine_release, _ = wine.get_wine_release(config.WINE_EXE)
+        logos_release = utils.convert_logos_release(config.current_logos_version)  # noqa: E501
+        wine_release, _ = wine.get_wine_release(str(utils.get_wine_exe_path()))
 
         def run_logos():
-            wine.run_wine_proc(config.WINE_EXE, exe=config.LOGOS_EXE)
+            wine.run_wine_proc(
+                str(utils.get_wine_exe_path()),
+                exe=config.LOGOS_EXE
+            )
 
         # TODO: Find a way to incorporate check_wine_version_and_branch()
         if 30 > logos_release[0] > 9 and (
@@ -117,7 +120,10 @@ class LogosManager:
         index_finished = threading.Event()
 
         def run_indexing():
-            wine.run_wine_proc(config.WINE_EXE, exe=config.logos_indexer_exe)
+            wine.run_wine_proc(
+                str(utils.get_wine_exe_path()),
+                exe=config.logos_indexer_exe
+            )
 
         def check_if_indexing(process):
             start_time = time.time()
@@ -227,7 +233,12 @@ class LogosManager:
             'add', 'HKCU\\Software\\Logos4\\Logging', '/v', 'Enabled',
             '/t', 'REG_DWORD', '/d', value, '/f'
         ]
-        wine.run_wine_proc(config.WINE_EXE, exe='reg', exe_args=exe_args)
+        process = wine.run_wine_proc(
+            str(utils.get_wine_exe_path()),
+            exe='reg',
+            exe_args=exe_args
+        )
+        process.wait()
         wine.wineserver_wait()
         config.LOGS = state
         if self.app is not None:
