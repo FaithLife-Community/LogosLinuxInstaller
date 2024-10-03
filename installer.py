@@ -502,7 +502,7 @@ def ensure_winetricks_applied(app=None):
         workdir.mkdir(parents=True, exist_ok=True)
         usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
         sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
-        # FIXME: This is failing (20241002).
+
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
             msg.status("Disabling winemenubuilder…", app)
             reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
