@@ -512,25 +512,27 @@ def ensure_winetricks_applied(app=None):
 # ''')
 #            wine.wine_reg_install(reg_file)
 
-        msg.status("Setting Renderer to GDI…", app)
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
+            msg.status("Setting Renderer to GDI…", app)
             wine.set_renderer("gdi")
 
-        msg.status("Setting Font Smooting to RGB…", app)
         if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
+            msg.status("Setting Font Smooting to RGB…", app)
             wine.install_font_smoothing()
 
-        msg.status("Installing fonts…", app)
         if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
+            msg.status("Installing fonts…", app)
             wine.install_fonts()
 
         if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
+            msg.status("Installing D3D…", app)
             wine.install_d3d_compiler()
 
         if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
+            msg.status(f"Setting {config.FLPRODUCT} to Win10 Mode…", app)
             wine.set_win_version("logos", "win10")
 
-        msg.logos_msg(f"Setting {config.FLPRODUCT} Bible Indexing to Win10 Mode.")
+        msg.logos_msg(f"Setting {config.FLPRODUCT} Bible Indexing to Win10 Mode…")  # noqa: E501
         wine.set_win_version("indexer", "win10")
         wine.light_wineserver_wait()
     logging.debug("> Done.")
