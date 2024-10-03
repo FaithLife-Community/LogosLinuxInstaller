@@ -302,7 +302,7 @@ def status(text, app=None, end='\n'):
     if app is not None:
         if config.DIALOG == 'tk':
             app.status_q.put(text)
-            app.root.event_generate('<<UpdateStatus>>')
+            app.root.event_generate(app.status_evt)
             logging.info(f"{text}")
         elif config.DIALOG == 'curses':
             if len(config.console_log) > 0:

@@ -626,7 +626,7 @@ class ControlWindow():
         self.logging_event = '<<UpdateLoggingButton>>'
         self.root.bind(self.logging_event, self.update_logging_button)
         self.status_q = Queue()
-        self.status_evt = '<<UpdateStatus>>'
+        self.status_evt = '<<UpdateControlStatus>>'
         self.root.bind(self.status_evt, self.update_status_text)
         self.root.bind('<<ClearStatus>>', self.clear_status_text)
         self.progress_q = Queue()
