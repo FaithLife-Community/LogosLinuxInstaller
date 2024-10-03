@@ -88,6 +88,10 @@ class LogosManager:
             msg.status(txt, self.app)
         else:
             wine.wineserver_kill()
+            app = self.app
+            if config.DIALOG == 'tk':
+                # Don't send "Running" message to GUI b/c it never clears.
+                app = None
             msg.status(f"Running {config.FLPRODUCT}…", app=app)
             utils.start_thread(run_logos, daemon=False)
             self.logos_state = State.RUNNING
