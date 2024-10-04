@@ -555,13 +555,15 @@ def install_premade_wine_bottle(srcdir, appdir):
 
 
 def compare_logos_linux_installer_version():
+    # TODO: Save this as a config variable and only run it once in
+    # network.check_for_updates().
     status = None
     message = None
     if (
         config.LLI_CURRENT_VERSION is not None
         and config.LLI_LATEST_VERSION is not None
     ):
-        logging.debug(f"{config.LLI_CURRENT_VERSION=}; {config.LLI_LATEST_VERSION=}")  # noqa: E501
+        # logging.debug(f"{config.LLI_CURRENT_VERSION=}; {config.LLI_LATEST_VERSION=}")  # noqa: E501
         if (
             version.parse(config.LLI_CURRENT_VERSION)
             < version.parse(config.LLI_LATEST_VERSION)
@@ -587,7 +589,7 @@ def compare_logos_linux_installer_version():
         status = False
         message = "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set."  # noqa: E501
 
-    logging.debug(f"{status=}; {message=}")
+    # logging.debug(f"{status=}; {message=}")
     return status, message
 
 
