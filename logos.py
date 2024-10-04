@@ -93,7 +93,7 @@ class LogosManager:
                 # Don't send "Running" message to GUI b/c it never clears.
                 app = None
             msg.status(f"Running {config.FLPRODUCT}…", app=app)
-            utils.start_thread(run_logos, daemon=False)
+            utils.start_thread(run_logos, daemon_bool=False)
             self.logos_state = State.RUNNING
 
     def stop(self):
