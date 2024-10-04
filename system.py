@@ -344,6 +344,15 @@ def get_package_manager():
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
+    elif shutil.which('apk') is not None:  # manjaro
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["apk", "--no-interactive", "add"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["apk", "--no-interactive", "fetch"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["apk", "--no-interactive", "del"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["apk", "list", "-i"]
+        config.QUERY_PREFIX = ''
+        config.PACKAGES = "gcompat fuse-common fuse3 patch wget sed grep gawk cabextract 7zip samba curl"  # noqa: E501
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pamac", "install", "--no-upgrade", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pamac", "install", "--no-upgrade", "--download-only", "--no-confirm"]  # noqa: E501
@@ -545,6 +554,19 @@ def postinstall_dependencies_steamos():
     return command
 
 
+def postinstall_dependencies_alpine():
+    user = os.getlogin()
+    command = [
+        config.SUPERUSER_COMMAND, "modprobe", "fuse", "&&",
+        config.SUPERUSER_COMMAND, "rc-update", "add", "fuse", "boot", "&&",
+        config.SUPERUSER_COMMAND, "sed", "-i", "'s/#user_allow_other/user_allow_other/g'", '/etc/fuse.conf', "&&",
+        config.SUPERUSER_COMMAND, "addgroup", "fuse", "&&",
+        config.SUPERUSER_COMMAND, "adduser", f"{user}", "fuse", "&&",
+        config.SUPERUSER_COMMAND, "rc-service", "fuse", "restart",
+    ]
+    return command
+
+
 def preinstall_dependencies(app=None):
     command = []
     logging.debug("Performing pre-install dependencies…")
@@ -560,6 +582,8 @@ def postinstall_dependencies(app=None):
     logging.debug("Performing post-install dependencies…")
     if config.OS_NAME == "Steam":
         command = postinstall_dependencies_steamos()
+    if config.OS_NAME == "alpine":
+        command = postinstall_dependencies_alpine()
     else:
         logging.debug("No post-install dependencies required.")
     return command
