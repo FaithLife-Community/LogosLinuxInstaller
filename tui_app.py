@@ -860,14 +860,16 @@ class TUI:
     def set_tui_menu_options(self, dialog=False):
         labels = []
         if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
-            logging.debug("Checking if Logos Linux Installer needs updated.")  # noqa: E501
+            # logging.debug("Checking if Logos Linux Installer needs updated.")  # noqa: E501
             status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
             if status == 0:
                 labels.append("Update Logos Linux Installer")
             elif status == 1:
-                logging.debug("Logos Linux Installer is up-to-date.")
+                # logging.debug("Logos Linux Installer is up-to-date.")
+                pass
             elif status == 2:
-                logging.debug("Logos Linux Installer is newer than the latest release.")  # noqa: E501
+                # logging.debug("Logos Linux Installer is newer than the latest release.")  # noqa: E501
+                pass
             else:
                 logging.error(f"{error_message}")
 
