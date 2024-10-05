@@ -154,9 +154,14 @@ class LogosManager:
 
         wine.wineserver_kill()
         msg.status(f"Indexing has begun…", self.app)
+
+        # Populate config.logos_indexer_exe
+        if config.logos_indexer_exe is None or config.login_window_cmd is None or config.logos_cef_cmd is None:
+            wine.set_logos_paths()
+
         # index_thread = threading.Thread(target=run_indexing)
         # index_thread.start()
-        index_thread = utils.start_thread(run_indexing, daemon=False)
+        index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
         time.sleep(1)  # If we don't wait, the thread starts too quickly
         # and the process won't yet be launched when we try to pull it from config.processes
