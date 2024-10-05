@@ -246,7 +246,7 @@ def cli_ask_filepath(question_text):
 def logos_continue_question(question_text, no_text, secondary, app=None):
     if config.DIALOG == 'tk':
         gui_continue_question(question_text, no_text, secondary)
-    elif app is None:
+    elif config.DIALOG == 'cli':
         cli_continue_question(question_text, no_text, secondary)
     elif config.DIALOG == 'curses':
         app.screen_q.put(
