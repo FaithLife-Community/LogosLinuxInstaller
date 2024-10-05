@@ -618,7 +618,7 @@ class TUI:
         config.WINE_EXE = choice
         if choice:
             self.menu_screen.choice = "Processing"
-            self.wine_q.put(config.WINE_EXE)
+            self.wines_q.put(config.WINE_EXE)
             self.wine_e.set()
 
     def winetricksbin_select(self, choice):
