@@ -242,7 +242,7 @@ def parse_args(args, parser):
     # Set ACTION function.
     actions = {
         'install_app': cli.CLI().install_app,
-        'run_installed_app': logos.LogosManager().start,
+        'run_installed_app': cli.CLI().run_installed_app,
         'run_indexing': logos.LogosManager().index,
         'remove_library_catalog': control.remove_library_catalog,
         'remove_index_files': control.remove_all_index_files,
@@ -413,6 +413,7 @@ def main():
         'remove_library_catalog',
         'restore',
         'run_indexing',
+        'run_installed_app',
         'run_logos',
         'switch_logging',
     ]
@@ -423,7 +424,7 @@ def main():
         config.ACTION()
     elif utils.app_is_installed():
         # Run the desired Logos action.
-        logging.info(f"Running function: {config.ACTION.__name__}")
+        logging.info(f"Running function for installed app: {config.ACTION.__name__}")  # noqa: E501
         config.ACTION()  # defaults to run_control_panel()
     else:
         logging.info("Starting Control Panel")
