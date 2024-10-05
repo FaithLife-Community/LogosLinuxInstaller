@@ -28,7 +28,6 @@ class CLI:
 
         msg.logos_msg("Exiting CLI installer.")
 
-
     def user_input_processor(self):
         prompt = None
         question = None
@@ -40,7 +39,13 @@ class CLI:
             question = prompt[0]
             options = prompt[1]
         if question is not None and options is not None:
-            choice = input(f"{question}: {options}: ")
+            # Convert options list to string.
+            default = options[0]
+            options[0] = f"{options[0]} [default]"
+            optstr = ', '.join(options)
+            choice = input(f"{question}: {optstr}: ")
+            if len(choice) == 0:
+                choice = default
         if choice is not None and choice.lower() == 'exit':
             self.running = False
         if choice is not None:
