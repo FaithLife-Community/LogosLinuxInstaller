@@ -44,10 +44,9 @@ class FileProps(Props):
     def get_md5(self):
         if self.path is None:
             return
-        logging.debug("This may take a while…")
         md5 = hashlib.md5()
         with self.path.open('rb') as f:
-            for chunk in iter(lambda: f.read(4096), b''):
+            for chunk in iter(lambda: f.read(524288), b''):
                 md5.update(chunk)
         self.md5 = b64encode(md5.digest()).decode('utf-8')
         logging.debug(f"{str(self.path)} MD5: {self.md5}")
@@ -349,9 +348,6 @@ def same_md5(url, file_path):
     if url_md5 is None:  # skip MD5 check if not provided with URL
         res = True
     else:
-        # TODO: Figure out why this is taking a long time.
-        # On 20240922, I ran into an issue such that it would take
-        # upwards of 6.5 minutes to complete
         file_md5 = FileProps(file_path).get_md5()
         logging.debug(f"{file_md5=}")
         res = url_md5 == file_md5
