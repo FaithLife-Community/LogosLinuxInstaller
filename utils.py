@@ -243,6 +243,7 @@ def check_dependencies(app=None):
 
     if app:
         if config.DIALOG == "tk":
+            # FIXME: This should get moved to gui_app.
             app.root.event_generate('<<StopIndeterminateProgress>>')
 
 
