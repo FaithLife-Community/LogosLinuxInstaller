@@ -282,8 +282,8 @@ def get_dialog():
     # Set config.DIALOG.
     if dialog is not None:
         dialog = dialog.lower()
-        if dialog not in ['curses', 'tk']:
-            msg.logos_error("Valid values for DIALOG are 'curses' or 'tk'.")
+        if dialog not in ['cli', 'curses', 'tk']:
+            msg.logos_error("Valid values for DIALOG are 'cli', 'curses' or 'tk'.")  # noqa: E501
         config.DIALOG = dialog
     elif sys.__stdin__.isatty():
         config.DIALOG = 'curses'
@@ -780,8 +780,9 @@ def have_lib(library, ld_library_path):
     available_library_paths = ['/usr/lib', '/lib']
     if ld_library_path is not None:
         available_library_paths = [*ld_library_path.split(':'), *available_library_paths]
-        roots = [root for root in available_library_paths if not Path(root).is_symlink()]
-        logging.debug(f"Library Paths: {roots}")
+
+    roots = [root for root in available_library_paths if not Path(root).is_symlink()]
+    logging.debug(f"Library Paths: {roots}")
     for root in roots:
         libs = []
         logging.debug(f"Have lib? Checking {root}")
@@ -796,7 +797,7 @@ def have_lib(library, ld_library_path):
 
 
 def check_libs(libraries, app=None):
-    ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
+    ld_library_path = os.environ.get('LD_LIBRARY_PATH')
     for library in libraries:
         have_lib_result = have_lib(library, ld_library_path)
         if have_lib_result:
