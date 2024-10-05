@@ -550,7 +550,7 @@ def get_logos_releases(app=None):
             app.releases_e.set()
         elif config.DIALOG == 'cli':
             app.input_q.put((f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?: ", filtered_releases))
-            app.event.set()
+            app.input_event.set()
     return filtered_releases
 
 

@@ -241,7 +241,7 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'install_app': run_cli,
+        'install_app': cli.CLI().install_app,
         'run_installed_app': logos.LogosManager().start,
         'run_indexing': logos.LogosManager().index,
         'remove_library_catalog': control.remove_library_catalog,
@@ -285,10 +285,6 @@ def parse_args(args, parser):
     if config.ACTION is None:
         config.ACTION = run_control_panel
     logging.debug(f"{config.ACTION=}")
-
-
-def run_cli():
-    cli.command_line_interface()
 
 
 def run_control_panel():

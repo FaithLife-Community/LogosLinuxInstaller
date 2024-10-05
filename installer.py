@@ -27,8 +27,9 @@ def ensure_product_choice(app=None):
         if app:
             if config.DIALOG == 'cli':
                 app.input_q.put(("Choose which FaithLife product the script should install: ", ["Logos", "Verbum", "Exit"]))
-                app.event.wait()
-                app.event.clear()
+                app.input_event.set()
+                app.choice_event.wait()
+                app.choice_event.clear()
                 config.FLPRODUCT = app.choice_q.get()
             else:
                 utils.send_task(app, 'FLPRODUCT')
@@ -61,8 +62,9 @@ def ensure_version_choice(app=None):
         if app:
             if config.DIALOG == 'cli':
                 app.input_q.put((f"Which version of {config.FLPRODUCT} should the script install?: ", ["10", "9", "Exit"]))
-                app.event.wait()
-                app.event.clear()
+                app.input_event.set()
+                app.choice_event.wait()
+                app.choice_event.clear()
                 config.TARGETVERSION = app.choice_q.get()
             else:
                 utils.send_task(app, 'TARGETVERSION')
@@ -87,10 +89,9 @@ def ensure_release_choice(app=None):
         if app:
             if config.DIALOG == 'cli':
                 utils.start_thread(network.get_logos_releases, daemon_bool=True, app=app)
-                app.event.wait()
-                app.event.clear()
-                app.event.wait()  # Wait for user input queue to receive input
-                app.event.clear()
+                app.input_event.set()
+                app.choice_event.wait()
+                app.choice_event.clear()
                 config.TARGET_RELEASE_VERSION = app.choice_q.get()
             else:
                 utils.send_task(app, 'TARGET_RELEASE_VERSION')
@@ -122,8 +123,9 @@ def ensure_install_dir_choice(app=None):
                 default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
                 question = f"Where should {config.FLPRODUCT} files be installed to?: "  # noqa: E501
                 app.input_q.put((question, [default, "Type your own custom path", "Exit"]))
-                app.event.wait()
-                app.event.clear()
+                app.input_event.set()
+                app.choice_event.wait()
+                app.choice_event.clear()
                 config.INSTALLDIR = app.choice_q.get()
             elif config.DIALOG == 'tk':
                 config.INSTALLDIR = default
@@ -163,9 +165,10 @@ def ensure_wine_choice(app=None):
                 if config.DIALOG == 'cli':
                     app.input_q.put((
                         f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?: ", options))
-                    app.event.set()
-                app.event.wait()
-                app.event.clear()
+                    app.input_event.set()
+                app.input_event.set()
+                app.choice_event.wait()
+                app.choice_event.clear()
                 config.WINE_EXE = utils.get_relative_path(utils.get_config_var(app.choice_q.get()), config.INSTALLDIR)
             else:
                 utils.send_task(app, 'WINE_EXE')
@@ -208,8 +211,9 @@ def ensure_winetricks_choice(app=None):
         if app:
             if config.DIALOG == 'cli':
                 app.input_q.put((f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux.", winetricks_options))
-                app.event.wait()
-                app.event.clear()
+                app.input_event.set()
+                app.choice_event.wait()
+                app.choice_event.clear()
                 winetricksbin = app.choice_q.get()
             else:
                 utils.send_task(app, 'WINETRICKSBIN')
@@ -221,9 +225,9 @@ def ensure_winetricks_choice(app=None):
             config.WINETRICKSBIN = winetricksbin
         else:
             config.WINETRICKSBIN = winetricks_options[0]
-    else:
-        m = f"{utils.get_calling_function_name()}: --install-app is broken"
-        logging.critical(m)
+    # else:
+    #     m = f"{utils.get_calling_function_name()}: --install-app is broken"
+    #     logging.critical(m)
 
     logging.debug(f"> {config.WINETRICKSBIN=}")
 
@@ -751,6 +755,10 @@ Categories=Education;
 
     if app:
         if config.DIALOG == 'cli':
+            # Signal CLI.user_input_processor to stop.
+            app.input_q.put(None)
+            app.input_event.set()
+            # Signal CLI itself to stop.
             app.stop()
 
 
