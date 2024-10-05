@@ -30,7 +30,7 @@ class CLI:
         self.user_input_processor()
 
     def run_installed_app(self):
-        self.thread = utils.start_thread(self.logos.start, app=self)
+        self.logos.start()
 
     def user_input_processor(self, evt=None):
         while self.running:
