@@ -243,8 +243,8 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'install_app': cli.CLI().install_app,
-        'run_installed_app': cli.CLI().run_installed_app,
+        'install_app': install_app,
+        'run_installed_app': run_installed_app,
         'run_indexing': logos.LogosManager().index,
         'remove_library_catalog': control.remove_library_catalog,
         'remove_index_files': control.remove_all_index_files,
@@ -287,6 +287,17 @@ def parse_args(args, parser):
     if config.ACTION is None:
         config.ACTION = run_control_panel
     logging.debug(f"{config.ACTION=}")
+
+
+# NOTE: install_app() and run_installed_app() have to be explicit functions to
+# avoid instantiating cli.CLI() when CLI is not being run. Otherwise,
+# config.DIALOG is incorrectly set as 'cli'.
+def install_app():
+    cli.CLI().install_app()
+
+
+def run_installed_app():
+    cli.CLI().run_installed_app()
 
 
 def run_control_panel():
