@@ -35,7 +35,7 @@ def ensure_product_choice(app=None):
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
     else:
-        if config.DIALOG == 'curses':
+        if config.DIALOG == 'curses' and app:
             app.set_product(config.FLPRODUCT)
 
     if config.FLPRODUCT == 'Logos':
@@ -66,7 +66,7 @@ def ensure_version_choice(app=None):
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
     else:
-        if config.DIALOG == 'curses':
+        if config.DIALOG == 'curses' and app:
             app.set_version(config.TARGETVERSION)
 
     logging.debug(f"> {config.TARGETVERSION=}")
@@ -90,7 +90,7 @@ def ensure_release_choice(app=None):
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
     else:
-        if config.DIALOG == 'curses':
+        if config.DIALOG == 'curses' and app:
             app.set_release(config.TARGET_RELEASE_VERSION)
 
     logging.debug(f"> {config.TARGET_RELEASE_VERSION=}")
@@ -121,7 +121,7 @@ def ensure_install_dir_choice(app=None):
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
     else:
-        if config.DIALOG == 'curses':
+        if config.DIALOG == 'curses' and app:
             app.set_installdir(config.INSTALLDIR)
 
     logging.debug(f"> {config.INSTALLDIR=}")
@@ -151,7 +151,7 @@ def ensure_wine_choice(app=None):
             m = f"{utils.get_calling_function_name()}: --install-app is broken"
             logging.critical(m)
     else:
-        if config.DIALOG == 'curses':
+        if config.DIALOG == 'curses' and app:
             app.set_wine(utils.get_wine_exe_path())
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
