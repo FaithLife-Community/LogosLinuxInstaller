@@ -448,10 +448,12 @@ def close():
     logging.debug("Closing Logos on Linux.")
     for thread in threads:
         thread.join()
-    if len(processes) > 0:
+    # Only kill wine processes if closing the Control Panel. Otherwise, some
+    # CLI commands get killed as soon as they're started.
+    if config.ACTION.__name__ == 'run_control_panel' and len(processes) > 0:
         wine.end_wine_processes()
     else:
-        logging.debug("No processes found.")
+        logging.debug("No extra processes found.")
     logging.debug("Closing Logos on Linux finished.")
 
 
