@@ -55,8 +55,11 @@ for key, default in extended_config.items():
 ACTION = 'app'
 APPIMAGE_FILE_PATH = None
 authenticated = False
+architecture = None
 BADPACKAGES = None
+bits = None
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")  # noqa: E501
+ELFPACKAGES = None
 GUI = None
 INSTALL_STEP = 0
 INSTALL_STEPS_COUNT = 0
