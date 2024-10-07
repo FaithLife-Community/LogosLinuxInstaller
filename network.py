@@ -138,6 +138,8 @@ def cli_download(uri, destination, app=None):
     cli_queue = queue.Queue()
     kwargs = {'q': cli_queue, 'target': target}
     t = utils.start_thread(net_get, uri, **kwargs)
+    # TODO: This results in high CPU usage while showing the progress bar.
+    # The solution will be to rework the wait on the cli_queue.
     try:
         while t.is_alive():
             if cli_queue.empty():
