@@ -759,7 +759,8 @@ class ControlWindow():
         appimage_filename = self.open_file_dialog("AppImage", "AppImage")
         if not appimage_filename:
             return
-        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        # config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        config.APPIMAGE_FILE_PATH = appimage_filename
         utils.start_thread(utils.set_appimage_symlink, app=self)
 
     def get_winetricks(self, evt=None):

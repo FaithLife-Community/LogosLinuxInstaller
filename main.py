@@ -213,6 +213,9 @@ def parse_args(args, parser):
     if args.delete_log:
         config.DELETE_LOG = True
 
+    if args.set_appimage:
+        config.APPIMAGE_FILE_PATH = args.set_appimage[0]
+
     if args.skip_fonts:
         config.SKIP_FONTS = True
 
@@ -243,8 +246,8 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'install_app': install_app,
-        'run_installed_app': run_installed_app,
+        'install_app': cli.install_app,
+        'run_installed_app': cli.run_installed_app,
         'run_indexing': logos.LogosManager().index,
         'remove_library_catalog': control.remove_library_catalog,
         'remove_index_files': control.remove_all_index_files,
@@ -254,7 +257,7 @@ def parse_args(args, parser):
         'restore': control.restore,
         'update_self': utils.update_to_latest_lli_release,
         'update_latest_appimage': utils.update_to_latest_recommended_appimage,
-        'set_appimage': utils.set_appimage_symlink,
+        'set_appimage': cli.set_appimage,
         'get_winetricks': control.set_winetricks,
         'run_winetricks': wine.run_winetricks,
         'install_d3d_compiler': wine.install_d3d_compiler,
@@ -287,17 +290,6 @@ def parse_args(args, parser):
     if config.ACTION is None:
         config.ACTION = run_control_panel
     logging.debug(f"{config.ACTION=}")
-
-
-# NOTE: install_app() and run_installed_app() have to be explicit functions to
-# avoid instantiating cli.CLI() when CLI is not being run. Otherwise,
-# config.DIALOG is incorrectly set as 'cli'.
-def install_app():
-    cli.CLI().install_app()
-
-
-def run_installed_app():
-    cli.CLI().run_installed_app()
 
 
 def run_control_panel():
