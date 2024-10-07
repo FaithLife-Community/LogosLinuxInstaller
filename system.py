@@ -183,33 +183,33 @@ def popen_command(command, retries=1, delay=0, **kwargs):
     return None
 
 
-def wait_on(command):
-    try:
-        # Start the process in the background
-        # TODO: Convert to use popen_command()
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        msg.status(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
-        time.sleep(1.0)
-        while process.poll() is None:
-            msg.logos_progress()
-            time.sleep(0.5)
-        print()
+# def wait_on(command):
+#     try:
+#         # Start the process in the background
+#         # TODO: Convert to use popen_command()
+#         process = subprocess.Popen(
+#             command,
+#             stdout=subprocess.PIPE,
+#             stderr=subprocess.PIPE,
+#             text=True
+#         )
+#         msg.status(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
+#         time.sleep(1.0)
+#         while process.poll() is None:
+#             msg.logos_progress()
+#             time.sleep(0.5)
+#         print()
 
-        # Process has finished, check the result
-        stdout, stderr = process.communicate()
+#         # Process has finished, check the result
+#         stdout, stderr = process.communicate()
 
-        if process.returncode == 0:
-            logging.info(f"\"{' '.join(command)}\" has ended properly.")
-        else:
-            logging.error(f"Error: {stderr}")
+#         if process.returncode == 0:
+#             logging.info(f"\"{' '.join(command)}\" has ended properly.")
+#         else:
+#             logging.error(f"Error: {stderr}")
 
-    except Exception as e:
-        logging.critical(f"{e}")
+#     except Exception as e:
+#         logging.critical(f"{e}")
 
 
 def get_pids(query):
@@ -230,20 +230,20 @@ def get_logos_pids():
     config.processes[config.logos_indexer_exe] = get_pids(config.logos_indexer_exe)
 
 
-def get_pids_using_file(file_path, mode=None):
-    # Make list (set) of pids using 'directory'.
-    pids = set()
-    for proc in psutil.process_iter(['pid', 'open_files']):
-        try:
-            if mode is not None:
-                paths = [f.path for f in proc.open_files() if f.mode == mode]
-            else:
-                paths = [f.path for f in proc.open_files()]
-            if len(paths) > 0 and file_path in paths:
-                pids.add(proc.pid)
-        except psutil.AccessDenied:
-            pass
-    return pids
+# def get_pids_using_file(file_path, mode=None):
+#     # Make list (set) of pids using 'directory'.
+#     pids = set()
+#     for proc in psutil.process_iter(['pid', 'open_files']):
+#         try:
+#             if mode is not None:
+#                 paths = [f.path for f in proc.open_files() if f.mode == mode]
+#             else:
+#                 paths = [f.path for f in proc.open_files()]
+#             if len(paths) > 0 and file_path in paths:
+#                 pids.add(proc.pid)
+#         except psutil.AccessDenied:
+#             pass
+#     return pids
 
 
 def reboot():

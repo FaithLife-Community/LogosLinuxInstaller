@@ -449,31 +449,46 @@ def get_winetricks_options():
     return winetricks_options
 
 
-def get_pids_using_file(file_path, mode=None):
-    pids = set()
-    for proc in psutil.process_iter(['pid', 'open_files']):
+def get_procs_using_file(file_path, mode=None):
+    procs = set()
+    for proc in psutil.process_iter(['pid', 'open_files', 'name']):
         try:
             if mode is not None:
                 paths = [f.path for f in proc.open_files() if f.mode == mode]
             else:
                 paths = [f.path for f in proc.open_files()]
             if len(paths) > 0 and file_path in paths:
-                pids.add(proc.pid)
+                procs.add(proc.pid)
         except psutil.AccessDenied:
             pass
-    return pids
+    return procs
 
 
-def wait_process_using_dir(directory):
-    logging.info(f"* Starting wait_process_using_dir for {directory}…")
+# def get_pids_using_file(file_path, mode=None):
+#     pids = set()
+#     for proc in psutil.process_iter(['pid', 'open_files']):
+#         try:
+#             if mode is not None:
+#                 paths = [f.path for f in proc.open_files() if f.mode == mode]
+#             else:
+#                 paths = [f.path for f in proc.open_files()]
+#             if len(paths) > 0 and file_path in paths:
+#                 pids.add(proc.pid)
+#         except psutil.AccessDenied:
+#             pass
+#     return pids
 
-    # Get pids and wait for them to finish.
-    pids = get_pids_using_file(directory)
-    for pid in pids:
-        logging.info(f"wait_process_using_dir PID: {pid}")
-        psutil.wait(pid)
 
-    logging.info("* End of wait_process_using_dir.")
+# def wait_process_using_dir(directory):
+#     logging.info(f"* Starting wait_process_using_dir for {directory}…")
+
+#     # Get pids and wait for them to finish.
+#     pids = get_pids_using_file(directory)
+#     for pid in pids:
+#         logging.info(f"wait_process_using_dir PID: {pid}")
+#         psutil.wait(pid)
+
+#     logging.info("* End of wait_process_using_dir.")
 
 
 def write_progress_bar(percent, screen_width=80):

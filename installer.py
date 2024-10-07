@@ -522,7 +522,8 @@ def ensure_wineprefix_init(app=None):
             logging.debug("Initializing wineprefix.")
             process = wine.initializeWineBottle()
             wine.wait_pid(process)
-            wine.light_wineserver_wait()
+            # wine.light_wineserver_wait()
+            wine.wineserver_wait()
             logging.debug("Wine init complete.")
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
@@ -580,7 +581,8 @@ def ensure_winetricks_applied(app=None):
 
         msg.logos_msg(f"Setting {config.FLPRODUCT} Bible Indexing to Win10 Mode…")  # noqa: E501
         wine.set_win_version("indexer", "win10")
-        wine.light_wineserver_wait()
+        # wine.light_wineserver_wait()
+        wine.wineserver_wait()
     logging.debug("> Done.")
 
 
