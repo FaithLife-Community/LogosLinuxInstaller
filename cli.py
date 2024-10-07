@@ -123,6 +123,9 @@ def backup():
 
 
 def create_shortcuts():
+    # TODO: This takes surprisingly long because it walks through all the
+    # installer steps to confirm everything up to the shortcuts. Can this be
+    # shortcutted?
     CLI().install_app()
 
 
