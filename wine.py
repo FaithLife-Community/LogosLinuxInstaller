@@ -59,14 +59,15 @@ def wineserver_wait():
         process.wait()
 
 
-def light_wineserver_wait():
-    command = [f"{config.WINESERVER_EXE}", "-w"]
-    system.wait_on(command)
+# def light_wineserver_wait():
+#     command = [f"{config.WINESERVER_EXE}", "-w"]
+#     system.wait_on(command)
 
 
-def heavy_wineserver_wait():
-    utils.wait_process_using_dir(config.WINEPREFIX)
-    system.wait_on([f"{config.WINESERVER_EXE}", "-w"])
+# def heavy_wineserver_wait():
+#     utils.wait_process_using_dir(config.WINEPREFIX)
+#     # system.wait_on([f"{config.WINESERVER_EXE}", "-w"])
+#     wineserver_wait()
 
 
 def end_wine_processes():
@@ -215,7 +216,8 @@ def wine_reg_install(reg_file):
         msg.logos_error(f"{failed}: {reg_file}")
     elif process.returncode == 0:
         logging.info(f"{reg_file} installed.")
-    light_wineserver_wait()
+    # light_wineserver_wait()
+    wineserver_wait()
 
 
 def install_msi(app=None):
@@ -313,7 +315,13 @@ def run_winetricks_cmd(*args):
     process = run_wine_proc(config.WINETRICKSBIN, exe_args=cmd)
     wait_pid(process)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
-    heavy_wineserver_wait()
+    # heavy_wineserver_wait()
+    wineserver_wait()
+    logging.debug(f"procs using {config.WINEPREFIX}:")
+    for proc in utils.get_procs_using_file(config.WINEPREFIX):
+        logging.debug(f"{proc=}")
+    else:
+        logging.debug('<None>')
 
 
 def install_d3d_compiler():
