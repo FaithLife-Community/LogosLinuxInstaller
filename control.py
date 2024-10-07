@@ -211,10 +211,9 @@ def copy_data(src_dirs, dst_dir):
 
 def remove_install_dir():
     folder = Path(config.INSTALLDIR)
-    # FIXME: msg.cli_question needs additional arg
     if (
         folder.is_dir()
-        and msg.cli_question(f"Delete \"{folder}\" and all its contents?", "")
+        and msg.cli_question(f"Delete \"{folder}\" and all its contents?", "", "")
     ):
         shutil.rmtree(folder)
         logging.warning(f"Deleted folder and all its contents: {folder}")
