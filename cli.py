@@ -32,6 +32,9 @@ class CLI:
     def run_installed_app(self):
         self.logos.start()
 
+    def set_appimage(self):
+        utils.set_appimage_symlink(app=self)
+
     def user_input_processor(self, evt=None):
         while self.running:
             prompt = None
@@ -62,5 +65,13 @@ class CLI:
                 self.choice_event.set()
 
 
-def command_line_interface():
-    CLI().run()
+def install_app():
+    CLI().install_app()
+
+
+def run_installed_app():
+    CLI().run_installed_app()
+
+
+def set_appimage():
+    CLI().set_appimage()

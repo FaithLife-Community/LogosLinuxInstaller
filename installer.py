@@ -162,10 +162,8 @@ def ensure_wine_choice(app=None):
                     utils.find_appimage_files(config.TARGET_RELEASE_VERSION),
                     utils.find_wine_binary_files(config.TARGET_RELEASE_VERSION)
                 )
-                if config.DIALOG == 'cli':
-                    app.input_q.put((
-                        f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?: ", options))
-                    app.input_event.set()
+                app.input_q.put((
+                    f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?: ", options))
                 app.input_event.set()
                 app.choice_event.wait()
                 app.choice_event.clear()

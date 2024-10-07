@@ -24,7 +24,9 @@ import msg
 import network
 import system
 if system.have_dep("dialog"):
-    import tui_dialog
+    import tui_dialog as tui
+else:
+    import tui_curses as tui
 import wine
 
 # TODO: Move config commands to config.py
@@ -688,6 +690,7 @@ def is_appimage(file_path):
 
         return appimage_check, appimage_type
     else:
+        logging.error(f"File does not exist: {expanded_path}")
         return False, None
 
 
@@ -791,27 +794,31 @@ def set_appimage_symlink(app=None):
     # if config.APPIMAGE_FILE_PATH is None:
     #     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
 
-    # logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
-    # if config.APPIMAGE_FILE_PATH == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
-    #     get_recommended_appimage()
-    #     selected_appimage_file_path = Path(config.APPDIR_BINDIR) / config.APPIMAGE_FILE_PATH  # noqa: E501
-    # else:
-    #     selected_appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
-    selected_appimage_file_path = Path(config.SELECTED_APPIMAGE_FILENAME)
-
-    if not check_appimage(selected_appimage_file_path):
-        logging.warning(f"Cannot use {selected_appimage_file_path}.")
-        return
-
-    copy_message = (
-        f"Should the program copy {selected_appimage_file_path} to the"
-        f" {config.APPDIR_BINDIR} directory?"
-    )
-
-    # Determine if user wants their AppImage in the Logos on Linux bin dir.
-    if selected_appimage_file_path.exists():
-        confirm = False
+    logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
+    logging.debug(f"{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME=}")
+    appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
+    appdir_bindir = Path(config.APPDIR_BINDIR)
+    appimage_symlink_path = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
+    if appimage_file_path.name == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
+        # Default case.
+        network.get_recommended_appimage()
+        selected_appimage_file_path = Path(config.APPDIR_BINDIR) / appimage_file_path.name  # noqa: E501
+        bindir_appimage = selected_appimage_file_path / config.APPDIR_BINDIR
+        if not bindir_appimage.exists():
+            logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")  # noqa: E501
+            shutil.copy(selected_appimage_file_path, f"{config.APPDIR_BINDIR}")
     else:
+        selected_appimage_file_path = appimage_file_path
+        # Verify user-selected AppImage.
+        if not check_appimage(selected_appimage_file_path):
+            msg.logos_error(f"Cannot use {selected_appimage_file_path}.")
+
+        # Determine if user wants their AppImage in the Logos on Linux bin dir.
+        copy_message = (
+            f"Should the program copy {selected_appimage_file_path} to the"
+            f" {config.APPDIR_BINDIR} directory?"
+        )
+        # FIXME: What if user cancels the confirmation dialog?
         if config.DIALOG == "tk":
             # TODO: With the GUI this runs in a thread. It's not clear if the
             # messagebox will work correctly. It may need to be triggered from
@@ -820,34 +827,25 @@ def set_appimage_symlink(app=None):
             tk_root.withdraw()
             confirm = tk.messagebox.askquestion("Confirmation", copy_message)
             tk_root.destroy()
-        else:
-            confirm = tui_dialog.confirm("Confirmation", copy_message)
-    # FIXME: What if user cancels the confirmation dialog?
+        elif config.DIALOG in ['curses', 'dialog']:
+            confirm = tui.confirm("Confirmation", copy_message)
+        elif config.DIALOG == 'cli':
+            confirm = msg.logos_acknowledge_question(copy_message, '', '')
 
-    appimage_symlink_path = Path(f"{config.APPDIR_BINDIR}/{config.APPIMAGE_LINK_SELECTION_NAME}")  # noqa: E501
+        # Copy AppImage if confirmed.
+        if confirm is True or confirm == 'yes':
+            logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")  # noqa: E501
+            dest = appdir_bindir / selected_appimage_file_path.name
+            if not dest.exists():
+                shutil.copy(selected_appimage_file_path, f"{config.APPDIR_BINDIR}")  # noqa: E501
+            selected_appimage_file_path = dest
+
     delete_symlink(appimage_symlink_path)
-
-    # FIXME: confirm is always False b/c appimage_filepath always exists b/c
-    # it's copied in place via logos_reuse_download function above in
-    # get_recommended_appimage.
-    appimage_filename = selected_appimage_file_path.name
-    if confirm is True or confirm == 'yes':
-        logging.info(f"Copying {selected_appimage_file_path} to {config.APPDIR_BINDIR}.")  # noqa: E501
-        shutil.copy(selected_appimage_file_path, f"{config.APPDIR_BINDIR}")
-        os.symlink(selected_appimage_file_path, appimage_symlink_path)
-        config.SELECTED_APPIMAGE_FILENAME = f"{appimage_filename}"
-    # If not, use the selected AppImage's full path for link creation.
-    elif confirm is False or confirm == 'no':
-        logging.debug(f"{selected_appimage_file_path} already exists in {config.APPDIR_BINDIR}. No need to copy.")  # noqa: E501
-        os.symlink(selected_appimage_file_path, appimage_symlink_path)
-        logging.debug("AppImage symlink updated.")
-        config.SELECTED_APPIMAGE_FILENAME = f"{selected_appimage_file_path}"
-        logging.debug("Updated config with new AppImage path.")
-    else:
-        logging.error("Error getting user confirmation.")
+    os.symlink(selected_appimage_file_path, appimage_symlink_path)
+    config.SELECTED_APPIMAGE_FILENAME = f"{selected_appimage_file_path.name}"  # noqa: E501
 
     write_config(config.CONFIG_FILE)
-    if app:
+    if config.DIALOG == 'tk':
         app.root.event_generate("<<UpdateLatestAppImageButton>>")
 
 
