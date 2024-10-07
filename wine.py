@@ -19,6 +19,9 @@ def set_logos_paths():
     config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
     config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'  # noqa: E501
     config.logos_indexing_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'  # noqa: E501
+    # TODO: Can't this just be set based on WINEPREFIX and USER vars without
+    # having to walk through the WINEPREFIX tree? Or maybe this is to account
+    # for a non-typical installation location?
     for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
         for f in files:
             if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
