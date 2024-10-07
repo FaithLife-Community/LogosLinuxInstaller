@@ -246,26 +246,26 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'install_app': cli.install_app,
-        'run_installed_app': cli.run_installed_app,
-        'run_indexing': logos.LogosManager().index,
-        'remove_library_catalog': control.remove_library_catalog,
-        'remove_index_files': control.remove_all_index_files,
-        'edit_config': control.edit_config,
-        'install_dependencies': utils.check_dependencies,
         'backup': control.backup,
-        'restore': control.restore,
-        'update_self': utils.update_to_latest_lli_release,
-        'update_latest_appimage': utils.update_to_latest_recommended_appimage,
-        'set_appimage': cli.set_appimage,
+        'create_shortcuts': installer.ensure_launcher_shortcuts,
+        'edit_config': control.edit_config,
         'get_winetricks': control.set_winetricks,
-        'run_winetricks': wine.run_winetricks,
+        'install_app': cli.install_app,
         'install_d3d_compiler': wine.install_d3d_compiler,
+        'install_dependencies': utils.check_dependencies,
         'install_fonts': wine.install_fonts,
         'install_icu': wine.install_icu_data_files,
-        'toggle_app_logging': logos.LogosManager().switch_logging,
-        'create_shortcuts': installer.ensure_launcher_shortcuts,
+        'remove_index_files': control.remove_all_index_files,
         'remove_install_dir': control.remove_install_dir,
+        'remove_library_catalog': control.remove_library_catalog,
+        'restore': control.restore,
+        'run_indexing': logos.LogosManager().index,
+        'run_installed_app': cli.run_installed_app,
+        'run_winetricks': wine.run_winetricks,
+        'set_appimage': cli.set_appimage,
+        'toggle_app_logging': logos.LogosManager().switch_logging,
+        'update_self': utils.update_to_latest_lli_release,
+        'update_latest_appimage': utils.update_to_latest_recommended_appimage,
     }
 
     config.ACTION = None
@@ -414,13 +414,17 @@ def main():
     install_required = [
         'backup',
         'create_shortcuts',
-        'remove_all_index_files',
+        'install_d3d_compiler',
+        'install_fonts',
+        'install_icu',
+        'remove_index_files',
         'remove_library_catalog',
         'restore',
         'run_indexing',
         'run_installed_app',
-        'run_logos',
-        'switch_logging',
+        'run_winetricks',
+        'set_appimage',
+        'toggle_app_logging',
     ]
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")
