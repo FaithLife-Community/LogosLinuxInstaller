@@ -116,7 +116,7 @@ processes = {}
 threads = []
 login_window_cmd = None
 logos_cef_cmd = None
-logos_indexing_cmd = None
+logos_indexer_cmd = None
 logos_indexer_exe = None
 check_if_indexing = None
 
