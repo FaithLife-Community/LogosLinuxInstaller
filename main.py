@@ -246,26 +246,26 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'backup': control.backup,
-        'create_shortcuts': installer.ensure_launcher_shortcuts,
-        'edit_config': control.edit_config,
-        'get_winetricks': control.set_winetricks,
+        'backup': cli.backup,
+        'create_shortcuts': cli.create_shortcuts,
+        'edit_config': cli.edit_config,
+        'get_winetricks': cli.get_winetricks,
         'install_app': cli.install_app,
-        'install_d3d_compiler': wine.install_d3d_compiler,
-        'install_dependencies': utils.check_dependencies,
-        'install_fonts': wine.install_fonts,
-        'install_icu': wine.install_icu_data_files,
-        'remove_index_files': control.remove_all_index_files,
-        'remove_install_dir': control.remove_install_dir,
-        'remove_library_catalog': control.remove_library_catalog,
-        'restore': control.restore,
-        'run_indexing': logos.LogosManager().index,
+        'install_d3d_compiler': cli.install_d3d_compiler,
+        'install_dependencies': cli.install_dependencies,
+        'install_fonts': cli.install_fonts,
+        'install_icu': cli.install_icu,
+        'remove_index_files': cli.remove_index_files,
+        'remove_install_dir': cli.remove_install_dir,
+        'remove_library_catalog': cli.remove_library_catalog,
+        'restore': cli.restore,
+        'run_indexing': cli.run_indexing,
         'run_installed_app': cli.run_installed_app,
-        'run_winetricks': wine.run_winetricks,
+        'run_winetricks': cli.run_winetricks,
         'set_appimage': cli.set_appimage,
-        'toggle_app_logging': logos.LogosManager().switch_logging,
-        'update_self': utils.update_to_latest_lli_release,
-        'update_latest_appimage': utils.update_to_latest_recommended_appimage,
+        'toggle_app_logging': cli.toggle_app_logging,
+        'update_self': cli.update_self,
+        'update_latest_appimage': cli.update_latest_appimage,
     }
 
     config.ACTION = None
@@ -433,7 +433,7 @@ def main():
         config.ACTION()
     elif utils.app_is_installed():
         # Run the desired Logos action.
-        logging.info(f"Running function for installed app: {config.ACTION.__name__}")  # noqa: E501
+        logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
         config.ACTION()  # defaults to run_control_panel()
     else:
         logging.info("Starting Control Panel")
