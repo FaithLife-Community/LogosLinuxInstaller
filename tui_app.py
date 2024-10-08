@@ -284,7 +284,7 @@ class TUI:
         self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
         for i, line in enumerate(resize_lines):
             if i < self.window_height:
-                self.resize_window.addnstr(i, margin, line, self.window_width - config.margin, curses.A_BOLD)
+                tui_curses.write_line(self, self.resize_window, i, margin, line, self.window_width - config.margin, curses.A_BOLD)
         self.refresh()
 
     def display(self):
