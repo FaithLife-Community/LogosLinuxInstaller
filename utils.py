@@ -70,7 +70,7 @@ def set_runtime_config():
         config.WINESERVER_EXE = str(bin_dir / 'wineserver')
     if config.FLPRODUCT and config.WINEPREFIX and not config.LOGOS_EXE:
         config.LOGOS_EXE = find_installed_product()
-    if find_installed_product():
+    if app_is_installed():
         wine.set_logos_paths()
 
 

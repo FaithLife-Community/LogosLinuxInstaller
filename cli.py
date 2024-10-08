@@ -19,9 +19,7 @@ class CLI:
         self.input_q = queue.Queue()
         self.input_event = threading.Event()
         self.choice_event = threading.Event()
-        if utils.find_installed_product():
-            wine.set_logos_paths()
-            self.logos = logos.LogosManager(app=self)
+        self.logos = logos.LogosManager(app=self)
 
     def backup(self):
         control.backup()
