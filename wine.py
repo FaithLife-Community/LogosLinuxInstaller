@@ -22,6 +22,19 @@ def get_wine_user():
     config.wine_user = path_parts[path_parts.index('users') + 1]
 
 
+def set_logos_paths():
+    if config.wine_user is None:
+        get_wine_user()
+    if config.logos_indexer_cmd is None or config.login_window_cmd is None or config.logos_cef_cmd is None:
+        config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
+        config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'  # noqa: E501
+        config.logos_indexer_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'  # noqa: E501
+    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
+        for f in files:
+            if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
+                config.logos_indexer_exe = os.path.join(root, f)
+                break
+
 def check_wineserver():
     try:
         process = run_wine_proc(config.WINESERVER, exe_args=["-p"])

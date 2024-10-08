@@ -25,17 +25,6 @@ class LogosManager:
         self.logos_state = State.STOPPED
         self.indexing_state = State.STOPPED
         self.app = app
-        if config.wine_user is None:
-            wine.get_wine_user()
-        if config.logos_indexer_cmd is None or config.login_window_cmd is None or config.logos_cef_cmd is None:
-            config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
-            config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'  # noqa: E501
-            config.logos_indexer_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'  # noqa: E501
-        for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
-            for f in files:
-                if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
-                    config.logos_indexer_exe = os.path.join(root, f)
-                    break
 
     def monitor_indexing(self):
         if config.logos_indexer_cmd in config.processes:
@@ -65,9 +54,7 @@ class LogosManager:
                 self.logos_state = State.RUNNING
 
     def monitor(self):
-        if utils.file_exists(config.LOGOS_EXE):
-            if config.wine_user is None:
-                wine.get_wine_user()
+        if utils.find_installed_product():
             system.get_logos_pids()
             try:
                 self.monitor_indexing()

@@ -623,6 +623,8 @@ def ensure_product_installed(app=None):
         config.LOGOS_EXE = utils.find_installed_product()
         config.current_logos_version = config.TARGET_RELEASE_VERSION
 
+    wine.set_logos_paths()
+
     # Clean up temp files, etc.
     utils.clean_all()
 

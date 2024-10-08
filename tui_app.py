@@ -870,7 +870,8 @@ class TUI:
             else:
                 logging.error(f"{error_message}")
 
-        if utils.file_exists(config.LOGOS_EXE):
+        if utils.find_installed_product():
+            wine.set_logos_paths()
             if self.logos.logos_state == logos.State.RUNNING:
                 run = f"Stop {config.FLPRODUCT}"
             elif self.logos.logos_state == logos.State.STOPPED:
