@@ -213,7 +213,7 @@ def remove_install_dir():
     folder = Path(config.INSTALLDIR)
     if (
         folder.is_dir()
-        and msg.cli_question(f"Delete \"{folder}\" and all its contents?", "", "")
+        and msg.cli_question(f"Delete \"{folder}\" and all its contents?")
     ):
         shutil.rmtree(folder)
         logging.warning(f"Deleted folder and all its contents: {folder}")
