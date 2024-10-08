@@ -466,6 +466,7 @@ def main():
 def close():
     logging.debug("Closing Logos on Linux.")
     for thread in threads:
+        # Only wait on non-daemon threads.
         if not thread.daemon:
             thread.join()
     # Only kill wine processes if closing the Control Panel. Otherwise, some
