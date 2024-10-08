@@ -54,7 +54,7 @@ class LogosManager:
                 self.logos_state = State.RUNNING
 
     def monitor(self):
-        if utils.find_installed_product():
+        if utils.app_is_installed():
             system.get_logos_pids()
             try:
                 self.monitor_indexing()

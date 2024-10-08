@@ -659,7 +659,7 @@ class ControlWindow():
             utils.start_thread(self.logos.get_app_logging_state)
 
     def configure_app_button(self, evt=None):
-        if utils.find_installed_product():
+        if utils.app_is_installed():
             wine.set_logos_paths()
             self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
             self.gui.app_button.config(command=self.run_logos)

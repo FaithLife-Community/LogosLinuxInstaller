@@ -414,13 +414,18 @@ def run():
     elif config.ACTION.__name__ not in install_required:
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()
-    elif utils.app_is_installed():
-        # Run the desired Logos action.
-        logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
-        config.ACTION()  # defaults to run_control_panel()
+    elif config.ACTION.__name__ in install_required:
+        if utils.app_is_installed():
+            config.DIALOG = "cli"
+            # Run the desired Logos action.
+            logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
+            config.ACTION()  # defaults to run_control_panel()
+        else:
+            msg.logos_error("App not installed…")
     else:
         logging.info("Starting Control Panel")
         run_control_panel()
+
 
 
 def main():
