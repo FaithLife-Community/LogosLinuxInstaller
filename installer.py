@@ -172,7 +172,12 @@ def ensure_wine_choice(app=None):
                 utils.send_task(app, 'WINE_EXE')
                 if config.DIALOG == 'curses':
                     app.wine_e.wait()
-                config.WINE_EXE = app.wines_q.get()
+                    config.WINE_EXE = app.wines_q.get()
+                # GUI uses app.wines_q for list of available, then app.wine_q
+                # for the user's choice of specific binary.
+                elif config.DIALOG == 'tk':
+                    config.WINE_EXE = app.wine_q.get()
+
     else:
         if config.DIALOG == 'curses' and app:
             app.set_wine(utils.get_wine_exe_path())
