@@ -660,7 +660,7 @@ class ControlWindow():
 
     def configure_app_button(self, evt=None):
         if utils.app_is_installed():
-            wine.set_logos_paths()
+            # wine.set_logos_paths()
             self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
             self.gui.app_button.config(command=self.run_logos)
             self.gui.get_winetricks_button.state(['!disabled'])

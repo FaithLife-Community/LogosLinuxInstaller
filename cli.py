@@ -13,7 +13,6 @@ import utils
 
 class CLI:
     def __init__(self):
-        config.DIALOG = "cli"
         self.running = True
         self.choice_q = queue.Queue()
         self.input_q = queue.Queue()

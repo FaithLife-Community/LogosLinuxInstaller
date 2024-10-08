@@ -392,8 +392,18 @@ def check_incompatibilities():
 
 
 def run():
-    # Run desired action (requested function, defaulting to installer)
-    # Check if app is installed.
+    # Run desired action (requested function, defaults to control_panel)
+    if config.ACTION == "disabled":
+        msg.logos_error("That option is disabled.", "info")
+    if config.ACTION.__name__ == 'run_control_panel':
+        # if utils.app_is_installed():
+        #     wine.set_logos_paths()
+        config.ACTION()  # run control_panel right away
+        return
+
+    # Only control_panel ACTION uses TUI/GUI interface; all others are CLI.
+    config.DIALOG = 'cli'
+
     install_required = [
         'backup',
         'create_shortcuts',
@@ -409,23 +419,16 @@ def run():
         'set_appimage',
         'toggle_app_logging',
     ]
-    if config.ACTION == "disabled":
-        msg.logos_error("That option is disabled.", "info")
-    elif config.ACTION.__name__ not in install_required:
+    if config.ACTION.__name__ not in install_required:
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION()
-    elif config.ACTION.__name__ in install_required:
-        if utils.app_is_installed():
-            config.DIALOG = "cli"
-            # Run the desired Logos action.
-            logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
-            config.ACTION()  # defaults to run_control_panel()
-        else:
-            msg.logos_error("App not installed…")
-    else:
-        logging.info("Starting Control Panel")
-        run_control_panel()
-
+    elif utils.app_is_installed():  # install_required; checking for app
+        # wine.set_logos_paths()
+        # Run the desired Logos action.
+        logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
+        config.ACTION()
+    else:  # install_required, but app not installed
+        msg.logos_error("App not installed…")
 
 
 def main():
