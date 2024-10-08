@@ -20,6 +20,13 @@ def wrap_text(app, text):
     return lines
 
 
+def write_line(app, stdscr, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL):
+    try:
+        stdscr.addnstr(start_y, start_x, text, char_limit, attributes)
+    except curses.error:
+        signal.signal(signal.SIGWINCH, app.signal_resize)
+
+
 def title(app, title_text, title_start_y_adj):
     stdscr = app.get_main_window()
     title_lines = wrap_text(app, title_text)
@@ -27,7 +34,7 @@ def title(app, title_text, title_start_y_adj):
     last_index = 0
     for i, line in enumerate(title_lines):
         if i < app.window_height:
-            stdscr.addnstr(i + title_start_y_adj, 2, line, app.window_width, curses.A_BOLD)
+            write_line(app, stdscr, i + title_start_y_adj, 2, line, app.window_width, curses.A_BOLD)
         last_index = i
 
     return last_index
@@ -44,7 +51,7 @@ def text_centered(app, text, start_y=0):
     for i, line in enumerate(text_lines):
         if text_start_y + i < app.window_height:
             x = app.window_width // 2 - text_width // 2
-            stdscr.addnstr(text_start_y + i, x, line, app.window_width)
+            write_line(app, stdscr, text_start_y + i, x, line, app.window_width, curses.A_BOLD)
 
     return text_start_y, text_lines
 
@@ -74,7 +81,7 @@ def confirm(app, question_text, height=None, width=None):
         elif key.lower() == 'n':
             return False
 
-        stdscr.addnstr(y, 0, "Type Y[es] or N[o]. ", app.window_width)
+        write_line(app, stdscr, y, 0, "Type Y[es] or N[o]. ", app.window_width, curses.A_BOLD)
 
 
 class CursesDialog:
@@ -119,7 +126,7 @@ class UserInputDialog(CursesDialog):
         self.stdscr.refresh()
 
     def input(self):
-        self.stdscr.addnstr(self.question_start_y + len(self.question_lines) + 2, 10, self.user_input, self.app.window_width)
+        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.user_input, self.app.window_width)
         key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.user_input))
 
         try:
@@ -162,7 +169,8 @@ class PasswordDialog(UserInputDialog):
             return self.user_input
 
     def input(self):
-        self.stdscr.addnstr(self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation, self.app.window_width)
+        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation,
+                   self.app.window_width)
         key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.obfuscation))
 
         try:
@@ -235,9 +243,9 @@ class MenuDialog(CursesDialog):
                     x = max(0, self.app.window_width // 2 - len(line) // 2)
                     if y < self.app.menu_window_height:
                         if index == config.current_option:
-                            self.stdscr.addnstr(y, x, line, self.app.window_width, curses.A_REVERSE)
+                            write_line(self.app, self.stdscr, y, x, line, self.app.window_width, curses.A_REVERSE)
                         else:
-                            self.stdscr.addnstr(y, x, line, self.app.window_width)
+                            write_line(self.app, self.stdscr, y, x, line, self.app.window_width)
                 menu_bottom = y
 
                 if type(option) is list:
@@ -245,10 +253,7 @@ class MenuDialog(CursesDialog):
 
         # Display pagination information
         page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
-        try:
-            self.stdscr.addnstr(max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
-        except curses.error:
-            signal.signal(signal.SIGWINCH, self.app.signal_resize)
+        write_line(self.app, self.stdscr, max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
 
     def do_menu_up(self):
         if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:

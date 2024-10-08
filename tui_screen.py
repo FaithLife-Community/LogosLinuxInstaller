@@ -85,20 +85,14 @@ class ConsoleScreen(CursesScreen):
 
         console_start_y = len(tui_curses.wrap_text(self.app, self.title)) + len(
             tui_curses.wrap_text(self.app, self.subtitle)) + 1
-        try:
-            self.stdscr.addnstr(console_start_y, config.margin, f"---Console---", self.app.window_width - (config.margin * 2))
-        except curses.error:
-            signal.signal(signal.SIGWINCH, self.app.signal_resize)
+        tui_curses.write_line(self.app, self.stdscr, console_start_y, config.margin, f"---Console---", self.app.window_width - (config.margin * 2))
         recent_messages = config.console_log[-config.console_log_lines:]
         for i, message in enumerate(recent_messages, 1):
             message_lines = tui_curses.wrap_text(self.app, message)
             for j, line in enumerate(message_lines):
                 if 2 + j < self.app.window_height:
                     truncated = message[:self.app.window_width - (config.margin * 2)]
-                    try:
-                        self.stdscr.addnstr(console_start_y + i, config.margin, truncated, self.app.window_width - (config.margin * 2))
-                    except curses.error:
-                        signal.signal(signal.SIGWINCH, self.app.signal_resize)
+                    tui_curses.write_line(self.app, self.stdscr, console_start_y + i, config.margin, truncated, self.app.window_width - (config.margin * 2))
 
         self.stdscr.noutrefresh()
         curses.doupdate()
