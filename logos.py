@@ -146,24 +146,25 @@ class LogosManager:
         def wait_on_indexing():
             index_finished.wait()
             self.indexing_state = State.STOPPED
-            msg.status(f"Indexing has finished.", self.app)
+            msg.status("Indexing has finished.", self.app)
             wine.wineserver_wait()
 
         wine.wineserver_kill()
-        msg.status(f"Indexing has begun…", self.app)
-        # index_thread = threading.Thread(target=run_indexing)
-        # index_thread.start()
-        index_thread = utils.start_thread(run_indexing, daemon=False)
+        msg.status("Indexing has begun…", self.app)
+        index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
-        time.sleep(1)  # If we don't wait, the thread starts too quickly
-        # and the process won't yet be launched when we try to pull it from config.processes
+        # If we don't wait the process won't yet be launched when we try to
+        # pull it from config.processes.
+        while config.processes.get(config.logos_indexer_exe) is None:
+            time.sleep(0.1)
+        logging.debug(f"{config.processes=}")
         process = config.processes[config.logos_indexer_exe]
-        # check_thread = threading.Thread(target=check_if_indexing, args=(process,))
-        check_thread = utils.start_thread(check_if_indexing, process)
-        # wait_thread = threading.Thread(target=wait_on_indexing)
-        wait_thread = utils.start_thread(wait_on_indexing)
-        # check_thread.start()
-        # wait_thread.start()
+        check_thread = utils.start_thread(
+            check_if_indexing,
+            process,
+            daemon_bool=False
+        )
+        wait_thread = utils.start_thread(wait_on_indexing, daemon_bool=False)
         main.threads.extend([index_thread, check_thread, wait_thread])
         config.processes[config.logos_indexer_exe] = index_thread
         config.processes[config.check_if_indexing] = check_thread
