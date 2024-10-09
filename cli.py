@@ -21,7 +21,7 @@ class CLI:
         self.logos = logos.LogosManager(app=self)
 
     def backup(self):
-        control.backup()
+        control.backup(app=self)
 
     def edit_config(self):
         control.edit_config()
@@ -58,7 +58,7 @@ class CLI:
         control.remove_library_catalog()
 
     def restore(self):
-        control.restore()
+        control.restore(app=self)
 
     def run_indexing(self):
         self.logos.index()
