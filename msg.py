@@ -114,10 +114,11 @@ def initialize_logging(stderr_log_level):
     )
 
 
-def initialize_curses_logging():
+def initialize_tui_logging():
     current_logger = logging.getLogger()
     for h in current_logger.handlers:
         if h.name == 'terminal':
+            current_logger.removeHandler(h)
             break
 
 

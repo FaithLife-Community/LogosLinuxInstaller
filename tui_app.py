@@ -290,7 +290,7 @@ class TUI:
     def display(self):
         signal.signal(signal.SIGWINCH, self.signal_resize)
         signal.signal(signal.SIGINT, self.end)
-        msg.initialize_curses_logging()
+        msg.initialize_tui_logging()
         msg.status(self.console_message, self)
         self.active_screen = self.menu_screen
         last_time = time.time()
