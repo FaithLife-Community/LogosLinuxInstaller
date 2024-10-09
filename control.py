@@ -92,7 +92,7 @@ def backup_and_restore(mode='backup', app=None):
     logging.debug(f"{src_dirs=}")
     if not src_dirs:
         m = "No files to backup"
-        if app is not None:
+        if config.DIALOG in ['curses', 'dialog', 'tk']:
             app.status_q.put(m)
             app.root.event_generate('<<StartIndeterminateProgress>>')
             app.root.event_generate('<<UpdateStatus>>')
@@ -102,7 +102,7 @@ def backup_and_restore(mode='backup', app=None):
     # Get source transfer size.
     q = queue.Queue()
     m = "Calculating backup size"
-    if app is not None:
+    if config.DIALOG in ['curses', 'dialog', 'tk']:
         app.status_q.put(m)
         app.root.event_generate('<<StartIndeterminateProgress>>')
         app.root.event_generate(app.status_evt)
@@ -117,14 +117,14 @@ def backup_and_restore(mode='backup', app=None):
         print()
         msg.logos_error("Cancelled with Ctrl+C.")
     t.join()
-    if app is not None:
+    if config.DIALOG in ['curses', 'dialog', 'tk']:
         app.root.event_generate('<<StopIndeterminateProgress>>')
         app.root.event_generate('<<ClearStatus>>')
     src_size = q.get()
     if src_size == 0:
         m = f"Nothing to {mode}!"
         logging.warning(m)
-        if app is not None:
+        if config.DIALOG in ['curses', 'dialog', 'tk']:
             app.status_q.put(m)
             app.root.event_generate('<<UpdateStatus>>')
         return
@@ -140,35 +140,26 @@ def backup_and_restore(mode='backup', app=None):
     else:
         timestamp = datetime.today().strftime('%Y%m%dT%H%M%S')
         current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{timestamp}"  # noqa: E501
-        dst_dir = Path(config.BACKUPDIR) / current_backup_name
-        dst_dir.mkdir(exist_ok=True, parents=True)
+        backup_dir = Path(config.BACKUPDIR)
+        backup_dir.mkdir(exist_ok=True, parents=True)
+        dst_dir = backup_dir / current_backup_name
+        logging.debug(f"Backup directory path: {dst_dir}")
+
+        # Check for existing backup.
+        try:
+            dst_dir.mkdir()
+        except FileExistsError:
+            msg.logos_error(f"Backup already exists: {dst_dir}")
 
     # Verify disk space.
-    if (
-        not utils.enough_disk_space(dst_dir, src_size)
-        and not Path(dst_dir / 'Data').is_dir()
-    ):
+    if not utils.enough_disk_space(dst_dir, src_size):
         m = f"Not enough free disk space for {mode}."
-        if app is not None:
+        if config.DIALOG in ['curses', 'dialog', 'tk']:
             app.status_q.put(m)
             app.root.event_generate('<<UpdateStatus>>')
             return
         else:
             msg.logos_error(m)
-
-    # Verify destination.
-    if config.BACKUPDIR is None:
-        config.BACKUPDIR = Path().home() / 'Logos_on_Linux_backups'
-    backup_dir = Path(config.BACKUPDIR)
-    backup_dir.mkdir(exist_ok=True, parents=True)
-    if not utils.enough_disk_space(backup_dir, src_size):
-        msg.logos_error("Not enough free disk space for backup.")
-
-    # Run backup.
-    try:
-        dst_dir.mkdir()
-    except FileExistsError:
-        msg.logos_error(f"Backup already exists: {dst_dir}")
 
     # Run file transfer.
     if mode == 'restore':
@@ -177,7 +168,7 @@ def backup_and_restore(mode='backup', app=None):
         m = f"Backing up to {str(dst_dir)}"
     logging.info(m)
     msg.status(m)
-    if app is not None:
+    if config.DIALOG in ['curses', 'dialog', 'tk']:
         app.status_q.put(m)
         app.root.event_generate(app.status_evt)
     dst_dir_size = utils.get_path_size(dst_dir)
@@ -190,7 +181,7 @@ def backup_and_restore(mode='backup', app=None):
                 dest_size_init=dst_dir_size
             )
             utils.write_progress_bar(progress)
-            if app is not None:
+            if config.DIALOG in ['curses', 'dialog', 'tk']:
                 app.progress_q.put(progress)
                 app.root.event_generate('<<UpdateProgress>>')
             time.sleep(0.5)
@@ -199,7 +190,7 @@ def backup_and_restore(mode='backup', app=None):
         print()
         msg.logos_error("Cancelled with Ctrl+C.")
     t.join()
-    if app is not None:
+    if config.DIALOG in ['curses', 'dialog', 'tk']:
         app.root.event_generate('<<ClearStatus>>')
     logging.info(f"Finished. {src_size} bytes copied to {str(dst_dir)}")
 
