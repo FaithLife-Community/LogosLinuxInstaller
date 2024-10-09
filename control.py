@@ -138,7 +138,7 @@ def backup_and_restore(mode='backup', app=None):
             if dst.is_dir():
                 shutil.rmtree(dst)
     else:
-        timestamp = datetime.today().strftime('%Y%m%dT%H%M%S')
+        timestamp = utils.get_timestamp().replace('-', '')
         current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{timestamp}"  # noqa: E501
         backup_dir = Path(config.BACKUPDIR)
         backup_dir.mkdir(exist_ok=True, parents=True)

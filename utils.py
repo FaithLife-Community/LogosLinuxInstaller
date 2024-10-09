@@ -15,6 +15,7 @@ import tarfile
 import threading
 import time
 import tkinter as tk
+from datetime import datetime
 from packaging import version
 from pathlib import Path
 from typing import List, Union
@@ -1018,3 +1019,7 @@ def stopwatch(start_time=None, interval=10.0):
         return True, last_log_time
     else:
         return False, start_time
+
+
+def get_timestamp():
+    return datetime.today().strftime('%Y-%m-%dT%H%M%S')
