@@ -871,15 +871,15 @@ class TUI:
                 logging.error(f"{error_message}")
 
         if utils.app_is_installed():
-            if self.logos.logos_state == logos.State.RUNNING:
+            if self.logos.logos_state in [logos.State.STARTING, logos.State.RUNNING]:  # noqa: E501
                 run = f"Stop {config.FLPRODUCT}"
-            elif self.logos.logos_state == logos.State.STOPPED:
+            elif self.logos.logos_state in [logos.State.STOPPING, logos.State.STOPPED]:  # noqa: E501
                 run = f"Run {config.FLPRODUCT}"
 
             if self.logos.indexing_state == logos.State.RUNNING:
-                indexing = f"Stop Indexing"
+                indexing = "Stop Indexing"
             elif self.logos.indexing_state == logos.State.STOPPED:
-                indexing = f"Run Indexing"
+                indexing = "Run Indexing"
             labels_default = [
                 run,
                 indexing
