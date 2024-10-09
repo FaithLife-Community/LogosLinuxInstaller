@@ -364,14 +364,18 @@ class PromptGui(Frame):
         store_button.pack(pady=20)
 
 
-def show_error(message, title="Fatal Error", detail=None, app=None, parent=None):  # noqa: E501
+def show_error(message, fatal=True, detail=None, app=None, parent=None):  # noqa: E501
+    title = "Error"
+    if fatal:
+        title = "Fatal Error"
+
     kwargs = {'message': message}
     if parent and hasattr(app, parent):
         kwargs['parent'] = app.__dict__.get(parent)
     if detail:
         kwargs['detail'] = detail
     messagebox.showerror(title, **kwargs)
-    if hasattr(app, 'root'):
+    if fatal and hasattr(app, 'root'):
         app.root.destroy()
 
 
