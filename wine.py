@@ -25,15 +25,17 @@ def get_wine_user():
 def set_logos_paths():
     if config.wine_user is None:
         get_wine_user()
-    if config.logos_indexer_cmd is None or config.login_window_cmd is None or config.logos_cef_cmd is None:
-        config.login_window_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
+    logos_cmds = [
+        config.logos_cef_cmd,
+        config.logos_indexer_cmd,
+        config.logos_login_cmd,
+    ]
+    if None in logos_cmds:
         config.logos_cef_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosCEF.exe'  # noqa: E501
         config.logos_indexer_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\LogosIndexer.exe'  # noqa: E501
-    for root, dirs, files in os.walk(os.path.join(config.WINEPREFIX, "drive_c")):  # noqa: E501
-        for f in files:
-            if f == "LogosIndexer.exe" and root.endswith("Logos/System"):
-                config.logos_indexer_exe = os.path.join(root, f)
-                break
+        config.logos_login_cmd = f'C:\\users\\{config.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
+    config.logos_indexer_exe = str(Path(utils.find_installed_product()).parent / 'System' / 'LogosIndexer.exe')  # noqa: E501
+
 
 def check_wineserver():
     try:
@@ -133,7 +135,7 @@ def check_wine_rules(wine_release, release_version):
     elif config.TARGETVERSION == "9":
         required_wine_minimum = [7, 0]
     else:
-        raise ValueError(f"Invalid TARGETVERSION: {config.TARGETVERSION} ({type(config.TARGETVERSION)})")
+        raise ValueError(f"Invalid TARGETVERSION: {config.TARGETVERSION} ({type(config.TARGETVERSION)})")  # noqa: E501
 
     rules = [
         {
@@ -159,32 +161,50 @@ def check_wine_rules(wine_release, release_version):
 
     major_min, minor_min = required_wine_minimum
     major, minor, release_type = wine_release
-    result = True, "None"  # Whether the release is allowed and the error message
+    result = True, "None"  # Whether the release is allowed; error message
     for rule in rules:
         if major == rule["major"]:
             # Verify release is allowed
             if release_type not in rule["allowed_releases"]:
                 if minor >= rule.get("devel_allowed", float('inf')):
                     if release_type not in ["staging", "devel"]:
-                        result = False, (f"Wine release needs to be devel or staging. "
-                                       f"Current release: {release_type}.")
+                        result = (
+                            False,
+                            (
+                                f"Wine release needs to be devel or staging. "
+                                f"Current release: {release_type}."
+                            )
+                        )
                         break
                 else:
-                    result = False, (f"Wine release needs to be {rule["allowed_releases"]}. "
-                                   f"Current release: {release_type}.")
+                    result = (
+                        False,
+                        (
+                            f"Wine release needs to be {rule['allowed_releases']}. "  # noqa: E501
+                            f"Current release: {release_type}."
+                        )
+                    )
                     break
             # Verify version is allowed
             if minor in rule.get("minor_bad", []):
                 result = False, f"Wine version {major}.{minor} will not work."
                 break
             if major < major_min:
-                result = False, (f"Wine version {major}.{minor} is "
-                               f"below minimum required ({major_min}.{minor_min}).")
+                result = (
+                    False,
+                    (
+                        f"Wine version {major}.{minor} is "
+                        f"below minimum required ({major_min}.{minor_min}).")
+                )
                 break
             elif major == major_min and minor < minor_min:
                 if not rule["proton"]:
-                    result = False, (f"Wine version {major}.{minor} is "
-                                   f"below minimum required ({major_min}.{minor_min}).")
+                    result = (
+                        False,
+                        (
+                            f"Wine version {major}.{minor} is "
+                            f"below minimum required ({major_min}.{minor_min}).")  # noqa: E501
+                    )
                     break
     logging.debug(f"Result: {result}")
     return result
