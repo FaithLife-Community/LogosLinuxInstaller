@@ -72,41 +72,41 @@ def backup_and_restore(mode='backup', app=None):
                 answer = msg.cli_ask_filepath("Give backups folder path:")
                 answer = Path(answer).expanduser().resolve()
                 if not answer.is_dir():
-                    msg.status(f"Not a valid folder path: {answer}", app)
+                    msg.status(f"Not a valid folder path: {answer}", app=app)
             config.BACKUPDIR = answer
 
     # Set source folders.
+    backup_dir = Path(config.BACKUPDIR)
+    try:
+        backup_dir.mkdir(exist_ok=True, parents=True)
+    except PermissionError:
+        verb = 'access'
+        if mode == 'backup':
+            verb = 'create'
+        msg.logos_warning(f"Can't {verb} folder: {backup_dir}")
+        return
+
     if mode == 'restore':
+        config.RESTOREDIR = utils.get_latest_folder(config.BACKUPDIR)
+        config.RESTOREDIR = Path(config.RESTOREDIR).expanduser().resolve()
         if config.DIALOG == 'tk':
             pass
         else:
             # Offer to restore the most recent backup.
-            config.RESTOREDIR = utils.get_latest_folder(config.BACKUPDIR)
             if not msg.cli_question(f"Restore most-recent backup?: {config.RESTOREDIR}", ""):  # noqa: E501
                 config.RESTOREDIR = msg.cli_ask_filepath("Path to backup set that you want to restore:")  # noqa: E501
-        config.RESTOREDIR = Path(config.RESTOREDIR).expanduser().resolve()
         source_dir_base = config.RESTOREDIR
     else:
         source_dir_base = Path(config.LOGOS_EXE).parent
     src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]  # noqa: E501
     logging.debug(f"{src_dirs=}")
     if not src_dirs:
-        m = "No files to backup"
-        if config.DIALOG in ['curses', 'dialog', 'tk']:
-            app.status_q.put(m)
-            app.root.event_generate('<<StartIndeterminateProgress>>')
-            app.root.event_generate('<<UpdateStatus>>')
-        logging.warning(m)
+        msg.logos_warning(f"No files to {mode}", app=app)
         return
 
     # Get source transfer size.
     q = queue.Queue()
-    m = "Calculating backup size"
-    if config.DIALOG in ['curses', 'dialog', 'tk']:
-        app.status_q.put(m)
-        app.root.event_generate('<<StartIndeterminateProgress>>')
-        app.root.event_generate(app.status_evt)
-    msg.status(m, end='')
+    msg.status("Calculating backup size", app=app)
     t = utils.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
@@ -115,18 +115,14 @@ def backup_and_restore(mode='backup', app=None):
         print()
     except KeyboardInterrupt:
         print()
-        msg.logos_error("Cancelled with Ctrl+C.")
+        msg.logos_error("Cancelled with Ctrl+C.", app=app)
     t.join()
     if config.DIALOG in ['curses', 'dialog', 'tk']:
         app.root.event_generate('<<StopIndeterminateProgress>>')
         app.root.event_generate('<<ClearStatus>>')
     src_size = q.get()
     if src_size == 0:
-        m = f"Nothing to {mode}!"
-        logging.warning(m)
-        if config.DIALOG in ['curses', 'dialog', 'tk']:
-            app.status_q.put(m)
-            app.root.event_generate('<<UpdateStatus>>')
+        msg.logos_warning(f"Nothing to {mode}!", app=app)
         return
 
     # Set destination folder.
@@ -137,11 +133,9 @@ def backup_and_restore(mode='backup', app=None):
             dst = Path(dst_dir) / d
             if dst.is_dir():
                 shutil.rmtree(dst)
-    else:
+    else:  # backup mode
         timestamp = utils.get_timestamp().replace('-', '')
         current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{timestamp}"  # noqa: E501
-        backup_dir = Path(config.BACKUPDIR)
-        backup_dir.mkdir(exist_ok=True, parents=True)
         dst_dir = backup_dir / current_backup_name
         logging.debug(f"Backup directory path: {dst_dir}")
 
@@ -153,24 +147,16 @@ def backup_and_restore(mode='backup', app=None):
 
     # Verify disk space.
     if not utils.enough_disk_space(dst_dir, src_size):
-        m = f"Not enough free disk space for {mode}."
-        if config.DIALOG in ['curses', 'dialog', 'tk']:
-            app.status_q.put(m)
-            app.root.event_generate('<<UpdateStatus>>')
-            return
-        else:
-            msg.logos_error(m)
+        dst_dir.rmdir()
+        msg.logos_warning(f"Not enough free disk space for {mode}.", app=app)
+        return
 
     # Run file transfer.
     if mode == 'restore':
         m = f"Restoring backup from {str(source_dir_base)}"
     else:
         m = f"Backing up to {str(dst_dir)}"
-    logging.info(m)
-    msg.status(m)
-    if config.DIALOG in ['curses', 'dialog', 'tk']:
-        app.status_q.put(m)
-        app.root.event_generate(app.status_evt)
+    msg.status(m, app=app)
     dst_dir_size = utils.get_path_size(dst_dir)
     t = utils.start_thread(copy_data, src_dirs, dst_dir)
     try:
@@ -184,7 +170,7 @@ def backup_and_restore(mode='backup', app=None):
             if config.DIALOG in ['curses', 'dialog', 'tk']:
                 app.progress_q.put(progress)
                 app.root.event_generate('<<UpdateProgress>>')
-            time.sleep(0.5)
+            time.sleep(0.1)
         print()
     except KeyboardInterrupt:
         print()
