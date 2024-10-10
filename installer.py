@@ -408,7 +408,7 @@ def ensure_wine_executables(app=None):
         appimage_link.symlink_to(f"./{appimage_filename}")
 
         # Ensure wine executables symlinks.
-        for name in ["wine", "wine64", "wineserver"]:
+        for name in ["wine", "wine64", "wineserver", "winetricks"]:
             p = appdir_bindir / name
             p.unlink(missing_ok=True)
             p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
