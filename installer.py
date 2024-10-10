@@ -385,33 +385,8 @@ def ensure_wine_executables(app=None):
 
     # Add APPDIR_BINDIR to PATH.
     if not os.access(utils.get_wine_exe_path(), os.X_OK):
-        appdir_bindir = Path(config.APPDIR_BINDIR)
-        os.environ['PATH'] = f"{config.APPDIR_BINDIR}:{os.getenv('PATH')}"
-        # Ensure AppImage symlink.
-        appimage_link = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
-        appimage_file = Path(config.SELECTED_APPIMAGE_FILENAME)
-        appimage_filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
-        if config.WINEBIN_CODE in ['AppImage', 'Recommended']:
-            # Ensure appimage is copied to appdir_bindir.
-            downloaded_file = utils.get_downloaded_file_path(appimage_filename)  # noqa: E501
-            if not appimage_file.is_file():
-                msg.status(f"Copying: {downloaded_file} into: {str(appdir_bindir)}")  # noqa: E501
-                shutil.copy(downloaded_file, str(appdir_bindir))
-            os.chmod(appimage_file, 0o755)
-            appimage_filename = appimage_file.name
-        elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:  # noqa: E501
-            appimage_filename = "none.AppImage"
-        else:
-            msg.logos_error(f"WINEBIN_CODE error. WINEBIN_CODE is {config.WINEBIN_CODE}. Installation canceled!")  # noqa: E501
-
-        appimage_link.unlink(missing_ok=True)  # remove & replace
-        appimage_link.symlink_to(f"./{appimage_filename}")
-
-        # Ensure wine executables symlinks.
-        for name in ["wine", "wine64", "wineserver", "winetricks"]:
-            p = appdir_bindir / name
-            p.unlink(missing_ok=True)
-            p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
+        msg.status("Creating wine appimage symlinks…", app=app)
+        create_wine_appimage_symlinks(app=app)
 
     # Set WINESERVER_EXE.
     config.WINESERVER_EXE = f"{config.APPDIR_BINDIR}/wineserver"
@@ -440,7 +415,7 @@ def ensure_winetricks_executable(app=None):
     if not os.access(config.WINETRICKSBIN, os.X_OK):
         # Either previous system winetricks is no longer accessible, or the
         # or the user has chosen to download it.
-        msg.status("Downloading winetricks from the Internet…")
+        msg.status("Downloading winetricks from the Internet…", app=app)
         system.install_winetricks(config.APPDIR_BINDIR, app=app)
 
     logging.debug(f"> {config.WINETRICKSBIN} is executable?: {os.access(config.WINETRICKSBIN, os.X_OK)}")  # noqa: E501
@@ -716,6 +691,42 @@ def update_install_feedback(text, app=None):
 
 def get_progress_pct(current, total):
     return round(current * 100 / total)
+
+
+def create_wine_appimage_symlinks(app=None):
+    appdir_bindir = Path(config.APPDIR_BINDIR)
+    os.environ['PATH'] = f"{config.APPDIR_BINDIR}:{os.getenv('PATH')}"
+    # Ensure AppImage symlink.
+    appimage_link = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
+    appimage_file = Path(config.SELECTED_APPIMAGE_FILENAME)
+    appimage_filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
+    if config.WINEBIN_CODE in ['AppImage', 'Recommended']:
+        # Ensure appimage is copied to appdir_bindir.
+        downloaded_file = utils.get_downloaded_file_path(appimage_filename)
+        if not appimage_file.is_file():
+            msg.status(
+                f"Copying: {downloaded_file} into: {appdir_bindir}",
+                app=app
+            )
+            shutil.copy(downloaded_file, str(appdir_bindir))
+        os.chmod(appimage_file, 0o755)
+        appimage_filename = appimage_file.name
+    elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:
+        appimage_filename = "none.AppImage"
+    else:
+        msg.logos_error(
+            f"WINEBIN_CODE error. WINEBIN_CODE is {config.WINEBIN_CODE}. Installation canceled!",  # noqa: E501
+            app=app
+        )
+
+    appimage_link.unlink(missing_ok=True)  # remove & replace
+    appimage_link.symlink_to(f"./{appimage_filename}")
+
+    # Ensure wine executables symlinks.
+    for name in ["wine", "wine64", "wineserver", "winetricks"]:
+        p = appdir_bindir / name
+        p.unlink(missing_ok=True)
+        p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
 
 
 def get_flproducti_name(product_name):
