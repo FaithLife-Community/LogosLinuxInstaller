@@ -223,7 +223,7 @@ class LogosManager:
         )
         if current_value == '0x1':
             state = 'ENABLED'
-        if self.app is not None:
+        if config.DIALOG in ['curses', 'dialog', 'tk']:
             self.app.logging_q.put(state)
             if init:
                 self.app.root.event_generate('<<InitLoggingButton>>')
@@ -262,9 +262,9 @@ class LogosManager:
             exe='reg',
             exe_args=exe_args
         )
-        process.wait()
+        wine.wait_pid(process)
         wine.wineserver_wait()
         config.LOGS = state
-        if self.app is not None:
+        if config.DIALOG in ['curses', 'dialog', 'tk']:
             self.app.logging_q.put(state)
             self.app.root.event_generate(self.app.logging_event)
