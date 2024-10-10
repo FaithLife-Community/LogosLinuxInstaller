@@ -554,13 +554,7 @@ def ensure_winetricks_applied(app=None):
 
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
             msg.status("Disabling winemenubuilder…", app)
-            reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
-            reg_file.write_text(r'''REGEDIT4
-
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"winemenubuilder.exe"=""
-''')
-            wine.wine_reg_install(reg_file)
+            wine.disable_winemenubuilder()
 
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
             msg.status("Setting Renderer to GDI…", app)
@@ -582,6 +576,8 @@ def ensure_winetricks_applied(app=None):
             msg.status(f"Setting {config.FLPRODUCT} to Win10 Mode…", app)
             wine.set_win_version("logos", "win10")
 
+        # NOTE: Can't use utils.grep check here because the string
+        # "Version"="win10" might appear elsewhere in the registry.
         msg.logos_msg(f"Setting {config.FLPRODUCT} Bible Indexing to Win10 Mode…")  # noqa: E501
         wine.set_win_version("indexer", "win10")
         # wine.light_wineserver_wait()
