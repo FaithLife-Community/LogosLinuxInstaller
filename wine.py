@@ -273,6 +273,16 @@ def wine_reg_install(reg_file):
     wineserver_wait()
 
 
+def disable_winemenubuilder():
+    reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
+    reg_file.write_text(r'''REGEDIT4
+
+[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
+"winemenubuilder.exe"=""
+''')
+    wine_reg_install(reg_file)
+
+
 def install_msi(app=None):
     msg.status(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.", app)
     # Execute the .MSI
