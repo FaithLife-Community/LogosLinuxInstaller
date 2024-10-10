@@ -423,6 +423,7 @@ def ensure_wine_executables(app=None):
     logging.debug(f"> wine path: {config.APPDIR_BINDIR}/wine")
     logging.debug(f"> wine64 path: {config.APPDIR_BINDIR}/wine64")
     logging.debug(f"> wineserver path: {config.APPDIR_BINDIR}/wineserver")
+    logging.debug(f"> winetricks path: {config.APPDIR_BINDIR}/winetricks")
 
 
 def ensure_winetricks_executable(app=None):
@@ -520,8 +521,6 @@ def ensure_wineprefix_init(app=None):
                 f"{config.INSTALLDIR}/data",
             )
         else:
-            # if utils.get_wine_exe_path():
-            #     wine.initializeWineBottle()
             logging.debug("Initializing wineprefix.")
             process = wine.initializeWineBottle()
             wine.wait_pid(process)
