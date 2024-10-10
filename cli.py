@@ -1,12 +1,9 @@
-# import logging
 import queue
 import threading
 
-import config
 import control
 import installer
 import logos
-# import msg
 import wine
 import utils
 
@@ -22,6 +19,9 @@ class CLI:
 
     def backup(self):
         control.backup(app=self)
+
+    def create_shortcuts(self):
+        installer.create_launcher_shortcuts()
 
     def edit_config(self):
         control.edit_config()
@@ -122,10 +122,7 @@ def backup():
 
 
 def create_shortcuts():
-    # TODO: This takes surprisingly long because it walks through all the
-    # installer steps to confirm everything up to the shortcuts. Can this be
-    # shortcutted?
-    CLI().install_app()
+    CLI().create_shortcuts()
 
 
 def edit_config():
