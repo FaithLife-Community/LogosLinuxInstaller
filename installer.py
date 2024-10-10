@@ -639,45 +639,27 @@ def ensure_config_file(app=None):
 
     if not Path(config.CONFIG_FILE).is_file():
         logging.info(f"No config file at {config.CONFIG_FILE}")
-        parent = Path.home() / ".config" / "Logos_on_Linux"
-        parent.mkdir(exist_ok=True, parents=True)
-        if parent.is_dir():
-            utils.write_config(config.CONFIG_FILE)
-            logging.info(f"A config file was created at {config.CONFIG_FILE}.")
-        else:
-            msg.logos_warn(f"{str(parent)} does not exist. Failed to create config file.")  # noqa: E501
+        create_config_file()
     else:
         logging.info(f"Config file exists at {config.CONFIG_FILE}.")
-        # Compare existing config file contents with installer config.
-        logging.info("Comparing its contents with current config.")
-        current_config_file_dict = config.get_config_file_dict(config.CONFIG_FILE)  # noqa: E501
-        different = False
+        if config_has_changed():
+            if config.DIALOG == 'cli':
+                if msg.logos_acknowledge_question(
+                    f"Update config file at {config.CONFIG_FILE}?",
+                    "The existing config file was not overwritten.",
+                    ""
+                ):
+                    logging.info("Updating config file.")
+                    utils.write_config(config.CONFIG_FILE)
+            else:
+                utils.send_task(app, 'CONFIG')
+                if config.DIALOG == 'curses':
+                    app.config_e.wait()
 
-        for key in config.core_config_keys:
-            if current_config_file_dict.get(key) != config.__dict__.get(key):
-                different = True
-                break
-
-        if different:
-            if app:
-                if config.DIALOG == 'cli':
-                    if msg.logos_acknowledge_question(
-                        f"Update config file at {config.CONFIG_FILE}?",
-                        "The existing config file was not overwritten.",
-                        ""
-                    ):
-                        logging.info("Updating config file.")
-                        utils.write_config(config.CONFIG_FILE)
-                else:
-                    utils.send_task(app, 'CONFIG')
-                    if config.DIALOG == 'curses':
-                        app.config_e.wait()
-
-    if app:
-        if config.DIALOG == 'cli':
-            msg.logos_msg("Install has finished.")
-        else:
-            utils.send_task(app, 'DONE')
+    if config.DIALOG == 'cli':
+        msg.logos_msg("Install has finished.")
+    else:
+        utils.send_task(app, 'DONE')
 
     logging.debug(f"> File exists?: {config.CONFIG_FILE}: {Path(config.CONFIG_FILE).is_file()}")  # noqa: E501
 
@@ -747,6 +729,29 @@ def get_flproducti_name(product_name):
         return 'logos4'
     elif lname == 'verbum':
         return lname
+
+
+def create_config_file():
+    config_dir = Path(config.DEFAULT_CONFIG_PATH).parent
+    config_dir.mkdir(exist_ok=True, parents=True)
+    if config_dir.is_dir():
+        utils.write_config(config.CONFIG_FILE)
+        logging.info(f"A config file was created at {config.CONFIG_FILE}.")
+    else:
+        msg.logos_warn(f"{config_dir} does not exist. Failed to create config file.")  # noqa: E501
+
+
+def config_has_changed():
+    # Compare existing config file contents with installer config.
+    logging.info("Comparing its contents with current config.")
+    current_config_file_dict = config.get_config_file_dict(config.CONFIG_FILE)
+    changed = False
+
+    for key in config.core_config_keys:
+        if current_config_file_dict.get(key) != config.__dict__.get(key):
+            changed = True
+            break
+    return changed
 
 
 def create_desktop_file(name, contents):
