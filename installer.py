@@ -40,11 +40,10 @@ def ensure_product_choice(app=None):
         if config.DIALOG == 'curses' and app:
             app.set_product(config.FLPRODUCT)
 
+    config.FLPRODUCTi = get_flproducti_name(config.FLPRODUCT)
     if config.FLPRODUCT == 'Logos':
-        config.FLPRODUCTi = 'logos4'
         config.VERBUM_PATH = "/"
     elif config.FLPRODUCT == 'Verbum':
-        config.FLPRODUCTi = 'verbum'
         config.VERBUM_PATH = "/Verbum/"
 
     logging.debug(f"> {config.FLPRODUCT=}")
@@ -271,7 +270,8 @@ def ensure_installation_config(app=None):
 
     # Set icon variables.
     app_dir = Path(__file__).parent
-    logos_icon_url = app_dir / 'img' / f"{config.FLPRODUCTi}-128-icon.png"
+    flproducti = get_flproducti_name(config.FLPRODUCT)
+    logos_icon_url = app_dir / 'img' / f"{flproducti}-128-icon.png"
     config.LOGOS_ICON_URL = str(logos_icon_url)
     config.LOGOS_ICON_FILENAME = logos_icon_url.name
     config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{config.TARGETVERSION}{config.VERBUM_PATH}Installer/{config.TARGET_RELEASE_VERSION}/{config.FLPRODUCT}-x64.msi"  # noqa: E501
@@ -715,58 +715,19 @@ def ensure_launcher_shortcuts(app=None):
     runmode = system.get_runmode()
     if runmode == 'binary':
         update_install_feedback("Creating launcher shortcuts…", app=app)
-
-        app_dir = Path(config.INSTALLDIR) / 'data'
-        logos_icon_path = app_dir / config.LOGOS_ICON_FILENAME  # noqa: E501
-        if not logos_icon_path.is_file():
-            app_dir.mkdir(exist_ok=True)
-            shutil.copy(config.LOGOS_ICON_URL, logos_icon_path)
-        else:
-            logging.info(f"Icon found at {logos_icon_path}.")
-
-        desktop_files = [
-            (
-                f"{config.FLPRODUCT}Bible.desktop",
-                f"""[Desktop Entry]
-Name={config.FLPRODUCT}Bible
-Comment=A Bible Study Library with Built-In Tools
-Exec={config.INSTALLDIR}/LogosLinuxInstaller --run-installed-app
-Icon={str(logos_icon_path)}
-Terminal=false
-Type=Application
-Categories=Education;
-"""
-            ),
-            (
-                f"{config.FLPRODUCT}Bible-ControlPanel.desktop",
-                f"""[Desktop Entry]
-Name={config.FLPRODUCT}Bible Control Panel
-Comment=Perform various tasks for {config.FLPRODUCT} app
-Exec={config.INSTALLDIR}/LogosLinuxInstaller
-Icon={str(logos_icon_path)}
-Terminal=false
-Type=Application
-Categories=Education;
-"""
-            ),
-        ]
-        for f, c in desktop_files:
-            create_desktop_file(f, c)
-            fpath = Path.home() / '.local' / 'share' / 'applications' / f
-            logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
+        create_launcher_shortcuts()
     else:
         update_install_feedback(
             "Running from source. Skipping launcher creation.",
             app=app
         )
 
-    if app:
-        if config.DIALOG == 'cli':
-            # Signal CLI.user_input_processor to stop.
-            app.input_q.put(None)
-            app.input_event.set()
-            # Signal CLI itself to stop.
-            app.stop()
+    if config.DIALOG == 'cli':
+        # Signal CLI.user_input_processor to stop.
+        app.input_q.put(None)
+        app.input_event.set()
+        # Signal CLI itself to stop.
+        app.stop()
 
 
 def update_install_feedback(text, app=None):
@@ -780,6 +741,14 @@ def get_progress_pct(current, total):
     return round(current * 100 / total)
 
 
+def get_flproducti_name(product_name):
+    lname = product_name.lower()
+    if lname == 'logos':
+        return 'logos4'
+    elif lname == 'verbum':
+        return lname
+
+
 def create_desktop_file(name, contents):
     launcher_path = Path(f"~/.local/share/applications/{name}").expanduser()
     if launcher_path.is_file():
@@ -790,3 +759,79 @@ def create_desktop_file(name, contents):
     with launcher_path.open('w') as f:
         f.write(contents)
     os.chmod(launcher_path, 0o755)
+
+
+def create_launcher_shortcuts():
+    # Set variables for use in launcher files.
+    flproduct = config.FLPRODUCT
+    installdir = Path(config.INSTALLDIR)
+    m = "Can't create launchers"
+    if flproduct is None:
+        reason = "because the FaithLife product is not defined."
+        msg.logos_warning(f"{m} {reason}")  # noqa: E501
+        return
+    flproducti = get_flproducti_name(flproduct)
+    src_dir = Path(__file__).parent
+    logos_icon_src = src_dir / 'img' / f"{flproducti}-128-icon.png"
+
+    if installdir is None:
+        reason = "because the installation folder is not defined."
+        msg.logos_warning(f"{m} {reason}")
+        return
+    if not installdir.is_dir():
+        reason = "because the installation folder does not exist."
+        msg.logos_warning(f"{m} {reason}")
+        return
+    app_dir = Path(installdir) / 'data'
+    logos_icon_path = app_dir / logos_icon_src.name
+
+    if system.get_runmode() == 'binary':
+        lli_executable = f"{installdir}/LogosLinuxInstaller"
+    else:
+        script = Path(sys.argv[0]).expanduser().resolve()
+        # Find python in virtual environment.
+        py_bin = next(script.parent.glob('*/bin/python'))
+        if not py_bin.is_file():
+            msg.logos_warning("Could not locate python binary in virtual environment.")  # noqa: E501
+            return
+        lli_executable = f"{py_bin} {script}"
+
+    if not logos_icon_path.is_file():
+        app_dir.mkdir(exist_ok=True)
+        shutil.copy(logos_icon_src, logos_icon_path)
+    else:
+        logging.info(f"Icon found at {logos_icon_path}.")
+
+    # Set launcher file names and content.
+    desktop_files = [
+        (
+            f"{flproduct}Bible.desktop",
+            f"""[Desktop Entry]
+Name={flproduct}Bible
+Comment=A Bible Study Library with Built-In Tools
+Exec={lli_executable} --run-installed-app
+Icon={logos_icon_path}
+Terminal=false
+Type=Application
+Categories=Education;
+"""
+        ),
+        (
+            f"{flproduct}Bible-ControlPanel.desktop",
+            f"""[Desktop Entry]
+Name={flproduct}Bible Control Panel
+Comment=Perform various tasks for {flproduct} app
+Exec={lli_executable}
+Icon={logos_icon_path}
+Terminal=false
+Type=Application
+Categories=Education;
+"""
+        ),
+    ]
+
+    # Create the files.
+    for file_name, content in desktop_files:
+        create_desktop_file(file_name, content)
+        fpath = Path.home() / '.local' / 'share' / 'applications' / file_name
+        logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
