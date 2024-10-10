@@ -5,13 +5,13 @@ import os
 import signal
 import shutil
 import sys
-import time
 
 from pathlib import Path
 
 import config
 from gui import ask_question
 from gui import show_error
+from utils import get_timestamp
 
 
 class GzippedRotatingFileHandler(RotatingFileHandler):
@@ -114,10 +114,11 @@ def initialize_logging(stderr_log_level):
     )
 
 
-def initialize_curses_logging():
+def initialize_tui_logging():
     current_logger = logging.getLogger()
     for h in current_logger.handlers:
         if h.name == 'terminal':
+            current_logger.removeHandler(h)
             break
 
 
@@ -162,11 +163,9 @@ def logos_warn(message):
         logos_msg(message)
 
 
-# TODO: I think detail is doing the same thing as secondary.
-def logos_error(message, secondary=None, detail=None, app=None, parent=None):
+def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
     if detail is None:
         detail = ''
-    logging.critical(message)
     WIKI_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki"  # noqa: E501
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
@@ -176,6 +175,7 @@ def logos_error(message, secondary=None, detail=None, app=None, parent=None):
             message,
             detail=f"{detail}\n\n{help_message}",
             app=app,
+            fatal=fatal,
             parent=parent
         )
     elif config.DIALOG == 'curses':
@@ -187,6 +187,33 @@ def logos_error(message, secondary=None, detail=None, app=None, parent=None):
     else:
         logos_msg(message)
 
+
+# TODO: I think detail is doing the same thing as secondary.
+def logos_error(message, secondary=None, detail=None, app=None, parent=None):
+    # if detail is None:
+    #     detail = ''
+    # WIKI_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki"  # noqa: E501
+    # TELEGRAM_LINK = "https://t.me/linux_logos"
+    # MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
+    # help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
+    # if config.DIALOG == 'tk':
+    #     show_error(
+    #         message,
+    #         detail=f"{detail}\n\n{help_message}",
+    #         app=app,
+    #         parent=parent
+    #     )
+    # elif config.DIALOG == 'curses':
+    #     if secondary != "info":
+    #         status(message)
+    #         status(help_message)
+    #     else:
+    #         logos_msg(message)
+    # else:
+    #     logos_msg(message)
+    ui_message(message, secondary=secondary, detail=detail, app=app, parent=parent, fatal=True)  # noqa: E501
+
+    logging.critical(message)
     if secondary is None or secondary == "":
         try:
             os.remove("/tmp/LogosLinuxInstaller.pid")
@@ -197,6 +224,11 @@ def logos_error(message, secondary=None, detail=None, app=None, parent=None):
     if hasattr(app, 'destroy'):
         app.destroy()
     sys.exit(1)
+
+
+def logos_warning(message, secondary=None, detail=None, app=None, parent=None):
+    ui_message(message, secondary=secondary, detail=detail, app=app, parent=parent)  # noqa: E501
+    logging.error(message)
 
 
 def cli_question(question_text, secondary=""):
@@ -297,7 +329,7 @@ def status(text, app=None, end='\n'):
     def strip_timestamp(msg, timestamp_length=20):
         return msg[timestamp_length:]
 
-    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+    timestamp = get_timestamp()
     """Handles status messages for both TUI and GUI."""
     if app is not None:
         if config.DIALOG == 'tk':

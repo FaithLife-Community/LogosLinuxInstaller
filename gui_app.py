@@ -883,10 +883,6 @@ class ControlWindow():
         self.gui.progressvar.set(int(d))
 
     def update_progress(self, evt=None):
-        if self.config_thread.is_alive():
-            # Don't update config progress.
-            self.gui.progressvar.set(0)
-            return
         progress = self.progress_q.get()
         if not type(progress) is int:
             return
@@ -897,7 +893,12 @@ class ControlWindow():
             self.gui.progressvar.set(progress)
 
     def update_status_text(self, evt=None):
-        self.gui.statusvar.set(self.status_q.get())
+        if evt:
+            self.gui.statusvar.set(self.status_q.get())
+            self.root.after(3000, self.update_status_text)
+        else:  # clear status text if called manually and no progress shown
+            if self.gui.progressvar.get() == 0:
+                self.gui.statusvar.set('')
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])

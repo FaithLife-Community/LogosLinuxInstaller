@@ -169,14 +169,14 @@ def popen_command(command, retries=1, delay=0, **kwargs):
             return process
 
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error occurred in popen_command() while executing \"{command}\": {e}")
+            logging.error(f"Error occurred in popen_command() while executing \"{command}\": {e}")  # noqa: E501
             if "lock" in str(e):
-                logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")
+                logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
             else:
                 raise e
         except Exception as e:
-            logging.error(f"An unexpected error occurred when running {command}: {e}")
+            logging.error(f"An unexpected error occurred when running {command}: {e}")  # noqa: E501
             return None
 
     logging.error(f"Failed to execute after {retries} attempts: '{command}'")
@@ -216,18 +216,18 @@ def get_pids(query):
     results = []
     for process in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
-            if process.info['cmdline'] is not None and query in process.info['cmdline']:
+            if process.info['cmdline'] is not None and query in process.info['cmdline']:  # noqa: E501
                 results.append(process)
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):  # noqa: E501
             pass
     return results
 
 
 def get_logos_pids():
     config.processes[config.LOGOS_EXE] = get_pids(config.LOGOS_EXE)
-    config.processes[config.login_window_cmd] = get_pids(config.login_window_cmd)
+    config.processes[config.logos_login_cmd] = get_pids(config.logos_login_cmd)
     config.processes[config.logos_cef_cmd] = get_pids(config.logos_cef_cmd)
-    config.processes[config.logos_indexer_exe] = get_pids(config.logos_indexer_exe)
+    config.processes[config.logos_indexer_exe] = get_pids(config.logos_indexer_exe)  # noqa: E501
 
 
 # def get_pids_using_file(file_path, mode=None):
@@ -788,9 +788,9 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
 def have_lib(library, ld_library_path):
     available_library_paths = ['/usr/lib', '/lib']
     if ld_library_path is not None:
-        available_library_paths = [*ld_library_path.split(':'), *available_library_paths]
+        available_library_paths = [*ld_library_path.split(':'), *available_library_paths]  # noqa: E501
 
-    roots = [root for root in available_library_paths if not Path(root).is_symlink()]
+    roots = [root for root in available_library_paths if not Path(root).is_symlink()]  # noqa: E501
     logging.debug(f"Library Paths: {roots}")
     for root in roots:
         libs = []

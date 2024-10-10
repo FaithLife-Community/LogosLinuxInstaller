@@ -6,12 +6,12 @@ import tempfile
 
 # Define and set variables that are required in the config file.
 core_config_keys = [
-    "FLPRODUCT", "FLPRODUCTi", "TARGETVERSION", "TARGET_RELEASE_VERSION",
+    "FLPRODUCT", "TARGETVERSION", "TARGET_RELEASE_VERSION",
     "current_logos_version", "curses_colors",
     "INSTALLDIR", "WINETRICKSBIN", "WINEBIN_CODE", "WINE_EXE",
     "WINECMD_ENCODING", "LOGS", "BACKUPDIR", "LAST_UPDATED",
-    "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION", "logos_release_channel",
-    "lli_release_channel"
+    "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION",
+    "logos_release_channel", "lli_release_channel",
 ]
 for k in core_config_keys:
     globals()[k] = os.getenv(k)
@@ -57,6 +57,7 @@ APPIMAGE_FILE_PATH = None
 authenticated = False
 BADPACKAGES = None
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json")  # noqa: E501
+FLPRODUCTi = None
 GUI = None
 INSTALL_STEP = 0
 INSTALL_STEPS_COUNT = 0
@@ -114,7 +115,7 @@ options_per_page = 8
 resizing = False
 processes = {}
 threads = []
-login_window_cmd = None
+logos_login_cmd = None
 logos_cef_cmd = None
 logos_indexer_cmd = None
 logos_indexer_exe = None

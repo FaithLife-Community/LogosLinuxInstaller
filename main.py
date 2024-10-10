@@ -196,6 +196,10 @@ def get_parser():
         # help='check resources'
         help=argparse.SUPPRESS,
     )
+    cmd.add_argument(
+        '--winetricks', nargs='+',
+        help="run winetricks command",
+    )
     return parser
 
 
@@ -266,6 +270,7 @@ def parse_args(args, parser):
         'toggle_app_logging': cli.toggle_app_logging,
         'update_self': cli.update_self,
         'update_latest_appimage': cli.update_latest_appimage,
+        'winetricks': cli.winetricks,
     }
 
     config.ACTION = None
@@ -285,6 +290,8 @@ def parse_args(args, parser):
                 if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
                     e = f"{config.APPIMAGE_FILE_PATH} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
+            if arg == 'winetricks':
+                config.winetricks_args = getattr(args, 'winetricks')
             config.ACTION = action
             break
     if config.ACTION is None:
@@ -418,6 +425,7 @@ def run():
         'run_winetricks',
         'set_appimage',
         'toggle_app_logging',
+        'winetricks',
     ]
     if config.ACTION.__name__ not in install_required:
         logging.info(f"Running function: {config.ACTION.__name__}")

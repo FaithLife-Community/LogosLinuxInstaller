@@ -1,12 +1,9 @@
-# import logging
 import queue
 import threading
 
-import config
 import control
 import installer
 import logos
-# import msg
 import wine
 import utils
 
@@ -21,7 +18,10 @@ class CLI:
         self.logos = logos.LogosManager(app=self)
 
     def backup(self):
-        control.backup()
+        control.backup(app=self)
+
+    def create_shortcuts(self):
+        installer.create_launcher_shortcuts()
 
     def edit_config(self):
         control.edit_config()
@@ -58,7 +58,7 @@ class CLI:
         control.remove_library_catalog()
 
     def restore(self):
-        control.restore()
+        control.restore(app=self)
 
     def run_indexing(self):
         self.logos.index()
@@ -83,6 +83,10 @@ class CLI:
 
     def update_self(self):
         utils.update_to_latest_lli_release()
+
+    def winetricks(self):
+        import config
+        wine.run_winetricks_cmd(*config.winetricks_args)
 
     def user_input_processor(self, evt=None):
         while self.running:
@@ -122,10 +126,7 @@ def backup():
 
 
 def create_shortcuts():
-    # TODO: This takes surprisingly long because it walks through all the
-    # installer steps to confirm everything up to the shortcuts. Can this be
-    # shortcutted?
-    CLI().install_app()
+    CLI().create_shortcuts()
 
 
 def edit_config():
@@ -198,3 +199,7 @@ def update_latest_appimage():
 
 def update_self():
     CLI().update_self()
+
+
+def winetricks():
+    CLI().winetricks()
