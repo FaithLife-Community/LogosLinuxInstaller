@@ -84,6 +84,10 @@ class CLI:
     def update_self(self):
         utils.update_to_latest_lli_release()
 
+    def winetricks(self):
+        import config
+        wine.run_winetricks_cmd(*config.winetricks_args)
+
     def user_input_processor(self, evt=None):
         while self.running:
             prompt = None
@@ -195,3 +199,7 @@ def update_latest_appimage():
 
 def update_self():
     CLI().update_self()
+
+
+def winetricks():
+    CLI().winetricks()
