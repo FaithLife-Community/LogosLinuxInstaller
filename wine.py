@@ -40,7 +40,7 @@ def set_logos_paths():
 def check_wineserver():
     try:
         process = run_wine_proc(config.WINESERVER, exe_args=["-p"])
-        process.wait()
+        wait_pid(process)
         return process.returncode == 0
     except Exception:
         return False
@@ -49,7 +49,7 @@ def check_wineserver():
 def wineserver_kill():
     if check_wineserver():
         process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
-        process.wait()
+        wait_pid(process)
 
 
 # TODO: Review these three commands. The top is the newest and should be
@@ -57,7 +57,7 @@ def wineserver_kill():
 def wineserver_wait():
     if check_wineserver():
         process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
-        process.wait()
+        wait_pid(process)
 
 
 # def light_wineserver_wait():
@@ -260,6 +260,8 @@ def wine_reg_install(reg_file):
         exe="regedit.exe",
         exe_args=[reg_file]
     )
+    # NOTE: For some reason wait_pid results in the reg install failing.
+    # wait_pid(process)
     process.wait()
     if process is None or process.returncode != 0:
         failed = "Failed to install reg file"
@@ -342,10 +344,6 @@ def run_wine_proc(winecmd, exe=None, exe_args=list(), init=False):
                                         logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
                                     else:
                                         logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
-                # returncode = process.wait()
-                #
-                # if returncode != 0:
-                #     logging.error(f"Error running '{' '.join(command)}': {process.returncode}")  # noqa: E501
                 return process
             else:
                 return None
