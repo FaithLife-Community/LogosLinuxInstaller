@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import tempfile
+from datetime import datetime
 
 
 # Define and set variables that are required in the config file.
@@ -119,6 +120,13 @@ logos_login_cmd = None
 logos_cef_cmd = None
 logos_indexer_cmd = None
 logos_indexer_exe = None
+logos_linux_installer_status = None
+logos_linux_installer_status_info = {
+    0: "yes",
+    1: "uptodate",
+    2: "no",
+    None: "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set.",  # noqa: E501
+}
 check_if_indexing = None
 
 
@@ -183,3 +191,7 @@ def get_env_config():
         if val is not None:
             logging.info(f"Setting '{var}' to '{val}'")
             globals()[var] = val
+
+
+def get_timestamp():
+    return datetime.today().strftime('%Y-%m-%dT%H%M%S')

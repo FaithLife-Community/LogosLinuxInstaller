@@ -11,7 +11,6 @@ from pathlib import Path
 import config
 from gui import ask_question
 from gui import show_error
-from utils import get_timestamp
 
 
 class GzippedRotatingFileHandler(RotatingFileHandler):
@@ -329,7 +328,7 @@ def status(text, app=None, end='\n'):
     def strip_timestamp(msg, timestamp_length=20):
         return msg[timestamp_length:]
 
-    timestamp = get_timestamp()
+    timestamp = config.get_timestamp()
     """Handles status messages for both TUI and GUI."""
     if app is not None:
         if config.DIALOG == 'tk':
