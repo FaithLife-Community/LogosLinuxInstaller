@@ -819,17 +819,16 @@ class ControlWindow():
         self.gui.logging_button.state(['!disabled'])
 
     def update_latest_lli_release_button(self, evt=None):
-        status, reason = utils.compare_logos_linux_installer_version()
         msg = None
         if system.get_runmode() != 'binary':
             state = 'disabled'
             msg = "This button is disabled. Can't run self-update from script."
-        elif status == 0:
+        elif config.logos_linux_installer_status == 0:
             state = '!disabled'
-        elif status == 1:
+        elif config.logos_linux_installer_status == 1:
             state = 'disabled'
             msg = "This button is disabled. Logos Linux Installer is up-to-date."  # noqa: E501
-        elif status == 2:
+        elif config.logos_linux_installer_status == 2:
             state = 'disabled'
             msg = "This button is disabled. Logos Linux Installer is newer than the latest release."  # noqa: E501
         if msg:

@@ -9,6 +9,7 @@ import sys
 from base64 import b64encode
 from datetime import datetime, timedelta
 from pathlib import Path
+from time import sleep
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
@@ -466,6 +467,7 @@ def check_for_updates():
         logging.debug("Running self-update.")
 
         set_logoslinuxinstaller_latest_release_config()
+        utils.compare_logos_linux_installer_version()
         set_recommended_appimage_config()
 
         config.LAST_UPDATED = now.isoformat()
