@@ -144,7 +144,7 @@ def die_if_running():
                 confirm = tk.messagebox.askquestion("Confirmation", message)
                 tk_root.destroy()
             elif config.DIALOG == "curses":
-                confirm = tui_dialog.confirm("Confirmation", message)
+                confirm = tui.confirm("Confirmation", message)
             else:
                 confirm = msg.cli_question(message, "")
 
@@ -246,10 +246,9 @@ def check_dependencies(app=None):
     else:
         logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
 
-    if app:
-        if config.DIALOG == "tk":
-            # FIXME: This should get moved to gui_app.
-            app.root.event_generate('<<StopIndeterminateProgress>>')
+    if config.DIALOG == "tk":
+        # FIXME: This should get moved to gui_app.
+        app.root.event_generate('<<StopIndeterminateProgress>>')
 
 
 def file_exists(file_path):

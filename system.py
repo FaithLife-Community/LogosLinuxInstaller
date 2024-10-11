@@ -292,7 +292,9 @@ def get_dialog():
 
 
 def get_os():
-    config.OS_NAME = distro.id()  # FIXME: Not working. Returns "Linux".
+    # FIXME: Not working? Returns "Linux" on some systems? On Ubuntu 24.04 it
+    # correctly returns "ubuntu".
+    config.OS_NAME = distro.id()
     logging.info(f"OS name: {config.OS_NAME}")
     config.OS_RELEASE = distro.version()
     logging.info(f"OS release: {config.OS_RELEASE}")
@@ -641,9 +643,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             logging.error(m)
         else:
             msg.logos_continue_question(message, no_message, secondary, app)
-            if app:
-                if config.DIALOG == "curses":
-                    app.confirm_e.wait()
+            if config.DIALOG == "curses":
+                app.confirm_e.wait()
 
         # TODO: Need to send continue question to user based on DIALOG.
         # All we do above is create a message that we never send.
@@ -716,23 +717,21 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                 "Please run the following command in a terminal, then restart "
                 f"LogosLinuxInstaller:\n{sudo_command}\n"
             )
-            if app:
-                if config.DIALOG == "tk":
-                    if hasattr(app, 'root'):
-                        detail += "\nThe command has been copied to the clipboard."  # noqa: E501
-                        app.root.clipboard_clear()
-                        app.root.clipboard_append(sudo_command)
-                        app.root.update()
-                    msg.logos_error(
-                        message,
-                        detail=detail,
-                        app=app,
-                        parent='installer_win'
-                    )
-                install_deps_failed = True
-            else:
+            if config.DIALOG == "tk":
+                if hasattr(app, 'root'):
+                    detail += "\nThe command has been copied to the clipboard."  # noqa: E501
+                    app.root.clipboard_clear()
+                    app.root.clipboard_append(sudo_command)
+                    app.root.update()
+                msg.logos_error(
+                    message,
+                    detail=detail,
+                    app=app,
+                    parent='installer_win'
+                )
+            elif config.DIALOG == 'cli':
                 msg.logos_error(message + "\n" + detail)
-                install_deps_failed = True
+            install_deps_failed = True
 
         if manual_install_required and app and config.DIALOG == "curses":
             app.screen_q.put(
