@@ -576,42 +576,37 @@ def install_premade_wine_bottle(srcdir, appdir):
     )
 
 
-def compare_logos_linux_installer_version():
-    # TODO: Save this as a config variable and only run it once in
-    # network.check_for_updates().
+def compare_logos_linux_installer_version(
+        current=config.LLI_CURRENT_VERSION,
+        latest=config.LLI_LATEST_VERSION,
+):
+    # NOTE: The above params evaluate the variables when the module is
+    # imported. The following re-evaluates when the function is called.
+    if latest is None:
+        latest = config.LLI_LATEST_VERSION
+
+    # Check if status has already been evaluated.
+    if config.logos_linux_installer_status is not None:
+        status = config.logos_linux_installer_status
+        message = config.logos_linux_installer_status_info.get(status)
+        return status, message
+
     status = None
     message = None
-    if (
-        config.LLI_CURRENT_VERSION is not None
-        and config.LLI_LATEST_VERSION is not None
-    ):
-        # logging.debug(f"{config.LLI_CURRENT_VERSION=}; {config.LLI_LATEST_VERSION=}")  # noqa: E501
-        if (
-            version.parse(config.LLI_CURRENT_VERSION)
-            < version.parse(config.LLI_LATEST_VERSION)
-        ):
+    if current is not None and latest is not None:
+        if version.parse(current) < version.parse(latest):
             # Current release is older than recommended.
             status = 0
-            message = "yes"
-        elif (
-            version.parse(config.LLI_CURRENT_VERSION)
-            == version.parse(config.LLI_LATEST_VERSION)
-        ):
+        elif version.parse(current) == version.parse(latest):
             # Current release is latest.
             status = 1
-            message = "uptodate"
-        elif (
-            version.parse(config.LLI_CURRENT_VERSION)
-            > version.parse(config.LLI_LATEST_VERSION)
-        ):
+        elif version.parse(current) > version.parse(latest):
             # Installed version is custom.
             status = 2
-            message = "no"
-    else:
-        status = False
-        message = "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set."  # noqa: E501
 
-    # logging.debug(f"{status=}; {message=}")
+    config.logos_linux_installer_status = status
+    message = config.logos_linux_installer_status_info.get(status)
+    logging.debug(f"LLI self-update check: {status=}; {message=}")
     return status, message
 
 
@@ -1018,7 +1013,3 @@ def stopwatch(start_time=None, interval=10.0):
         return True, last_log_time
     else:
         return False, start_time
-
-
-def get_timestamp():
-    return datetime.today().strftime('%Y-%m-%dT%H%M%S')

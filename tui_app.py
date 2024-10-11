@@ -857,8 +857,8 @@ class TUI:
     def set_tui_menu_options(self, dialog=False):
         labels = []
         if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
-            # logging.debug("Checking if Logos Linux Installer needs updated.")  # noqa: E501
-            status, error_message = utils.compare_logos_linux_installer_version()  # noqa: E501
+            status = config.logos_linux_installer_status
+            error_message = config.logos_linux_installer_status_info.get(status)  # noqa: E501
             if status == 0:
                 labels.append("Update Logos Linux Installer")
             elif status == 1:
