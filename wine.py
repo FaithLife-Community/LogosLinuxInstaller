@@ -52,8 +52,6 @@ def wineserver_kill():
         wait_pid(process)
 
 
-# TODO: Review these three commands. The top is the newest and should be
-# preserved. Can the other two be refactored out?
 def wineserver_wait():
     if check_wineserver():
         process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
