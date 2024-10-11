@@ -138,10 +138,9 @@ def cli_download(uri, destination, app=None):
     cli_queue = queue.Queue()
     kwargs = {'q': cli_queue, 'target': target}
     t = utils.start_thread(net_get, uri, **kwargs)
-    # TODO: This results in high CPU usage while showing the progress bar.
-    # The solution will be to rework the wait on the cli_queue.
     try:
         while t.is_alive():
+            sleep(0.1)
             if cli_queue.empty():
                 continue
             utils.write_progress_bar(cli_queue.get())
@@ -389,17 +388,17 @@ def get_latest_release_data(releases_url):
 def get_latest_release_url(json_data):
     release_url = None
     if json_data:
-        release_url = json_data[0].get('assets')[0].get('browser_download_url')  # noqa: E501
+        release_url = json_data[0].get('assets')[0].get('browser_download_url')
         logging.info(f"Release URL: {release_url}")
     return release_url
 
 
-def get_latest_release_version_tag_name(json_data):
-    release_tag_name = None
+def get_tag_name(json_data):
+    tag_name = None
     if json_data:
-        release_tag_name = json_data[0].get('tag_name')  # noqa: E501
-        logging.info(f"Release URL Tag Name: {release_tag_name}")
-    return release_tag_name
+        tag_name = json_data[0].get('tag_name')
+        logging.info(f"Release URL Tag Name: {tag_name}")
+    return tag_name
 
 
 def set_logoslinuxinstaller_latest_release_config():
@@ -409,7 +408,6 @@ def set_logoslinuxinstaller_latest_release_config():
         releases_url = "https://api.github.com/repos/FaithLife-Community/test-builds/releases"  # noqa: E501
     json_data = get_latest_release_data(releases_url)
     logoslinuxinstaller_url = get_latest_release_url(json_data)
-    logoslinuxinstaller_tag_name = get_latest_release_version_tag_name(json_data)  # noqa: E501
     if logoslinuxinstaller_url is None:
         logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
         return
@@ -417,8 +415,8 @@ def set_logoslinuxinstaller_latest_release_config():
     config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
     # Getting version relies on the the tag_name field in the JSON data. This
     # is already parsed down to vX.X.X. Therefore we must strip the v.
-    config.LLI_LATEST_VERSION = logoslinuxinstaller_tag_name.lstrip('v')
-    logging.info(f"{config.LLI_LATEST_VERSION}")
+    config.LLI_LATEST_VERSION = get_tag_name(json_data).lstrip('v')
+    logging.info(f"{config.LLI_LATEST_VERSION=}")
 
 
 def set_recommended_appimage_config():
@@ -551,7 +549,12 @@ def get_logos_releases(app=None):
             app.releases_q.put(filtered_releases)
             app.releases_e.set()
         elif config.DIALOG == 'cli':
-            app.input_q.put((f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?: ", filtered_releases))
+            app.input_q.put(
+                (
+                    f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?: ",  # noqa: E501
+                    filtered_releases
+                )
+            )
             app.input_event.set()
     return filtered_releases
 

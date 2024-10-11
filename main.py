@@ -6,14 +6,11 @@ import config
 import control
 import curses
 
-import logos
-
 try:
     import dialog  # noqa: F401
 except ImportError:
     pass
 import gui_app
-import installer
 import logging
 import msg
 import network
@@ -54,7 +51,6 @@ def get_parser():
         help='skip font installations',
     )
     cfg.add_argument(
-        # TODO: Make this a hidden option?
         '-W', '--skip-winetricks', action='store_true',
         help='skip winetricks installations. For development purposes only!!!',
     )
@@ -182,7 +178,6 @@ def get_parser():
         help='[re-]create app shortcuts',
     )
     cmd.add_argument(
-        # TODO: Make this a hidden option?
         '--remove-install-dir', action='store_true',
         help='delete the current installation folder',
     )
