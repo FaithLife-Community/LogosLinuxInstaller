@@ -12,7 +12,7 @@ import network
 import system
 import utils
 
-from main import processes
+from config import processes
 
 
 def get_wine_user():

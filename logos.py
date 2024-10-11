@@ -72,7 +72,6 @@ class LogosManager:
 
     def start(self):
         self.logos_state = State.STARTING
-        logos_release = utils.convert_logos_release(config.current_logos_version)  # noqa: E501
         wine_release, _ = wine.get_wine_release(str(utils.get_wine_exe_path()))
 
         def run_logos():
@@ -81,16 +80,13 @@ class LogosManager:
                 exe=config.LOGOS_EXE
             )
 
-        # TODO: Find a way to incorporate check_wine_version_and_branch()
-        if 30 > logos_release[0] > 9 and (
-                wine_release[0] < 7 or (wine_release[0] == 7 and wine_release[1] < 18)):  # noqa: E501
-            txt = f"Can't run {config.FLPRODUCT} 10+ with Wine below 7.18."
-            logging.critical(txt)
-            msg.status(txt, self.app)
-        if logos_release[0] > 29 and wine_release[0] < 9 and wine_release[1] < 10:  # noqa: E501
-            txt = f"Can't run {config.FLPRODUCT} 30+ with Wine below 9.10."
-            logging.critical(txt)
-            msg.status(txt, self.app)
+        # Ensure wine version is compatible with Logos release version.
+        good_wine, reason = wine.check_wine_rules(
+            wine_release,
+            config.current_logos_version
+        )
+        if not good_wine:
+            msg.logos_error(reason, app=self)
         else:
             wine.wineserver_kill()
             app = self.app
