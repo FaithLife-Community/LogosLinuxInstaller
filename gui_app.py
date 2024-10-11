@@ -730,7 +730,6 @@ class ControlWindow():
         utils.start_thread(control.restore, app=self)
 
     def install_deps(self, evt=None):
-        # TODO: Separate as advanced feature.
         self.start_indeterminate_progress()
         utils.start_thread(utils.check_dependencies)
 
