@@ -48,6 +48,9 @@ def backup_and_restore(mode='backup', app=None):
     if config.BACKUPDIR is None:
         if config.DIALOG == 'tk':
             pass  # config.BACKUPDIR is already set in GUI
+        elif config.DIALOG == 'curses':
+            app.todo_e.wait()  # Wait for TUI to resolve config.BACKUPDIR
+            app.todo_e.clear()
         else:
             try:
                 config.BACKUPDIR = input("New or existing folder to store backups in: ")  # noqa: E501
@@ -62,14 +65,14 @@ def backup_and_restore(mode='backup', app=None):
     )
 
     # Confirm BACKUPDIR.
-    if config.DIALOG == 'tk':
-        pass  # user confirms in GUI
+    if config.DIALOG == 'tk' or config.DIALOG == 'curses':
+        pass  # user confirms in GUI or TUI
     else:
         verb = 'Use' if mode == 'backup' else 'Restore backup from'
         if not msg.cli_question(f"{verb} existing backups folder \"{config.BACKUPDIR}\"?", ""):  # noqa: E501
             answer = None
             while answer is None or (mode == 'restore' and not answer.is_dir()):  # noqa: E501
-                answer = msg.cli_ask_filepath("Give backups folder path:")
+                answer = msg.cli_ask_filepath("Please provide a backups folder path:")
                 answer = Path(answer).expanduser().resolve()
                 if not answer.is_dir():
                     msg.status(f"Not a valid folder path: {answer}", app=app)
@@ -91,6 +94,19 @@ def backup_and_restore(mode='backup', app=None):
         config.RESTOREDIR = Path(config.RESTOREDIR).expanduser().resolve()
         if config.DIALOG == 'tk':
             pass
+        elif config.DIALOG == 'curses':
+            app.screen_q.put(app.stack_confirm(24, app.todo_q, app.todo_e,
+                                               f"Restore most-recent backup?: {config.RESTOREDIR}", "", "",
+                                               dialog=config.use_python_dialog))
+            app.todo_e.wait()  # Wait for TUI to confirm RESTOREDIR
+            app.todo_e.clear()
+            if app.tmp == "No":
+                question = "Please choose a different restore folder path:"
+                app.screen_q.put(app.stack_input(25, app.todo_q, app.todo_e, question, f"{config.RESTOREDIR}",
+                                                 dialog=config.use_python_dialog))
+                app.todo_e.wait()
+                app.todo_e.clear()
+                config.RESTOREDIR = Path(app.tmp).expanduser().resolve()
         else:
             # Offer to restore the most recent backup.
             if not msg.cli_question(f"Restore most-recent backup?: {config.RESTOREDIR}", ""):  # noqa: E501
@@ -104,9 +120,15 @@ def backup_and_restore(mode='backup', app=None):
         msg.logos_warning(f"No files to {mode}", app=app)
         return
 
+    if config.DIALOG == 'curses':
+        if mode == 'backup':
+            app.screen_q.put(app.stack_text(8, app.todo_q, app.todo_e, "Backing up data…", wait=True))
+        else:
+            app.screen_q.put(app.stack_text(8, app.todo_q, app.todo_e, "Restoring data…", wait=True))
+
     # Get source transfer size.
     q = queue.Queue()
-    msg.status("Calculating backup size", app=app)
+    msg.status("Calculating backup size…", app=app)
     t = utils.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
@@ -117,7 +139,7 @@ def backup_and_restore(mode='backup', app=None):
         print()
         msg.logos_error("Cancelled with Ctrl+C.", app=app)
     t.join()
-    if config.DIALOG in ['curses', 'dialog', 'tk']:
+    if config.DIALOG == 'tk':
         app.root.event_generate('<<StopIndeterminateProgress>>')
         app.root.event_generate('<<ClearStatus>>')
     src_size = q.get()
@@ -137,13 +159,13 @@ def backup_and_restore(mode='backup', app=None):
         timestamp = config.get_timestamp().replace('-', '')
         current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{timestamp}"  # noqa: E501
         dst_dir = backup_dir / current_backup_name
-        logging.debug(f"Backup directory path: {dst_dir}")
+        logging.debug(f"Backup directory path: \"{dst_dir}\".")
 
         # Check for existing backup.
         try:
             dst_dir.mkdir()
         except FileExistsError:
-            msg.logos_error(f"Backup already exists: {dst_dir}")
+            msg.logos_error(f"Backup already exists: {dst_dir}.")
 
     # Verify disk space.
     if not utils.enough_disk_space(dst_dir, src_size):
@@ -153,30 +175,33 @@ def backup_and_restore(mode='backup', app=None):
 
     # Run file transfer.
     if mode == 'restore':
-        m = f"Restoring backup from {str(source_dir_base)}"
+        m = f"Restoring backup from {str(source_dir_base)}…"
     else:
-        m = f"Backing up to {str(dst_dir)}"
+        m = f"Backing up to {str(dst_dir)}…"
     msg.status(m, app=app)
+    msg.status("Calculating destination directory size", app=app)
     dst_dir_size = utils.get_path_size(dst_dir)
+    msg.status("Starting backup…", app=app)
     t = utils.start_thread(copy_data, src_dirs, dst_dir)
     try:
         while t.is_alive():
-            progress = utils.get_copy_progress(
-                dst_dir,
-                src_size,
-                dest_size_init=dst_dir_size
-            )
-            utils.write_progress_bar(progress)
-            if config.DIALOG in ['curses', 'dialog', 'tk']:
-                app.progress_q.put(progress)
-                app.root.event_generate('<<UpdateProgress>>')
+            logging.debug("DEV: Still copying…")
+            # progress = utils.get_copy_progress(
+            #     dst_dir,
+            #     src_size,
+            #     dest_size_init=dst_dir_size
+            # )
+            # utils.write_progress_bar(progress)
+            # if config.DIALOG == 'tk':
+            #     app.progress_q.put(progress)
+            #     app.root.event_generate('<<UpdateProgress>>')
             time.sleep(0.1)
         print()
     except KeyboardInterrupt:
         print()
         msg.logos_error("Cancelled with Ctrl+C.")
     t.join()
-    if config.DIALOG in ['curses', 'dialog', 'tk']:
+    if config.DIALOG == 'tk':
         app.root.event_generate('<<ClearStatus>>')
     logging.info(f"Finished. {src_size} bytes copied to {str(dst_dir)}")
 

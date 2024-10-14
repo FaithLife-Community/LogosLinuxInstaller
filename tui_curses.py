@@ -149,7 +149,6 @@ class UserInputDialog(CursesDialog):
         else:
             if self.user_input is None or self.user_input == "":
                 self.user_input = self.default_text
-            logging.debug(f"Selected Path: {self.user_input}")
             return self.user_input
 
 

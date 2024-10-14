@@ -36,6 +36,7 @@ class TUI:
         self.llirunning = True
         self.active_progress = False
         self.logos = logos.LogosManager(app=self)
+        self.tmp = ""
 
         # Queues
         self.main_thread = threading.Thread()
@@ -396,7 +397,11 @@ class TUI:
             18: self.utilities_menu_select,
             19: self.renderer_select,
             20: self.win_ver_logos_select,
-            21: self.win_ver_index_select
+            21: self.win_ver_index_select,
+            22: self.verify_backup_path,
+            23: self.use_backup_path,
+            24: self.confirm_restore_dir,
+            25: self.choose_restore_dir
         }
 
         # Capture menu exiting before processing in the rest of the handler
@@ -457,11 +462,13 @@ class TUI:
             control.remove_library_catalog()
         elif choice.startswith("Winetricks"):
             self.reset_screen()
-            self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu", self.set_winetricks_menu_options(), dialog=config.use_python_dialog))
+            self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu",
+                                              self.set_winetricks_menu_options(), dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice.startswith("Utilities"):
             self.reset_screen()
-            self.screen_q.put(self.stack_menu(18, self.todo_q, self.todo_e, "Utilities Menu", self.set_utilities_menu_options(), dialog=config.use_python_dialog))
+            self.screen_q.put(self.stack_menu(18, self.todo_q, self.todo_e, "Utilities Menu",
+                                              self.set_utilities_menu_options(), dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice == "Change Color Scheme":
             self.change_color_scheme()
@@ -537,14 +544,14 @@ class TUI:
             self.update_windows()
             utils.check_dependencies(self)
             self.go_to_main_menu()
-        elif choice == "Back up Data":
+        elif choice == "Back Up Data":
             self.reset_screen()
-            control.backup()
-            self.go_to_main_menu()
+            self.get_backup_path(mode="backup")
+            utils.start_thread(self.do_backup)
         elif choice == "Restore Data":
             self.reset_screen()
-            control.restore()
-            self.go_to_main_menu()
+            self.get_backup_path(mode="restore")
+            utils.start_thread(self.do_backup)
         elif choice == "Update to Latest AppImage":
             self.reset_screen()
             utils.update_to_latest_recommended_appimage()
@@ -839,6 +846,62 @@ class TUI:
     #                 f"Please provide your password to provide escalation privileges.")
     #     self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
 
+    def get_backup_path(self, mode):
+        self.tmp = mode
+        if config.BACKUPDIR is None or not Path(config.BACKUPDIR).is_dir():
+            if config.BACKUPDIR is None:
+                question = "Please provide a backups folder path:"
+            else:
+                question = f"Current backups folder path \"{config.BACKUPDIR}\" is invalid. Please provide a new one:"
+            self.screen_q.put(self.stack_input(22, self.todo_q, self.todo_e, question,
+                                               os.path.expanduser("~/Backups"), dialog=config.use_python_dialog))
+        else:
+            verb = 'Use' if mode == 'backup' else 'Restore backup from'
+            question = f"{verb} backup from existing backups folder \"{config.BACKUPDIR}\"?"
+            self.screen_q.put(self.stack_confirm(23, self.todo_q, self.todo_e, question, "",
+                                                 "", dialog=config.use_python_dialog))
+
+    def verify_backup_path(self, choice):
+        if choice:
+            if not Path(choice).is_dir():
+                msg.status(f"Not a valid folder path: {choice}. Try again.", app=self)
+                question = "Please provide a different backups folder path:"
+                self.screen_q.put(self.stack_input(22, self.todo_q, self.todo_e, question,
+                                               os.path.expanduser("~/Backups"), dialog=config.use_python_dialog))
+            else:
+                config.BACKUPDIR = choice
+                self.todo_e.set()
+
+    def use_backup_path(self, choice):
+        if choice == "No":
+            question = "Please provide a new backups folder path:"
+            self.screen_q.put(self.stack_input(22, self.todo_q, self.todo_e, question,
+                                               os.path.expanduser(f"{config.BACKUPDIR}"), dialog=config.use_python_dialog))
+        else:
+            self.todo_e.set()
+
+    def confirm_restore_dir(self, choice):
+        if choice:
+            if choice == "Yes":
+                self.tmp = "Yes"
+            else:
+                self.tmp = "No"
+            self.todo_e.set()
+
+    def choose_restore_dir(self, choice):
+        if choice:
+            self.tmp = choice
+            self.todo_e.set()
+
+    def do_backup(self):
+        self.todo_e.wait()
+        self.todo_e.clear()
+        if self.tmp == 'backup':
+            control.backup(self)
+        else:
+            control.restore(self)
+        self.go_to_main_menu()
+
     def report_waiting(self, text, dialog):
         #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
         config.console_log.append(text)
@@ -968,13 +1031,18 @@ class TUI:
 
         labels_utilities = [
             "Install Dependencies",
-            "Edit Config",
-            "Change Logos Release Channel",
-            "Change Logos on Linux Release Channel",
-            "Back up Data",
-            "Restore Data",
+            "Edit Config"
         ]
         labels.extend(labels_utilities)
+
+        if utils.file_exists(config.LOGOS_EXE):
+            labels_utils_installed = [
+                "Change Logos Release Channel",
+                "Change Logos on Linux Release Channel",
+                "Back Up Data",
+                "Restore Data"
+            ]
+            labels.extend(labels_utils_installed)
 
         label = "Enable Logging" if config.LOGS == "DISABLED" else "Disable Logging"
         labels.append(label)
