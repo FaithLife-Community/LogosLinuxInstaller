@@ -737,8 +737,8 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             app.screen_q.put(
                 app.stack_confirm(
                     17,
-                    app.todo_q,
-                    app.todo_e,
+                    app.manualinstall_q,
+                    app.manualinstall_e,
                     f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\nLogosLinuxInstaller:\n{sudo_command}\n",  # noqa: E501
                     "User cancelled dependency installation.",  # noqa: E501
                     message,
