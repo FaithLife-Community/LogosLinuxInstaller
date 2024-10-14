@@ -1039,8 +1039,8 @@ class TUI:
             labels_utils_installed = [
                 "Change Logos Release Channel",
                 "Change Logos on Linux Release Channel",
-                "Back Up Data",
-                "Restore Data"
+                # "Back Up Data",
+                # "Restore Data"
             ]
             labels.extend(labels_utils_installed)
 
