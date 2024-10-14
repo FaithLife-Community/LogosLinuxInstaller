@@ -1,5 +1,23 @@
 # Changelog
 
+- 4.0.0-beta.1
+	- Migrate .config and logs from `~/.config/Logos_on_Linux` and `~/.local/state/Logos_on_Linux` to `~/.config/FaithLife-Community` and `~/.local/state/FaithLife-Community`
+	- Add Logos State Manager [T. H. Wright, N. Marti]
+	- Numerous bug fixes [N. Marti, ctrlaltf24]
+	- Make config.WINE_EXE dynamic [T. H. Wright]
+	- Add Docker Build File [jimbob88]
+	- Fix numerous TUI issues [T. H. Wright]
+	- Fix #16 [T. H. Wright]
+	- Fix #84 [T. H. Wright]
+	- Fix #106 [T. H. Wright]
+	- Fix #127 [T. H. Wright]
+	- Fix #128 [T. H. Wright]
+	- Fix #142 [T. H. Wright]
+	- Fix #143 [T. H. Wright]
+	- Fix #153 [T. H. Wright]
+	- Fix #157 [T. H. Wright]
+	- Fix #181 [T. H. Wright]
+	- Fix #188 [T. H. Wright]
 - 4.0.0-alpha.14
 	- Fix install routine [N. Marti, T. H. Wright]
 	- Fix #144, #154, #156
