@@ -184,8 +184,10 @@ def backup_and_restore(mode='backup', app=None):
     msg.status("Starting backup…", app=app)
     t = utils.start_thread(copy_data, src_dirs, dst_dir)
     try:
+        counter = 0
         while t.is_alive():
-            logging.debug("DEV: Still copying…")
+            logging.debug(f"DEV: Still copying… {counter}")
+            counter = counter + 1
             # progress = utils.get_copy_progress(
             #     dst_dir,
             #     src_size,
@@ -195,7 +197,7 @@ def backup_and_restore(mode='backup', app=None):
             # if config.DIALOG == 'tk':
             #     app.progress_q.put(progress)
             #     app.root.event_generate('<<UpdateProgress>>')
-            time.sleep(0.1)
+            time.sleep(1)
         print()
     except KeyboardInterrupt:
         print()
