@@ -277,10 +277,10 @@ class ControlGui(Frame):
         row += 1
         self.deps_label.grid(column=0, row=row, sticky='w', pady=2)
         self.deps_button.grid(column=1, row=row, sticky='w', pady=2)
-        row += 1
-        self.backups_label.grid(column=0, row=row, sticky='w', pady=2)
-        self.backup_button.grid(column=1, row=row, sticky='w', pady=2)
-        self.restore_button.grid(column=2, row=row, sticky='w', pady=2)
+        # row += 1
+        # self.backups_label.grid(column=0, row=row, sticky='w', pady=2)
+        # self.backup_button.grid(column=1, row=row, sticky='w', pady=2)
+        # self.restore_button.grid(column=2, row=row, sticky='w', pady=2)
         row += 1
         self.update_lli_label.grid(column=0, row=row, sticky='w', pady=2)
         self.update_lli_button.grid(column=1, row=row, sticky='w', pady=2)
