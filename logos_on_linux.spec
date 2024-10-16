@@ -2,12 +2,12 @@
 
 
 a = Analysis(
-    ['main.py'],
+    ['scripts/run_app.py'],
     pathex=[],
     #binaries=[('/usr/bin/tclsh8.6', '.')],
     binaries=[],
-    datas=[('img/*-128-icon.png', 'img')],
-    hiddenimports=[],
+    datas=[('logos_on_linux/img/*-128-icon.png', 'img')],
+    hiddenimports=['logos_on_linux'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='LogosLinuxInstaller',
+    name='logos-on-linux',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

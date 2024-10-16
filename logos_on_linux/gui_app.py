@@ -13,15 +13,15 @@ from tkinter import Toplevel
 from tkinter import filedialog as fd
 from tkinter.ttk import Style
 
-import config
-import control
-import gui
-import installer
-import logos
-import network
-import system
-import utils
-import wine
+from . import config
+from . import control
+from . import gui
+from . import installer
+from . import logos
+from . import network
+from . import system
+from . import utils
+from . import wine
 
 
 class Root(Tk):
