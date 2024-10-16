@@ -4,21 +4,20 @@ import signal
 import threading
 import time
 import curses
-import time
 from pathlib import Path
 from queue import Queue
 
-import config
-import control
-import installer
-import logos
-import msg
-import network
-import system
-import tui_curses
-import tui_screen
-import utils
-import wine
+from . import config
+from . import control
+from . import installer
+from . import logos
+from . import msg
+from . import network
+from . import system
+from . import tui_curses
+from . import tui_screen
+from . import utils
+from . import wine
 
 console_message = ""
 

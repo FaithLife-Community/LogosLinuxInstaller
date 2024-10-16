@@ -1,11 +1,10 @@
 import curses
-import logging
 import signal
 import textwrap
 
-import config
-import msg
-import utils
+from . import config
+from . import msg
+from . import utils
 
 
 def wrap_text(app, text):

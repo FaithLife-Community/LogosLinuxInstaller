@@ -10,18 +10,14 @@ import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 
-import config
-# import installer
-import msg
-import network
-import system
-import tui_curses
-# import tui_app
-import utils
-# import wine
+from . import config
+from . import msg
+from . import network
+from . import system
+from . import tui_curses
+from . import utils
 
 
 def edit_config():
