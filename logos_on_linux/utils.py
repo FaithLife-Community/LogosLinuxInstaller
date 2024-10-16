@@ -15,20 +15,19 @@ import tarfile
 import threading
 import time
 import tkinter as tk
-from datetime import datetime
 from packaging import version
 from pathlib import Path
 from typing import List, Union
 
-import config
-import msg
-import network
-import system
+from . import config
+from . import msg
+from . import network
+from . import system
 if system.have_dep("dialog"):
-    import tui_dialog as tui
+    from . import tui_dialog as tui
 else:
-    import tui_curses as tui
-import wine
+    from . import tui_curses as tui
+from . import wine
 
 # TODO: Move config commands to config.py
 

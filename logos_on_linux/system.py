@@ -1,6 +1,7 @@
-import logging
 import distro
+import logging
 import os
+import psutil
 import shutil
 import subprocess
 import sys
@@ -8,11 +9,10 @@ import time
 import zipfile
 from pathlib import Path
 
-import psutil
 
-import config
-import msg
-import network
+from . import config
+from . import msg
+from . import network
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.

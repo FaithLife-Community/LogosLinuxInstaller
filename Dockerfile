@@ -28,4 +28,4 @@ RUN pyenv install --verbose ${PYTHON_VERSION}
 RUN pyenv global ${PYTHON_VERSION}
 
 WORKDIR /usr/src/app
-ENTRYPOINT ["sh", "-c", "pip install --no-cache-dir pyinstaller -r requirements.txt && pyinstaller LogosLinuxInstaller.spec"]
+ENTRYPOINT ["sh", "-c", "pip install --no-cache-dir .[build] && pyinstaller logos_on_linux.spec"]

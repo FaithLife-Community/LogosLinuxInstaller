@@ -6,6 +6,7 @@ except ImportError:
     pass
 
 
+
 def text(screen, text, height=None, width=None, title=None, backtitle=None, colors=True):
     dialog = Dialog()
     dialog.autowidgetsize = True

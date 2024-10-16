@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dependencies = [
+#    "altgraph",
+#    "certifi",
+#    "charset-normalizer",
+    "distro",
+#    "idna",
+    "packaging",
+    "psutil",
+    "pythondialog",
+    "requests",
+#    "tkinter",  # actually provided by a system package, not a python package
+#    "urllib3",
+]
+name = "logos_on_linux"
+dynamic = ["readme", "version"]
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+build = ["pyinstaller"]
+
+[project.scripts]
+logos-on-linux = "logos_on_linux.main:main"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/plain"}
+version = {attr = "logos_on_linux.config.LLI_CURRENT_VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"logos_on_linux.img" = ["*icon.png"]

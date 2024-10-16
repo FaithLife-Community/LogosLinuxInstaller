@@ -1,11 +1,11 @@
 import queue
 import threading
 
-import control
-import installer
-import logos
-import wine
-import utils
+from . import control
+from . import installer
+from . import logos
+from . import wine
+from . import utils
 
 
 class CLI:
