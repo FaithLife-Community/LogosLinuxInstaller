@@ -6,13 +6,13 @@ import signal
 import subprocess
 from pathlib import Path
 
-import config
-import msg
-import network
-import system
-import utils
+from . import config
+from . import msg
+from . import network
+from . import system
+from . import utils
 
-from config import processes
+from .config import processes
 
 
 def get_wine_user():

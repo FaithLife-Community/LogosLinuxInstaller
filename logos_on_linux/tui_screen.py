@@ -1,16 +1,15 @@
+import curses
 import logging
 import time
-import signal
 from pathlib import Path
-import curses
 
-import config
-import installer
-import system
-import tui_curses
-import utils
+from . import config
+from . import installer
+from . import system
+from . import tui_curses
+from . import utils
 if system.have_dep("dialog"):
-    import tui_dialog
+    from . import tui_dialog
 
 
 class Screen:

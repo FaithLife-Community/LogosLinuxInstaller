@@ -13,9 +13,9 @@ from time import sleep
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
-import config
-import msg
-import utils
+from . import config
+from . import msg
+from . import utils
 
 
 class Props():

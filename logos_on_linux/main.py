@@ -1,28 +1,27 @@
 #!/usr/bin/env python3
 import argparse
-
-import cli
-import config
-import control
 import curses
-
 try:
     import dialog  # noqa: F401
 except ImportError:
     pass
-import gui_app
 import logging
-import msg
-import network
 import os
 import shutil
 import sys
-import system
-import tui_app
-import utils
-import wine
 
-from config import processes, threads
+from . import cli
+from . import config
+from . import control
+from . import gui_app
+from . import msg
+from . import network
+from . import system
+from . import tui_app
+from . import utils
+from . import wine
+
+from .config import processes, threads
 
 
 def get_parser():

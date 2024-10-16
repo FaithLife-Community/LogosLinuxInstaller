@@ -4,12 +4,12 @@ import logging
 import psutil
 import threading
 
-import config
-import main
-import msg
-import system
-import utils
-import wine
+from . import config
+from . import main
+from . import msg
+from . import system
+from . import utils
+from . import wine
 
 
 class State(Enum):
