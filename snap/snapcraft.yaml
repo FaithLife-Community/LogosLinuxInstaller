@@ -1,0 +1,27 @@
+name: logos-linux-installer
+base: core24
+adopt-info: lli
+summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
+description: |
+  This repository contains a Python program for installing and maintaining
+  FaithLife's Logos Bible (Verbum) Software on Linux.
+
+  This program is created and maintained by the FaithLife Community and is
+  licensed under the MIT License.
+grade: stable
+confinement: strict
+
+apps:
+  logos-linux-installer:
+    command: bin/LogoLinuxInstaller
+  run:
+    command: bin/LogosLinuxInstaller --run-installed-app
+
+parts:
+  # wine:
+  #   source: 
+
+  lli:
+    source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/v4.0.0-beta.1.tar.gz
+    plugin: dump
+    
