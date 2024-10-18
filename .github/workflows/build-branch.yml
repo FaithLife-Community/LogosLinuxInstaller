@@ -48,8 +48,6 @@ jobs:
         # apt-get install python3-tk
         pip install --upgrade pip
         pip install .[build]
-        # pip install -r requirements.txt
-        # pip install pyinstaller
 
     - name: Build with pyinstaller
       id: pyinstaller
