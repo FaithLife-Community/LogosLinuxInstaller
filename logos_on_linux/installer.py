@@ -4,12 +4,12 @@ import shutil
 import sys
 from pathlib import Path
 
-import config
-import msg
-import network
-import system
-import utils
-import wine
+from . import config
+from . import msg
+from . import network
+from . import system
+from . import utils
+from . import wine
 
 
 def ensure_product_choice(app=None):

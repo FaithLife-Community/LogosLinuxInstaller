@@ -8,9 +8,9 @@ import sys
 
 from pathlib import Path
 
-import config
-from gui import ask_question
-from gui import show_error
+from . import config
+from .gui import ask_question
+from .gui import show_error
 
 
 class GzippedRotatingFileHandler(RotatingFileHandler):

@@ -14,8 +14,8 @@ from tkinter.ttk import Progressbar
 from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
-import config
-import utils
+from . import config
+from . import utils
 
 
 class InstallerGui(Frame):

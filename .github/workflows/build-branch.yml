@@ -47,18 +47,17 @@ jobs:
       run: |
         # apt-get install python3-tk
         pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
+        pip install .[build]
 
     - name: Build with pyinstaller
       id: pyinstaller
       run: |
-        pyinstaller LogosLinuxInstaller.spec --clean
-        echo "bin_name=LogosLinuxInstaller" >> $GITHUB_OUTPUT
+        pyinstaller logos_on_linux.spec --clean
+        echo "bin_name=logos-on-linux" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LogosLinuxInstaller
-        path: dist/LogosLinuxInstaller
+        name: logos-on-linux
+        path: dist/logos-on-linux
         compression-level: 0
