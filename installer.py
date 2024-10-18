@@ -584,8 +584,8 @@ def ensure_icu_data_files(app=None):
     if not utils.file_exists(icu_license_path):
         wine.install_icu_data_files(app=app)
 
-    if config.DIALOG == "curses":
-        app.install_icu_e.wait()
+        if config.DIALOG == "curses":
+            app.install_icu_e.wait()
 
     logging.debug('> ICU data files installed')
 
