@@ -1,5 +1,8 @@
 # Changelog
 
+- 4.0.0-beta.2
+	- Fix #171 [N. Marti]
+	- Fix #185 [N. Marti]
 - 4.0.0-beta.1
 	- Migrate .config and logs from `~/.config/Logos_on_Linux` and `~/.local/state/Logos_on_Linux` to `~/.config/FaithLife-Community` and `~/.local/state/FaithLife-Community`
 	- Add Logos State Manager [T. H. Wright, N. Marti]
