@@ -87,7 +87,7 @@ class InstallerWindow():
         # Set root parameters.
         self.win = new_win
         self.root = root
-        self.win.title("Faithlife Bible Software Installer")
+        self.win.title(f"{config.name_app} Installer")
         self.win.resizable(False, False)
         self.gui = gui.InstallerGui(self.win)
 
@@ -560,7 +560,7 @@ class ControlWindow():
     def __init__(self, root, *args, **kwargs):
         # Set root parameters.
         self.root = root
-        self.root.title("Faithlife Bible Software Control Panel")
+        self.root.title(f"{config.name_app} Control Panel")
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
         self.actioncmd = None
@@ -745,7 +745,7 @@ class ControlWindow():
 
     def update_to_latest_lli_release(self, evt=None):
         self.start_indeterminate_progress()
-        self.gui.statusvar.set("Updating to latest Logos Linux Installer version…")  # noqa: E501
+        self.gui.statusvar.set(f"Updating to latest {config.name_app} version…")  # noqa: E501
         utils.start_thread(utils.update_to_latest_lli_release, app=self)
 
     def update_to_latest_appimage(self, evt=None):
@@ -827,10 +827,10 @@ class ControlWindow():
             state = '!disabled'
         elif config.logos_linux_installer_status == 1:
             state = 'disabled'
-            msg = "This button is disabled. Logos Linux Installer is up-to-date."  # noqa: E501
+            msg = f"This button is disabled. {config.name_app} is up-to-date."  # noqa: E501
         elif config.logos_linux_installer_status == 2:
             state = 'disabled'
-            msg = "This button is disabled. Logos Linux Installer is newer than the latest release."  # noqa: E501
+            msg = f"This button is disabled. {config.name_app} is newer than the latest release."  # noqa: E501
         if msg:
             gui.ToolTip(self.gui.update_lli_button, msg)
         self.clear_status_text()

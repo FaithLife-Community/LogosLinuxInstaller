@@ -25,7 +25,7 @@ from .config import processes, threads
 
 
 def get_parser():
-    desc = "Installs FaithLife Bible Software with Wine on Linux."
+    desc = "Installs FaithLife Bible Software with Wine."
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
         '-v', '--version', action='version',
@@ -138,7 +138,7 @@ def get_parser():
     )
     cmd.add_argument(
         '--update-self', '-u', action='store_true',
-        help='Update Logos Linux Installer to the latest release.',
+        help=f'Update {config.name_app} to the latest release.',
     )
     cmd.add_argument(
         '--update-latest-appimage', '-U', action='store_true',

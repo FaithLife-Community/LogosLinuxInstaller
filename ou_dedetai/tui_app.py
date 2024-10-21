@@ -439,7 +439,7 @@ class TUI:
                 daemon_bool=True,
                 app=self,
             )
-        elif choice.startswith("Update Logos Linux Installer"):
+        elif choice.startswith(f"Update {config.name_app}"):
             utils.update_to_latest_lli_release()
         elif choice == f"Run {config.FLPRODUCT}":
             self.reset_screen()
@@ -922,7 +922,7 @@ class TUI:
             status = config.logos_linux_installer_status
             error_message = config.logos_linux_installer_status_info.get(status)  # noqa: E501
             if status == 0:
-                labels.append("Update Logos Linux Installer")
+                labels.append(f"Update {config.name_app}")
             elif status == 1:
                 # logging.debug("Logos Linux Installer is up-to-date.")
                 pass

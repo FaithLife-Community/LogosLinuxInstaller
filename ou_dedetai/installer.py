@@ -854,7 +854,8 @@ Keywords={flproduct};Logos;Bible;Control;
             f"{config.name_binary}.desktop",
             f"""[Desktop Entry]
 Name={config.name_app}
-Comment=Manages FaithLife Bible Software
+GenericName=FaithLife Wine App Installer
+Comment=Manages FaithLife Bible Software via Wine
 Exec={lli_executable}
 Icon={app_icon_path}
 Terminal=false
