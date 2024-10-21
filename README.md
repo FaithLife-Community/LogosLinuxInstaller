@@ -16,7 +16,7 @@ This repository contains a Python program for installing and maintaining [FaithL
 This program is created and maintained by the FaithLife Community and is licensed under the MIT License.
 
 
-## oudetai binary
+## oudedetai binary
 
 The main program is a distributable executable binary and contains Python itself and all necessary Python packages.
 
