@@ -52,7 +52,7 @@ jobs:
     - name: Build with pyinstaller
       id: pyinstaller
       run: |
-        pyinstaller ou_dedetai.spec --clean
+        ./scripts/build-binary.sh
         echo "bin_name=oudedetai" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
