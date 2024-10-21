@@ -6,7 +6,7 @@ https://github.com/pyinstaller/pyinstaller/issues/2560
 """
 import re
 import sys
-import ou_dedetai
+import ou_dedetai.main
 if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    sys.exit(ou_dedetai.main())
+    sys.exit(ou_dedetai.main.main())

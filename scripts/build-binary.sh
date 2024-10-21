@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+start_dir="$PWD"
 script_dir="$(dirname "$0")"
 repo_root="$(dirname "$script_dir")"
+cd "$repo_root"
 if ! which pyinstaller >/dev/null 2>&1; then
-    echo "Error: Need to install pyinstaller; e.g. 'pip3 install pyinstaller'"
-    exit 1
+    # Install build deps.
+    python3 -m pip install .[build]
 fi
-python3 -m PyInstaller --clean "${repo_root}/ou_dedetai.spec"
+pyinstaller --clean --log-level DEBUG ou_dedetai.spec
+cd "$start_dir"
