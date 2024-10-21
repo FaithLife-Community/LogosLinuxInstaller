@@ -77,7 +77,7 @@ class Root(Tk):
 
         # Set panel icon.
         app_dir = Path(__file__).parent
-        self.icon = app_dir / 'img' / 'logos4-128-icon.png'
+        self.icon = app_dir / 'img' / 'icon.png'
         self.pi = PhotoImage(file=f'{self.icon}')
         self.iconphoto(False, self.pi)
 
@@ -913,7 +913,7 @@ class ControlWindow():
 
 def control_panel_app():
     utils.set_debug()
-    classname = "LogosLinuxControlPanel"
+    classname = config.name_binary
     root = Root(className=classname)
     ControlWindow(root, class_=classname)
     root.mainloop()
