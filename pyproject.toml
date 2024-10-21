@@ -16,7 +16,7 @@ dependencies = [
 #    "tkinter",  # actually provided by a system package, not a python package
 #    "urllib3",
 ]
-name = "logos_on_linux"
+name = "ou_dedetai"
 dynamic = ["readme", "version"]
 requires-python = ">=3.12"
 
@@ -24,14 +24,14 @@ requires-python = ">=3.12"
 build = ["pyinstaller"]
 
 [project.scripts]
-logos-on-linux = "logos_on_linux.main:main"
+oudedetai = "ou_dedetai.main:main"
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
-version = {attr = "logos_on_linux.config.LLI_CURRENT_VERSION"}
+version = {attr = "ou_dedetai.config.LLI_CURRENT_VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["."]
 
 [tool.setuptools.package-data]
-"logos_on_linux.img" = ["*icon.png"]
+"ou_dedetai.img" = ["*icon.png"]

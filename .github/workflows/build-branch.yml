@@ -52,12 +52,12 @@ jobs:
     - name: Build with pyinstaller
       id: pyinstaller
       run: |
-        pyinstaller logos_on_linux.spec --clean
-        echo "bin_name=logos-on-linux" >> $GITHUB_OUTPUT
+        pyinstaller ou_dedetai.spec --clean
+        echo "bin_name=oudedetai" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: logos-on-linux
-        path: dist/logos-on-linux
+        name: oudedetai
+        path: dist/oudedetai
         compression-level: 0

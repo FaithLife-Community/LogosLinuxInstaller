@@ -658,7 +658,7 @@ def ensure_launcher_executable(app=None):
         )
 
         # Copy executable to config.INSTALLDIR.
-        launcher_exe = Path(f"{config.INSTALLDIR}/LogosLinuxInstaller")
+        launcher_exe = Path(f"{config.INSTALLDIR}/{config.name_binary})")
         if launcher_exe.is_file():
             logging.debug("Removing existing launcher binary.")
             launcher_exe.unlink()
@@ -809,7 +809,7 @@ def create_launcher_shortcuts():
     logos_icon_path = app_dir / logos_icon_src.name
 
     if system.get_runmode() == 'binary':
-        lli_executable = f"{installdir}/LogosLinuxInstaller"
+        lli_executable = f"{installdir}/{config.name_binary}"
     else:
         script = Path(sys.argv[0]).expanduser().resolve()
         # Find python in virtual environment.

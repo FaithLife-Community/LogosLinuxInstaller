@@ -440,7 +440,7 @@ def install_icu_data_files(app=None):
     icu_url = network.get_latest_release_url(json_data)
     # icu_tag_name = utils.get_latest_release_version_tag_name(json_data)
     if icu_url is None:
-        logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
+        logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
         return
     icu_filename = os.path.basename(icu_url)
     network.logos_reuse_download(

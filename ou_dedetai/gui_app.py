@@ -668,7 +668,7 @@ class ControlWindow():
             self.gui.app_button.config(command=self.run_installer)
 
     def run_installer(self, evt=None):
-        classname = "LogosLinuxInstaller"
+        classname = config.name_binary
         self.installer_win = Toplevel()
         InstallerWindow(self.installer_win, self.root, class_=classname)
         self.root.icon = config.LOGOS_ICON_URL

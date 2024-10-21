@@ -123,14 +123,13 @@ def update_config_file(config_file_path, key, value):
 
 
 def die_if_running():
-    PIDF = '/tmp/LogosLinuxInstaller.pid'
 
     def remove_pid_file():
-        if os.path.exists(PIDF):
-            os.remove(PIDF)
+        if os.path.exists(config.pid_file):
+            os.remove(config.pid_file)
 
-    if os.path.isfile(PIDF):
-        with open(PIDF, 'r') as f:
+    if os.path.isfile(config.pid_file):
+        with open(config.pid_file, 'r') as f:
             pid = f.read().strip()
             message = f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?"  # noqa: E501
             if config.DIALOG == "tk":
@@ -151,7 +150,7 @@ def die_if_running():
                 os.kill(int(pid), signal.SIGKILL)
 
     atexit.register(remove_pid_file)
-    with open(PIDF, 'w') as f:
+    with open(config.pid_file, 'w') as f:
         f.write(str(os.getpid()))
 
 
@@ -167,7 +166,7 @@ def die(message):
 
 def restart_lli():
     logging.debug("Restarting Logos Linux Installer.")
-    pidfile = Path('/tmp/LogosLinuxInstaller.pid')
+    pidfile = Path(config.pid_file)
     if pidfile.is_file():
         pidfile.unlink()
     os.execv(sys.executable, [sys.executable])
@@ -809,7 +808,7 @@ def set_appimage_symlink(app=None):
         if not check_appimage(selected_appimage_file_path):
             msg.logos_error(f"Cannot use {selected_appimage_file_path}.")
 
-        # Determine if user wants their AppImage in the Logos on Linux bin dir.
+        # Determine if user wants their AppImage in the app bin dir.
         copy_message = (
             f"Should the program copy {selected_appimage_file_path} to the"
             f" {config.APPDIR_BINDIR} directory?"
@@ -849,7 +848,7 @@ def update_to_latest_lli_release(app=None):
     status, _ = compare_logos_linux_installer_version()
 
     if system.get_runmode() != 'binary':
-        logging.error("Can't update LogosLinuxInstaller when run as a script.")
+        logging.error(f"Can't update {config.name_app} when run as a script.")
     elif status == 0:
         network.update_lli_binary(app=app)
     elif status == 1:
@@ -884,7 +883,7 @@ def get_downloaded_file_path(filename):
 
 
 def send_task(app, task):
-    #logging.debug(f"{task=}")
+    # logging.debug(f"{task=}")
     app.todo_q.put(task)
     if config.DIALOG == 'tk':
         app.root.event_generate('<<ToDo>>')
