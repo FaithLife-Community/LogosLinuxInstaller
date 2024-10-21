@@ -658,7 +658,7 @@ def ensure_launcher_executable(app=None):
         )
 
         # Copy executable to config.INSTALLDIR.
-        launcher_exe = Path(f"{config.INSTALLDIR}/{config.name_binary})")
+        launcher_exe = Path(f"{config.INSTALLDIR}/{config.name_binary}")
         if launcher_exe.is_file():
             logging.debug("Removing existing launcher binary.")
             launcher_exe.unlink()
@@ -796,6 +796,7 @@ def create_launcher_shortcuts():
     flproducti = get_flproducti_name(flproduct)
     src_dir = Path(__file__).parent
     logos_icon_src = src_dir / 'img' / f"{flproducti}-128-icon.png"
+    app_icon_src = src_dir / 'img' / 'icon.png'
 
     if installdir is None:
         reason = "because the installation folder is not defined."
@@ -807,23 +808,31 @@ def create_launcher_shortcuts():
         return
     app_dir = Path(installdir) / 'data'
     logos_icon_path = app_dir / logos_icon_src.name
+    app_icon_path = app_dir / app_icon_src.name
 
     if system.get_runmode() == 'binary':
         lli_executable = f"{installdir}/{config.name_binary}"
     else:
         script = Path(sys.argv[0]).expanduser().resolve()
+        repo_dir = None
+        for p in script.parents:
+            for c in p.iterdir():
+                if c.name == '.git':
+                    repo_dir = p
+                    break
         # Find python in virtual environment.
-        py_bin = next(script.parent.glob('*/bin/python'))
+        py_bin = next(repo_dir.glob('*/bin/python'))
         if not py_bin.is_file():
             msg.logos_warning("Could not locate python binary in virtual environment.")  # noqa: E501
             return
-        lli_executable = f"{py_bin} {script}"
+        lli_executable = f"env DIALOG=tk {py_bin} {script}"
 
-    if not logos_icon_path.is_file():
-        app_dir.mkdir(exist_ok=True)
-        shutil.copy(logos_icon_src, logos_icon_path)
-    else:
-        logging.info(f"Icon found at {logos_icon_path}.")
+    for (src, path) in [(app_icon_src, app_icon_path), (logos_icon_src, logos_icon_path)]:  # noqa: E501
+        if not path.is_file():
+            app_dir.mkdir(exist_ok=True)
+            shutil.copy(src, path)
+        else:
+            logging.info(f"Icon found at {path}.")
 
     # Set launcher file names and content.
     desktop_files = [
@@ -836,19 +845,23 @@ Exec={lli_executable} --run-installed-app
 Icon={logos_icon_path}
 Terminal=false
 Type=Application
+StartupWMClass={flproduct.lower()}.exe
 Categories=Education;
+Keywords={flproduct};Logos;Bible;Control;
 """
         ),
         (
-            f"{flproduct}Bible-ControlPanel.desktop",
+            f"{config.name_binary}.desktop",
             f"""[Desktop Entry]
-Name={flproduct}Bible Control Panel
-Comment=Perform various tasks for {flproduct} app
+Name={config.name_app}
+Comment=Manages FaithLife Bible Software
 Exec={lli_executable}
-Icon={logos_icon_path}
+Icon={app_icon_path}
 Terminal=false
 Type=Application
+StartupWMClass={config.name_binary}
 Categories=Education;
+Keywords={flproduct};Logos;Bible;Control;
 """
         ),
     ]
