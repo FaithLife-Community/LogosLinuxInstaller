@@ -566,7 +566,7 @@ def update_lli_binary(app=None):
     lli_download_path = Path(config.MYDOWNLOADS) / config.name_binary
     temp_path = Path(config.MYDOWNLOADS) / f"{config.name_binary}.tmp"
     logging.debug(
-        f"Updating Logos Linux Installer to latest version by overwriting: {lli_file_path}")  # noqa: E501
+        f"Updating {config.name_app} to latest version by overwriting: {lli_file_path}")  # noqa: E501
 
     # Remove existing downloaded file if different version.
     if lli_download_path.is_file():
@@ -591,5 +591,5 @@ def update_lli_binary(app=None):
         return
 
     os.chmod(sys.argv[0], os.stat(sys.argv[0]).st_mode | 0o111)
-    logging.debug("Successfully updated Logos Linux Installer.")
+    logging.debug(f"Successfully updated {config.name_app}.")
     utils.restart_lli()

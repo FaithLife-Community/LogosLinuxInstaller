@@ -218,7 +218,7 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        self.update_lli_label = Label(self, text="Update Logos Linux Installer")  # noqa: E501
+        self.update_lli_label = Label(self, text=f"Update {config.name_app}")  # noqa: E501
         self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(

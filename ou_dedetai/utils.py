@@ -165,7 +165,7 @@ def die(message):
 
 
 def restart_lli():
-    logging.debug("Restarting Logos Linux Installer.")
+    logging.debug(f"Restarting {config.name_app}.")
     pidfile = Path(config.pid_file)
     if pidfile.is_file():
         pidfile.unlink()
