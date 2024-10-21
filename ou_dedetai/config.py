@@ -5,6 +5,12 @@ import tempfile
 from datetime import datetime
 
 
+# Define app name variables.
+name_app = 'Ou Dedetai'
+name_binary = 'oudedetai'
+name_package = 'ou_dedetai'
+repo_link = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
+
 # Define and set variables that are required in the config file.
 core_config_keys = [
     "FLPRODUCT", "TARGETVERSION", "TARGET_RELEASE_VERSION",
@@ -27,7 +33,7 @@ extended_config = {
     'DEBUG': False,
     'DELETE_LOG': None,
     'DIALOG': None,
-    'LOGOS_LOG': os.path.expanduser("~/.local/state/FaithLife-Community/Logos_on_Linux.log"),  # noqa: E501
+    'LOGOS_LOG': os.path.expanduser(f"~/.local/state/FaithLife-Community/{name_binary}.log"),  # noqa: E501
     'wine_log': os.path.expanduser("~/.local/state/FaithLife-Community/wine.log"),  # noqa: #E501
     'LOGOS_EXE': None,
     'LOGOS_EXECUTABLE': None,
@@ -57,7 +63,7 @@ ACTION = 'app'
 APPIMAGE_FILE_PATH = None
 authenticated = False
 BADPACKAGES = None
-DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json")  # noqa: E501
+DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{name_binary}.json")  # noqa: E501
 FLPRODUCTi = None
 GUI = None
 INSTALL_STEP = 0
@@ -67,7 +73,7 @@ LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
 LLI_CURRENT_VERSION = "4.0.0-beta.1"
 LLI_LATEST_VERSION = None
-LLI_TITLE = "Logos Linux Installer"
+LLI_TITLE = name_app
 LOG_LEVEL = logging.WARNING
 LOGOS_BLUE = '#0082FF'
 LOGOS_GRAY = '#E7E7E7'
@@ -77,7 +83,7 @@ LOGOS_DIR = os.path.dirname(LOGOS_EXE) if LOGOS_EXE else None  # noqa: F821
 LOGOS_FORCE_ROOT = False
 LOGOS_ICON_FILENAME = None
 LOGOS_ICON_URL = None
-LOGOS_LATEST_VERSION_FILENAME = "LogosLinuxInstaller"
+LOGOS_LATEST_VERSION_FILENAME = name_binary
 LOGOS_LATEST_VERSION_URL = None
 LOGOS9_RELEASES = None      # used to save downloaded releases list
 LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
@@ -91,6 +97,7 @@ PACKAGE_MANAGER_COMMAND_REMOVE = None
 PACKAGE_MANAGER_COMMAND_QUERY = None
 PACKAGES = None
 PASSIVE = None
+pid_file = f'/tmp/{name_binary}.pid'
 PRESENT_WORKING_DIRECTORY = os.getcwd()
 QUERY_PREFIX = None
 REBOOT_REQUIRED = None

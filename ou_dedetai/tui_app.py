@@ -26,11 +26,11 @@ console_message = ""
 class TUI:
     def __init__(self, stdscr):
         self.stdscr = stdscr
-        #if config.current_logos_version is not None:
-        self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"
-        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"
-        #else:
-        #    self.title = f"Welcome to Logos on Linux ({config.LLI_CURRENT_VERSION})"
+        # if config.current_logos_version is not None:
+        self.title = f"Welcome to {config.name_app} {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
+        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"  # noqa: E501
+        # else:
+        #    self.title = f"Welcome to {config.name_app} ({config.LLI_CURRENT_VERSION})"  # noqa: E501
         self.console_message = "Starting TUI…"
         self.llirunning = True
         self.active_progress = False
@@ -233,15 +233,15 @@ class TUI:
 
     def update_main_window_contents(self):
         self.clear()
-        self.title = f"Welcome to Logos on Linux {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"
-        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"
-        self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
+        self.title = f"Welcome to {config.name_app} {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
+        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"  # noqa: E501
+        self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)  # noqa: E501
         self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
-        #self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
+        # self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
         self.switch_q.put(1)
         self.refresh()
 
-    #ERR: On a sudden resize, the Curses menu is not properly resized,
+    # ERR: On a sudden resize, the Curses menu is not properly resized,
     # and we are not currently dynamically passing the menu options based
     # on the current screen, but rather always passing the tui menu options.
     # To replicate, open Terminator, run LLI full screen, then his Ctrl+A.
@@ -531,7 +531,7 @@ class TUI:
             utils.change_logos_release_channel()
             self.update_main_window_contents()
             self.go_to_main_menu()
-        elif choice == "Change Logos on Linux Release Channel":
+        elif choice == f"Change {config.name_app} Release Channel":
             self.reset_screen()
             utils.change_lli_release_channel()
             network.set_logoslinuxinstaller_latest_release_config()
@@ -1037,7 +1037,7 @@ class TUI:
         if utils.file_exists(config.LOGOS_EXE):
             labels_utils_installed = [
                 "Change Logos Release Channel",
-                "Change Logos on Linux Release Channel",
+                f"Change {config.name_app} Release Channel",
                 # "Back Up Data",
                 # "Restore Data"
             ]

@@ -715,7 +715,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
             detail = (
                 "Please run the following command in a terminal, then restart "
-                f"LogosLinuxInstaller:\n{sudo_command}\n"
+                f"{config.name_app}:\n{sudo_command}\n"
             )
             if config.DIALOG == "tk":
                 if hasattr(app, 'root'):
@@ -739,7 +739,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                     17,
                     app.manualinstall_q,
                     app.manualinstall_e,
-                    f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\nLogosLinuxInstaller:\n{sudo_command}\n",  # noqa: E501
+                    f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\n{config.name_app}:\n{sudo_command}\n",  # noqa: E501
                     "User cancelled dependency installation.",  # noqa: E501
                     message,
                     options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))  # noqa: E501

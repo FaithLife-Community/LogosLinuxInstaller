@@ -5,7 +5,7 @@ FROM ubuntu:focal
 # Prevent popups during install of requirements
 ENV DEBIAN_FRONTEND=noninteractive
 
-# LogosLinuxInstaller Requirements
+# App Requirements
 RUN apt update -qq && apt install -y -qq git build-essential gdb lcov pkg-config \
     libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
@@ -28,4 +28,4 @@ RUN pyenv install --verbose ${PYTHON_VERSION}
 RUN pyenv global ${PYTHON_VERSION}
 
 WORKDIR /usr/src/app
-ENTRYPOINT ["sh", "-c", "pip install --no-cache-dir .[build] && pyinstaller logos_on_linux.spec"]
+ENTRYPOINT ["sh", "-c", "pip install --no-cache-dir .[build] && pyinstaller ou_dedetai.spec"]

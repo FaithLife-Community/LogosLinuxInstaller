@@ -2,15 +2,23 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/f730f74748c348cb9b3ff2fa1654c84b)](https://app.codacy.com/manual/FaithLife-Community/LogosLinuxInstaller?utm_source=github.com&utm_medium=referral&utm_content=FaithLife-Community/LogosLinuxInstaller&utm_campaign=Badge_Grade_Dashboard)
 [![Automation testing](https://img.shields.io/badge/Automation-testing-sucess)](https://github.com/FaithLife-Community/LogosLinuxInstallTests) [![Installer LogosBible](https://img.shields.io/badge/Installer-LogosBible-blue)](https://www.logos.com) [![LastRelease](https://img.shields.io/github/v/release/FaithLife-Community/LogosLinuxInstaller)](https://github.com/FaithLife-Community/LogosLinuxInstaller/releases)
 
-# Install Logos Bible Software on Linux
+# Ou Dedetai
 
-This repository contains a Python program for installing and maintaining FaithLife's Logos Bible (Verbum) Software on Linux.
+>Remember Jesus Christ, risen from the dead, the offspring of David, as preached in my gospel, for which I am suffering, bound with chains as a criminal. **But the word of God is not bound!**  
+ἀλλʼ **ὁ λόγος** τοῦ θεοῦ **οὐ δέδεται**
+>
+> Second Timothy 2:8–9, ESV
+
+## Manages Logos Bible Software via Wine
+
+This repository contains a Python program for installing and maintaining [FaithLife](https://faithlife.com/)'s [Logos Bible (Verbum) Software](https://www.logos.com/) via [Wine](https://www.winehq.org/).
 
 This program is created and maintained by the FaithLife Community and is licensed under the MIT License.
 
-## LogosLinuxInstaller
 
-The main program is a distributable executable and contains Python itself and all necessary Python packages.
+## oudetai binary
+
+The main program is a distributable executable binary and contains Python itself and all necessary Python packages.
 
 When running the program, it will attempt to determine your operating system and package manager.
 It will then attempt to install all needed system dependencies during the installation of Logos.
@@ -121,11 +129,11 @@ $ cd LogosLinuxInstaller
 # docker run --rm -v $(pwd):/usr/src/app logosinstaller
 ```
 
-The built binary will now be in `./dist/LogosLinuxInstaller`.
+The built binary will now be in `./dist/oudedetai`.
 
 ## Install guide (possibly outdated)
 
-NOTE: You can run Logos on Linux using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
+NOTE: You can run **Ou Dedetai** using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
 
 If you want to install your distro's dependencies outside of the script, please see the [System Dependencies wiki page](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/System-Dependencies).
 

@@ -384,8 +384,8 @@ def check_incompatibilities():
         question_text = "Remove AppImageLauncher? A reboot will be required."
         secondary = (
             "Your system currently has AppImageLauncher installed.\n"
-            "LogosLinuxInstaller is not compatible with AppImageLauncher.\n"
-            "For more information, see: https://github.com/FaithLife-Community/LogosLinuxInstaller/issues/114"  # noqa: E501
+            f"{config.name_app} is not compatible with AppImageLauncher.\n"
+            f"For more information, see: {config.repo_link}/issues/114"
         )
         no_text = "User declined to remove AppImageLauncher."
         msg.logos_continue_question(question_text, no_text, secondary)
@@ -466,7 +466,7 @@ def main():
 
 
 def close():
-    logging.debug("Closing Logos on Linux.")
+    logging.debug(f"Closing {config.name_app}.")
     for thread in threads:
         # Only wait on non-daemon threads.
         if not thread.daemon:
@@ -477,7 +477,7 @@ def close():
         wine.end_wine_processes()
     else:
         logging.debug("No extra processes found.")
-    logging.debug("Closing Logos on Linux finished.")
+    logging.debug(f"Closing {config.name_app} finished.")
 
 
 if __name__ == '__main__':

@@ -410,7 +410,7 @@ def set_logoslinuxinstaller_latest_release_config():
     json_data = get_latest_release_data(releases_url)
     logoslinuxinstaller_url = get_latest_release_url(json_data)
     if logoslinuxinstaller_url is None:
-        logging.critical("Unable to set LogosLinuxInstaller release without URL.")  # noqa: E501
+        logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
         return
     config.LOGOS_LATEST_VERSION_URL = logoslinuxinstaller_url
     config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
@@ -563,8 +563,8 @@ def get_logos_releases(app=None):
 
 def update_lli_binary(app=None):
     lli_file_path = os.path.realpath(sys.argv[0])
-    lli_download_path = Path(config.MYDOWNLOADS) / "LogosLinuxInstaller"
-    temp_path = Path(config.MYDOWNLOADS) / "LogosLinuxInstaller.tmp"
+    lli_download_path = Path(config.MYDOWNLOADS) / config.name_binary
+    temp_path = Path(config.MYDOWNLOADS) / f"{config.name_binary}.tmp"
     logging.debug(
         f"Updating Logos Linux Installer to latest version by overwriting: {lli_file_path}")  # noqa: E501
 
@@ -579,7 +579,7 @@ def update_lli_binary(app=None):
 
     logos_reuse_download(
         config.LOGOS_LATEST_VERSION_URL,
-        "LogosLinuxInstaller",
+        config.name_binary,
         config.MYDOWNLOADS,
         app=app,
     )

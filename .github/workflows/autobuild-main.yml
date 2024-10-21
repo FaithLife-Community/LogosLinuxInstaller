@@ -23,7 +23,7 @@ jobs:
     - name: Run shell tasks
       run: |
         echo "DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
-        find -name LogosLinuxInstaller -type f -exec chmod +x {} \;
+        find -name oudedetai -type f -exec chmod +x {} \;
     - name: Upload release to test repo
       uses: softprops/action-gh-release@v1
       with:
