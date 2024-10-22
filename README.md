@@ -4,17 +4,17 @@
 
 # Ou Dedetai
 
->Remember Jesus Christ, risen from the dead, the offspring of David, as preached in my gospel, for which I am suffering, bound with chains as a criminal. **But the word of God is not bound!**  
-ἀλλʼ **ὁ λόγος** τοῦ θεοῦ **οὐ δέδεται**
+>Remember Jesus Christ, risen from the dead, the offspring of David, as preached in my gospel, for which I am suffering, bound with chains as a criminal. But **the word** of God **is not bound!**
 >
-> Second Timothy 2:8–9, ESV
+>ἀλλʼ **ὁ λόγος** τοῦ θεοῦ **οὐ δέδεται**  
+
+—Second Timothy 2:8–9 [ESV](https://biblia.com/bible/esv/2-timothy/2/8-9), [NA<sup>28</sup>](https://biblia.com/bible/ubs5/2-timothy/2/9)
 
 ## Manages Logos Bible Software via Wine
 
 This repository contains a Python program for installing and maintaining [FaithLife](https://faithlife.com/)'s [Logos Bible (Verbum) Software](https://www.logos.com/) via [Wine](https://www.winehq.org/).
 
 This program is created and maintained by the FaithLife Community and is licensed under the MIT License.
-
 
 ## oudedetai binary
 
