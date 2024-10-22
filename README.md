@@ -137,3 +137,6 @@ NOTE: You can run **Ou Dedetai** using the Steam Proton Experimental binary, whi
 
 If you want to install your distro's dependencies outside of the script, please see the [System Dependencies wiki page](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/System-Dependencies).
 
+---
+
+Soli Deo Gloria
