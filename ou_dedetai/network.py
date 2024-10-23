@@ -367,8 +367,9 @@ def same_size(url, file_path):
     return res
 
 
-def get_latest_release_data(releases_url):
-    data = net_get(releases_url)
+def get_latest_release_data(repository):
+    release_url = f"https://api.github.com/repos/{repository}/releases/latest"
+    data = net_get(release_url)
     if data:
         try:
             json_data = json.loads(data.decode())
@@ -376,20 +377,16 @@ def get_latest_release_data(releases_url):
             logging.error(f"Error decoding JSON response: {e}")
             return None
 
-        if not isinstance(json_data, list) or len(json_data) == 0:
-            logging.error("Invalid or empty JSON response.")
-            return None
-        else:
-            return json_data
+        return json_data
     else:
         logging.critical("Could not get latest release URL.")
         return None
 
 
-def get_latest_release_url(json_data):
+def get_first_asset_url(json_data):
     release_url = None
     if json_data:
-        release_url = json_data[0].get('assets')[0].get('browser_download_url')
+        release_url = json_data.get('assets')[0].get('browser_download_url')
         logging.info(f"Release URL: {release_url}")
     return release_url
 
@@ -397,18 +394,18 @@ def get_latest_release_url(json_data):
 def get_tag_name(json_data):
     tag_name = None
     if json_data:
-        tag_name = json_data[0].get('tag_name')
+        tag_name = json_data.get('tag_name')
         logging.info(f"Release URL Tag Name: {tag_name}")
     return tag_name
 
 
 def set_logoslinuxinstaller_latest_release_config():
     if config.lli_release_channel is None or config.lli_release_channel == "stable":  # noqa: E501
-        releases_url = "https://api.github.com/repos/FaithLife-Community/LogosLinuxInstaller/releases"  # noqa: E501
+        repo = "FaithLife-Community/LogosLinuxInstaller"
     else:
-        releases_url = "https://api.github.com/repos/FaithLife-Community/test-builds/releases"  # noqa: E501
-    json_data = get_latest_release_data(releases_url)
-    logoslinuxinstaller_url = get_latest_release_url(json_data)
+        repo = "FaithLife-Community/test-builds"
+    json_data = get_latest_release_data(repo)
+    logoslinuxinstaller_url = get_first_asset_url(json_data)
     if logoslinuxinstaller_url is None:
         logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
         return
@@ -421,10 +418,10 @@ def set_logoslinuxinstaller_latest_release_config():
 
 
 def set_recommended_appimage_config():
-    releases_url = "https://api.github.com/repos/FaithLife-Community/wine-appimages/releases"  # noqa: E501
+    repo = "FaithLife-Community/wine-appimages"
     if not config.RECOMMENDED_WINE64_APPIMAGE_URL:
-        json_data = get_latest_release_data(releases_url)
-        appimage_url = get_latest_release_url(json_data)
+        json_data = get_latest_release_data(repo)
+        appimage_url = get_first_asset_url(json_data)
         if appimage_url is None:
             logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
             return
