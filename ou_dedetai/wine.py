@@ -435,9 +435,9 @@ def set_win_version(exe, windows_version):
 
 
 def install_icu_data_files(app=None):
-    releases_url = "https://api.github.com/repos/FaithLife-Community/icu/releases"  # noqa: E501
-    json_data = network.get_latest_release_data(releases_url)
-    icu_url = network.get_latest_release_url(json_data)
+    repo = "FaithLife-Community/icu"
+    json_data = network.get_latest_release_data(repo)
+    icu_url = network.get_first_asset_url(json_data)
     # icu_tag_name = utils.get_latest_release_version_tag_name(json_data)
     if icu_url is None:
         logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
