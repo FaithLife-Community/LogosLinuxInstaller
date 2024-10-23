@@ -117,7 +117,7 @@ LogosLinuxInstaller$ source env/bin/activate # activate the env
 Python 3.12.5
 (env) LogosLinuxInstaller$ python -m tkinter # verify that tkinter test window opens
 (env) LogosLinuxInstaller$ pip install -r requirements.txt # install python packages
-(env) LogosLinuxInstaller$ ./main.py --help # run the script
+(env) LogosLinuxInstaller$ python -m ou_dedetai.main --help # run the script
 ```
 
 ### Building using docker
