@@ -118,6 +118,30 @@ class UrlProps(Props):
         return self.md5
 
 
+class GitHubRelease:
+    def __init__(self, json_data=None):
+        self.json_data = json_data
+        self.date = None
+        self.tag_name = None
+        self.download_url = None
+        if self.json_data:
+            self.set_date()
+            self.set_tag_name()
+            self.set_download_url()
+
+    def set_tag_name(self):
+        if self.json_data:
+            self.tag_name = self.json_data.get('tag_name')
+
+    def set_download_url(self):
+        if self.json_data:
+            self.download_url = self.json_data.get('assets')[0].get('browser_download_url')  # noqa: E501
+
+    def set_date(self):
+        if self.json_data:
+            self.date = self.json_data.get('published_at')
+
+
 def cli_download(uri, destination, app=None):
     message = f"Downloading '{uri}' to '{destination}'"
     msg.status(message)
