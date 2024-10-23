@@ -5,6 +5,7 @@ import shutil
 import signal
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from . import config
 from . import msg
@@ -16,8 +17,8 @@ from .config import processes
 
 
 def get_wine_user():
-    path = config.LOGOS_EXE
-    normalized_path = os.path.normpath(path)
+    path: Optional[str] = config.LOGOS_EXE
+    normalized_path: str = os.path.normpath(path)
     path_parts = normalized_path.split(os.sep)
     config.wine_user = path_parts[path_parts.index('users') + 1]
 

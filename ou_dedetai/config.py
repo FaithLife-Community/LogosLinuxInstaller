@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 from datetime import datetime
+from typing import Optional
 
 
 # Define app name variables.
@@ -59,20 +60,20 @@ for key, default in extended_config.items():
     globals()[key] = os.getenv(key, default)
 
 # Set other run-time variables not set in the env.
-ACTION = 'app'
-APPIMAGE_FILE_PATH = None
-authenticated = False
-BADPACKAGES = None
+ACTION: str = 'app'
+APPIMAGE_FILE_PATH: Optional[str] = None
+authenticated = False # FIXME: no references
+BADPACKAGES: Optional[str] = None # FIXME: no references
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{name_binary}.json")  # noqa: E501
-FLPRODUCTi = None
-GUI = None
-INSTALL_STEP = 0
-INSTALL_STEPS_COUNT = 0
+FLPRODUCTi: Optional[str] = None
+GUI = None # FIXME: no references
+INSTALL_STEP: int = 0
+INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
 LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
 LLI_CURRENT_VERSION = "4.0.0-beta.2"
-LLI_LATEST_VERSION = None
+LLI_LATEST_VERSION: Optional[str] = None
 LLI_TITLE = name_app
 LOG_LEVEL = logging.WARNING
 LOGOS_BLUE = '#0082FF'
@@ -80,34 +81,34 @@ LOGOS_GRAY = '#E7E7E7'
 LOGOS_WHITE = '#FCFCFC'
 # LOGOS_WHITE = '#F7F7F7'
 LOGOS_DIR = os.path.dirname(LOGOS_EXE) if LOGOS_EXE else None  # noqa: F821
-LOGOS_FORCE_ROOT = False
-LOGOS_ICON_FILENAME = None
-LOGOS_ICON_URL = None
+LOGOS_FORCE_ROOT: bool = False
+LOGOS_ICON_FILENAME: Optional[str] = None
+LOGOS_ICON_URL: Optional[str] = None
 LOGOS_LATEST_VERSION_FILENAME = name_binary
-LOGOS_LATEST_VERSION_URL = None
-LOGOS9_RELEASES = None      # used to save downloaded releases list
+LOGOS_LATEST_VERSION_URL: Optional[str] = None
+LOGOS9_RELEASES = None      # used to save downloaded releases list # FIXME: not set #noqa: E501
 LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
 LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"  # noqa: E501
-LOGOS10_RELEASES = None     # used to save downloaded releases list
-MYDOWNLOADS = None
-OS_NAME = None
-OS_RELEASE = None
-PACKAGE_MANAGER_COMMAND_INSTALL = None
-PACKAGE_MANAGER_COMMAND_REMOVE = None
-PACKAGE_MANAGER_COMMAND_QUERY = None
-PACKAGES = None
-PASSIVE = None
+LOGOS10_RELEASES = None     # used to save downloaded releases list # FIXME: not set #noqa: E501
+MYDOWNLOADS: Optional[str] = None # FIXME: Should this use the tempfile module?
+OS_NAME: Optional[str] = None
+OS_RELEASE: Optional[str] = None
+PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None
+PACKAGE_MANAGER_COMMAND_REMOVE: Optional[list[str]] = None
+PACKAGE_MANAGER_COMMAND_QUERY: Optional[list[str]] = None
+PACKAGES: Optional[str] = None
+PASSIVE: Optional[bool] = None
 pid_file = f'/tmp/{name_binary}.pid'
-PRESENT_WORKING_DIRECTORY = os.getcwd()
-QUERY_PREFIX = None
-REBOOT_REQUIRED = None
-RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = None
-RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = None
-RECOMMENDED_WINE64_APPIMAGE_FILENAME = None
-RECOMMENDED_WINE64_APPIMAGE_VERSION = None
-RECOMMENDED_WINE64_APPIMAGE_BRANCH = None
-SUPERUSER_COMMAND = None
-VERBUM_PATH = None
+PRESENT_WORKING_DIRECTORY: str = os.getcwd()
+QUERY_PREFIX: Optional[str] = None
+REBOOT_REQUIRED: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_FILENAME: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_VERSION: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_BRANCH: Optional[str] = None
+SUPERUSER_COMMAND: Optional[str] = None
+VERBUM_PATH: Optional[str] = None
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
 WINETRICKS_VERSION = '20220411'
 wine_user = None
