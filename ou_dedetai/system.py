@@ -418,43 +418,42 @@ def query_packages(packages, mode="install", app=None):
     logging.debug(f"packages to check: {packages}")
     status = {package: "Unchecked" for package in packages}
 
-    if app is not None:
-        for p in packages:
-            logging.debug(f"Checking for: {p}")
-            l_num = 0
-            for line in package_list.split('\n'):
-                # logging.debug(f"{line=}")
-                l_num += 1
-                if config.PACKAGE_MANAGER_COMMAND_QUERY[0] == 'dpkg':
-                    parts = line.strip().split()
-                    if l_num < 6 or len(parts) < 2:  # skip header, etc.
-                        continue
-                    state = parts[0]
-                    pkg = parts[1].split(':')[0]  # remove :arch if present
-                    if pkg == p and state[1] == 'i':
-                        if mode == 'install':
-                            status[p] = "Installed"
-                        elif mode == 'remove':
-                            conflicting_packages.append(p)
-                            status[p] = 'Conflicting'
-                        break
-                else:
-                    if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":  # noqa: E501
-                        logging.debug(f"'{p}' installed: {line}")
+    for p in packages:
+        logging.debug(f"Checking for: {p}")
+        l_num = 0
+        for line in package_list.split('\n'):
+            # logging.debug(f"{line=}")
+            l_num += 1
+            if config.PACKAGE_MANAGER_COMMAND_QUERY[0] == 'dpkg':
+                parts = line.strip().split()
+                if l_num < 6 or len(parts) < 2:  # skip header, etc.
+                    continue
+                state = parts[0]
+                pkg = parts[1].split(':')[0]  # remove :arch if present
+                if pkg == p and state[1] == 'i':
+                    if mode == 'install':
                         status[p] = "Installed"
-                        break
-                    elif line.strip().startswith(p) and mode == "remove":
+                    elif mode == 'remove':
                         conflicting_packages.append(p)
-                        status[p] = "Conflicting"
-                        break
+                        status[p] = 'Conflicting'
+                    break
+            else:
+                if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":  # noqa: E501
+                    logging.debug(f"'{p}' installed: {line}")
+                    status[p] = "Installed"
+                    break
+                elif line.strip().startswith(p) and mode == "remove":
+                    conflicting_packages.append(p)
+                    status[p] = "Conflicting"
+                    break
 
-            if status[p] == "Unchecked":
-                if mode == "install":
-                    missing_packages.append(p)
-                    status[p] = "Missing"
-                elif mode == "remove":
-                    status[p] = "Not Installed"
-            logging.debug(f"{p} status: {status.get(p)}")
+        if status[p] == "Unchecked":
+            if mode == "install":
+                missing_packages.append(p)
+                status[p] = "Missing"
+            elif mode == "remove":
+                status[p] = "Not Installed"
+        logging.debug(f"{p} status: {status.get(p)}")
 
     logging.debug(f"Packages status: {status}")
 
