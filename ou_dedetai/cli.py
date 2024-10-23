@@ -10,7 +10,7 @@ from . import utils
 
 class CLI:
     def __init__(self):
-        self.running = True
+        self.running: bool = True
         self.choice_q = queue.Queue()
         self.input_q = queue.Queue()
         self.input_event = threading.Event()

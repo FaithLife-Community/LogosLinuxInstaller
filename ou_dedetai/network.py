@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+from typing import Optional
 import requests
 import shutil
 import sys
@@ -383,15 +384,16 @@ def get_latest_release_data(repository):
         return None
 
 
-def get_first_asset_url(json_data):
+def get_first_asset_url(json_data) -> Optional[str]:
     release_url = None
     if json_data:
+        # FIXME: Portential KeyError
         release_url = json_data.get('assets')[0].get('browser_download_url')
         logging.info(f"Release URL: {release_url}")
     return release_url
 
 
-def get_tag_name(json_data):
+def get_tag_name(json_data) -> Optional[str]:
     tag_name = None
     if json_data:
         tag_name = json_data.get('tag_name')

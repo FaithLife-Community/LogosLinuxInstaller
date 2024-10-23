@@ -1,3 +1,4 @@
+from typing import Optional
 import distro
 import logging
 import os
@@ -16,7 +17,7 @@ from . import network
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.
-def run_command(command, retries=1, delay=0, **kwargs):
+def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.CompletedProcess[any]]:
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
     capture_output = kwargs.get("capture_output", True)
@@ -259,7 +260,7 @@ def reboot():
     sys.exit(0)
 
 
-def t(command):
+def t(command): # FIXME: unused, have_dep does the same thing
     if shutil.which(command) is not None:
         return True
     else:
@@ -275,6 +276,7 @@ def tl(library):
 
 
 def get_dialog():
+    # FIXME: wouldn't the cli still work without a DISPLAY? What about wayland?
     if not os.environ.get('DISPLAY'):
         msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
 
@@ -481,6 +483,9 @@ def check_dialog_version():
     if have_dep("dialog"):
         try:
             result = run_command(["dialog", "--version"])
+            if result is None:
+                print("Failed to run the 'dialog' command.")  # noqa: E501
+                return None
             version_info = result.stdout.strip()
             if version_info.startswith("Version: "):
                 version_info = version_info[len("Version: "):]
@@ -493,7 +498,7 @@ def check_dialog_version():
 
 
 def test_dialog_version():
-    version = check_dialog_version()
+    version: Optional[str] = check_dialog_version()
 
     def parse_date(version):
         try:

@@ -677,6 +677,7 @@ def ensure_launcher_shortcuts(app=None):
     ensure_launcher_executable(app=app)
     config.INSTALL_STEP += 1
     runmode = system.get_runmode()
+    # FIXME: why not do this all the time?
     if runmode == 'binary':
         update_install_feedback("Creating launcher shortcuts…", app=app)
         create_launcher_shortcuts()
@@ -741,7 +742,7 @@ def create_wine_appimage_symlinks(app=None):
         p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
 
 
-def get_flproducti_name(product_name):
+def get_flproducti_name(product_name) -> str:
     lname = product_name.lower()
     if lname == 'logos':
         return 'logos4'
