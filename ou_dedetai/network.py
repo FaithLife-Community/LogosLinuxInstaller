@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import mmap
 import os
 import queue
 import requests
@@ -52,6 +53,17 @@ class FileProps(Props):
         self.md5 = b64encode(md5.digest()).decode('utf-8')
         logging.debug(f"{str(self.path)} MD5: {self.md5}")
         return self.md5
+
+    def has_bytes(self, byte_sequence):
+        r = None
+        with self.path.open('rb') as f:
+            mm = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
+            r = mm.find(byte_sequence)
+        if r is None or r == -1:
+            result = False
+        elif isinstance(r, int):
+            result = True
+        return result
 
 
 class UrlProps(Props):
