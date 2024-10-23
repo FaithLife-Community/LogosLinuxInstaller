@@ -486,10 +486,10 @@ class TUI:
             self.go_to_main_menu()
         elif choice == "Install d3dcompiler":
             self.reset_screen()
-            wine.installD3DCompiler()
+            wine.install_d3d_compiler()
         elif choice == "Install Fonts":
             self.reset_screen()
-            wine.installFonts()
+            wine.install_fonts()
             self.go_to_main_menu()
         elif choice == "Set Renderer":
             self.reset_screen()
@@ -566,7 +566,7 @@ class TUI:
             self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
         elif choice == "Install ICU":
             self.reset_screen()
-            wine.installICUDataFiles()
+            wine.install_icu_data_files()
             self.go_to_main_menu()
         elif choice.endswith("Logging"):
             self.reset_screen()
