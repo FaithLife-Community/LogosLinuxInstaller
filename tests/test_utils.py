@@ -4,8 +4,8 @@ import shutil
 import unittest
 from pathlib import Path
 
-import config
-import utils
+import ou_dedetai.config as config
+import ou_dedetai.utils as utils
 
 URLOBJ = utils.UrlProps('http://ip.me')
 
@@ -158,6 +158,16 @@ class TestUtils(unittest.TestCase):
 
     def test_urlprops_get_md5(self):
         self.assertIsNone(URLOBJ.md5)
+
+    def test_grep_found(self):
+        self.assertTrue(utils.grep(r'LOGOS_DIR', self.grepfile))
+
+    def test_grep_nofile(self):
+        self.assertIsNone(utils.grep(r'test', 'thisfiledoesnotexist'))
+
+    def test_grep_notfound(self):
+        self.assertFalse(utils.grep(r'TEST_NOT_IN_FILE', self.grepfile))
+
 
 
 class TestUtilsConfigFile(unittest.TestCase):

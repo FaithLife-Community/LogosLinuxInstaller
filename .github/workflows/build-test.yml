@@ -25,8 +25,8 @@ jobs:
         name: ${{ needs.build.outputs.bin_name }}
     - name: Fix file permissions
       run: |
-        find -name LogosLinuxInstaller -type f
-        find -name LogosLinuxInstaller -type f -exec chmod +x {} \;
+        find -name oudedetai -type f
+        find -name oudedetai -type f -exec chmod +x {} \;
     - name: Upload release to test repo
       uses: softprops/action-gh-release@v1
       with:
