@@ -260,13 +260,6 @@ def reboot():
     sys.exit(0)
 
 
-def t(command): # FIXME: unused, have_dep does the same thing
-    if shutil.which(command) is not None:
-        return True
-    else:
-        return False
-
-
 def tl(library):
     try:
         __import__(library)
@@ -276,7 +269,6 @@ def tl(library):
 
 
 def get_dialog():
-    # FIXME: wouldn't the cli still work without a DISPLAY? What about wayland?
     if not os.environ.get('DISPLAY'):
         msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
 

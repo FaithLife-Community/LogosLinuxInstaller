@@ -40,7 +40,7 @@ class CLI:
         wine.install_d3d_compiler()
 
     def install_dependencies(self):
-        utils.check_dependencies(app=self)
+        utils.install_dependencies(app=self)
 
     def install_fonts(self):
         wine.install_fonts()

@@ -541,7 +541,7 @@ class TUI:
             self.reset_screen()
             msg.status("Checking dependencies…", self)
             self.update_windows()
-            utils.check_dependencies(self)
+            utils.install_dependencies(self)
             self.go_to_main_menu()
         elif choice == "Back Up Data":
             self.reset_screen()

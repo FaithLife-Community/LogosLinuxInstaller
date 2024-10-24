@@ -225,7 +225,7 @@ def delete_symlink(symlink_path):
             logging.error(f"Error removing symlink: {e}")
 
 
-def check_dependencies(app=None): # FIXME: misnomer, isn't this an install_dependencies
+def install_dependencies(app=None):
     if config.TARGETVERSION:
         targetversion = int(config.TARGETVERSION)
     else:
@@ -442,7 +442,7 @@ def get_winetricks_options():
         # Check if local winetricks version is up-to-date.
         cmd = ["winetricks", "--version"]
         local_winetricks_version = subprocess.check_output(cmd).split()[0]
-        if str(local_winetricks_version) >= "20220411": #FIXME: consider using config.WINETRICKS_VERSION and != string comparision on versions is dodgy #noqa: E501
+        if str(local_winetricks_version) != config.WINETRICKS_VERSION: #noqa: E501
             winetricks_options.insert(0, local_winetricks_path)
         else:
             logging.info("Local winetricks is too old.")

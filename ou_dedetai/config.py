@@ -62,11 +62,9 @@ for key, default in extended_config.items():
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
 APPIMAGE_FILE_PATH: Optional[str] = None
-authenticated = False # FIXME: no references
-BADPACKAGES: Optional[str] = None # FIXME: no references
+BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{name_binary}.json")  # noqa: E501
 FLPRODUCTi: Optional[str] = None
-GUI = None # FIXME: no references
 INSTALL_STEP: int = 0
 INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
@@ -93,7 +91,7 @@ LOGOS9_RELEASES = None      # used to save downloaded releases list # FIXME: not
 LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
 LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"  # noqa: E501
 LOGOS10_RELEASES = None     # used to save downloaded releases list # FIXME: not set #noqa: E501
-MYDOWNLOADS: Optional[str] = None # FIXME: Should this use the tempfile module?
+MYDOWNLOADS: Optional[str] = None # FIXME: Should this use ~/.cache?
 OS_NAME: Optional[str] = None
 OS_RELEASE: Optional[str] = None
 PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None

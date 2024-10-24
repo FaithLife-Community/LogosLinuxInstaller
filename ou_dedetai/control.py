@@ -269,7 +269,7 @@ def set_winetricks():
             # Check if local winetricks version is up-to-date; if so, offer to
             # use it or to download; else, download it.
             local_winetricks_version = subprocess.check_output(["winetricks", "--version"]).split()[0]  # noqa: E501
-            if str(local_winetricks_version) >= "20220411": #FIXME: consider using config.WINETRICKS_VERSION and != string comparision on versions is dodgy #noqa: E501
+            if str(local_winetricks_version) != config.WINETRICKS_VERSION: # noqa: E501
                 if config.DIALOG == 'tk': #FIXME: CLI client not considered
                     logging.info("Setting winetricks to the local binary…")
                     config.WINETRICKSBIN = local_winetricks_path
@@ -289,7 +289,6 @@ def set_winetricks():
                         config.WINETRICKSBIN = local_winetricks_path
                         return 0
                     elif winetricks_choice.startswith("2"):
-                        # download_winetricks()
                         system.install_winetricks(config.APPDIR_BINDIR)
                         config.WINETRICKSBIN = os.path.join(
                             config.APPDIR_BINDIR,
@@ -302,7 +301,6 @@ def set_winetricks():
                         sys.exit(0)
             else:
                 msg.status("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet…")  # noqa: E501
-                # download_winetricks()
                 system.install_winetricks(config.APPDIR_BINDIR)
                 config.WINETRICKSBIN = os.path.join(
                     config.APPDIR_BINDIR,
@@ -311,7 +309,6 @@ def set_winetricks():
                 return 0
         else:
             msg.status("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
-            # download_winetricks()
             system.install_winetricks(config.APPDIR_BINDIR)
             config.WINETRICKSBIN = os.path.join(
                 config.APPDIR_BINDIR,
@@ -320,13 +317,3 @@ def set_winetricks():
             return 0
     return 0
 
-
-def download_winetricks(): #FIXME: unused, logic moved to system.install_winetricks
-    msg.status("Downloading winetricks…")
-    appdir_bindir = f"{config.INSTALLDIR}/data/bin"
-    network.logos_reuse_download(
-        config.WINETRICKS_URL,
-        "winetricks",
-        appdir_bindir
-    )
-    os.chmod(f"{appdir_bindir}/winetricks", 0o755)

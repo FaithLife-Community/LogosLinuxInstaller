@@ -349,7 +349,7 @@ def ensure_sys_deps(app=None):
     update_install_feedback("Ensuring system dependencies are met…", app=app)
 
     if not config.SKIP_DEPENDENCIES:
-        utils.check_dependencies(app)
+        utils.install_dependencies(app)
         if config.DIALOG == "curses":
             app.installdeps_e.wait()
         logging.debug("> Done.")
@@ -674,16 +674,8 @@ def ensure_launcher_shortcuts(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_launcher_executable(app=app)
     config.INSTALL_STEP += 1
-    runmode = system.get_runmode()
-    # FIXME: why not do this all the time?
-    if runmode == 'binary':
-        update_install_feedback("Creating launcher shortcuts…", app=app)
-        create_launcher_shortcuts()
-    else:
-        update_install_feedback(
-            "Running from source. Skipping launcher creation.",
-            app=app
-        )
+    update_install_feedback("Creating launcher shortcuts…", app=app)
+    create_launcher_shortcuts()
 
     if config.DIALOG == 'cli':
         # Signal CLI.user_input_processor to stop.
