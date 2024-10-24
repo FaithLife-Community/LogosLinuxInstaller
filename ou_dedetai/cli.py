@@ -46,7 +46,7 @@ class CLI:
         wine.install_fonts()
 
     def install_icu(self):
-        wine.install_icu_data_files()
+        wine.enforce_icu_data_files()
 
     def remove_index_files(self):
         control.remove_all_index_files()

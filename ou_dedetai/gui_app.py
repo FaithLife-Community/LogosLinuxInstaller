@@ -704,7 +704,7 @@ class ControlWindow():
 
     def install_icu(self, evt=None):
         self.gui.statusvar.set("Installing ICU files…")
-        utils.start_thread(wine.install_icu_data_files, app=self)
+        utils.start_thread(wine.enforce_icu_data_files, app=self)
 
     def run_backup(self, evt=None):
         # Get backup folder.
