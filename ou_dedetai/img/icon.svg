@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 135.46667 135.46667"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="icon.svg"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title1">Ou Dedetai</title>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="0.7198092"
+     inkscape:cx="397.32751"
+     inkscape:cy="561.25984"
+     inkscape:window-width="1854"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer2" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient5"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#0082ff;stop-opacity:0.75;"
+         offset="0"
+         id="stop5" />
+      <stop
+         style="stop-color:#0082ff;stop-opacity:0.25;"
+         offset="1"
+         id="stop6" />
+    </linearGradient>
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient5"
+       id="radialGradient6"
+       cx="67.733337"
+       cy="67.733337"
+       fx="67.733337"
+       fy="67.733337"
+       r="67.733337"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="background"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:url(#radialGradient6);fill-opacity:1;stroke-width:1"
+       id="rect1"
+       width="135.46667"
+       height="135.46667"
+       x="0"
+       y="2.7755576e-17"
+       rx="16.932388"
+       ry="16.933334"
+       inkscape:highlight-color="#e7e7e7" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="chain">
+    <rect
+       style="fill:#e7e7e7;fill-opacity:0;fill-rule:evenodd;stroke:#fcfcfc;stroke-width:8.46667;stroke-dasharray:none;stroke-opacity:1"
+       id="rect2"
+       width="30.579021"
+       height="54.59483"
+       x="79.516243"
+       y="-73.171265"
+       rx="12.700001"
+       ry="12.700001"
+       transform="rotate(45)" />
+    <rect
+       style="fill:#e7e7e7;fill-opacity:0;fill-rule:evenodd;stroke:#fcfcfc;stroke-width:8.46667;stroke-dasharray:none;stroke-opacity:1"
+       id="rect2-5"
+       width="30.579021"
+       height="54.59483"
+       x="44.316643"
+       y="60.557995"
+       rx="12.700001"
+       ry="12.700001"
+       transform="rotate(15)" />
+    <path
+       id="rect2-5-2"
+       style="fill:none;fill-opacity:0;fill-rule:evenodd;stroke:#fcfcfc;stroke-width:8.66059;stroke-dasharray:none;stroke-opacity:1"
+       d="m 65.690532,58.344083 6.158371,-7.004944 c 4.692366,-5.337411 13.05296,-5.960828 18.745705,-1.397793 v 0 l 4.190406,3.35883 c 5.692746,4.563037 6.498106,12.533446 1.805741,17.870856 l -5.530554,6.290823"
+       sodipodi:nodetypes="csscssc" />
+    <path
+       id="path4"
+       style="fill:none;fill-opacity:0;fill-rule:evenodd;stroke:#fcfcfc;stroke-width:8.66059;stroke-dasharray:none;stroke-opacity:1"
+       d="m 74.93435,85.713447 -9.161188,7.334194 c -5.547909,4.441502 -13.88974,3.603647 -18.703638,-1.878599 l -3.54349,-4.03546 C 38.712138,81.651336 39.303058,73.662163 44.850968,69.220661 l 8.418833,-6.739886"
+       sodipodi:nodetypes="cssssc" />
+  </g>
+  <metadata
+     id="metadata1">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Ou Dedetai</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>
