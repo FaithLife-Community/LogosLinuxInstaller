@@ -330,9 +330,13 @@ def set_config():
     utils.set_default_config()
 
     # Update config from CONFIG_FILE.
-    if not utils.file_exists(config.CONFIG_FILE) and utils.file_exists(config.LEGACY_CONFIG_FILE):  # noqa: E501
-        config.set_config_env(config.LEGACY_CONFIG_FILE)
-        utils.write_config(config.CONFIG_FILE)
+    if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
+        for legacy_config in config.LEGACY_CONFIG_FILES:
+            if utils.file_exists(legacy_config):
+                config.set_config_env(legacy_config)
+                utils.write_config(config.CONFIG_FILE)
+                os.remove(legacy_config)
+                break
     else:
         config.set_config_env(config.CONFIG_FILE)
 
