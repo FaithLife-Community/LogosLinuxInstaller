@@ -70,7 +70,10 @@ GUI = None # FIXME: no references
 INSTALL_STEP: int = 0
 INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
-LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
+LEGACY_CONFIG_FILES = [
+    os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),  # noqa: E501
+    os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
+]
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
 LLI_CURRENT_VERSION = "4.0.0-beta.2"
 LLI_LATEST_VERSION: Optional[str] = None
