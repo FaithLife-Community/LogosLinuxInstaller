@@ -731,7 +731,7 @@ class ControlWindow():
 
     def install_deps(self, evt=None):
         self.start_indeterminate_progress()
-        utils.start_thread(utils.check_dependencies)
+        utils.start_thread(utils.install_dependencies)
 
     def open_file_dialog(self, filetype_name, filetype_extension):
         file_path = fd.askopenfilename(
