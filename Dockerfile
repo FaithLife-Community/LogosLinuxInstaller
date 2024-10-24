@@ -6,15 +6,17 @@ FROM ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive
 
 # App Requirements
-RUN apt update -qq && apt install -y -qq git build-essential gdb lcov pkg-config \
+RUN apt-get update -qq \
+    && apt-get install -y -qq git build-essential gdb lcov pkg-config \
     libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
-    lzma lzma-dev python3-tk tk-dev uuid-dev zlib1g-dev && rm -rf /var/lib/apt/lists/*
+    lzma lzma-dev python3-tk tk-dev uuid-dev zlib1g-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # pyenv for guaranteed py 3.12
 ENV HOME="/root"
 WORKDIR ${HOME}
-RUN apt update && apt install -y curl && rm -rf /var/lib/apt/lists/*
 RUN curl https://pyenv.run | bash
 ENV PYENV_ROOT="${HOME}/.pyenv"
 ENV PATH="${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:${PATH}"
