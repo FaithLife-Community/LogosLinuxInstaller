@@ -434,11 +434,18 @@ def set_win_version(exe, windows_version):
         wait_pid(process)
 
 
-def install_icu_data_files(app=None):
+def enforce_icu_data_files(app=None):
     repo = "FaithLife-Community/icu"
     json_data = network.get_latest_release_data(repo)
     icu_url = network.get_first_asset_url(json_data)
-    # icu_tag_name = utils.get_latest_release_version_tag_name(json_data)
+    icu_latest_version = network.get_tag_name(json_data).lstrip('v')
+
+    # This file with the tag name of the downloaded release. If it doesn't match latest override the ICU files then write this file
+    icu_version_path = Path(f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/{repo.replace('/','_')}_Version.txt")
+    if icu_version_path.exists() and icu_version_path.read_text().strip() == icu_latest_version:
+        logging.debug(f"ICU Data files already up to date, no need to install.")
+        return
+
     if icu_url is None:
         logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
         return
@@ -461,6 +468,8 @@ def install_icu_data_files(app=None):
     if hasattr(app, 'status_evt'):
         app.status_q.put("ICU files copied.")
         app.root.event_generate(app.status_evt)
+
+    icu_version_path.write_text(icu_latest_version)
 
     if app:
         if config.DIALOG == "curses":

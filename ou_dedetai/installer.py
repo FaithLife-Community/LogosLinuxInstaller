@@ -580,12 +580,10 @@ def ensure_icu_data_files(app=None):
     update_install_feedback(status, app=app)
     logging.debug('- ICU data files')
 
-    icu_license_path = f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/LICENSE-ICU.txt"  # noqa: E501
-    if not utils.file_exists(icu_license_path):
-        wine.install_icu_data_files(app=app)
+    wine.enforce_icu_data_files(app=app)
 
-        if config.DIALOG == "curses":
-            app.install_icu_e.wait()
+    if config.DIALOG == "curses":
+        app.install_icu_e.wait()
 
     logging.debug('> ICU data files installed')
 

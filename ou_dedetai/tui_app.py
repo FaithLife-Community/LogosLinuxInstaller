@@ -566,7 +566,7 @@ class TUI:
             self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
         elif choice == "Install ICU":
             self.reset_screen()
-            wine.install_icu_data_files()
+            wine.enforce_icu_data_files()
             self.go_to_main_menu()
         elif choice.endswith("Logging"):
             self.reset_screen()
