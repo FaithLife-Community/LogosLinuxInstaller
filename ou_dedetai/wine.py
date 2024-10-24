@@ -445,6 +445,9 @@ def enforce_icu_data_files(app=None):
     icu_version_path = Path(f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/{repo.replace('/','_')}_Version.txt")
     if icu_version_path.exists() and icu_version_path.read_text().strip() == icu_latest_version:
         logging.debug(f"ICU Data files already up to date, no need to install.")
+        if hasattr(app, 'status_evt'):
+            app.status_q.put("ICU files were already up to date.")
+            app.root.event_generate(app.status_evt)
         return
 
     if icu_url is None:
