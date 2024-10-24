@@ -441,8 +441,9 @@ def enforce_icu_data_files(app=None):
     icu_latest_version = network.get_tag_name(json_data).lstrip('v')
 
     # This file with the tag name of the downloaded release. If it doesn't match latest override the ICU files then write this file
-    icu_version_path = Path(f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/{repo.replace('/','_')}_Version.txt")
-    if icu_version_path.exists() and icu_version_path.read_text().strip() == icu_latest_version:
+    config_dir = os.path.expanduser(f"~/.local/state/FaithLife-Community/")
+    icu_version_path = Path(f"{config_dir}/ICU_Version.txt")
+    if icu_version_path.exists() and icu_version_path.read_text().strip() == f"{repo}\n{icu_latest_version}":
         logging.debug(f"ICU Data files already up to date, no need to install.")
         if hasattr(app, 'status_evt'):
             app.status_q.put("ICU files were already up to date.")
@@ -472,7 +473,7 @@ def enforce_icu_data_files(app=None):
         app.status_q.put("ICU files copied.")
         app.root.event_generate(app.status_evt)
 
-    icu_version_path.write_text(icu_latest_version)
+    icu_version_path.write_text(f"{repo}\n{icu_latest_version}")
 
     if app:
         if config.DIALOG == "curses":
