@@ -1,5 +1,8 @@
 import queue
 import threading
+from typing import Optional
+
+from ou_dedetai.app import App
 
 from . import control
 from . import installer
@@ -8,8 +11,9 @@ from . import wine
 from . import utils
 
 
-class CLI:
+class CLI(App):
     def __init__(self):
+        super().__init__()
         self.running = True
         self.choice_q = queue.Queue()
         self.input_q = queue.Queue()
@@ -88,6 +92,20 @@ class CLI:
         import config
         wine.run_winetricks_cmd(*config.winetricks_args)
 
+    _exit_option: str = "Exit"
+
+    def _ask(self, question: str, options: list[str]) -> str:
+        """Passes the user input to the user_input_processor thread
+        
+        The user_input_processor is running on the thread that the user's stdin/stdout is attached to
+        This function is being called from another thread so we need to pass the information between threads using a queue/event
+        """
+        self.input_q.put((question, options))
+        self.input_event.set()
+        self.choice_event.wait()
+        self.choice_event.clear()
+        return self.choice_q.get()
+
     def user_input_processor(self, evt=None):
         while self.running:
             prompt = None
@@ -111,7 +129,7 @@ class CLI:
                 choice = input(f"{question}: {optstr}: ")
                 if len(choice) == 0:
                     choice = default
-            if choice is not None and choice.lower() == 'exit':
+            if choice is not None and choice == self._exit_option:
                 self.running = False
             if choice is not None:
                 self.choice_q.put(choice)

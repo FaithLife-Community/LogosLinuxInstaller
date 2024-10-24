@@ -6,6 +6,9 @@ import time
 import curses
 from pathlib import Path
 from queue import Queue
+from typing import Optional
+
+from ou_dedetai.app import App
 
 from . import config
 from . import control
@@ -23,8 +26,9 @@ console_message = ""
 
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
-class TUI:
+class TUI(App):
     def __init__(self, stdscr):
+        super().__init__()
         self.stdscr = stdscr
         # if config.current_logos_version is not None:
         self.title = f"Welcome to {config.name_app} {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
@@ -36,6 +40,10 @@ class TUI:
         self.active_progress = False
         self.logos = logos.LogosManager(app=self)
         self.tmp = ""
+
+        # Generic ask/response events/threads
+        self.ask_answer_queue = Queue()
+        self.ask_answer_event = threading.Event()
 
         # Queues
         self.main_thread = threading.Thread()
@@ -54,8 +62,6 @@ class TUI:
         self.switch_q = Queue()
 
         # Install and Options
-        self.product_q = Queue()
-        self.product_e = threading.Event()
         self.version_q = Queue()
         self.version_e = threading.Event()
         self.releases_q = Queue()
@@ -350,9 +356,7 @@ class TUI:
             signal.signal(signal.SIGINT, self.end)
 
     def task_processor(self, evt=None, task=None):
-        if task == 'FLPRODUCT':
-            utils.start_thread(self.get_product, config.use_python_dialog)
-        elif task == 'TARGETVERSION':
+        if task == 'TARGETVERSION':
             utils.start_thread(self.get_version, config.use_python_dialog)
         elif task == 'TARGET_RELEASE_VERSION':
             utils.start_thread(self.get_release, config.use_python_dialog)
@@ -377,7 +381,7 @@ class TUI:
         screen_actions = {
             0: self.main_menu_select,
             1: self.custom_appimage_select,
-            2: self.product_select,
+            2: self.handle_ask_response,
             3: self.version_select,
             4: self.release_select,
             5: self.installdir_select,
@@ -585,16 +589,6 @@ class TUI:
         self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
         self.appimage_e.set()
 
-    def product_select(self, choice):
-        if choice:
-            if str(choice).startswith("Logos"):
-                config.FLPRODUCT = "Logos"
-            elif str(choice).startswith("Verbum"):
-                config.FLPRODUCT = "Verbum"
-            self.menu_screen.choice = "Processing"
-            self.product_q.put(config.FLPRODUCT)
-            self.product_e.set()
-
     def version_select(self, choice):
         if choice:
             if "10" in choice:
@@ -719,25 +713,25 @@ class TUI:
         if isinstance(self.active_screen, tui_screen.CursesScreen):
             self.clear()
 
-    def get_product(self, dialog):
-        question = "Choose which FaithLife product the script should install:"  # noqa: E501
-        labels = ["Logos", "Verbum", "Return to Main Menu"]
-        options = self.which_dialog_options(labels, dialog)
-        self.menu_options = options
-        self.screen_q.put(self.stack_menu(2, self.product_q, self.product_e, question, options, dialog=dialog))
+    _exit_option = "Return to Main Menu"
 
-    def set_product(self, choice):
-        if str(choice).startswith("Logos"):
-            config.FLPRODUCT = "Logos"
-        elif str(choice).startswith("Verbum"):
-            config.FLPRODUCT = "Verbum"
-        self.menu_screen.choice = "Processing"
-        self.product_q.put(config.FLPRODUCT)
-        self.product_e.set()
+    def _ask(self, question: str, options: list[str]) -> Optional[str]:
+        options = self.which_dialog_options(options, config.use_python_dialog)
+        self.menu_options = options
+        self.screen_q.put(self.stack_menu(2, Queue(), threading.Event(), question, options, dialog=config.use_python_dialog))
+
+        # Now wait for it to complete
+        self.ask_answer_event.wait()
+        return self.ask_answer_queue.get()
+
+    def handle_ask_response(self, choice: Optional[str]):
+        if choice is not None:
+            self.ask_answer_queue.put(choice)
+            self.ask_answer_event.set()
+            self.switch_screen(config.use_python_dialog)
 
     def get_version(self, dialog):
-        self.product_e.wait()
-        question = f"Which version of {config.FLPRODUCT} should the script install?"  # noqa: E501
+        question = f"Which version of {self.conf.faithlife_product} should the script install?"  # noqa: E501
         labels = ["10", "9", "Return to Main Menu"]
         options = self.which_dialog_options(labels, dialog)
         self.menu_options = options
