@@ -18,6 +18,37 @@ from . import config
 from . import utils
 
 
+class ChoiceGui(Frame):
+    _default_prompt: str = "Choose…"
+
+    def __init__(self, root, question: str, options: list[str], **kwargs):
+        super(ChoiceGui, self).__init__(root, **kwargs)
+        self.italic = font.Font(slant='italic')
+        self.config(padding=5)
+        self.grid(row=0, column=0, sticky='nwes')
+
+        # Label Row
+        self.question_label = Label(self, text=question)
+        # drop-down menu
+        self.answer_var = StringVar(value=self._default_prompt)
+        self.answer_dropdown = Combobox(self, textvariable=self.answer_var)
+        self.answer_dropdown['values'] = options
+        if len(options) > 0:
+            self.answer_dropdown.set(options[0])
+
+        # Cancel/Okay buttons row.
+        self.cancel_button = Button(self, text="Cancel")
+        self.okay_button = Button(self, text="Confirm")
+
+        # Place widgets.
+        row = 0
+        self.question_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.answer_dropdown.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
+        self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
+
+
 class InstallerGui(Frame):
     def __init__(self, root, **kwargs):
         super(InstallerGui, self).__init__(root, **kwargs)

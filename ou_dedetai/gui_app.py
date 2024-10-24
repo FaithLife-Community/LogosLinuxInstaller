@@ -7,11 +7,15 @@ import logging
 from pathlib import Path
 from queue import Queue
 
+from threading import Event
 from tkinter import PhotoImage
 from tkinter import Tk
 from tkinter import Toplevel
 from tkinter import filedialog as fd
 from tkinter.ttk import Style
+from typing import Optional
+
+from ou_dedetai.app import App
 
 from . import config
 from . import control
@@ -23,6 +27,33 @@ from . import system
 from . import utils
 from . import wine
 
+class GuiApp(App):
+    """Implements the App interface for all windows"""
+
+    _exit_option: Optional[str] = None
+
+    def __init__(self, root: "Root", **kwargs):
+        super().__init__()
+        self.root_to_destory_on_none = root
+
+    def _ask(self, question: str, options: list[str] = None) -> Optional[str]:
+        answer_q = Queue()
+        answer_event = Event()
+        def spawn_dialog():
+            # Create a new popup (with it's own event loop)
+            pop_up = ChoicePopUp(question, options, answer_q, answer_event)
+
+            # Run the mainloop in this thread
+            pop_up.mainloop()
+
+        utils.start_thread(spawn_dialog)
+
+        answer_event.wait()
+        answer = answer_q.get()
+        if answer is None:
+            self.root_to_destory_on_none.destroy()
+            return None
+        return answer
 
 class Root(Tk):
     def __init__(self, *args, **kwargs):
@@ -82,8 +113,45 @@ class Root(Tk):
         self.iconphoto(False, self.pi)
 
 
-class InstallerWindow():
-    def __init__(self, new_win, root, **kwargs):
+class ChoicePopUp(Tk):
+    """Creates a pop-up with a choice"""
+    def __init__(self, question: str, options: list[str], answer_q: Queue, answer_event: Event, **kwargs):
+        # Set root parameters.
+        super().__init__()
+        self.title(f"Quesiton: {question.strip().strip(':')}")
+        self.resizable(False, False)
+        self.gui = gui.ChoiceGui(self, question, options)
+        # Set root widget event bindings.
+        self.bind(
+            "<Return>",
+            self.on_confirm_choice
+        )
+        self.bind(
+            "<Escape>",
+            self.on_cancel_released
+        )
+        self.gui.cancel_button.config(command=self.on_cancel_released)
+        self.gui.okay_button.config(command=self.on_confirm_choice)
+        self.answer_q = answer_q
+        self.answer_event = answer_event
+
+    def on_confirm_choice(self, evt=None):
+        if self.gui.answer_dropdown.get() == gui.ChoiceGui._default_prompt:
+            return
+        answer = self.gui.answer_dropdown.get()
+        self.answer_q.put(answer)
+        self.answer_event.set()
+        self.destroy()
+
+    def on_cancel_released(self, evt=None):
+        self.answer_q.put(None)
+        self.answer_event.set()
+        self.destroy()
+
+
+class InstallerWindow(GuiApp):
+    def __init__(self, new_win, root: Root, **kwargs):
+        super().__init__(root)
         # Set root parameters.
         self.win = new_win
         self.root = root
@@ -177,7 +245,29 @@ class InstallerWindow():
 
         # Run commands.
         self.get_winetricks_options()
-        self.start_ensure_config()
+        self.grey_out_others_if_faithlife_product_is_not_selected()
+
+    def grey_out_others_if_faithlife_product_is_not_selected(self):
+        if not config.FLPRODUCT:
+            # Disable all input widgets after Version.
+            widgets = [
+                self.gui.version_dropdown,
+                self.gui.release_dropdown,
+                self.gui.release_check_button,
+                self.gui.wine_dropdown,
+                self.gui.wine_check_button,
+                self.gui.okay_button,
+            ]
+            self.set_input_widgets_state('disabled', widgets=widgets)
+            if not self.gui.productvar.get():
+                self.gui.productvar.set(self.gui.product_dropdown['values'][0])
+            # This is started in a new thread because it blocks and was called form the constructor
+            utils.start_thread(self.set_product)
+
+    def _hook_product_update(self, product: Optional[str]):
+        if product is not None:
+            self.gui.productvar.set(product)
+            self.gui.product_dropdown.set(product)
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
@@ -222,21 +312,7 @@ class InstallerWindow():
             else:
                 return
         self.set_input_widgets_state('enabled')
-        if task == 'FLPRODUCT':
-            # Disable all input widgets after Version.
-            widgets = [
-                self.gui.version_dropdown,
-                self.gui.release_dropdown,
-                self.gui.release_check_button,
-                self.gui.wine_dropdown,
-                self.gui.wine_check_button,
-                self.gui.okay_button,
-            ]
-            self.set_input_widgets_state('disabled', widgets=widgets)
-            if not self.gui.productvar.get():
-                self.gui.productvar.set(self.gui.product_dropdown['values'][0])
-            self.set_product()
-        elif task == 'TARGETVERSION':
+        if task == 'TARGETVERSION':
             # Disable all input widgets after Version.
             widgets = [
                 self.gui.release_dropdown,
@@ -290,7 +366,7 @@ class InstallerWindow():
         self.gui.product_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
             logging.debug(f"User changed FLPRODUCT to '{self.gui.flproduct}'")
-            config.FLPRODUCT = None
+            config.FLPRODUCT = self.gui.flproduct
             config.FLPRODUCTi = None
             config.VERBUM_PATH = None
 
@@ -556,8 +632,9 @@ class InstallerWindow():
         return 0
 
 
-class ControlWindow():
+class ControlWindow(GuiApp):
     def __init__(self, root, *args, **kwargs):
+        super().__init__(root)
         # Set root parameters.
         self.root = root
         self.root.title(f"{config.name_app} Control Panel")

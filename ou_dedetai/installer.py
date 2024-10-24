@@ -4,6 +4,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from ou_dedetai.app import App
+
 from . import config
 from . import msg
 from . import network
@@ -12,41 +14,23 @@ from . import utils
 from . import wine
 
 
-def ensure_product_choice(app=None):
+def ensure_product_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     update_install_feedback("Choose product…", app=app)
     logging.debug('- config.FLPRODUCT')
     logging.debug('- config.FLPRODUCTi')
     logging.debug('- config.VERBUM_PATH')
 
-    if not config.FLPRODUCT:
-        if config.DIALOG == 'cli':
-            app.input_q.put(
-                (
-                    "Choose which FaithLife product the script should install: ",  # noqa: E501
-                    ["Logos", "Verbum", "Exit"]
-                )
-            )
-            app.input_event.set()
-            app.choice_event.wait()
-            app.choice_event.clear()
-            config.FLPRODUCT = app.choice_q.get()
-        else:
-            utils.send_task(app, 'FLPRODUCT')
-            if config.DIALOG == 'curses':
-                app.product_e.wait()
-            config.FLPRODUCT = app.product_q.get()
-    else:
-        if config.DIALOG == 'curses' and app:
-            app.set_product(config.FLPRODUCT)
-
-    config.FLPRODUCTi = get_flproducti_name(config.FLPRODUCT)
-    if config.FLPRODUCT == 'Logos':
+    # accessing app.conf.faithlife_product ensures the product is selected
+    # Eventually we'd migrate all of these kind of variables in config to this pattern
+    # That require a user selection if they are found to be None
+    config.FLPRODUCTi = get_flproducti_name(app.conf.faithlife_product)
+    if app.conf.faithlife_product == 'Logos':
         config.VERBUM_PATH = "/"
-    elif config.FLPRODUCT == 'Verbum':
+    elif app.conf.faithlife_product == 'Verbum':
         config.VERBUM_PATH = "/Verbum/"
 
-    logging.debug(f"> {config.FLPRODUCT=}")
+    logging.debug(f"> {app.conf.faithlife_product=}")
     logging.debug(f"> {config.FLPRODUCTi=}")
     logging.debug(f"> {config.VERBUM_PATH=}")
 
