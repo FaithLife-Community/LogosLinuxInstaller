@@ -677,7 +677,15 @@ def ensure_launcher_shortcuts(app=None):
     ensure_launcher_executable(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Creating launcher shortcuts…", app=app)
-    create_launcher_shortcuts()
+    runmode = system.get_runmode()
+    if runmode == 'binary':
+        update_install_feedback("Creating launcher shortcuts…", app=app)
+        create_launcher_shortcuts()
+    else:
+        update_install_feedback(
+            "Running from source. Skipping launcher creation.",
+            app=app
+        )
 
     if config.DIALOG == 'cli':
         # Signal CLI.user_input_processor to stop.
