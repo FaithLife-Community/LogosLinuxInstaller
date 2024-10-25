@@ -83,7 +83,7 @@ LogosLinuxInstaller$ source env/bin/activate # activate the env
 (env) LogosLinuxInstaller$ python --version # verify python version
 Python 3.12.5
 (env) LogosLinuxInstaller$ python -m tkinter # verify that tkinter test window opens
-(env) LogosLinuxInstaller$ pip install -r requirements.txt # install python packages
+(env) LogosLinuxInstaller$ pip install -r .[build] # install python packages
 (env) LogosLinuxInstaller$ python -m ou_dedetai.main --help # run the script
 ```
 
