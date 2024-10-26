@@ -158,35 +158,8 @@ def logos_reuse_download(
     targetdir,
     app=None,
 ):
-    dirs = [
-        config.INSTALLDIR,
-        os.getcwd(),
-        config.MYDOWNLOADS,
-    ]
-    found = 1
-    for i in dirs:
-        if i is not None:
-            logging.debug(f"Checking {i} for {file}.")
-            file_path = Path(i) / file
-            if os.path.isfile(file_path):
-                logging.info(f"{file} exists in {i}. Verifying properties.")
-                if verify_downloaded_file(
-                    sourceurl,
-                    file_path,
-                    app=app,
-                ):
-                    logging.info(f"{file} properties match. Using it…")
-                    msg.status(f"Copying {file} into {targetdir}")
-                    try:
-                        shutil.copy(os.path.join(i, file), targetdir)
-                    except shutil.SameFileError:
-                        pass
-                    found = 0
-                    break
-                else:
-                    logging.info(f"Incomplete file: {file_path}.")
-    if found == 1:
-        file_path = os.path.join(config.MYDOWNLOADS, file)
+    def _download(app, sourceurl: str, file_path: str):
+        """Downloads (or resumes a previous download)"""
         if config.DIALOG == 'tk' and app:
             # Ensure progress bar.
             app.stop_indeterminate_progress()
@@ -198,17 +171,48 @@ def logos_reuse_download(
             )
         else:
             cli_download(sourceurl, file_path, app=app)
+
+    def _verify_and_copy(app, sourceurl: str, file_path:str, targetdir: str):
+        """Verifies the checksum on the file and copies it if it matches"""
         if verify_downloaded_file(
             sourceurl,
             file_path,
             app=app,
         ):
-            msg.status(f"Copying: {file} into: {targetdir}")
+            logging.info(f"{file} properties match. Using it…")
+            msg.status(f"Copying {file} into {targetdir}")
             try:
-                shutil.copy(os.path.join(config.MYDOWNLOADS, file), targetdir)
+                shutil.copy(os.path.join(i, file), targetdir)
+                return True
             except shutil.SameFileError:
-                pass
-        else:
+                return True
+        return False
+
+    dirs = [
+        config.INSTALLDIR,
+        os.getcwd(),
+        config.MYDOWNLOADS,
+    ]
+    for i in dirs:
+        if i is not None:
+            logging.debug(f"Checking {i} for {file}.")
+            file_path = Path(i) / file
+            if os.path.isfile(file_path):
+                logging.info(f"{file} exists in {i}. Verifying properties.")
+                if _verify_and_copy(app, sourceurl, file_path, targetdir):
+                    # File is valid
+                    return
+                else:
+                    logging.info(f"Incomplete file: {file_path}.")
+    file_path = os.path.join(config.MYDOWNLOADS, file)
+    _download(app, sourceurl, file_path)
+    if not _verify_and_copy(app, sourceurl, file_path, targetdir):
+        logging.debug(f"File {file} isn't valid. Deleting and trying again...")
+        # Delete the file and try again
+        os.remove(file_path)
+        _download(app, sourceurl, file_path)
+        if not _verify_and_copy(app, sourceurl, file_path, targetdir):
+            # Alright, we tried. Nothing we can do anymore.
             msg.logos_error(f"Bad file size or checksum: {file_path}")
 
 
