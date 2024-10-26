@@ -441,20 +441,12 @@ def enforce_icu_data_files(app=None):
     icu_url = network.get_first_asset_url(json_data)
     icu_latest_version = network.get_tag_name(json_data).lstrip('v')
 
-    # This file with the tag name of the downloaded release. If it doesn't match latest override the ICU files then write this file
-    config_dir = os.path.expanduser(f"~/.local/state/FaithLife-Community/")
-    icu_version_path = Path(f"{config_dir}/ICU_Version.txt")
-    if icu_version_path.exists() and icu_version_path.read_text().strip() == f"{repo}\n{icu_latest_version}":
-        logging.debug(f"ICU Data files already up to date, no need to install.")
-        if hasattr(app, 'status_evt'):
-            app.status_q.put("ICU files were already up to date.")
-            app.root.event_generate(app.status_evt)
-        return
-
     if icu_url is None:
         logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
         return
-    icu_filename = os.path.basename(icu_url)
+    icu_filename = os.path.basename(icu_url).removesuffix(".tar.gz")
+    # Append the version to the file name so it doesn't collide with previous versions
+    icu_filename = f"{icu_filename}-{icu_latest_version}.tar.gz"
     network.logos_reuse_download(
         icu_url,
         icu_filename,
@@ -462,7 +454,7 @@ def enforce_icu_data_files(app=None):
         app=app
     )
     drive_c = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c"
-    utils.untar_file(f"{config.MYDOWNLOADS}/icu-win.tar.gz", drive_c)
+    utils.untar_file(f"{config.MYDOWNLOADS}/{icu_filename}", drive_c)
 
     # Ensure the target directory exists
     icu_win_dir = f"{drive_c}/icu-win/windows"
@@ -473,8 +465,6 @@ def enforce_icu_data_files(app=None):
     if hasattr(app, 'status_evt'):
         app.status_q.put("ICU files copied.")
         app.root.event_generate(app.status_evt)
-
-    icu_version_path.write_text(f"{repo}\n{icu_latest_version}")
 
     if app:
         if config.DIALOG == "curses":
