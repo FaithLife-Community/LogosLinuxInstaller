@@ -98,8 +98,3 @@ $ cd LogosLinuxInstaller
 
 The built binary will now be in `./dist/oudedetai`.
 
-## Install guide (possibly outdated)
-
-NOTE: You can run **Ou Dedetai** using the Steam Proton Experimental binary, which often has the latest and greatest updates to make Logos run even smoother. The script should be able to find the binary automatically, unless your Steam install is located outside of your HOME directory.
-
-If you want to install your distro's dependencies outside of the script, please see the [System Dependencies wiki page](https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki/System-Dependencies).
