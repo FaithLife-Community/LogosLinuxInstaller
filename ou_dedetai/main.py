@@ -83,10 +83,6 @@ def get_parser():
         '-L', '--delete-log', action='store_true',
         help='delete the log file',
     )
-    cfg.add_argument(
-        '-P', '--passive', action='store_true',
-        help='run product installer non-interactively',
-    )
 
     # Define runtime actions (mutually exclusive).
     grp = parser.add_argument_group(
@@ -238,9 +234,6 @@ def parse_args(args, parser):
         else:
             message = f"Custom binary path does not exist: \"{args.custom_binary_path}\"\n"  # noqa: E501
             parser.exit(status=1, message=message)
-
-    if args.passive:
-        config.PASSIVE = True
 
     # Set ACTION function.
     actions = {

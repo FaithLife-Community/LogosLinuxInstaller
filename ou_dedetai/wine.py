@@ -286,9 +286,7 @@ def install_msi(app=None):
     msg.status(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.", app)
     # Execute the .MSI
     wine_exe = str(utils.get_wine_exe_path().parent / 'wine64')
-    exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}"]
-    if config.PASSIVE is True:
-        exe_args.append('/passive')
+    exe_args = ["/i", f"{config.INSTALLDIR}/data/{config.LOGOS_EXECUTABLE}", "/passive"]
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
     process = run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
     return process

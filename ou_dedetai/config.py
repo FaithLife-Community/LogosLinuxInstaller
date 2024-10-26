@@ -98,7 +98,6 @@ PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None
 PACKAGE_MANAGER_COMMAND_REMOVE: Optional[list[str]] = None
 PACKAGE_MANAGER_COMMAND_QUERY: Optional[list[str]] = None
 PACKAGES: Optional[str] = None
-PASSIVE: Optional[bool] = None
 pid_file = f'/tmp/{name_binary}.pid'
 PRESENT_WORKING_DIRECTORY: str = os.getcwd()
 QUERY_PREFIX: Optional[str] = None
