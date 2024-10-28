@@ -435,6 +435,24 @@ def set_win_version(exe, windows_version):
         wait_pid(process)
 
 
+def get_icu_dll_version(icu_dll_filepath):
+    icu_path = Path(icu_dll_filepath)
+    if icu_path.is_file():
+        m = re.search(
+            # Match all non-null bytes following 'windows-%ld'; works for
+            # icu.dll but not for other DLLs.
+            rb'(?:windows-%ld\0+)[^\0]+(?=\0)',
+            icu_path.read_bytes()
+        )
+        if m:
+            # Return everything after the last null byte.
+            return m[0].split(b'\0')[-1].decode()
+        else:
+            logging.error(f"DLL version not found: {icu_path}")
+    else:
+        logging.warning(f"File does not exist: {icu_path}")
+
+
 def enforce_icu_data_files(app=None):
     repo = "FaithLife-Community/icu"
     json_data = network.get_latest_release_data(repo)
@@ -442,10 +460,12 @@ def enforce_icu_data_files(app=None):
     icu_latest_version = network.get_tag_name(json_data).lstrip('v')
 
     # This file with the tag name of the downloaded release. If it doesn't match latest override the ICU files then write this file
-    config_dir = os.path.expanduser(f"~/.local/state/FaithLife-Community/")
-    icu_version_path = Path(f"{config_dir}/ICU_Version.txt")
-    if icu_version_path.exists() and icu_version_path.read_text().strip() == f"{repo}\n{icu_latest_version}":
-        logging.debug(f"ICU Data files already up to date, no need to install.")
+    # config_dir = os.path.expanduser(f"~/.local/state/FaithLife-Community/")
+    # icu_version_path = Path(f"{config_dir}/ICU_Version.txt")
+    # if icu_version_path.exists() and icu_version_path.read_text().strip() == f"{repo}\n{icu_latest_version}":
+    icu = Path(f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/windows/syswow64/icu.dll")
+    if icu.is_file() and get_icu_dll_version(icu) == icu_latest_version:
+        logging.debug("ICU Data files already up to date, no need to install.")
         if hasattr(app, 'status_evt'):
             app.status_q.put("ICU files were already up to date.")
             app.root.event_generate(app.status_evt)
@@ -474,11 +494,10 @@ def enforce_icu_data_files(app=None):
         app.status_q.put("ICU files copied.")
         app.root.event_generate(app.status_evt)
 
-    icu_version_path.write_text(f"{repo}\n{icu_latest_version}")
+    # icu_version_path.write_text(f"{repo}\n{icu_latest_version}")
 
-    if app:
-        if config.DIALOG == "curses":
-            app.install_icu_e.set()
+    if config.DIALOG == "curses":
+        app.install_icu_e.set()
 
 
 def get_registry_value(reg_path, name):
