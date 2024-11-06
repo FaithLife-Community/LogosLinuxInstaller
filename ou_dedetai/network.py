@@ -14,6 +14,8 @@ from time import sleep
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
+from ou_dedetai import wine
+
 from . import config
 from . import msg
 from . import utils
@@ -468,6 +470,7 @@ def check_for_updates():
         set_logoslinuxinstaller_latest_release_config()
         utils.compare_logos_linux_installer_version()
         set_recommended_appimage_config()
+        wine.enforce_icu_data_files()
 
         config.LAST_UPDATED = now.isoformat()
         utils.write_config(config.CONFIG_FILE)
