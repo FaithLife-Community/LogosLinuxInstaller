@@ -73,7 +73,7 @@ LEGACY_CONFIG_FILES = [
     os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
 ]
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
-LLI_CURRENT_VERSION = "4.0.0-beta.3"
+LLI_CURRENT_VERSION = "4.0.0-beta.4"
 LLI_LATEST_VERSION: Optional[str] = None
 LLI_TITLE = name_app
 LOG_LEVEL = logging.WARNING

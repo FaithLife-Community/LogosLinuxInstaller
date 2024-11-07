@@ -1,5 +1,7 @@
 # Changelog
 
+- 4.0.0-beta.4
+	- Fix #224 [N. Shaaban]
 - 4.0.0-beta.3
 	- Fix various regressions from beta (e.g., #209, #213) [N. Shaaban]
 	- Fix #191 [N. Shaaban]
