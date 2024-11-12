@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+from typing import Optional
 import requests
 import shutil
 import sys
@@ -12,6 +13,8 @@ from pathlib import Path
 from time import sleep
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
+
+from ou_dedetai import wine
 
 from . import config
 from . import msg
@@ -383,15 +386,16 @@ def get_latest_release_data(repository):
         return None
 
 
-def get_first_asset_url(json_data):
+def get_first_asset_url(json_data) -> Optional[str]:
     release_url = None
     if json_data:
+        # FIXME: Portential KeyError
         release_url = json_data.get('assets')[0].get('browser_download_url')
         logging.info(f"Release URL: {release_url}")
     return release_url
 
 
-def get_tag_name(json_data):
+def get_tag_name(json_data) -> Optional[str]:
     tag_name = None
     if json_data:
         tag_name = json_data.get('tag_name')
@@ -466,6 +470,7 @@ def check_for_updates():
         set_logoslinuxinstaller_latest_release_config()
         utils.compare_logos_linux_installer_version()
         set_recommended_appimage_config()
+        wine.enforce_icu_data_files()
 
         config.LAST_UPDATED = now.isoformat()
         utils.write_config(config.CONFIG_FILE)

@@ -545,7 +545,7 @@ class TUI(App):
             self.reset_screen()
             msg.status("Checking dependencies…", self)
             self.update_windows()
-            utils.check_dependencies(self)
+            utils.install_dependencies(self)
             self.go_to_main_menu()
         elif choice == "Back Up Data":
             self.reset_screen()
@@ -570,7 +570,7 @@ class TUI(App):
             self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
         elif choice == "Install ICU":
             self.reset_screen()
-            wine.install_icu_data_files()
+            wine.enforce_icu_data_files()
             self.go_to_main_menu()
         elif choice.endswith("Logging"):
             self.reset_screen()

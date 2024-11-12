@@ -333,7 +333,7 @@ def ensure_sys_deps(app=None):
     update_install_feedback("Ensuring system dependencies are met…", app=app)
 
     if not config.SKIP_DEPENDENCIES:
-        utils.check_dependencies(app)
+        utils.install_dependencies(app)
         if config.DIALOG == "curses":
             app.installdeps_e.wait()
         logging.debug("> Done.")
@@ -564,12 +564,10 @@ def ensure_icu_data_files(app=None):
     update_install_feedback(status, app=app)
     logging.debug('- ICU data files')
 
-    icu_license_path = f"{config.WINEPREFIX}/drive_c/windows/globalization/ICU/LICENSE-ICU.txt"  # noqa: E501
-    if not utils.file_exists(icu_license_path):
-        wine.install_icu_data_files(app=app)
+    wine.enforce_icu_data_files(app=app)
 
-        if config.DIALOG == "curses":
-            app.install_icu_e.wait()
+    if config.DIALOG == "curses":
+        app.install_icu_e.wait()
 
     logging.debug('> ICU data files installed')
 
@@ -660,6 +658,7 @@ def ensure_launcher_shortcuts(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_launcher_executable(app=app)
     config.INSTALL_STEP += 1
+    update_install_feedback("Creating launcher shortcuts…", app=app)
     runmode = system.get_runmode()
     if runmode == 'binary':
         update_install_feedback("Creating launcher shortcuts…", app=app)
@@ -725,7 +724,7 @@ def create_wine_appimage_symlinks(app=None):
         p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
 
 
-def get_flproducti_name(product_name):
+def get_flproducti_name(product_name) -> str:
     lname = product_name.lower()
     if lname == 'logos':
         return 'logos4'

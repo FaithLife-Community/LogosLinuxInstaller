@@ -5,6 +5,7 @@ import shutil
 import signal
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from . import config
 from . import msg
@@ -16,8 +17,8 @@ from .config import processes
 
 
 def get_wine_user():
-    path = config.LOGOS_EXE
-    normalized_path = os.path.normpath(path)
+    path: Optional[str] = config.LOGOS_EXE
+    normalized_path: str = os.path.normpath(path)
     path_parts = normalized_path.split(os.sep)
     config.wine_user = path_parts[path_parts.index('users') + 1]
 
@@ -434,15 +435,18 @@ def set_win_version(exe, windows_version):
         wait_pid(process)
 
 
-def install_icu_data_files(app=None):
+def enforce_icu_data_files(app=None):
     repo = "FaithLife-Community/icu"
     json_data = network.get_latest_release_data(repo)
     icu_url = network.get_first_asset_url(json_data)
-    # icu_tag_name = utils.get_latest_release_version_tag_name(json_data)
+    icu_latest_version = network.get_tag_name(json_data).lstrip('v')
+
     if icu_url is None:
         logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
         return
-    icu_filename = os.path.basename(icu_url)
+    icu_filename = os.path.basename(icu_url).removesuffix(".tar.gz")
+    # Append the version to the file name so it doesn't collide with previous versions
+    icu_filename = f"{icu_filename}-{icu_latest_version}.tar.gz"
     network.logos_reuse_download(
         icu_url,
         icu_filename,
@@ -450,7 +454,7 @@ def install_icu_data_files(app=None):
         app=app
     )
     drive_c = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c"
-    utils.untar_file(f"{config.MYDOWNLOADS}/icu-win.tar.gz", drive_c)
+    utils.untar_file(f"{config.MYDOWNLOADS}/{icu_filename}", drive_c)
 
     # Ensure the target directory exists
     icu_win_dir = f"{drive_c}/icu-win/windows"

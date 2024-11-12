@@ -14,7 +14,7 @@ from . import utils
 class CLI(App):
     def __init__(self):
         super().__init__()
-        self.running = True
+        self.running: bool = True
         self.choice_q = queue.Queue()
         self.input_q = queue.Queue()
         self.input_event = threading.Event()
@@ -44,13 +44,13 @@ class CLI(App):
         wine.install_d3d_compiler()
 
     def install_dependencies(self):
-        utils.check_dependencies()
+        utils.install_dependencies(app=self)
 
     def install_fonts(self):
         wine.install_fonts()
 
     def install_icu(self):
-        wine.install_icu_data_files()
+        wine.enforce_icu_data_files()
 
     def remove_index_files(self):
         control.remove_all_index_files()

@@ -781,7 +781,7 @@ class ControlWindow(GuiApp):
 
     def install_icu(self, evt=None):
         self.gui.statusvar.set("Installing ICU files…")
-        utils.start_thread(wine.install_icu_data_files, app=self)
+        utils.start_thread(wine.enforce_icu_data_files, app=self)
 
     def run_backup(self, evt=None):
         # Get backup folder.
@@ -808,7 +808,7 @@ class ControlWindow(GuiApp):
 
     def install_deps(self, evt=None):
         self.start_indeterminate_progress()
-        utils.start_thread(utils.check_dependencies)
+        utils.start_thread(utils.install_dependencies)
 
     def open_file_dialog(self, filetype_name, filetype_extension):
         file_path = fd.askopenfilename(
