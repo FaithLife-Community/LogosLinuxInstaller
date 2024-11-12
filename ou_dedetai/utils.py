@@ -1,4 +1,5 @@
 import atexit
+from datetime import datetime
 import glob
 import inspect
 import json
@@ -1012,3 +1013,6 @@ def stopwatch(start_time=None, interval=10.0):
         return True, last_log_time
     else:
         return False, start_time
+
+def get_timestamp():
+    return datetime.today().strftime('%Y-%m-%dT%H%M%S')

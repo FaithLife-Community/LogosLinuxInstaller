@@ -179,6 +179,3 @@ def get_env_config():
             logging.info(f"Setting '{var}' to '{val}'")
             globals()[var] = val
 
-
-def get_timestamp():
-    return datetime.today().strftime('%Y-%m-%dT%H%M%S')

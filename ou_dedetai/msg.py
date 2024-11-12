@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import config
 from . import constants
+from . import utils
 from .gui import ask_question
 from .gui import show_error
 
@@ -329,7 +330,7 @@ def status(text, app=None, end='\n'):
     def strip_timestamp(msg, timestamp_length=20):
         return msg[timestamp_length:]
 
-    timestamp = config.get_timestamp()
+    timestamp = utils.get_timestamp()
     """Handles status messages for both TUI and GUI."""
     if app is not None:
         if config.DIALOG == 'tk':
