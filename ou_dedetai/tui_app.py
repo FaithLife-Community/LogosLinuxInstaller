@@ -12,6 +12,7 @@ from ou_dedetai.app import App
 
 from . import config
 from . import control
+from . import constants
 from . import installer
 from . import logos
 from . import msg
@@ -31,10 +32,10 @@ class TUI(App):
         super().__init__()
         self.stdscr = stdscr
         # if config.current_logos_version is not None:
-        self.title = f"Welcome to {config.name_app} {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
         self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"  # noqa: E501
         # else:
-        #    self.title = f"Welcome to {config.name_app} ({config.LLI_CURRENT_VERSION})"  # noqa: E501
+        #    self.title = f"Welcome to {constants.APP_NAME} ({constants.LLI_CURRENT_VERSION})"  # noqa: E501
         self.console_message = "Starting TUI…"
         self.llirunning = True
         self.active_progress = False
@@ -239,7 +240,7 @@ class TUI(App):
 
     def update_main_window_contents(self):
         self.clear()
-        self.title = f"Welcome to {config.name_app} {config.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
         self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"  # noqa: E501
         self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)  # noqa: E501
         self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
@@ -443,7 +444,7 @@ class TUI(App):
                 daemon_bool=True,
                 app=self,
             )
-        elif choice.startswith(f"Update {config.name_app}"):
+        elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release()
         elif choice == f"Run {config.FLPRODUCT}":
             self.reset_screen()
@@ -535,7 +536,7 @@ class TUI(App):
             utils.change_logos_release_channel()
             self.update_main_window_contents()
             self.go_to_main_menu()
-        elif choice == f"Change {config.name_app} Release Channel":
+        elif choice == f"Change {constants.APP_NAME} Release Channel":
             self.reset_screen()
             utils.change_lli_release_channel()
             network.set_logoslinuxinstaller_latest_release_config()
@@ -916,7 +917,7 @@ class TUI(App):
             status = config.logos_linux_installer_status
             error_message = config.logos_linux_installer_status_info.get(status)  # noqa: E501
             if status == 0:
-                labels.append(f"Update {config.name_app}")
+                labels.append(f"Update {constants.APP_NAME}")
             elif status == 1:
                 # logging.debug("Logos Linux Installer is up-to-date.")
                 pass
@@ -1031,7 +1032,7 @@ class TUI(App):
         if utils.file_exists(config.LOGOS_EXE):
             labels_utils_installed = [
                 "Change Logos Release Channel",
-                f"Change {config.name_app} Release Channel",
+                f"Change {constants.APP_NAME} Release Channel",
                 # "Back Up Data",
                 # "Restore Data"
             ]

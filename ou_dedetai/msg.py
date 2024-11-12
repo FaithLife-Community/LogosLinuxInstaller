@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from . import config
+from . import constants
 from .gui import ask_question
 from .gui import show_error
 
@@ -165,7 +166,7 @@ def logos_warn(message):
 def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
     if detail is None:
         detail = ''
-    WIKI_LINK = f"{config.repo_link}/wiki"
+    WIKI_LINK = f"{constants.REPOSITORY_LINK}/wiki"
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
@@ -191,7 +192,7 @@ def ui_message(message, secondary=None, detail=None, app=None, parent=None, fata
 def logos_error(message, secondary=None, detail=None, app=None, parent=None):
     # if detail is None:
     #     detail = ''
-    # WIKI_LINK = f"{config.repo_link}/wiki"
+    # WIKI_LINK = f"{constants.REPOSITORY_LINK}/wiki"
     # TELEGRAM_LINK = "https://t.me/linux_logos"
     # MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
     # help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
@@ -215,7 +216,7 @@ def logos_error(message, secondary=None, detail=None, app=None, parent=None):
     logging.critical(message)
     if secondary is None or secondary == "":
         try:
-            os.remove(config.pid_file)
+            os.remove(constants.PID_FILE)
         except FileNotFoundError:  # no pid file when testing functions
             pass
         os.kill(os.getpgid(os.getpid()), signal.SIGKILL)

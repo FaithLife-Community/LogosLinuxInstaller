@@ -7,6 +7,7 @@ from pathlib import Path
 from ou_dedetai.app import App
 
 from . import config
+from . import constants
 from . import msg
 from . import network
 from . import system
@@ -426,16 +427,16 @@ def ensure_premade_winebottle_download(app=None):
     if config.TARGETVERSION != '9':
         return
     update_install_feedback(
-        f"Ensuring {config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME} bottle is downloaded…",  # noqa: E501
+        f"Ensuring {constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME} bottle is downloaded…",  # noqa: E501
         app=app
     )
 
-    downloaded_file = utils.get_downloaded_file_path(config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
+    downloaded_file = utils.get_downloaded_file_path(constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
     if not downloaded_file:
         downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
     network.logos_reuse_download(
-        config.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
-        config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
+        constants.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
+        constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
         config.MYDOWNLOADS,
         app=app,
     )
@@ -640,7 +641,7 @@ def ensure_launcher_executable(app=None):
         )
 
         # Copy executable to config.INSTALLDIR.
-        launcher_exe = Path(f"{config.INSTALLDIR}/{config.name_binary}")
+        launcher_exe = Path(f"{config.INSTALLDIR}/{constants.BINARY_NAME}")
         if launcher_exe.is_file():
             logging.debug("Removing existing launcher binary.")
             launcher_exe.unlink()
@@ -733,7 +734,7 @@ def get_flproducti_name(product_name) -> str:
 
 
 def create_config_file():
-    config_dir = Path(config.DEFAULT_CONFIG_PATH).parent
+    config_dir = Path(constants.DEFAULT_CONFIG_PATH).parent
     config_dir.mkdir(exist_ok=True, parents=True)
     if config_dir.is_dir():
         utils.write_config(config.CONFIG_FILE)
@@ -794,7 +795,7 @@ def create_launcher_shortcuts():
     app_icon_path = app_dir / app_icon_src.name
 
     if system.get_runmode() == 'binary':
-        lli_executable = f"{installdir}/{config.name_binary}"
+        lli_executable = f"{installdir}/{constants.BINARY_NAME}"
     else:
         script = Path(sys.argv[0]).expanduser().resolve()
         repo_dir = None
@@ -834,16 +835,16 @@ Keywords={flproduct};Logos;Bible;Control;
 """
         ),
         (
-            f"{config.name_binary}.desktop",
+            f"{constants.BINARY_NAME}.desktop",
             f"""[Desktop Entry]
-Name={config.name_app}
+Name={constants.APP_NAME}
 GenericName=FaithLife Wine App Installer
 Comment=Manages FaithLife Bible Software via Wine
 Exec={lli_executable}
 Icon={app_icon_path}
 Terminal=false
 Type=Application
-StartupWMClass={config.name_binary}
+StartupWMClass={constants.BINARY_NAME}
 Categories=Education;
 Keywords={flproduct};Logos;Bible;Control;
 """

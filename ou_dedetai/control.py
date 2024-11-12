@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 
 from . import config
+from . import constants
 from . import msg
 from . import network
 from . import system
@@ -269,7 +270,7 @@ def set_winetricks():
             # Check if local winetricks version is up-to-date; if so, offer to
             # use it or to download; else, download it.
             local_winetricks_version = subprocess.check_output(["winetricks", "--version"]).split()[0]  # noqa: E501
-            if str(local_winetricks_version) != config.WINETRICKS_VERSION: # noqa: E501
+            if str(local_winetricks_version) != constants.WINETRICKS_VERSION: # noqa: E501
                 if config.DIALOG == 'tk': #FIXME: CLI client not considered
                     logging.info("Setting winetricks to the local binary…")
                     config.WINETRICKSBIN = local_winetricks_path

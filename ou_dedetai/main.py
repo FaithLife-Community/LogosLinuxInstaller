@@ -13,6 +13,7 @@ import sys
 from . import cli
 from . import config
 from . import control
+from . import constants
 from . import gui_app
 from . import msg
 from . import network
@@ -30,8 +31,8 @@ def get_parser():
     parser.add_argument(
         '-v', '--version', action='version',
         version=(
-            f"{config.LLI_TITLE}, "
-            f"{config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}"
+            f"{constants.APP_NAME}, "
+            f"{constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}"
         ),
     )
 
@@ -65,7 +66,7 @@ def get_parser():
         '-c', '--config', metavar='CONFIG_FILE',
         help=(
             "use a custom config file during installation "
-            f"[default: {config.DEFAULT_CONFIG_PATH}]"
+            f"[default: {constants.DEFAULT_CONFIG_PATH}]"
         ),
     )
     cfg.add_argument(
@@ -138,7 +139,7 @@ def get_parser():
     )
     cmd.add_argument(
         '--update-self', '-u', action='store_true',
-        help=f'Update {config.name_app} to the latest release.',
+        help=f'Update {constants.APP_NAME} to the latest release.',
     )
     cmd.add_argument(
         '--update-latest-appimage', '-U', action='store_true',
@@ -331,7 +332,7 @@ def set_config():
 
     # Update config from CONFIG_FILE.
     if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
-        for legacy_config in config.LEGACY_CONFIG_FILES:
+        for legacy_config in constants.LEGACY_CONFIG_FILES:
             if utils.file_exists(legacy_config):
                 config.set_config_env(legacy_config)
                 utils.write_config(config.CONFIG_FILE)
@@ -388,8 +389,8 @@ def check_incompatibilities():
         question_text = "Remove AppImageLauncher? A reboot will be required."
         secondary = (
             "Your system currently has AppImageLauncher installed.\n"
-            f"{config.name_app} is not compatible with AppImageLauncher.\n"
-            f"For more information, see: {config.repo_link}/issues/114"
+            f"{constants.APP_NAME} is not compatible with AppImageLauncher.\n"
+            f"For more information, see: {constants.REPOSITORY_LINK}/issues/114"
         )
         no_text = "User declined to remove AppImageLauncher."
         msg.logos_continue_question(question_text, no_text, secondary)
@@ -459,7 +460,7 @@ def main():
     utils.die_if_root()
 
     # Print terminal banner
-    logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
+    logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501
     logging.debug(f"Installer log file: {config.LOGOS_LOG}")
 
     check_incompatibilities()
@@ -470,7 +471,7 @@ def main():
 
 
 def close():
-    logging.debug(f"Closing {config.name_app}.")
+    logging.debug(f"Closing {constants.APP_NAME}.")
     for thread in threads:
         # Only wait on non-daemon threads.
         if not thread.daemon:
@@ -481,7 +482,7 @@ def close():
         wine.end_wine_processes()
     else:
         logging.debug("No extra processes found.")
-    logging.debug(f"Closing {config.name_app} finished.")
+    logging.debug(f"Closing {constants.APP_NAME} finished.")
 
 
 if __name__ == '__main__':

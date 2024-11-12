@@ -12,6 +12,7 @@ from pathlib import Path
 
 
 from . import config
+from . import constants
 from . import msg
 from . import network
 
@@ -711,7 +712,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
             detail = (
                 "Please run the following command in a terminal, then restart "
-                f"{config.name_app}:\n{sudo_command}\n"
+                f"{constants.APP_NAME}:\n{sudo_command}\n"
             )
             if config.DIALOG == "tk":
                 if hasattr(app, 'root'):
@@ -735,7 +736,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
                     17,
                     app.manualinstall_q,
                     app.manualinstall_e,
-                    f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\n{config.name_app}:\n{sudo_command}\n",  # noqa: E501
+                    f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\n{constants.APP_NAME}:\n{sudo_command}\n",  # noqa: E501
                     "User cancelled dependency installation.",  # noqa: E501
                     message,
                     options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))  # noqa: E501
@@ -815,7 +816,7 @@ def check_libs(libraries, app=None):
 def install_winetricks(
         installdir,
         app=None,
-        version=config.WINETRICKS_VERSION,
+        version=constants.WINETRICKS_VERSION,
 ):
     msg.status(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501

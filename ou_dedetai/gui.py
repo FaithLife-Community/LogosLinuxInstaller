@@ -16,6 +16,7 @@ from tkinter.ttk import Separator
 
 from . import config
 from . import utils
+from . import constants
 
 
 class ChoiceGui(Frame):
@@ -61,7 +62,7 @@ class InstallerGui(Frame):
         self.flproduct = config.FLPRODUCT
         self.targetversion = config.TARGETVERSION
         self.logos_release_version = config.TARGET_RELEASE_VERSION
-        self.default_config_path = config.DEFAULT_CONFIG_PATH
+        self.default_config_path = constants.DEFAULT_CONFIG_PATH
         self.wine_exe = utils.get_wine_exe_path()
         self.winetricksbin = config.WINETRICKSBIN
         self.skip_fonts = config.SKIP_FONTS
@@ -249,7 +250,7 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        self.update_lli_label = Label(self, text=f"Update {config.name_app}")  # noqa: E501
+        self.update_lli_label = Label(self, text=f"Update {constants.APP_NAME}")  # noqa: E501
         self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(

@@ -18,6 +18,7 @@ from typing import Optional
 from ou_dedetai.app import App
 
 from . import config
+from . import constants
 from . import control
 from . import gui
 from . import installer
@@ -64,23 +65,23 @@ class Root(Tk):
         self.style.theme_use('alt')
 
         # Update color scheme.
-        self.style.configure('TCheckbutton', bordercolor=config.LOGOS_GRAY)
-        self.style.configure('TCombobox', bordercolor=config.LOGOS_GRAY)
-        self.style.configure('TCheckbutton', indicatorcolor=config.LOGOS_GRAY)
-        self.style.configure('TRadiobutton', indicatorcolor=config.LOGOS_GRAY)
+        self.style.configure('TCheckbutton', bordercolor=constants.LOGOS_GRAY)
+        self.style.configure('TCombobox', bordercolor=constants.LOGOS_GRAY)
+        self.style.configure('TCheckbutton', indicatorcolor=constants.LOGOS_GRAY)
+        self.style.configure('TRadiobutton', indicatorcolor=constants.LOGOS_GRAY)
         bg_widgets = [
             'TCheckbutton', 'TCombobox', 'TFrame', 'TLabel', 'TRadiobutton'
         ]
         fg_widgets = ['TButton', 'TSeparator']
         for w in bg_widgets:
-            self.style.configure(w, background=config.LOGOS_WHITE)
+            self.style.configure(w, background=constants.LOGOS_WHITE)
         for w in fg_widgets:
-            self.style.configure(w, background=config.LOGOS_GRAY)
+            self.style.configure(w, background=constants.LOGOS_GRAY)
         self.style.configure(
             'Horizontal.TProgressbar',
-            thickness=10, background=config.LOGOS_BLUE,
-            bordercolor=config.LOGOS_GRAY,
-            troughcolor=config.LOGOS_GRAY,
+            thickness=10, background=constants.LOGOS_BLUE,
+            bordercolor=constants.LOGOS_GRAY,
+            troughcolor=constants.LOGOS_GRAY,
         )
 
         # Justify to the left [('Button.label', {'sticky': 'w'})]
@@ -155,7 +156,7 @@ class InstallerWindow(GuiApp):
         # Set root parameters.
         self.win = new_win
         self.root = root
-        self.win.title(f"{config.name_app} Installer")
+        self.win.title(f"{constants.APP_NAME} Installer")
         self.win.resizable(False, False)
         self.gui = gui.InstallerGui(self.win)
 
@@ -637,14 +638,14 @@ class ControlWindow(GuiApp):
         super().__init__(root)
         # Set root parameters.
         self.root = root
-        self.root.title(f"{config.name_app} Control Panel")
+        self.root.title(f"{constants.APP_NAME} Control Panel")
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
         self.actioncmd = None
         self.logos = logos.LogosManager(app=self)
 
         text = self.gui.update_lli_label.cget('text')
-        ver = config.LLI_CURRENT_VERSION
+        ver = constants.LLI_CURRENT_VERSION
         new = config.LLI_LATEST_VERSION
         text = f"{text}\ncurrent: v{ver}\nlatest: v{new}"
         self.gui.update_lli_label.config(text=text)
@@ -745,7 +746,7 @@ class ControlWindow(GuiApp):
             self.gui.app_button.config(command=self.run_installer)
 
     def run_installer(self, evt=None):
-        classname = config.name_binary
+        classname = constants.BINARY_NAME
         self.installer_win = Toplevel()
         InstallerWindow(self.installer_win, self.root, class_=classname)
         self.root.icon = config.LOGOS_ICON_URL
@@ -822,7 +823,7 @@ class ControlWindow(GuiApp):
 
     def update_to_latest_lli_release(self, evt=None):
         self.start_indeterminate_progress()
-        self.gui.statusvar.set(f"Updating to latest {config.name_app} version…")  # noqa: E501
+        self.gui.statusvar.set(f"Updating to latest {constants.APP_NAME} version…")  # noqa: E501
         utils.start_thread(utils.update_to_latest_lli_release, app=self)
 
     def update_to_latest_appimage(self, evt=None):
@@ -904,10 +905,10 @@ class ControlWindow(GuiApp):
             state = '!disabled'
         elif config.logos_linux_installer_status == 1:
             state = 'disabled'
-            msg = f"This button is disabled. {config.name_app} is up-to-date."  # noqa: E501
+            msg = f"This button is disabled. {constants.APP_NAME} is up-to-date."  # noqa: E501
         elif config.logos_linux_installer_status == 2:
             state = 'disabled'
-            msg = f"This button is disabled. {config.name_app} is newer than the latest release."  # noqa: E501
+            msg = f"This button is disabled. {constants.APP_NAME} is newer than the latest release."  # noqa: E501
         if msg:
             gui.ToolTip(self.gui.update_lli_button, msg)
         self.clear_status_text()
@@ -990,7 +991,7 @@ class ControlWindow(GuiApp):
 
 def control_panel_app():
     utils.set_debug()
-    classname = config.name_binary
+    classname = constants.BINARY_NAME
     root = Root(className=classname)
     ControlWindow(root, class_=classname)
     root.mainloop()

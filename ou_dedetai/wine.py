@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import config
+from . import constants
 from . import msg
 from . import network
 from . import system
@@ -442,7 +443,7 @@ def enforce_icu_data_files(app=None):
     icu_latest_version = network.get_tag_name(json_data).lstrip('v')
 
     if icu_url is None:
-        logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
+        logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501
         return
     icu_filename = os.path.basename(icu_url).removesuffix(".tar.gz")
     # Append the version to the file name so it doesn't collide with previous versions

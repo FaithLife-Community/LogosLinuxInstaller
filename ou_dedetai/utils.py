@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from . import config
+from . import constants
 from . import msg
 from . import network
 from . import system
@@ -55,7 +56,7 @@ def set_default_config():
     system.get_superuser_command()
     system.get_package_manager()
     if config.CONFIG_FILE is None:
-        config.CONFIG_FILE = config.DEFAULT_CONFIG_PATH
+        config.CONFIG_FILE = constants.DEFAULT_CONFIG_PATH
     config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
@@ -125,11 +126,11 @@ def update_config_file(config_file_path, key, value):
 def die_if_running():
 
     def remove_pid_file():
-        if os.path.exists(config.pid_file):
-            os.remove(config.pid_file)
+        if os.path.exists(constants.PID_FILE):
+            os.remove(constants.PID_FILE)
 
-    if os.path.isfile(config.pid_file):
-        with open(config.pid_file, 'r') as f:
+    if os.path.isfile(constants.PID_FILE):
+        with open(constants.PID_FILE, 'r') as f:
             pid = f.read().strip()
             message = f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?"  # noqa: E501
             if config.DIALOG == "tk":
@@ -150,7 +151,7 @@ def die_if_running():
                 os.kill(int(pid), signal.SIGKILL)
 
     atexit.register(remove_pid_file)
-    with open(config.pid_file, 'w') as f:
+    with open(constants.PID_FILE, 'w') as f:
         f.write(str(os.getpid()))
 
 
@@ -165,8 +166,8 @@ def die(message):
 
 
 def restart_lli():
-    logging.debug(f"Restarting {config.name_app}.")
-    pidfile = Path(config.pid_file)
+    logging.debug(f"Restarting {constants.APP_NAME}.")
+    pidfile = Path(constants.PID_FILE)
     if pidfile.is_file():
         pidfile.unlink()
     os.execv(sys.executable, [sys.executable])
@@ -187,7 +188,7 @@ def clean_all():
     logging.info("Cleaning all temp files…")
     os.system("rm -fr /tmp/LBS.*")
     os.system(f"rm -fr {config.WORKDIR}")
-    os.system(f"rm -f {config.PRESENT_WORKING_DIRECTORY}/wget-log*")
+    os.system(f"rm -f {os.getcwd()}/wget-log*")
     logging.info("done")
 
 
@@ -442,7 +443,7 @@ def get_winetricks_options():
         # Check if local winetricks version is up-to-date.
         cmd = ["winetricks", "--version"]
         local_winetricks_version = subprocess.check_output(cmd).split()[0]
-        if str(local_winetricks_version) != config.WINETRICKS_VERSION: #noqa: E501
+        if str(local_winetricks_version) != constants.WINETRICKS_VERSION: #noqa: E501
             winetricks_options.insert(0, local_winetricks_path)
         else:
             logging.info("Local winetricks is too old.")
@@ -567,15 +568,15 @@ def get_latest_folder(folder_path):
 
 
 def install_premade_wine_bottle(srcdir, appdir):
-    msg.status(f"Extracting: '{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
+    msg.status(f"Extracting: '{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
     shutil.unpack_archive(
-        f"{srcdir}/{config.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
+        f"{srcdir}/{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
         appdir
     )
 
 
 def compare_logos_linux_installer_version(
-        current=config.LLI_CURRENT_VERSION,
+        current=constants.LLI_CURRENT_VERSION,
         latest=config.LLI_LATEST_VERSION,
 ):
     # NOTE: The above params evaluate the variables when the module is
@@ -848,13 +849,13 @@ def update_to_latest_lli_release(app=None):
     status, _ = compare_logos_linux_installer_version()
 
     if system.get_runmode() != 'binary':
-        logging.error(f"Can't update {config.name_app} when run as a script.")
+        logging.error(f"Can't update {constants.APP_NAME} when run as a script.")
     elif status == 0:
         network.update_lli_binary(app=app)
     elif status == 1:
-        logging.debug(f"{config.LLI_TITLE} is already at the latest version.")
+        logging.debug(f"{constants.APP_NAME} is already at the latest version.")
     elif status == 2:
-        logging.debug(f"{config.LLI_TITLE} is at a newer version than the latest.") # noqa: 501
+        logging.debug(f"{constants.APP_NAME} is at a newer version than the latest.") # noqa: 501
 
 
 def update_to_latest_recommended_appimage():

@@ -28,7 +28,7 @@ oudedetai = "ou_dedetai.main:main"
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
-version = {attr = "ou_dedetai.config.LLI_CURRENT_VERSION"}
+version = {attr = "ou_dedetai.constants.LLI_CURRENT_VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -17,6 +17,7 @@ from xml.etree import ElementTree as ET
 from ou_dedetai import wine
 
 from . import config
+from . import constants
 from . import msg
 from . import utils
 
@@ -411,7 +412,7 @@ def set_logoslinuxinstaller_latest_release_config():
     json_data = get_latest_release_data(repo)
     logoslinuxinstaller_url = get_first_asset_url(json_data)
     if logoslinuxinstaller_url is None:
-        logging.critical(f"Unable to set {config.name_app} release without URL.")  # noqa: E501
+        logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501
         return
     config.LOGOS_LATEST_VERSION_URL = logoslinuxinstaller_url
     config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
@@ -565,10 +566,10 @@ def get_logos_releases(app=None):
 
 def update_lli_binary(app=None):
     lli_file_path = os.path.realpath(sys.argv[0])
-    lli_download_path = Path(config.MYDOWNLOADS) / config.name_binary
-    temp_path = Path(config.MYDOWNLOADS) / f"{config.name_binary}.tmp"
+    lli_download_path = Path(config.MYDOWNLOADS) / constants.BINARY_NAME
+    temp_path = Path(config.MYDOWNLOADS) / f"{constants.BINARY_NAME}.tmp"
     logging.debug(
-        f"Updating {config.name_app} to latest version by overwriting: {lli_file_path}")  # noqa: E501
+        f"Updating {constants.APP_NAME} to latest version by overwriting: {lli_file_path}")  # noqa: E501
 
     # Remove existing downloaded file if different version.
     if lli_download_path.is_file():
@@ -581,7 +582,7 @@ def update_lli_binary(app=None):
 
     logos_reuse_download(
         config.LOGOS_LATEST_VERSION_URL,
-        config.name_binary,
+        constants.BINARY_NAME,
         config.MYDOWNLOADS,
         app=app,
     )
@@ -593,5 +594,5 @@ def update_lli_binary(app=None):
         return
 
     os.chmod(sys.argv[0], os.stat(sys.argv[0]).st_mode | 0o111)
-    logging.debug(f"Successfully updated {config.name_app}.")
+    logging.debug(f"Successfully updated {constants.APP_NAME}.")
     utils.restart_lli()

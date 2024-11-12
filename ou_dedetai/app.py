@@ -9,7 +9,7 @@ class App(abc.ABC):
         self.conf = Config(self)
 
     def ask(self, question: str, options: list[str]) -> str:
-        """Askes the user a question with a list of supplied options
+        """Asks the user a question with a list of supplied options
 
         Returns the option the user picked.
 
@@ -38,8 +38,15 @@ class App(abc.ABC):
         """
         raise NotImplementedError()
 
+    # XXX: should this be changed to config updates more generally?
     def _hook_product_update(self, product: Optional[str]):
         """A hook for any changes the individual apps want to do when a platform changes"""
+        pass
+
+    # XXX: unused at present
+    @abc.abstractmethod
+    def update_progress(self, message: str, percent: Optional[int] = None):
+        """Updates the progress of the current operation"""
         pass
 
 class Config:
