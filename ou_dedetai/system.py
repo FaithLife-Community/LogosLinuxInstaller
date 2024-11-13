@@ -10,6 +10,8 @@ import time
 import zipfile
 from pathlib import Path
 
+from ou_dedetai.app import App
+
 
 from . import config
 from . import constants
@@ -225,11 +227,11 @@ def get_pids(query):
     return results
 
 
-def get_logos_pids():
-    config.processes[config.LOGOS_EXE] = get_pids(config.LOGOS_EXE)
-    config.processes[config.logos_login_cmd] = get_pids(config.logos_login_cmd)
-    config.processes[config.logos_cef_cmd] = get_pids(config.logos_cef_cmd)
-    config.processes[config.logos_indexer_exe] = get_pids(config.logos_indexer_exe)  # noqa: E501
+def get_logos_pids(app: App):
+    config.processes[app.conf.logos_exe] = get_pids(app.conf.logos_exe)
+    config.processes[app.conf.logos_indexer_exe] = get_pids(app.conf.logos_indexer_exe)
+    config.processes[app.conf.logos_cef_exe] = get_pids(app.conf.logos_cef_exe)
+    config.processes[app.conf.logos_indexer_exe] = get_pids(app.conf.logos_indexer_exe)  # noqa: E501
 
 
 # def get_pids_using_file(file_path, mode=None):
@@ -815,7 +817,7 @@ def check_libs(libraries, app=None):
 
 def install_winetricks(
         installdir,
-        app=None,
+        app: App,
         version=constants.WINETRICKS_VERSION,
 ):
     msg.status(f"Installing winetricks v{version}…")
@@ -838,5 +840,5 @@ def install_winetricks(
                 z.extract(zi, path=installdir)
                 break
     os.chmod(f"{installdir}/winetricks", 0o755)
-    config.WINETRICKSBIN = f"{installdir}/winetricks"
+    app.conf.winetricks_binary = f"{installdir}/winetricks"
     logging.debug("Winetricks installed.")

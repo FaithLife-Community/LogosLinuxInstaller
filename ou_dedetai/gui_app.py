@@ -37,7 +37,7 @@ class GuiApp(App):
         super().__init__()
         self.root_to_destory_on_none = root
 
-    def _ask(self, question: str, options: list[str] = None) -> Optional[str]:
+    def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
         answer_q = Queue()
         answer_event = Event()
         def spawn_dialog():
@@ -46,15 +46,18 @@ class GuiApp(App):
 
             # Run the mainloop in this thread
             pop_up.mainloop()
+        if isinstance(options, list):
+            utils.start_thread(spawn_dialog)
 
-        utils.start_thread(spawn_dialog)
+            answer_event.wait()
+            answer = answer_q.get()
+            if answer is None:
+                self.root_to_destory_on_none.destroy()
+                return None
+        elif isinstance(options, str):
+            answer = options
 
-        answer_event.wait()
-        answer = answer_q.get()
-        if answer is None:
-            self.root_to_destory_on_none.destroy()
-            return None
-        elif answer == PROMPT_OPTION_DIRECTORY:
+        if answer == PROMPT_OPTION_DIRECTORY:
             answer = fd.askdirectory(
                 parent=self.root_to_destory_on_none,
                 title=question,
@@ -163,24 +166,18 @@ class ChoicePopUp(Tk):
 
 
 class InstallerWindow(GuiApp):
-    def __init__(self, new_win, root: Root, **kwargs):
+    def __init__(self, new_win, root: Root, app: App, **kwargs):
         super().__init__(root)
         # Set root parameters.
         self.win = new_win
         self.root = root
         self.win.title(f"{constants.APP_NAME} Installer")
         self.win.resizable(False, False)
-        self.gui = gui.InstallerGui(self.win)
+        self.gui = gui.InstallerGui(self.win, app)
 
         # Initialize variables.
-        self.flproduct = None  # config.FLPRODUCT
         self.config_thread = None
-        self.wine_exe = None
-        self.winetricksbin = None
         self.appimages = None
-        # self.appimage_verified = None
-        # self.logos_verified = None
-        # self.tricks_verified = None
 
         # Set widget callbacks and event bindings.
         self.gui.product_dropdown.bind(
@@ -249,26 +246,22 @@ class InstallerWindow(GuiApp):
             "<<ToDo>>",
             self.todo
         )
-        self.product_q = Queue()
-        self.version_q = Queue()
         self.releases_q = Queue()
-        self.release_q = Queue()
         self.wine_q = Queue()
-        self.tricksbin_q = Queue()
 
         # Run commands.
         self.get_winetricks_options()
 
-    def _hook(self):
+    def _config_updated(self):
         """Update the GUI to reflect changes in the configuration if they were prompted separately"""
-        # The configuration enforces dependencies, if FLPRODUCT is unset, so will it's dependents (TARGETVERSION and TARGET_RELEASE_VERSION)
+        # The configuration enforces dependencies, if product is unset, so will it's dependents (version and release)
         # XXX: test this hook. Interesting thing is, this may never be called in production, as it's only called (presently) when the separate prompt returns
         # Returns either from config or the dropdown
-        self.gui.productvar.set(config.FLPRODUCT or self.gui.product_dropdown['values'][0])
-        self.gui.versionvar.set(config.TARGETVERSION or self.gui.version_dropdown['values'][-1])
-        self.gui.releasevar.set(config.TARGET_RELEASE_VERSION or self.gui.release_dropdown['values'][0])
-        # Returns either WINE_EXE if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise ''
-        self.gui.winevar.set(config.WINE_EXE or next(iter(self.gui.wine_dropdown['values']), ''))
+        self.gui.productvar.set(self.conf._raw.faithlife_product or self.gui.product_dropdown['values'][0])
+        self.gui.versionvar.set(self.conf._raw.faithlife_product_version or self.gui.version_dropdown['values'][-1])
+        self.gui.releasevar.set(self.conf._raw.faithlife_product_release or self.gui.release_dropdown['values'][0])
+        # Returns either wine_binary if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise ''
+        self.gui.winevar.set(self.conf._raw.wine_binary or next(iter(self.gui.wine_dropdown['values']), ''))
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
@@ -280,8 +273,8 @@ class InstallerWindow(GuiApp):
         )
 
     def get_winetricks_options(self):
-        config.WINETRICKSBIN = None  # override config file b/c "Download" accounts for that  # noqa: E501
-        self.gui.tricks_dropdown['values'] = utils.get_winetricks_options()
+        self.conf.winetricks_binary = None  # override config file b/c "Download" accounts for that  # noqa: E501
+        self.gui.tricks_dropdown['values'] = utils.get_winetricks_options() + ['Return to Main Menu']
         self.gui.tricksvar.set(self.gui.tricks_dropdown['values'][0])
 
     def set_input_widgets_state(self, state, widgets='all'):
@@ -320,60 +313,30 @@ class InstallerWindow(GuiApp):
             self.set_input_widgets_state('disabled')
         elif task == 'DONE':
             self.update_install_progress()
-        elif task == 'CONFIG':
-            logging.info("Updating config file.")
-            utils.write_config(config.CONFIG_FILE)
 
     def set_product(self, evt=None):
         if self.gui.productvar.get().startswith('C'):  # ignore default text
             return
-        self.gui.flproduct = self.gui.productvar.get()
+        self.conf.faithlife_product = self.gui.productvar.get()
         self.gui.product_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
-            logging.debug(f"User changed FLPRODUCT to '{self.gui.flproduct}'")
-            config.FLPRODUCT = self.gui.flproduct
-            config.FLPRODUCTi = None
-            config.VERBUM_PATH = None
-
-            config.TARGETVERSION = None
+            logging.debug(f"User changed faithlife_product to '{self.conf.faithlife_product}'")
             self.gui.versionvar.set('')
-
-            config.TARGET_RELEASE_VERSION = None
             self.gui.releasevar.set('')
-
-            config.INSTALLDIR = None
-            config.APPDIR_BINDIR = None
-
-            config.WINE_EXE = None
             self.gui.winevar.set('')
-            config.SELECTED_APPIMAGE_FILENAME = None
-            config.WINEBIN_CODE = None
 
             self.start_ensure_config()
-        else:
-            self.product_q.put(self.gui.flproduct)
 
     def set_version(self, evt=None):
-        self.gui.targetversion = self.gui.versionvar.get()
+        self.conf.faithlife_product_version = self.gui.versionvar.get()
         self.gui.version_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
-            logging.debug(f"User changed TARGETVERSION to '{self.gui.targetversion}'")  # noqa: E501
-            config.TARGETVERSION = None
-            self.gui.releasevar.set('')
-            config.TARGET_RELEASE_VERSION = None
+            logging.debug(f"User changed Target Version to '{self.conf.faithlife_product_version}'")  # noqa: E501
             self.gui.releasevar.set('')
 
-            config.INSTALLDIR = None
-            config.APPDIR_BINDIR = None
-
-            config.WINE_EXE = None
             self.gui.winevar.set('')
-            config.SELECTED_APPIMAGE_FILENAME = None
-            config.WINEBIN_CODE = None
 
             self.start_ensure_config()
-        else:
-            self.version_q.put(self.gui.targetversion)
 
     def start_releases_check(self):
         # Disable button; clear list.
@@ -396,23 +359,14 @@ class InstallerWindow(GuiApp):
     def set_release(self, evt=None):
         if self.gui.releasevar.get()[0] == 'C':  # ignore default text
             return
-        self.gui.logos_release_version = self.gui.releasevar.get()
+        self.conf.faithlife_product_release = self.gui.releasevar.get()
         self.gui.release_dropdown.selection_clear()
         if evt:  # manual override
-            config.TARGET_RELEASE_VERSION = self.gui.logos_release_version
-            logging.debug(f"User changed TARGET_RELEASE_VERSION to '{self.gui.logos_release_version}'")  # noqa: E501
+            logging.debug(f"User changed release version to '{self.conf.faithlife_product_release}'")  # noqa: E501
 
-            config.INSTALLDIR = None
-            config.APPDIR_BINDIR = None
-
-            config.WINE_EXE = None
             self.gui.winevar.set('')
-            config.SELECTED_APPIMAGE_FILENAME = None
-            config.WINEBIN_CODE = None
 
             self.start_ensure_config()
-        else:
-            self.release_q.put(self.gui.logos_release_version)
 
     def start_find_appimage_files(self, release_version):
         # Setup queue, signal, thread.
@@ -458,11 +412,10 @@ class InstallerWindow(GuiApp):
         )
 
     def set_wine(self, evt=None):
-        self.gui.wine_exe = self.gui.winevar.get()
+        self.conf.wine_binary = self.gui.winevar.get()
         self.gui.wine_dropdown.selection_clear()
         if evt:  # manual override
-            logging.debug(f"User changed WINE_EXE to '{self.gui.wine_exe}'")
-            config.WINE_EXE = None
+            logging.debug(f"User changed wine binary to '{self.conf.wine_binary}'")
             config.SELECTED_APPIMAGE_FILENAME = None
             config.WINEBIN_CODE = None
 
@@ -471,25 +424,23 @@ class InstallerWindow(GuiApp):
             self.wine_q.put(
                 utils.get_relative_path(
                     utils.get_config_var(self.gui.wine_exe),
-                    config.INSTALLDIR
+                    self.conf.install_dir
                 )
             )
 
     def set_winetricks(self, evt=None):
-        self.gui.winetricksbin = self.gui.tricksvar.get()
+        self.conf.winetricks_binary = self.gui.tricksvar.get()
         self.gui.tricks_dropdown.selection_clear()
         if evt:  # manual override
-            config.WINETRICKSBIN = None
+            self.conf.winetricks_binary = None
             self.start_ensure_config()
-        else:
-            self.tricksbin_q.put(self.gui.winetricksbin)
 
     def on_release_check_released(self, evt=None):
         self.start_releases_check()
 
     def on_wine_check_released(self, evt=None):
         self.gui.wine_check_button.state(['disabled'])
-        self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
+        self.start_wine_versions_check(self.conf.faithlife_product_release)
 
     def set_skip_fonts(self, evt=None):
         self.gui.skip_fonts = 1 - self.gui.fontsvar.get()  # invert True/False
@@ -541,7 +492,7 @@ class InstallerWindow(GuiApp):
         self.stop_indeterminate_progress()
         if not self.appimage_q.empty():
             self.appimages = self.appimage_q.get()
-            self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
+            self.start_wine_versions_check(self.conf.faithlife_product_release)
 
     def update_wine_check_progress(self, evt=None):
         if evt and self.wines_q.empty():
@@ -604,7 +555,7 @@ class ControlWindow(GuiApp):
         self.root = root
         self.root.title(f"{constants.APP_NAME} Control Panel")
         self.root.resizable(False, False)
-        self.gui = gui.ControlGui(self.root)
+        self.gui = gui.ControlGui(self.root, app=self)
         self.actioncmd = None
         self.logos = logos.LogosManager(app=self)
 
@@ -635,7 +586,7 @@ class ControlWindow(GuiApp):
         )
         self.gui.logging_button.state(['disabled'])
 
-        self.gui.config_button.config(command=control.edit_config)
+        self.gui.config_button.config(command=self.edit_config)
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
@@ -700,10 +651,13 @@ class ControlWindow(GuiApp):
             self.start_indeterminate_progress()
             utils.start_thread(self.logos.get_app_logging_state)
 
+    def edit_config(self):
+        control.edit_file(self.conf.config_file_path)
+
     def configure_app_button(self, evt=None):
         if utils.app_is_installed():
             # wine.set_logos_paths()
-            self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
+            self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
             self.gui.app_button.config(command=self.run_logos)
             self.gui.get_winetricks_button.state(['!disabled'])
         else:
@@ -712,7 +666,7 @@ class ControlWindow(GuiApp):
     def run_installer(self, evt=None):
         classname = constants.BINARY_NAME
         self.installer_win = Toplevel()
-        InstallerWindow(self.installer_win, self.root, class_=classname)
+        InstallerWindow(self.installer_win, self.root, app=self, class_=classname)
         self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
@@ -749,16 +703,6 @@ class ControlWindow(GuiApp):
         utils.start_thread(wine.enforce_icu_data_files, app=self)
 
     def run_backup(self, evt=None):
-        # Get backup folder.
-        if config.BACKUPDIR is None:
-            config.BACKUPDIR = fd.askdirectory(
-                parent=self.root,
-                title=f"Choose folder for {config.FLPRODUCT} backups",
-                initialdir=Path().home(),
-            )
-            if not config.BACKUPDIR:  # user cancelled
-                return
-
         # Prepare progress bar.
         self.gui.progress.state(['!disabled'])
         self.gui.progress.config(mode='determinate')
@@ -818,10 +762,13 @@ class ControlWindow(GuiApp):
     def launch_winetricks(self, evt=None):
         self.gui.statusvar.set("Launching Winetricks…")
         # Start winetricks in thread.
-        utils.start_thread(wine.run_winetricks)
+        utils.start_thread(self.run_winetricks)
         # Start thread to clear status after delay.
         args = [12000, self.root.event_generate, '<<ClearStatus>>']
         utils.start_thread(self.root.after, *args)
+
+    def run_winetricks(self):
+        wine.run_winetricks(self)
 
     def switch_logging(self, evt=None):
         desired_state = self.gui.loggingstatevar.get()
@@ -855,7 +802,8 @@ class ControlWindow(GuiApp):
 
     def update_app_button(self, evt=None):
         self.gui.app_button.state(['!disabled'])
-        self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
+        # XXX: we may need another hook here to update the product version should it change
+        self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
         self.configure_app_button()
         self.update_run_winetricks_button()
         self.gui.logging_button.state(['!disabled'])
@@ -880,7 +828,7 @@ class ControlWindow(GuiApp):
         self.gui.update_lli_button.state([state])
 
     def update_latest_appimage_button(self, evt=None):
-        status, reason = utils.compare_recommended_appimage_version()
+        status, reason = utils.compare_recommended_appimage_version(self)
         msg = None
         if status == 0:
             state = '!disabled'
@@ -897,7 +845,7 @@ class ControlWindow(GuiApp):
         self.gui.latest_appimage_button.state([state])
 
     def update_run_winetricks_button(self, evt=None):
-        if utils.file_exists(config.WINETRICKSBIN):
+        if utils.file_exists(self.conf.winetricks_binary):
             state = '!disabled'
         else:
             state = 'disabled'

@@ -7,18 +7,18 @@ from warnings import deprecated
 
 from . import constants
 
-
 # Define and set variables that are required in the config file.
-core_config_keys = [
-    "FLPRODUCT", "TARGETVERSION", "TARGET_RELEASE_VERSION",
-    "current_logos_version", "curses_colors",
-    "INSTALLDIR", "WINETRICKSBIN", "WINEBIN_CODE", "WINE_EXE",
-    "WINECMD_ENCODING", "LOGS", "BACKUPDIR", "LAST_UPDATED",
-    "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION",
-    "logos_release_channel", "lli_release_channel",
-]
-for k in core_config_keys:
-    globals()[k] = os.getenv(k)
+# XXX: slowly kill these
+current_logos_version = None
+INSTALLDIR = None
+WINEBIN_CODE = None
+WINE_EXE = None
+WINECMD_ENCODING = None
+LOGS = None
+LAST_UPDATED = None
+RECOMMENDED_WINE64_APPIMAGE_URL = None
+LLI_LATEST_VERSION = None
+lli_release_channel = None
 
 # Define and set additional variables that can be set in the env.
 extended_config = {
@@ -59,11 +59,9 @@ for key, default in extended_config.items():
 ACTION: str = 'app'
 APPIMAGE_FILE_PATH: Optional[str] = None
 BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
-FLPRODUCTi: Optional[str] = None
 INSTALL_STEP: int = 0
 INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
-LLI_LATEST_VERSION: Optional[str] = None
 LOG_LEVEL = logging.WARNING
 LOGOS_DIR = os.path.dirname(LOGOS_EXE) if LOGOS_EXE else None  # noqa: F821
 LOGOS_FORCE_ROOT: bool = False
@@ -89,7 +87,6 @@ RECOMMENDED_WINE64_APPIMAGE_FILENAME: Optional[str] = None
 RECOMMENDED_WINE64_APPIMAGE_VERSION: Optional[str] = None
 RECOMMENDED_WINE64_APPIMAGE_BRANCH: Optional[str] = None
 SUPERUSER_COMMAND: Optional[str] = None
-VERBUM_PATH: Optional[str] = None
 wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 install_finished = False
@@ -103,10 +100,6 @@ options_per_page = 8
 resizing = False
 processes = {}
 threads = []
-logos_login_cmd = None
-logos_cef_cmd = None
-logos_indexer_cmd = None
-logos_indexer_exe = None
 logos_linux_installer_status = None
 logos_linux_installer_status_info = {
     0: "yes",

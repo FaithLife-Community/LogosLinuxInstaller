@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
 from ou_dedetai import wine
+from ou_dedetai.app import App
 
 from . import config
 from . import constants
@@ -159,10 +160,10 @@ def logos_reuse_download(
     sourceurl,
     file,
     targetdir,
-    app=None,
+    app: App,
 ):
     dirs = [
-        config.INSTALLDIR,
+        app.conf.install_dir,
         os.getcwd(),
         config.MYDOWNLOADS,
     ]
@@ -443,6 +444,7 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
+# XXX: this may be a bit of an issue, this is before the app initializes. I supposed we could load a proto-config that doesn't have any of the ensuring the user is prompted
 def check_for_updates():
     # We limit the number of times set_recommended_appimage_config is run in
     # order to avoid GitHub API limits. This sets the check to once every 12
@@ -479,7 +481,7 @@ def check_for_updates():
         logging.debug("Skipping self-update.")
 
 
-def get_recommended_appimage():
+def get_recommended_appimage(app: App):
     wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)  # noqa: E501
     dest_path = Path(config.APPDIR_BINDIR) / wine64_appimage_full_filename
     if dest_path.is_file():
@@ -488,29 +490,31 @@ def get_recommended_appimage():
         logos_reuse_download(
             config.RECOMMENDED_WINE64_APPIMAGE_URL,
             config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME,
-            config.APPDIR_BINDIR)
+            config.APPDIR_BINDIR,
+            app=app
+        )
 
-def get_logos_releases(app=None) -> list[str]:
+def get_logos_releases(app: App) -> list[str]:
     # Use already-downloaded list if requested again.
     downloaded_releases = None
-    if config.TARGETVERSION == '9' and config.LOGOS9_RELEASES:
+    if app.conf.faithlife_product_version == '9' and config.LOGOS9_RELEASES:
         downloaded_releases = config.LOGOS9_RELEASES
-    elif config.TARGETVERSION == '10' and config.LOGOS10_RELEASES:
+    elif app.conf.faithlife_product_version == '10' and config.LOGOS10_RELEASES:
         downloaded_releases = config.LOGOS10_RELEASES
     if downloaded_releases:
-        logging.debug(f"Using already-downloaded list of v{config.TARGETVERSION} releases")  # noqa: E501
+        logging.debug(f"Using already-downloaded list of v{app.conf.faithlife_product_version} releases")  # noqa: E501
         if app:
             app.releases_q.put(downloaded_releases)
             app.root.event_generate(app.release_evt)
         return downloaded_releases
 
-    msg.status(f"Downloading release list for {config.FLPRODUCT} {config.TARGETVERSION}…")  # noqa: E501
+    msg.status(f"Downloading release list for {app.conf.faithlife_product} {app.conf.faithlife_product_version}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
-    if config.logos_release_channel is None or config.logos_release_channel == "stable":  # noqa: E501
-        url = f"https://clientservices.logos.com/update/v1/feed/logos{config.TARGETVERSION}/stable.xml"  # noqa: E501
-    elif config.logos_release_channel == "beta":
+    if app.conf.faithlife_product_release_channel == "beta":
         url = "https://clientservices.logos.com/update/v1/feed/logos10/beta.xml"  # noqa: E501
-
+    else:
+        url = f"https://clientservices.logos.com/update/v1/feed/logos{app.conf.faithlife_product_version}/stable.xml"  # noqa: E501
+    
     response_xml_bytes = net_get(url)
     # if response_xml is None and None not in [q, app]:
     if response_xml_bytes is None:

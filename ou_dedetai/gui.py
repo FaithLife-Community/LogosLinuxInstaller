@@ -14,6 +14,8 @@ from tkinter.ttk import Progressbar
 from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
+from ou_dedetai.app import App
+
 from . import config
 from . import utils
 from . import constants
@@ -51,26 +53,24 @@ class ChoiceGui(Frame):
 
 
 class InstallerGui(Frame):
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, app: App, **kwargs):
         super(InstallerGui, self).__init__(root, **kwargs)
 
         self.italic = font.Font(slant='italic')
         self.config(padding=5)
         self.grid(row=0, column=0, sticky='nwes')
 
+        self.app = app
+
+        # XXX: remove these
         # Initialize vars from ENV.
-        self.flproduct = config.FLPRODUCT
-        self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.TARGET_RELEASE_VERSION
-        self.default_config_path = constants.DEFAULT_CONFIG_PATH
-        self.wine_exe = utils.get_wine_exe_path()
-        self.winetricksbin = config.WINETRICKSBIN
+        self.wine_exe = app.conf.wine_binary
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
             self.skip_fonts = 0
         self.skip_dependencies = config.SKIP_DEPENDENCIES
-        if self.skip_fonts is None:
-            self.skip_fonts = 0
+        if self.skip_dependencies is None:
+            self.skip_dependencies = 0
 
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
@@ -79,8 +79,8 @@ class InstallerGui(Frame):
         self.product_dropdown = Combobox(self, textvariable=self.productvar)
         self.product_dropdown.state(['readonly'])
         self.product_dropdown['values'] = ('Logos', 'Verbum')
-        if self.flproduct in self.product_dropdown['values']:
-            self.product_dropdown.set(self.flproduct)
+        if app.conf.faithlife_product in self.product_dropdown['values']:
+            self.product_dropdown.set(app.conf.faithlife_product)
         # version drop-down menu
         self.versionvar = StringVar()
         self.version_dropdown = Combobox(
@@ -91,8 +91,8 @@ class InstallerGui(Frame):
         self.version_dropdown.state(['readonly'])
         self.version_dropdown['values'] = ('9', '10')
         self.versionvar.set(self.version_dropdown['values'][1])
-        if self.targetversion in self.version_dropdown['values']:
-            self.version_dropdown.set(self.targetversion)
+        if app.conf.faithlife_product_version in self.version_dropdown['values']:
+            self.version_dropdown.set(app.conf.faithlife_product_version)
 
         # Release row.
         self.release_label = Label(self, text="Release: ")
@@ -101,9 +101,9 @@ class InstallerGui(Frame):
         self.release_dropdown = Combobox(self, textvariable=self.releasevar)
         self.release_dropdown.state(['readonly'])
         self.release_dropdown['values'] = []
-        if self.logos_release_version:
-            self.release_dropdown['values'] = [self.logos_release_version]
-            self.releasevar.set(self.logos_release_version)
+        if app.conf._raw.faithlife_product_release:
+            self.release_dropdown['values'] = [app.conf._raw.faithlife_product_release]
+            self.releasevar.set(app.conf._raw.faithlife_product_release)
 
         # release check button
         self.release_check_button = Button(self, text="Get Release List")
@@ -127,8 +127,8 @@ class InstallerGui(Frame):
         self.tricks_dropdown = Combobox(self, textvariable=self.tricksvar)
         self.tricks_dropdown.state(['readonly'])
         values = ['Download']
-        if self.winetricksbin:
-            values.insert(0, self.winetricksbin)
+        if app.conf._raw.winetricks_binary:
+            values.insert(0, app.conf._raw.winetricks_binary)
         self.tricks_dropdown['values'] = values
         self.tricksvar.set(self.tricks_dropdown['values'][0])
 
@@ -188,16 +188,15 @@ class InstallerGui(Frame):
 
 
 class ControlGui(Frame):
-    def __init__(self, root, *args, **kwargs):
+    def __init__(self, root, app: App, *args, **kwargs):
         super(ControlGui, self).__init__(root, **kwargs)
         self.config(padding=5)
         self.grid(row=0, column=0, sticky='nwes')
 
+        self.app = app
+
+        # XXX: remove these
         # Initialize vars from ENV.
-        self.installdir = config.INSTALLDIR
-        self.flproduct = config.FLPRODUCT
-        self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.TARGET_RELEASE_VERSION
         self.logs = config.LOGS
         self.config_file = config.CONFIG_FILE
 

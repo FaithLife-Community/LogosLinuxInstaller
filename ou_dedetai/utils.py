@@ -16,6 +16,7 @@ import tarfile
 import threading
 import time
 import tkinter as tk
+from ou_dedetai.app import App
 from packaging import version
 from pathlib import Path
 from typing import List, Optional, Union
@@ -52,6 +53,7 @@ def append_unique(list, item):
 
 
 # Set "global" variables.
+# XXX: fold this into config
 def set_default_config():
     system.get_os()
     system.get_superuser_command()
@@ -62,51 +64,12 @@ def set_default_config():
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
 
 
-def set_runtime_config():
-    # Set runtime variables that are dependent on ones from config file.
-    if config.INSTALLDIR and not config.WINEPREFIX:
-        config.WINEPREFIX = f"{config.INSTALLDIR}/data/wine64_bottle"
-    if get_wine_exe_path() and not config.WINESERVER_EXE:
-        bin_dir = Path(get_wine_exe_path()).parent
-        config.WINESERVER_EXE = str(bin_dir / 'wineserver')
-    if config.FLPRODUCT and config.WINEPREFIX and not config.LOGOS_EXE:
-        config.LOGOS_EXE = find_installed_product()
-    if app_is_installed():
-        wine.set_logos_paths()
-
-
-def log_current_persistent_config():
-    logging.debug("Current persistent config:")
-    for k in config.core_config_keys:
-        logging.debug(f"{k}: {config.__dict__.get(k)}")
-
-
+# XXX: remove, no need.
 def write_config(config_file_path):
-    logging.info(f"Writing config to {config_file_path}")
-    os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
-
-    config_data = {key: config.__dict__.get(key) for key in config.core_config_keys}  # noqa: E501
-
-    try:
-        for key, value in config_data.items():
-            if key == "WINE_EXE":
-                # We store the value of WINE_EXE as relative path if it is in
-                # the install directory.
-                if value is not None:
-                    value = get_relative_path(
-                        get_config_var(value),
-                        config.INSTALLDIR
-                    )
-            if isinstance(value, Path):
-                config_data[key] = str(value)
-        with open(config_file_path, 'w') as config_file:
-            json.dump(config_data, config_file, indent=4, sort_keys=True)
-            config_file.write('\n')
-
-    except IOError as e:
-        msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
+    pass
 
 
+# XXX: refactor
 def update_config_file(config_file_path, key, value):
     config_file_path = Path(config_file_path)
     with config_file_path.open(mode='r') as f:
@@ -226,9 +189,9 @@ def delete_symlink(symlink_path):
             logging.error(f"Error removing symlink: {e}")
 
 
-def install_dependencies(app=None):
-    if config.TARGETVERSION:
-        targetversion = int(config.TARGETVERSION)
+def install_dependencies(app: App):
+    if app.conf.faithlife_product_version:
+        targetversion = int(app.conf.faithlife_product_version)
     else:
         targetversion = 10
     msg.status(f"Checking Logos {str(targetversion)} dependencies…", app)
@@ -243,7 +206,7 @@ def install_dependencies(app=None):
             app=app
         )
     else:
-        logging.error(f"TARGETVERSION not found: {config.TARGETVERSION}.")
+        logging.error(f"Unknown Target version, expecting 9 or 10 but got: {app.conf.faithlife_product_version}.")
 
     if config.DIALOG == "tk":
         # FIXME: This should get moved to gui_app.
@@ -256,40 +219,6 @@ def file_exists(file_path):
         return os.path.isfile(expanded_path)
     else:
         return False
-
-
-def change_logos_release_channel():
-    if config.logos_release_channel == "stable":
-        config.logos_release_channel = "beta"
-        update_config_file(
-            config.CONFIG_FILE,
-            'logos_release_channel',
-            "beta"
-        )
-    else:
-        config.logos_release_channel = "stable"
-        update_config_file(
-            config.CONFIG_FILE,
-            'logos_release_channel',
-            "stable"
-        )
-
-
-def change_lli_release_channel():
-    if config.lli_release_channel == "stable":
-        config.logos_release_channel = "dev"
-        update_config_file(
-            config.CONFIG_FILE,
-            'lli_release_channel',
-            "dev"
-        )
-    else:
-        config.lli_release_channel = "stable"
-        update_config_file(
-            config.CONFIG_FILE,
-            'lli_release_channel',
-            "stable"
-        )
 
 
 def get_current_logos_version():
@@ -333,14 +262,6 @@ def convert_logos_release(logos_release):
         int(point),
     ]
     return logos_release_arr
-
-
-def which_release():
-    if config.current_logos_release:
-        return config.current_logos_release
-    else:
-        return config.TARGET_RELEASE_VERSION
-
 
 def check_logos_release_version(version, threshold, check_version_part):
     if version is not None:
@@ -438,18 +359,21 @@ def get_wine_options(appimages, binaries, app=None) -> Union[List[List[str]], Li
 
 def get_winetricks_options():
     local_winetricks_path = shutil.which('winetricks')
-    winetricks_options = ['Download', 'Return to Main Menu']
+    winetricks_options = ['Download']
     if local_winetricks_path is not None:
-        # Check if local winetricks version is up-to-date.
-        cmd = ["winetricks", "--version"]
-        local_winetricks_version = subprocess.check_output(cmd).split()[0]
-        if str(local_winetricks_version) != constants.WINETRICKS_VERSION: #noqa: E501
+        if check_winetricks_version(local_winetricks_path):
             winetricks_options.insert(0, local_winetricks_path)
         else:
             logging.info("Local winetricks is too old.")
     else:
         logging.info("Local winetricks not found.")
     return winetricks_options
+
+def check_winetricks_version(winetricks_path: str) -> bool:
+    # Check if local winetricks version matches expected
+    cmd = [winetricks_path, "--version"]
+    local_winetricks_version = subprocess.check_output(cmd).split()[0]
+    return str(local_winetricks_version) == constants.WINETRICKS_VERSION #noqa: E501
 
 
 def get_procs_using_file(file_path, mode=None):
@@ -510,10 +434,10 @@ def app_is_installed():
     return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)  # noqa: E501
 
 
-def find_installed_product() -> Optional[str]:
-    if config.FLPRODUCT and config.WINEPREFIX:
-        drive_c = Path(f"{config.WINEPREFIX}/drive_c/")
-        name = config.FLPRODUCT
+def find_installed_product(faithlife_product: str, wine_prefix: str) -> Optional[str]:
+    if faithlife_product and wine_prefix:
+        drive_c = Path(f"{wine_prefix}/drive_c/")
+        name = faithlife_product
         exe = None
         for root, _, files in drive_c.walk(follow_symlinks=False):
             if root.name == name and f"{name}.exe" in files:
@@ -609,40 +533,36 @@ def compare_logos_linux_installer_version(
     return status, message
 
 
-def compare_recommended_appimage_version():
+def compare_recommended_appimage_version(app: App):
     status = None
     message = None
     wine_release = []
-    wine_exe_path = get_wine_exe_path()
-    if wine_exe_path is not None:
-        wine_release, error_message = wine.get_wine_release(wine_exe_path)
-        if wine_release is not None and wine_release is not False:
-            current_version = '.'.join([str(n) for n in wine_release[:2]])
-            logging.debug(f"Current wine release: {current_version}")
+    wine_exe_path = app.conf.wine_binary
+    wine_release, error_message = wine.get_wine_release(wine_exe_path)
+    if wine_release is not None and wine_release is not False:
+        current_version = '.'.join([str(n) for n in wine_release[:2]])
+        logging.debug(f"Current wine release: {current_version}")
 
-            if config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
-                logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")  # noqa: E501
-                if current_version < config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
-                    # Current release is older than recommended.
-                    status = 0
-                    message = "yes"
-                elif current_version == config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
-                    # Current release is latest.
-                    status = 1
-                    message = "uptodate"
-                elif current_version > config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
-                    # Installed version is custom
-                    status = 2
-                    message = "no"
-            else:
-                status = False
-                message = f"Error: {error_message}"
+        if config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
+            logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")  # noqa: E501
+            if current_version < config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
+                # Current release is older than recommended.
+                status = 0
+                message = "yes"
+            elif current_version == config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
+                # Current release is latest.
+                status = 1
+                message = "uptodate"
+            elif current_version > config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
+                # Installed version is custom
+                status = 2
+                message = "no"
         else:
             status = False
             message = f"Error: {error_message}"
     else:
         status = False
-        message = "config.WINE_EXE is not set."
+        message = f"Error: {error_message}"
 
     logging.debug(f"{status=}; {message=}")
     return status, message
@@ -712,7 +632,8 @@ def check_appimage(filestr):
         return False
 
 
-def find_appimage_files(release_version, app=None):
+def find_appimage_files(app: App):
+    release_version = config.current_logos_version or app.conf.faithlife_product_version
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",
@@ -785,7 +706,7 @@ def find_wine_binary_files(release_version):
     return binaries
 
 
-def set_appimage_symlink(app=None):
+def set_appimage_symlink(app: App):
     # This function assumes make_skel() has been run once.
     # if config.APPIMAGE_FILE_PATH is None:
     #     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
@@ -797,7 +718,7 @@ def set_appimage_symlink(app=None):
     appimage_symlink_path = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
     if appimage_file_path.name == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
         # Default case.
-        network.get_recommended_appimage()
+        network.get_recommended_appimage(app)
         selected_appimage_file_path = Path(config.APPDIR_BINDIR) / appimage_file_path.name  # noqa: E501
         bindir_appimage = selected_appimage_file_path / config.APPDIR_BINDIR
         if not bindir_appimage.exists():
@@ -858,11 +779,11 @@ def update_to_latest_lli_release(app=None):
         logging.debug(f"{constants.APP_NAME} is at a newer version than the latest.") # noqa: 501
 
 
-def update_to_latest_recommended_appimage():
+def update_to_latest_recommended_appimage(app: App):
     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
-    status, _ = compare_recommended_appimage_version()
+    status, _ = compare_recommended_appimage_version(app)
     if status == 0:
-        set_appimage_symlink()
+        set_appimage_symlink(app)
     elif status == 1:
         logging.debug("The AppImage is already set to the latest recommended.")
     elif status == 2:
@@ -979,20 +900,6 @@ def get_config_var(var):
         return var
     else:
         return None
-
-
-def get_wine_exe_path():
-    if config.WINE_EXE is not None:
-        path = get_relative_path(
-            get_config_var(config.WINE_EXE),
-            config.INSTALLDIR
-        )
-        wine_exe_path = Path(create_dynamic_path(path, config.INSTALLDIR))
-        logging.debug(f"{wine_exe_path=}")
-        return wine_exe_path
-    else:
-        return None
-
 
 def stopwatch(start_time=None, interval=10.0):
     if start_time is None:

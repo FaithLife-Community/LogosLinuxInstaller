@@ -350,7 +350,6 @@ def set_config():
 
     # Update config based on environment variables.
     config.get_env_config()
-    utils.set_runtime_config()
     # Update terminal log level if set in environment and changed from current
     # level.
     if config.VERBOSE:
@@ -432,7 +431,7 @@ def run():
     elif utils.app_is_installed():  # install_required; checking for app
         # wine.set_logos_paths()
         # Run the desired Logos action.
-        logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
+        logging.info(f"Running function: {config.ACTION.__name__}")  # noqa: E501
         config.ACTION()
     else:  # install_required, but app not installed
         msg.logos_error("App not installed…")
@@ -441,9 +440,6 @@ def run():
 def main():
     set_config()
     set_dialog()
-
-    # Log persistent config.
-    utils.log_current_persistent_config()
 
     # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
     # can be run in conjunction with other actions, so it gets special

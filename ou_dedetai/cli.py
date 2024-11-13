@@ -1,6 +1,5 @@
 import queue
 import threading
-from typing import Optional
 
 from ou_dedetai.app import App
 
@@ -25,13 +24,13 @@ class CLI(App):
         control.backup(app=self)
 
     def create_shortcuts(self):
-        installer.create_launcher_shortcuts()
+        installer.create_launcher_shortcuts(self)
 
     def edit_config(self):
-        control.edit_config()
+        control.edit_file(self.conf.config_file_path)
 
     def get_winetricks(self):
-        control.set_winetricks()
+        control.set_winetricks(self)
 
     def install_app(self):
         self.thread = utils.start_thread(
@@ -41,13 +40,13 @@ class CLI(App):
         self.user_input_processor()
 
     def install_d3d_compiler(self):
-        wine.install_d3d_compiler()
+        wine.install_d3d_compiler(self)
 
     def install_dependencies(self):
         utils.install_dependencies(app=self)
 
     def install_fonts(self):
-        wine.install_fonts()
+        wine.install_fonts(self)
 
     def install_icu(self):
         wine.enforce_icu_data_files()
@@ -56,7 +55,7 @@ class CLI(App):
         control.remove_all_index_files()
 
     def remove_install_dir(self):
-        control.remove_install_dir()
+        control.remove_install_dir(self)
 
     def remove_library_catalog(self):
         control.remove_library_catalog()
@@ -71,7 +70,7 @@ class CLI(App):
         self.logos.start()
 
     def run_winetricks(self):
-        wine.run_winetricks()
+        wine.run_winetricks(self)
 
     def set_appimage(self):
         utils.set_appimage_symlink(app=self)
@@ -83,23 +82,25 @@ class CLI(App):
         self.logos.switch_logging()
 
     def update_latest_appimage(self):
-        utils.update_to_latest_recommended_appimage()
+        utils.update_to_latest_recommended_appimage(self)
 
     def update_self(self):
         utils.update_to_latest_lli_release()
 
     def winetricks(self):
         import config
-        wine.run_winetricks_cmd(*config.winetricks_args)
+        wine.run_winetricks_cmd(self, *config.winetricks_args)
 
     _exit_option: str = "Exit"
 
-    def _ask(self, question: str, options: list[str]) -> str:
+    def _ask(self, question: str, options: list[str] | str) -> str:
         """Passes the user input to the user_input_processor thread
         
         The user_input_processor is running on the thread that the user's stdin/stdout is attached to
         This function is being called from another thread so we need to pass the information between threads using a queue/event
         """
+        if isinstance(options, str):
+            options = [options]
         self.input_q.put((question, options))
         self.input_event.set()
         self.choice_event.wait()

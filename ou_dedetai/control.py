@@ -12,7 +12,7 @@ import sys
 import time
 from pathlib import Path
 
-from ou_dedetai.app import App
+from ou_dedetai.app import DOWNLOAD, App
 
 from . import config
 from . import constants
@@ -23,8 +23,8 @@ from . import tui_curses
 from . import utils
 
 
-def edit_config():
-    subprocess.Popen(['xdg-open', config.CONFIG_FILE])
+def edit_file(config_file: str):
+    subprocess.Popen(['xdg-open', config_file])
 
 
 def delete_log_file_contents():
@@ -44,42 +44,24 @@ def restore(app: App):
 # FIXME: consider moving this into it's own file/module.
 def backup_and_restore(mode: str, app: App):
     data_dirs = ['Data', 'Documents', 'Users']
-    # Ensure BACKUPDIR is defined.
-    if config.BACKUPDIR is None:
-        if config.DIALOG == 'tk':
-            pass  # config.BACKUPDIR is already set in GUI
-        elif config.DIALOG == 'curses':
-            app.todo_e.wait()  # Wait for TUI to resolve config.BACKUPDIR
-            app.todo_e.clear()
-        else:
-            try:
-                config.BACKUPDIR = input("New or existing folder to store backups in: ")  # noqa: E501
-            except KeyboardInterrupt:
-                print()
-                msg.logos_error("Cancelled with Ctrl+C")
-    config.BACKUPDIR = Path(config.BACKUPDIR).expanduser().resolve()
-    utils.update_config_file(
-        config.CONFIG_FILE,
-        'BACKUPDIR',
-        str(config.BACKUPDIR)
-    )
+    backup_dir = Path(app.conf.backup_directory).expanduser().resolve()
 
-    # Confirm BACKUPDIR.
+    # FIXME: Why is this different per UI? Should this always accept?
     if config.DIALOG == 'tk' or config.DIALOG == 'curses':
         pass  # user confirms in GUI or TUI
     else:
         verb = 'Use' if mode == 'backup' else 'Restore backup from'
-        if not msg.cli_question(f"{verb} existing backups folder \"{config.BACKUPDIR}\"?", ""):  # noqa: E501
+        if not msg.cli_question(f"{verb} existing backups folder \"{app.conf.backup_directory}\"?", ""):  # noqa: E501
             answer = None
             while answer is None or (mode == 'restore' and not answer.is_dir()):  # noqa: E501
                 answer = msg.cli_ask_filepath("Please provide a backups folder path:")
                 answer = Path(answer).expanduser().resolve()
                 if not answer.is_dir():
                     msg.status(f"Not a valid folder path: {answer}", app=app)
-            config.BACKUPDIR = answer
+            config.app.conf.backup_directory = answer
 
     # Set source folders.
-    backup_dir = Path(config.BACKUPDIR)
+    backup_dir = Path(app.conf.backup_directory)
     try:
         backup_dir.mkdir(exist_ok=True, parents=True)
     except PermissionError:
@@ -90,28 +72,28 @@ def backup_and_restore(mode: str, app: App):
         return
 
     if mode == 'restore':
-        config.RESTOREDIR = utils.get_latest_folder(config.BACKUPDIR)
-        config.RESTOREDIR = Path(config.RESTOREDIR).expanduser().resolve()
+        restore_dir = utils.get_latest_folder(app.conf.backup_directory)
+        restore_dir = Path(restore_dir).expanduser().resolve()
         if config.DIALOG == 'tk':
             pass
         elif config.DIALOG == 'curses':
             app.screen_q.put(app.stack_confirm(24, app.todo_q, app.todo_e,
-                                               f"Restore most-recent backup?: {config.RESTOREDIR}", "", "",
+                                               f"Restore most-recent backup?: {restore_dir}", "", "",
                                                dialog=config.use_python_dialog))
-            app.todo_e.wait()  # Wait for TUI to confirm RESTOREDIR
+            app.todo_e.wait()  # Wait for TUI to confirm restore_dir
             app.todo_e.clear()
             if app.tmp == "No":
                 question = "Please choose a different restore folder path:"
-                app.screen_q.put(app.stack_input(25, app.todo_q, app.todo_e, question, f"{config.RESTOREDIR}",
+                app.screen_q.put(app.stack_input(25, app.todo_q, app.todo_e, question, f"{restore_dir}",
                                                  dialog=config.use_python_dialog))
                 app.todo_e.wait()
                 app.todo_e.clear()
-                config.RESTOREDIR = Path(app.tmp).expanduser().resolve()
+                restore_dir = Path(app.tmp).expanduser().resolve()
         else:
             # Offer to restore the most recent backup.
-            if not msg.cli_question(f"Restore most-recent backup?: {config.RESTOREDIR}", ""):  # noqa: E501
-                config.RESTOREDIR = msg.cli_ask_filepath("Path to backup set that you want to restore:")  # noqa: E501
-        source_dir_base = config.RESTOREDIR
+            if not msg.cli_question(f"Restore most-recent backup?: {restore_dir}", ""):  # noqa: E501
+                restore_dir = msg.cli_ask_filepath("Path to backup set that you want to restore:")  # noqa: E501
+        source_dir_base = restore_dir
     else:
         source_dir_base = Path(config.LOGOS_EXE).parent
     src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]  # noqa: E501
@@ -120,6 +102,7 @@ def backup_and_restore(mode: str, app: App):
         msg.logos_warning(f"No files to {mode}", app=app)
         return
 
+    # FIXME: UI specific code
     if config.DIALOG == 'curses':
         if mode == 'backup':
             app.screen_q.put(app.stack_text(8, app.todo_q, app.todo_e, "Backing up data…", wait=True))
@@ -157,7 +140,7 @@ def backup_and_restore(mode: str, app: App):
                 shutil.rmtree(dst)
     else:  # backup mode
         timestamp = utils.get_timestamp().replace('-', '')
-        current_backup_name = f"{config.FLPRODUCT}{config.TARGETVERSION}-{timestamp}"  # noqa: E501
+        current_backup_name = f"{app.conf.faithlife_product}{app.conf.faithlife_product_version}-{timestamp}"  # noqa: E501
         dst_dir = backup_dir / current_backup_name
         logging.debug(f"Backup directory path: \"{dst_dir}\".")
 
@@ -213,8 +196,8 @@ def copy_data(src_dirs, dst_dir):
         shutil.copytree(src, Path(dst_dir) / src.name)
 
 
-def remove_install_dir():
-    folder = Path(config.INSTALLDIR)
+def remove_install_dir(app: App):
+    folder = Path(app.conf.install_dir)
     if (
         folder.is_dir()
         and msg.cli_question(f"Delete \"{folder}\" and all its contents?")
@@ -261,62 +244,28 @@ def remove_library_catalog():
             logging.error(f"Error removing {file_to_remove}: {e}")
 
 
-def set_winetricks():
+def set_winetricks(app: App):
     msg.status("Preparing winetricks…")
-    if not config.APPDIR_BINDIR:
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
-    # Check if local winetricks version available; else, download it
-    if config.WINETRICKSBIN is None or not os.access(config.WINETRICKSBIN, os.X_OK):  # noqa: E501
-        local_winetricks_path = shutil.which('winetricks')
-        if local_winetricks_path is not None:
-            # Check if local winetricks version is up-to-date; if so, offer to
-            # use it or to download; else, download it.
-            local_winetricks_version = subprocess.check_output(["winetricks", "--version"]).split()[0]  # noqa: E501
-            if str(local_winetricks_version) != constants.WINETRICKS_VERSION: # noqa: E501
-                if config.DIALOG == 'tk': #FIXME: CLI client not considered
-                    logging.info("Setting winetricks to the local binary…")
-                    config.WINETRICKSBIN = local_winetricks_path
-                else:
-                    title = "Choose Winetricks"
-                    question_text = "Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that FLPRODUCT requires on Linux."  # noqa: E501
-
-                    options = [
-                        "1: Use local winetricks.",
-                        "2: Download winetricks from the Internet"
-                    ]
-                    winetricks_choice = tui_curses.menu(options, title, question_text)  # noqa: E501
-
-                    logging.debug(f"winetricks_choice: {winetricks_choice}")
-                    if winetricks_choice.startswith("1"):
-                        logging.info("Setting winetricks to the local binary…")
-                        config.WINETRICKSBIN = local_winetricks_path
-                        return 0
-                    elif winetricks_choice.startswith("2"):
-                        system.install_winetricks(config.APPDIR_BINDIR)
-                        config.WINETRICKSBIN = os.path.join(
-                            config.APPDIR_BINDIR,
-                            "winetricks"
-                        )
-                        return 0
-                    else:
-                        # FIXME: Should this call a function on the app object?
-                        msg.status("Installation canceled!")
-                        sys.exit(0)
-            else:
-                msg.status("The system's winetricks is too old. Downloading an up-to-date winetricks from the Internet…")  # noqa: E501
-                system.install_winetricks(config.APPDIR_BINDIR)
-                config.WINETRICKSBIN = os.path.join(
-                    config.APPDIR_BINDIR,
-                    "winetricks"
-                )
-                return 0
-        else:
-            msg.status("Local winetricks not found. Downloading winetricks from the Internet…")  # noqa: E501
-            system.install_winetricks(config.APPDIR_BINDIR)
-            config.WINETRICKSBIN = os.path.join(
-                config.APPDIR_BINDIR,
-                "winetricks"
-            )
+    if app.conf.winetricks_binary != DOWNLOAD:
+        valid = True
+        # Double check it's a valid winetricks
+        if not Path(app.conf.winetricks_binary).exists():
+            logging.warning("Winetricks path does not exist, downloading instead...")
+            valid = False
+        if not os.access(app.conf.winetricks_binary, os.X_OK):
+            logging.warning("Winetricks path given is not executable, downloading instead...")
+            valid = False
+        if not utils.check_winetricks_version(app.conf.winetricks_binary):
+            logging.warning("Winetricks version mismatch, downloading instead...")
+            valid = False
+        if valid:
+            logging.info(f"Found valid winetricks: {app.conf.winetricks_binary}")
             return 0
-    return 0
+        # Continue executing the download if it wasn't valid
 
+    system.install_winetricks(app.conf.installer_binary_directory, app)
+    app.conf.wine_binary = os.path.join(
+        app.conf.installer_binary_directory,
+        "winetricks"
+    )
+    return 0

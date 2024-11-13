@@ -32,8 +32,8 @@ class TUI(App):
         super().__init__()
         self.stdscr = stdscr
         # if config.current_logos_version is not None:
-        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
-        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"  # noqa: E501
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
+        self.subtitle = f"Logos Version: {config.current_logos_version} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         # else:
         #    self.title = f"Welcome to {constants.APP_NAME} ({constants.LLI_CURRENT_VERSION})"  # noqa: E501
         self.console_message = "Starting TUI…"
@@ -129,32 +129,19 @@ class TUI(App):
         curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
 
-    def set_curses_colors_logos(self):
-        self.stdscr.bkgd(' ', curses.color_pair(3))
-        self.main_window.bkgd(' ', curses.color_pair(3))
-        self.menu_window.bkgd(' ', curses.color_pair(3))
-
-    def set_curses_colors_light(self):
-        self.stdscr.bkgd(' ', curses.color_pair(6))
-        self.main_window.bkgd(' ', curses.color_pair(6))
-        self.menu_window.bkgd(' ', curses.color_pair(6))
-
-    def set_curses_colors_dark(self):
-        self.stdscr.bkgd(' ', curses.color_pair(7))
-        self.main_window.bkgd(' ', curses.color_pair(7))
-        self.menu_window.bkgd(' ', curses.color_pair(7))
-
-    def change_color_scheme(self):
-        if config.curses_colors == "Logos":
-            config.curses_colors = "Light"
-            self.set_curses_colors_light()
-        elif config.curses_colors == "Light":
-            config.curses_colors = "Dark"
-            self.set_curses_colors_dark()
-        else:
-            config.curses_colors = "Logos"
-            config.curses_colors = "Logos"
-            self.set_curses_colors_logos()
+    def set_curses_colors(self):
+        if self.conf.curses_colors == "Logos":
+            self.stdscr.bkgd(' ', curses.color_pair(3))
+            self.main_window.bkgd(' ', curses.color_pair(3))
+            self.menu_window.bkgd(' ', curses.color_pair(3))
+        elif self.conf.curses_colors == "Light":
+            self.stdscr.bkgd(' ', curses.color_pair(6))
+            self.main_window.bkgd(' ', curses.color_pair(6))
+            self.menu_window.bkgd(' ', curses.color_pair(6))
+        elif self.conf.curses_colors == "Dark":
+            self.stdscr.bkgd(' ', curses.color_pair(7))
+            self.main_window.bkgd(' ', curses.color_pair(7))
+            self.menu_window.bkgd(' ', curses.color_pair(7))
 
     def update_windows(self):
         if isinstance(self.active_screen, tui_screen.CursesScreen):
@@ -178,18 +165,8 @@ class TUI(App):
     def init_curses(self):
         try:
             if curses.has_colors():
-                if config.curses_colors is None or config.curses_colors == "Logos":
-                    config.curses_colors = "Logos"
-                    self.set_curses_style()
-                    self.set_curses_colors_logos()
-                elif config.curses_colors == "Light":
-                    config.curses_colors = "Light"
-                    self.set_curses_style()
-                    self.set_curses_colors_light()
-                elif config.curses_colors == "Dark":
-                    config.curses_colors = "Dark"
-                    self.set_curses_style()
-                    self.set_curses_colors_dark()
+                self.set_curses_style()
+                self.set_curses_colors()
 
             curses.curs_set(0)
             curses.noecho()
@@ -208,6 +185,9 @@ class TUI(App):
             self.end_curses()
             logging.error(f"An error occurred in init_curses(): {e}")
             raise
+
+    def _config_updated(self):
+        self.set_curses_colors()
 
     def end_curses(self):
         try:
@@ -228,8 +208,8 @@ class TUI(App):
 
     def update_main_window_contents(self):
         self.clear()
-        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({config.lli_release_channel})"  # noqa: E501
-        self.subtitle = f"Logos Version: {config.current_logos_version} ({config.logos_release_channel})"  # noqa: E501
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
+        self.subtitle = f"Logos Version: {config.current_logos_version} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)  # noqa: E501
         self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
         # self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
@@ -349,8 +329,6 @@ class TUI(App):
             utils.start_thread(self.get_waiting, config.use_python_dialog)
         elif task == 'INSTALLING_PW':
             utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
-        elif task == 'CONFIG':
-            utils.start_thread(self.get_config, config.use_python_dialog)
         elif task == 'DONE':
             self.update_main_window_contents()
         elif task == 'PID':
@@ -364,7 +342,6 @@ class TUI(App):
             3: self.handle_ask_file_response,
             4: self.handle_ask_directory_response,
             8: self.waiting,
-            9: self.config_update_select,
             10: self.waiting_releases,
             11: self.winetricks_menu_select,
             12: self.logos.start,
@@ -377,8 +354,6 @@ class TUI(App):
             19: self.renderer_select,
             20: self.win_ver_logos_select,
             21: self.win_ver_index_select,
-            22: self.verify_backup_path,
-            23: self.use_backup_path,
             24: self.confirm_restore_dir,
             25: self.choose_restore_dir
         }
@@ -421,12 +396,12 @@ class TUI(App):
             )
         elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release()
-        elif choice == f"Run {config.FLPRODUCT}":
+        elif choice == f"Run {self.conf.faithlife_product}":
             self.reset_screen()
             self.logos.start()
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
             self.switch_q.put(1)
-        elif choice == f"Stop {config.FLPRODUCT}":
+        elif choice == f"Stop {self.conf.faithlife_product}":
             self.reset_screen()
             self.logos.stop()
             self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
@@ -450,7 +425,7 @@ class TUI(App):
                                               self.set_utilities_menu_options(), dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice == "Change Color Scheme":
-            self.change_color_scheme()
+            self.conf.cycle_curses_color_scheme()
             msg.status("Changing color scheme", self)
             self.reset_screen()
             utils.write_config(config.CONFIG_FILE)
@@ -458,18 +433,18 @@ class TUI(App):
     def winetricks_menu_select(self, choice):
         if choice == "Download or Update Winetricks":
             self.reset_screen()
-            control.set_winetricks()
+            control.set_winetricks(self)
             self.go_to_main_menu()
         elif choice == "Run Winetricks":
             self.reset_screen()
-            wine.run_winetricks()
+            wine.run_winetricks(self)
             self.go_to_main_menu()
         elif choice == "Install d3dcompiler":
             self.reset_screen()
-            wine.install_d3d_compiler()
+            wine.install_d3d_compiler(self)
         elif choice == "Install Fonts":
             self.reset_screen()
-            wine.install_fonts()
+            wine.install_fonts(self)
             self.go_to_main_menu()
         elif choice == "Set Renderer":
             self.reset_screen()
@@ -504,16 +479,16 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Edit Config":
             self.reset_screen()
-            control.edit_config()
+            control.edit_file(self.conf.config_file_path)
             self.go_to_main_menu()
         elif choice == "Change Logos Release Channel":
             self.reset_screen()
-            utils.change_logos_release_channel()
+            self.conf.toggle_faithlife_product_release_channel()
             self.update_main_window_contents()
             self.go_to_main_menu()
         elif choice == f"Change {constants.APP_NAME} Release Channel":
             self.reset_screen()
-            utils.change_lli_release_channel()
+            self.conf.toggle_installer_release_channel()
             network.set_logoslinuxinstaller_latest_release_config()
             self.update_main_window_contents()
             self.go_to_main_menu()
@@ -525,19 +500,17 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Back Up Data":
             self.reset_screen()
-            self.get_backup_path(mode="backup")
             utils.start_thread(self.do_backup)
         elif choice == "Restore Data":
             self.reset_screen()
-            self.get_backup_path(mode="restore")
             utils.start_thread(self.do_backup)
         elif choice == "Update to Latest AppImage":
             self.reset_screen()
-            utils.update_to_latest_recommended_appimage()
+            utils.update_to_latest_recommended_appimage(self)
             self.go_to_main_menu()
         elif choice == "Set AppImage":
             # TODO: Allow specifying the AppImage File
-            appimages = utils.find_appimage_files(utils.which_release())
+            appimages = utils.find_appimage_files()
             appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in
                                 appimages]  # noqa: E501
             appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
@@ -560,25 +533,13 @@ class TUI(App):
         else:
             appimage_filename = choice
         config.SELECTED_APPIMAGE_FILENAME = appimage_filename
-        utils.set_appimage_symlink()
+        utils.set_appimage_symlink(self)
         self.menu_screen.choice = "Processing"
         self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
         self.appimage_e.set()
 
     def waiting(self, choice):
         pass
-
-    def config_update_select(self, choice):
-        if choice:
-            if choice == "Yes":
-                msg.status("Updating config file.", self)
-                utils.write_config(config.CONFIG_FILE)
-            else:
-                msg.status("Config file left unchanged.", self)
-            self.menu_screen.choice = "Processing"
-            self.config_q.put(True)
-            self.config_e.set()
-            self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Finishing install…", dialog=config.use_python_dialog))
 
     def waiting_releases(self, choice):
         pass
@@ -609,21 +570,21 @@ class TUI(App):
     def renderer_select(self, choice):
         if choice in ["gdi", "gl", "vulkan"]:
             self.reset_screen()
-            wine.set_renderer(choice)
+            wine.set_renderer(self, choice)
             msg.status(f"Changed renderer to {choice}.", self)
             self.go_to_main_menu()
 
     def win_ver_logos_select(self, choice):
         if choice in ["vista", "win7", "win8", "win10", "win11"]:
             self.reset_screen()
-            wine.set_win_version("logos", choice)
+            wine.set_win_version(self, "logos", choice)
             msg.status(f"Changed Windows version for Logos to {choice}.", self)
             self.go_to_main_menu()
 
     def win_ver_index_select(self, choice):
         if choice in ["vista", "win7", "win8", "win10", "win11"]:
             self.reset_screen()
-            wine.set_win_version("indexer", choice)
+            wine.set_win_version(self, "indexer", choice)
             msg.status(f"Changed Windows version for Indexer to {choice}.", self)
             self.go_to_main_menu()
 
@@ -647,16 +608,20 @@ class TUI(App):
 
     _exit_option = "Return to Main Menu"
 
-    def _ask(self, question: str, options: list[str]) -> Optional[str]:
-        options = self.which_dialog_options(options, config.use_python_dialog)
-        self.menu_options = options
-        self.screen_q.put(self.stack_menu(2, Queue(), threading.Event(), question, options, dialog=config.use_python_dialog))
+    def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
+        if isinstance(options, str):
+            answer = options
 
-        # Now wait for it to complete
-        self.ask_answer_event.wait()
-        answer = self.ask_answer_queue.get()
+        if isinstance(options, list):
+            options = self.which_dialog_options(options, config.use_python_dialog)
+            self.menu_options = options
+            self.screen_q.put(self.stack_menu(2, Queue(), threading.Event(), question, options, dialog=config.use_python_dialog))
 
-        if answer == PROMPT_OPTION_FILE or answer == PROMPT_OPTION_DIRECTORY:
+            # Now wait for it to complete
+            self.ask_answer_event.wait()
+            answer = self.ask_answer_queue.get()
+
+        if answer  == PROMPT_OPTION_DIRECTORY or answer ==  PROMPT_OPTION_FILE:
             stack_index = 3 if answer == PROMPT_OPTION_FILE else 4
             self.screen_q.put(self.stack_input(stack_index, Queue(), threading.Event(), question,
                                                os.path.expanduser(f"~/"), dialog=config.use_python_dialog))
@@ -689,52 +654,10 @@ class TUI(App):
         self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text,
                                           wait=True, percent=percent, dialog=dialog))
 
-    def get_config(self, dialog):
-        question = f"Update config file at {config.CONFIG_FILE}?"
-        labels = ["Yes", "No"]
-        options = self.which_dialog_options(labels, dialog)
-        self.menu_options = options
-        #TODO: Switch to msg.logos_continue_message
-        self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
-
     # def get_password(self, dialog):
     #     question = (f"Logos Linux Installer needs to run a command as root. "
     #                 f"Please provide your password to provide escalation privileges.")
     #     self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
-
-    def get_backup_path(self, mode):
-        self.tmp = mode
-        if config.BACKUPDIR is None or not Path(config.BACKUPDIR).is_dir():
-            if config.BACKUPDIR is None:
-                question = "Please provide a backups folder path:"
-            else:
-                question = f"Current backups folder path \"{config.BACKUPDIR}\" is invalid. Please provide a new one:"
-            self.screen_q.put(self.stack_input(22, self.todo_q, self.todo_e, question,
-                                               os.path.expanduser("~/Backups"), dialog=config.use_python_dialog))
-        else:
-            verb = 'Use' if mode == 'backup' else 'Restore backup from'
-            question = f"{verb} backup from existing backups folder \"{config.BACKUPDIR}\"?"
-            self.screen_q.put(self.stack_confirm(23, self.todo_q, self.todo_e, question, "",
-                                                 "", dialog=config.use_python_dialog))
-
-    def verify_backup_path(self, choice):
-        if choice:
-            if not Path(choice).is_dir():
-                msg.status(f"Not a valid folder path: {choice}. Try again.", app=self)
-                question = "Please provide a different backups folder path:"
-                self.screen_q.put(self.stack_input(22, self.todo_q, self.todo_e, question,
-                                               os.path.expanduser("~/Backups"), dialog=config.use_python_dialog))
-            else:
-                config.BACKUPDIR = choice
-                self.todo_e.set()
-
-    def use_backup_path(self, choice):
-        if choice == "No":
-            question = "Please provide a new backups folder path:"
-            self.screen_q.put(self.stack_input(22, self.todo_q, self.todo_e, question,
-                                               os.path.expanduser(f"{config.BACKUPDIR}"), dialog=config.use_python_dialog))
-        else:
-            self.todo_e.set()
 
     def confirm_restore_dir(self, choice):
         if choice:
@@ -791,9 +714,9 @@ class TUI(App):
 
         if utils.app_is_installed():
             if self.logos.logos_state in [logos.State.STARTING, logos.State.RUNNING]:  # noqa: E501
-                run = f"Stop {config.FLPRODUCT}"
+                run = f"Stop {self.conf.faithlife_product}"
             elif self.logos.logos_state in [logos.State.STOPPING, logos.State.STOPPED]:  # noqa: E501
-                run = f"Run {config.FLPRODUCT}"
+                run = f"Run {self.conf.faithlife_product}"
 
             if self.logos.indexing_state == logos.State.RUNNING:
                 indexing = "Stop Indexing"
