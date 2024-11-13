@@ -151,42 +151,6 @@ class UserInputDialog(CursesDialog):
             return self.user_input
 
 
-class PasswordDialog(UserInputDialog):
-    def __init__(self, app, question_text, default_text):
-        super().__init__(app, question_text, default_text)
-
-        self.obfuscation = ""
-
-    def run(self):
-        if not self.submit:
-            self.draw()
-            return "Processing"
-        else:
-            if self.user_input is None or self.user_input == "":
-                self.user_input = self.default_text
-            return self.user_input
-
-    def input(self):
-        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation,
-                   self.app.window_width)
-        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.obfuscation))
-
-        try:
-            if key == -1:  # If key not found, keep processing.
-                pass
-            elif key == ord('\n'):  # Enter key
-                self.submit = True
-            elif key == curses.KEY_BACKSPACE or key == 127:
-                if len(self.user_input) > 0:
-                    self.user_input = self.user_input[:-1]
-                    self.obfuscation = '*' * len(self.user_input[:-1])
-            else:
-                self.user_input += chr(key)
-                self.obfuscation = '*' * (len(self.obfuscation) + 1)
-        except KeyboardInterrupt:
-            signal.signal(signal.SIGINT, self.app.end)
-
-
 class MenuDialog(CursesDialog):
     def __init__(self, app, question_text, options):
         super().__init__(app)
