@@ -490,8 +490,7 @@ def get_recommended_appimage():
             config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME,
             config.APPDIR_BINDIR)
 
-
-def get_logos_releases(app=None):
+def get_logos_releases(app=None) -> list[str]:
     # Use already-downloaded list if requested again.
     downloaded_releases = None
     if config.TARGETVERSION == '9' and config.LOGOS9_RELEASES:
@@ -550,17 +549,6 @@ def get_logos_releases(app=None):
         if config.DIALOG == 'tk':
             app.releases_q.put(filtered_releases)
             app.root.event_generate(app.release_evt)
-        elif config.DIALOG == 'curses':
-            app.releases_q.put(filtered_releases)
-            app.releases_e.set()
-        elif config.DIALOG == 'cli':
-            app.input_q.put(
-                (
-                    f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?: ",  # noqa: E501
-                    filtered_releases
-                )
-            )
-            app.input_event.set()
     return filtered_releases
 
 

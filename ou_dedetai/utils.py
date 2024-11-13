@@ -982,6 +982,7 @@ def get_config_var(var):
         return None
 
 
+# XXX: this function is never called with an argument
 def get_wine_exe_path(path=None):
     if path is not None:
         path = get_relative_path(get_config_var(path), config.INSTALLDIR)

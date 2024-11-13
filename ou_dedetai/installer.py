@@ -15,6 +15,7 @@ from . import utils
 from . import wine
 
 
+# XXX: ideally this function wouldn't be needed, would happen automatically by nature of config accesses
 def ensure_product_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     update_install_feedback("Choose product…", app=app)
@@ -36,108 +37,43 @@ def ensure_product_choice(app: App):
     logging.debug(f"> {config.VERBUM_PATH=}")
 
 
-def ensure_version_choice(app=None):
+# XXX: we don't need this install step anymore
+def ensure_version_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     ensure_product_choice(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Choose version…", app=app)
     logging.debug('- config.TARGETVERSION')
-    if not config.TARGETVERSION:
-        if config.DIALOG == 'cli':
-            app.input_q.put(
-                (
-                    f"Which version of {config.FLPRODUCT} should the script install?: ",  # noqa: E501
-                    ["10", "9", "Exit"]
-                )
-            )
-            app.input_event.set()
-            app.choice_event.wait()
-            app.choice_event.clear()
-            config.TARGETVERSION = app.choice_q.get()
-        else:
-            utils.send_task(app, 'TARGETVERSION')
-            if config.DIALOG == 'curses':
-                app.version_e.wait()
-            config.TARGETVERSION = app.version_q.get()
-    else:
-        if config.DIALOG == 'curses' and app:
-            app.set_version(config.TARGETVERSION)
-
+    # Accessing this ensures it's set
+    app.conf.faithlife_product_version
     logging.debug(f"> {config.TARGETVERSION=}")
 
 
-def ensure_release_choice(app=None):
+# XXX: no longer needed
+def ensure_release_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     ensure_version_choice(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Choose product release…", app=app)
     logging.debug('- config.TARGET_RELEASE_VERSION')
-
-    if not config.TARGET_RELEASE_VERSION:
-        if config.DIALOG == 'cli':
-            utils.start_thread(
-                network.get_logos_releases,
-                daemon_bool=True,
-                app=app
-            )
-            app.input_event.set()
-            app.choice_event.wait()
-            app.choice_event.clear()
-            config.TARGET_RELEASE_VERSION = app.choice_q.get()
-        else:
-            utils.send_task(app, 'TARGET_RELEASE_VERSION')
-            if config.DIALOG == 'curses':
-                app.release_e.wait()
-            config.TARGET_RELEASE_VERSION = app.release_q.get()
-            logging.debug(f"{config.TARGET_RELEASE_VERSION=}")
-    else:
-        if config.DIALOG == 'curses' and app:
-            app.set_release(config.TARGET_RELEASE_VERSION)
-
+    # accessing this sets the config
+    app.conf.faithlife_product_release
     logging.debug(f"> {config.TARGET_RELEASE_VERSION=}")
 
 
-def ensure_install_dir_choice(app=None):
+def ensure_install_dir_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     ensure_release_choice(app=app)
     config.INSTALL_STEP += 1
-    update_install_feedback(
-        "Choose installation folder…",
-        app=app
-    )
+    update_install_feedback("Choose installation folder…", app=app)
     logging.debug('- config.INSTALLDIR')
-
-    default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
-    if not config.INSTALLDIR:
-        if config.DIALOG == 'cli':
-            default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
-            question = f"Where should {config.FLPRODUCT} files be installed to?: "  # noqa: E501
-            app.input_q.put(
-                (
-                    question,
-                    [default, "Type your own custom path", "Exit"]
-                )
-            )
-            app.input_event.set()
-            app.choice_event.wait()
-            app.choice_event.clear()
-            config.INSTALLDIR = app.choice_q.get()
-        elif config.DIALOG == 'tk':
-            config.INSTALLDIR = default
-        elif config.DIALOG == 'curses':
-            utils.send_task(app, 'INSTALLDIR')
-            app.installdir_e.wait()
-            config.INSTALLDIR = app.installdir_q.get()
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
-    else:
-        if config.DIALOG == 'curses' and app:
-            app.set_installdir(config.INSTALLDIR)
-
+    # Accessing this sets install_dir and bin_dir
+    app.conf.install_dir
     logging.debug(f"> {config.INSTALLDIR=}")
     logging.debug(f"> {config.APPDIR_BINDIR=}")
 
 
-def ensure_wine_choice(app=None):
+def ensure_wine_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     ensure_install_dir_choice(app=app)
     config.INSTALL_STEP += 1
@@ -149,39 +85,8 @@ def ensure_wine_choice(app=None):
     logging.debug('- config.WINE_EXE')
     logging.debug('- config.WINEBIN_CODE')
 
-    if utils.get_wine_exe_path() is None:
-        network.set_recommended_appimage_config()
-        if config.DIALOG == 'cli':
-            options = utils.get_wine_options(
-                utils.find_appimage_files(config.TARGET_RELEASE_VERSION),
-                utils.find_wine_binary_files(config.TARGET_RELEASE_VERSION)
-            )
-            app.input_q.put(
-                (
-                    f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?: ",  # noqa: E501
-                    options
-                )
-            )
-            app.input_event.set()
-            app.choice_event.wait()
-            app.choice_event.clear()
-            config.WINE_EXE = utils.get_relative_path(
-                utils.get_config_var(app.choice_q.get()),
-                config.INSTALLDIR
-            )
-        else:
-            utils.send_task(app, 'WINE_EXE')
-            if config.DIALOG == 'curses':
-                app.wine_e.wait()
-                config.WINE_EXE = app.wines_q.get()
-            # GUI uses app.wines_q for list of available, then app.wine_q
-            # for the user's choice of specific binary.
-            elif config.DIALOG == 'tk':
-                config.WINE_EXE = app.wine_q.get()
-
-    else:
-        if config.DIALOG == 'curses' and app:
-            app.set_wine(utils.get_wine_exe_path())
+    # This sets config.WINE_EXE
+    app.conf.wine_binary
 
     # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
     m = f"Preparing to process WINE_EXE. Currently set to: {utils.get_wine_exe_path()}."  # noqa: E501
@@ -199,44 +104,19 @@ def ensure_wine_choice(app=None):
     logging.debug(f"> {utils.get_wine_exe_path()=}")
 
 
-def ensure_winetricks_choice(app=None):
+# XXX: this isn't needed anymore
+def ensure_winetricks_choice(app: App):
     config.INSTALL_STEPS_COUNT += 1
     ensure_wine_choice(app=app)
     config.INSTALL_STEP += 1
     update_install_feedback("Choose winetricks binary…", app=app)
     logging.debug('- config.WINETRICKSBIN')
-
-    if config.WINETRICKSBIN is None:
-        # Check if local winetricks version available; else, download it.
-        config.WINETRICKSBIN = f"{config.APPDIR_BINDIR}/winetricks"
-
-        winetricks_options = utils.get_winetricks_options()
-
-        if config.DIALOG == 'cli':
-            app.input_q.put(
-                (
-                    f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux.",  # noqa: E501
-                    winetricks_options
-                )
-            )
-            app.input_event.set()
-            app.choice_event.wait()
-            app.choice_event.clear()
-            winetricksbin = app.choice_q.get()
-        else:
-            utils.send_task(app, 'WINETRICKSBIN')
-            if config.DIALOG == 'curses':
-                app.tricksbin_e.wait()
-            winetricksbin = app.tricksbin_q.get()
-
-        if not winetricksbin.startswith('Download'):
-            config.WINETRICKSBIN = winetricksbin
-        else:
-            config.WINETRICKSBIN = winetricks_options[0]
-
+    # Accessing the winetricks_binary variable will do this.
+    app.conf.winetricks_binary
     logging.debug(f"> {config.WINETRICKSBIN=}")
 
 
+# XXX: huh? What does this do?
 def ensure_install_fonts_choice(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_winetricks_choice(app=app)
@@ -247,6 +127,7 @@ def ensure_install_fonts_choice(app=None):
     logging.debug(f"> {config.SKIP_FONTS=}")
 
 
+# XXX: huh? What does this do?
 def ensure_check_sys_deps_choice(app=None):
     config.INSTALL_STEPS_COUNT += 1
     ensure_install_fonts_choice(app=app)
@@ -271,6 +152,9 @@ def ensure_installation_config(app=None):
     logging.debug('- config.LOGOS64_MSI')
     logging.debug('- config.LOGOS64_URL')
 
+    # XXX: This doesn't prompt the user for anything, all values are derived from other user-supplied values
+    # these "config" values probably don't need to be stored independently of the values they're derived from
+
     # Set icon variables.
     app_dir = Path(__file__).parent
     flproducti = get_flproducti_name(config.FLPRODUCT)
@@ -288,6 +172,7 @@ def ensure_installation_config(app=None):
     logging.debug(f"> {config.LOGOS64_MSI=}")
     logging.debug(f"> {config.LOGOS64_URL=}")
 
+    # XXX: What does the install task do? Shouldn't that logic be here?
     if config.DIALOG in ['curses', 'dialog', 'tk']:
         utils.send_task(app, 'INSTALL')
     else:
@@ -323,6 +208,7 @@ def ensure_install_dirs(app=None):
     logging.debug(f"> {wine_dir} exists: {wine_dir.is_dir()}")
     logging.debug(f"> {config.WINEPREFIX=}")
 
+    # XXX: what does this task do? Shouldn't that logic be here?
     if config.DIALOG in ['curses', 'dialog', 'tk']:
         utils.send_task(app, 'INSTALLING')
 
@@ -602,6 +488,8 @@ def ensure_config_file(app=None):
     config.INSTALL_STEP += 1
     update_install_feedback("Ensuring config file is up-to-date…", app=app)
 
+    # XXX: Why the platform specific logic?
+
     if not Path(config.CONFIG_FILE).is_file():
         logging.info(f"No config file at {config.CONFIG_FILE}")
         create_config_file()
@@ -670,6 +558,7 @@ def ensure_launcher_shortcuts(app=None):
             app=app
         )
 
+    # XXX: why only for this dialog?
     if config.DIALOG == 'cli':
         # Signal CLI.user_input_processor to stop.
         app.input_q.put(None)

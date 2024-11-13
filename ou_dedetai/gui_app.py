@@ -246,29 +246,17 @@ class InstallerWindow(GuiApp):
 
         # Run commands.
         self.get_winetricks_options()
-        self.grey_out_others_if_faithlife_product_is_not_selected()
 
-    def grey_out_others_if_faithlife_product_is_not_selected(self):
-        if not config.FLPRODUCT:
-            # Disable all input widgets after Version.
-            widgets = [
-                self.gui.version_dropdown,
-                self.gui.release_dropdown,
-                self.gui.release_check_button,
-                self.gui.wine_dropdown,
-                self.gui.wine_check_button,
-                self.gui.okay_button,
-            ]
-            self.set_input_widgets_state('disabled', widgets=widgets)
-            if not self.gui.productvar.get():
-                self.gui.productvar.set(self.gui.product_dropdown['values'][0])
-            # This is started in a new thread because it blocks and was called form the constructor
-            utils.start_thread(self.set_product)
-
-    def _hook_product_update(self, product: Optional[str]):
-        if product is not None:
-            self.gui.productvar.set(product)
-            self.gui.product_dropdown.set(product)
+    def _hook(self):
+        """Update the GUI to reflect changes in the configuration if they were prompted separately"""
+        # The configuration enforces dependencies, if FLPRODUCT is unset, so will it's dependents (TARGETVERSION and TARGET_RELEASE_VERSION)
+        # XXX: test this hook. Interesting thing is, this may never be called in production, as it's only called (presently) when the separate prompt returns
+        # Returns either from config or the dropdown
+        self.gui.productvar.set(config.FLPRODUCT or self.gui.product_dropdown['values'][0])
+        self.gui.versionvar.set(config.TARGETVERSION or self.gui.version_dropdown['values'][-1])
+        self.gui.releasevar.set(config.TARGET_RELEASE_VERSION or self.gui.release_dropdown['values'][0])
+        # Returns either WINE_EXE if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise ''
+        self.gui.winevar.set(config.WINE_EXE or next(iter(self.gui.wine_dropdown['values']), ''))
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
@@ -313,43 +301,7 @@ class InstallerWindow(GuiApp):
             else:
                 return
         self.set_input_widgets_state('enabled')
-        if task == 'TARGETVERSION':
-            # Disable all input widgets after Version.
-            widgets = [
-                self.gui.release_dropdown,
-                self.gui.release_check_button,
-                self.gui.wine_dropdown,
-                self.gui.wine_check_button,
-                self.gui.okay_button,
-            ]
-            self.set_input_widgets_state('disabled', widgets=widgets)
-            if not self.gui.versionvar.get():
-                self.gui.versionvar.set(self.gui.version_dropdown['values'][1])
-            self.set_version()
-        elif task == 'TARGET_RELEASE_VERSION':
-            # Disable all input widgets after Release.
-            widgets = [
-                self.gui.wine_dropdown,
-                self.gui.wine_check_button,
-                self.gui.okay_button,
-            ]
-            self.set_input_widgets_state('disabled', widgets=widgets)
-            self.start_releases_check()
-        elif task == 'WINE_EXE':
-            # Disable all input widgets after Wine Exe.
-            widgets = [
-                self.gui.okay_button,
-            ]
-            self.set_input_widgets_state('disabled', widgets=widgets)
-            self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
-        elif task == 'WINETRICKSBIN':
-            # Disable all input widgets after Winetricks.
-            widgets = [
-                self.gui.okay_button,
-            ]
-            self.set_input_widgets_state('disabled', widgets=widgets)
-            self.set_winetricks()
-        elif task == 'INSTALL':
+        if task == 'INSTALL':
             self.gui.statusvar.set('Ready to install!')
             self.gui.progressvar.set(0)
         elif task == 'INSTALLING':

@@ -63,22 +63,10 @@ class TUI(App):
         self.switch_q = Queue()
 
         # Install and Options
-        self.version_q = Queue()
-        self.version_e = threading.Event()
-        self.releases_q = Queue()
-        self.releases_e = threading.Event()
-        self.release_q = Queue()
-        self.release_e = threading.Event()
         self.manualinstall_q = Queue()
         self.manualinstall_e = threading.Event()
         self.installdeps_q = Queue()
         self.installdeps_e = threading.Event()
-        self.installdir_q = Queue()
-        self.installdir_e = threading.Event()
-        self.wines_q = Queue()
-        self.wine_e = threading.Event()
-        self.tricksbin_q = Queue()
-        self.tricksbin_e = threading.Event()
         self.deps_q = Queue()
         self.deps_e = threading.Event()
         self.finished_q = Queue()
@@ -357,17 +345,7 @@ class TUI(App):
             signal.signal(signal.SIGINT, self.end)
 
     def task_processor(self, evt=None, task=None):
-        if task == 'TARGETVERSION':
-            utils.start_thread(self.get_version, config.use_python_dialog)
-        elif task == 'TARGET_RELEASE_VERSION':
-            utils.start_thread(self.get_release, config.use_python_dialog)
-        elif task == 'INSTALLDIR':
-            utils.start_thread(self.get_installdir, config.use_python_dialog)
-        elif task == 'WINE_EXE':
-            utils.start_thread(self.get_wine, config.use_python_dialog)
-        elif task == 'WINETRICKSBIN':
-            utils.start_thread(self.get_winetricksbin, config.use_python_dialog)
-        elif task == 'INSTALL' or task == 'INSTALLING':
+        if task == 'INSTALL' or task == 'INSTALLING':
             utils.start_thread(self.get_waiting, config.use_python_dialog)
         elif task == 'INSTALLING_PW':
             utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
@@ -383,11 +361,6 @@ class TUI(App):
             0: self.main_menu_select,
             1: self.custom_appimage_select,
             2: self.handle_ask_response,
-            3: self.version_select,
-            4: self.release_select,
-            5: self.installdir_select,
-            6: self.wine_select,
-            7: self.winetricksbin_select,
             8: self.waiting,
             9: self.config_update_select,
             10: self.waiting_releases,
@@ -590,50 +563,6 @@ class TUI(App):
         self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
         self.appimage_e.set()
 
-    def version_select(self, choice):
-        if choice:
-            if "10" in choice:
-                config.TARGETVERSION = "10"
-            elif "9" in choice:
-                config.TARGETVERSION = "9"
-            self.menu_screen.choice = "Processing"
-            self.version_q.put(config.TARGETVERSION)
-            self.version_e.set()
-
-    def release_select(self, choice):
-        if choice:
-            config.TARGET_RELEASE_VERSION = choice
-            self.menu_screen.choice = "Processing"
-            self.release_q.put(config.TARGET_RELEASE_VERSION)
-            self.release_e.set()
-
-    def installdir_select(self, choice):
-        if choice:
-            config.INSTALLDIR = choice
-            config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
-            self.menu_screen.choice = "Processing"
-            self.installdir_q.put(config.INSTALLDIR)
-            self.installdir_e.set()
-
-    def wine_select(self, choice):
-        config.WINE_EXE = choice
-        if choice:
-            self.menu_screen.choice = "Processing"
-            self.wines_q.put(config.WINE_EXE)
-            self.wine_e.set()
-
-    def winetricksbin_select(self, choice):
-        winetricks_options = utils.get_winetricks_options()
-        if choice.startswith("Download"):
-            self.menu_screen.choice = "Processing"
-            self.tricksbin_q.put("Download")
-            self.tricksbin_e.set()
-        else:
-            self.menu_screen.choice = "Processing"
-            config.WINETRICKSBIN = winetricks_options[0]
-            self.tricksbin_q.put(config.WINETRICKSBIN)
-            self.tricksbin_e.set()
-
     def waiting(self, choice):
         pass
 
@@ -730,95 +659,6 @@ class TUI(App):
             self.ask_answer_queue.put(choice)
             self.ask_answer_event.set()
             self.switch_screen(config.use_python_dialog)
-
-    def get_version(self, dialog):
-        question = f"Which version of {self.conf.faithlife_product} should the script install?"  # noqa: E501
-        labels = ["10", "9", "Return to Main Menu"]
-        options = self.which_dialog_options(labels, dialog)
-        self.menu_options = options
-        self.screen_q.put(self.stack_menu(3, self.version_q, self.version_e, question, options, dialog=dialog))
-
-    def set_version(self, choice):
-        if "10" in choice:
-            config.TARGETVERSION = "10"
-        elif "9" in choice:
-            config.TARGETVERSION = "9"
-        self.menu_screen.choice = "Processing"
-        self.version_q.put(config.TARGETVERSION)
-        self.version_e.set()
-
-    def get_release(self, dialog):
-        labels = []
-        self.screen_q.put(self.stack_text(10, self.version_q, self.version_e, "Waiting to acquire Logos versions…", wait=True, dialog=dialog))
-        self.version_e.wait()
-        question = f"Which version of {config.FLPRODUCT} {config.TARGETVERSION} do you want to install?"  # noqa: E501
-        utils.start_thread(network.get_logos_releases, daemon_bool=True, app=self)
-        self.releases_e.wait()
-
-        labels = self.releases_q.get()
-
-        if labels is None:
-            msg.logos_error("Failed to fetch TARGET_RELEASE_VERSION.")
-        labels.append("Return to Main Menu")
-        options = self.which_dialog_options(labels, dialog)
-        self.menu_options = options
-        self.screen_q.put(self.stack_menu(4, self.release_q, self.release_e, question, options, dialog=dialog))
-
-    def set_release(self, choice):
-        config.TARGET_RELEASE_VERSION = choice
-        self.menu_screen.choice = "Processing"
-        self.release_q.put(config.TARGET_RELEASE_VERSION)
-        self.release_e.set()
-
-    def get_installdir(self, dialog):
-        self.release_e.wait()
-        default = f"{str(Path.home())}/{config.FLPRODUCT}Bible{config.TARGETVERSION}"  # noqa: E501
-        question = f"Where should {config.FLPRODUCT} files be installed to? [{default}]: "  # noqa: E501
-        self.screen_q.put(self.stack_input(5, self.installdir_q, self.installdir_e, question, default, dialog=dialog))
-
-    def set_installdir(self, choice):
-        config.INSTALLDIR = choice
-        config.APPDIR_BINDIR = f"{config.INSTALLDIR}/data/bin"
-        self.menu_screen.choice = "Processing"
-        self.installdir_q.put(config.INSTALLDIR)
-        self.installdir_e.set()
-
-    def get_wine(self, dialog):
-        self.installdir_e.wait()
-        self.screen_q.put(self.stack_text(10, self.wines_q, self.wine_e, "Waiting to acquire available Wine binaries…", wait=True, dialog=dialog))
-        question = f"Which Wine AppImage or binary should the script use to install {config.FLPRODUCT} v{config.TARGET_RELEASE_VERSION} in {config.INSTALLDIR}?"  # noqa: E501
-        labels = utils.get_wine_options(
-            utils.find_appimage_files(config.TARGET_RELEASE_VERSION),
-            utils.find_wine_binary_files(config.TARGET_RELEASE_VERSION)
-        )
-        labels.append("Return to Main Menu")
-        max_length = max(len(label) for label in labels)
-        max_length += len(str(len(labels))) + 10
-        options = self.which_dialog_options(labels, dialog)
-        self.menu_options = options
-        self.screen_q.put(self.stack_menu(6, self.wines_q, self.wine_e, question, options, width=max_length, dialog=dialog))
-
-    def set_wine(self, choice):
-        self.wines_q.put(utils.get_relative_path(utils.get_config_var(choice), config.INSTALLDIR))
-        self.menu_screen.choice = "Processing"
-        self.wine_e.set()
-
-    def get_winetricksbin(self, dialog):
-        self.wine_e.wait()
-        winetricks_options = utils.get_winetricks_options()
-        question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {config.FLPRODUCT} requires on Linux."  # noqa: E501
-        options = self.which_dialog_options(winetricks_options, dialog)
-        self.menu_options = options
-        self.screen_q.put(self.stack_menu(7, self.tricksbin_q, self.tricksbin_e, question, options, dialog=dialog))
-
-    def set_winetricksbin(self, choice):
-        if choice.startswith("Download"):
-            self.tricksbin_q.put("Download")
-        else:
-            winetricks_options = utils.get_winetricks_options()
-            self.tricksbin_q.put(winetricks_options[0])
-        self.menu_screen.choice = "Processing"
-        self.tricksbin_e.set()
 
     def get_waiting(self, dialog, screen_id=8):
         text = ["Install is running…\n"]
