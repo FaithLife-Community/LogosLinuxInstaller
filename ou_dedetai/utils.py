@@ -982,24 +982,17 @@ def get_config_var(var):
         return None
 
 
-# XXX: this function is never called with an argument
-def get_wine_exe_path(path=None):
-    if path is not None:
-        path = get_relative_path(get_config_var(path), config.INSTALLDIR)
+def get_wine_exe_path():
+    if config.WINE_EXE is not None:
+        path = get_relative_path(
+            get_config_var(config.WINE_EXE),
+            config.INSTALLDIR
+        )
         wine_exe_path = Path(create_dynamic_path(path, config.INSTALLDIR))
         logging.debug(f"{wine_exe_path=}")
         return wine_exe_path
     else:
-        if config.WINE_EXE is not None:
-            path = get_relative_path(
-                get_config_var(config.WINE_EXE),
-                config.INSTALLDIR
-            )
-            wine_exe_path = Path(create_dynamic_path(path, config.INSTALLDIR))
-            logging.debug(f"{wine_exe_path=}")
-            return wine_exe_path
-        else:
-            return None
+        return None
 
 
 def stopwatch(start_time=None, interval=10.0):
