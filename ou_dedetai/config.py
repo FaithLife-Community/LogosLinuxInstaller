@@ -2,8 +2,8 @@ import json
 import logging
 import os
 import tempfile
-from datetime import datetime
 from typing import Optional
+from warnings import deprecated
 
 from . import constants
 
@@ -117,6 +117,8 @@ logos_linux_installer_status_info = {
 check_if_indexing = None
 
 
+# XXX: remove this
+@deprecated
 def get_config_file_dict(config_file_path):
     config_dict = {}
     if config_file_path.endswith('.json'):
@@ -158,6 +160,7 @@ def get_config_file_dict(config_file_path):
         return config_dict
 
 
+# XXX: remove this
 def set_config_env(config_file_path):
     config_dict = get_config_file_dict(config_file_path)
     if config_dict is None:
@@ -171,7 +174,7 @@ def set_config_env(config_file_path):
         global APPDIR_BINDIR
         APPDIR_BINDIR = f"{installdir}/data/bin"
 
-
+# XXX: remove this
 def get_env_config():
     for var in globals().keys():
         val = os.getenv(var)

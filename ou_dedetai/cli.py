@@ -104,6 +104,7 @@ class CLI(App):
         self.input_event.set()
         self.choice_event.wait()
         self.choice_event.clear()
+        # XXX: This is always a freeform input, perhaps we should have some sort of validation?
         return self.choice_q.get()
 
     def user_input_processor(self, evt=None):

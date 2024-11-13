@@ -15,7 +15,7 @@ from tkinter import filedialog as fd
 from tkinter.ttk import Style
 from typing import Optional
 
-from ou_dedetai.app import App
+from ou_dedetai.app import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE, App
 
 from . import config
 from . import constants
@@ -54,6 +54,18 @@ class GuiApp(App):
         if answer is None:
             self.root_to_destory_on_none.destroy()
             return None
+        elif answer == PROMPT_OPTION_DIRECTORY:
+            answer = fd.askdirectory(
+                parent=self.root_to_destory_on_none,
+                title=question,
+                initialdir=Path().home(),
+            )
+        elif answer == PROMPT_OPTION_FILE:
+            answer = fd.askopenfilename(
+                parent=self.root_to_destory_on_none,
+                title=question,
+                initialdir=Path().home(),
+            )
         return answer
 
 class Root(Tk):

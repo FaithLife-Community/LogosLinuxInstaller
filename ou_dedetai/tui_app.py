@@ -8,7 +8,7 @@ from pathlib import Path
 from queue import Queue
 from typing import Optional
 
-from ou_dedetai.app import App
+from ou_dedetai.app import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE, App
 
 from . import config
 from . import control
@@ -361,6 +361,8 @@ class TUI(App):
             0: self.main_menu_select,
             1: self.custom_appimage_select,
             2: self.handle_ask_response,
+            3: self.handle_ask_file_response,
+            4: self.handle_ask_directory_response,
             8: self.waiting,
             9: self.config_update_select,
             10: self.waiting_releases,
@@ -652,13 +654,33 @@ class TUI(App):
 
         # Now wait for it to complete
         self.ask_answer_event.wait()
-        return self.ask_answer_queue.get()
+        answer = self.ask_answer_queue.get()
+
+        if answer == PROMPT_OPTION_FILE or answer == PROMPT_OPTION_DIRECTORY:
+            stack_index = 3 if answer == PROMPT_OPTION_FILE else 4
+            self.screen_q.put(self.stack_input(stack_index, Queue(), threading.Event(), question,
+                                               os.path.expanduser(f"~/"), dialog=config.use_python_dialog))
+            # Now wait for it to complete
+            self.ask_answer_event.wait()
+            answer = self.ask_answer_queue.get()
+
+        return answer
 
     def handle_ask_response(self, choice: Optional[str]):
         if choice is not None:
             self.ask_answer_queue.put(choice)
             self.ask_answer_event.set()
             self.switch_screen(config.use_python_dialog)
+
+    def handle_ask_file_response(self, choice: Optional[str]):
+        # XXX: can there be some sort of feedback if this file path isn't valid?
+        if choice is not None and Path(choice).exists() and Path(choice).is_file():
+            self.handle_ask_response(choice)
+
+    def handle_ask_directory_response(self, choice: Optional[str]):
+        # XXX: can there be some sort of feedback if this directory path isn't valid?
+        if choice is not None and Path(choice).exists() and Path(choice).is_dir():
+            self.handle_ask_response(choice)
 
     def get_waiting(self, dialog, screen_id=8):
         text = ["Install is running…\n"]

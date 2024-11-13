@@ -58,7 +58,6 @@ def set_default_config():
     system.get_package_manager()
     if config.CONFIG_FILE is None:
         config.CONFIG_FILE = constants.DEFAULT_CONFIG_PATH
-    config.PRESENT_WORKING_DIRECTORY = os.getcwd()
     config.MYDOWNLOADS = get_user_downloads_dir()
     os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
 

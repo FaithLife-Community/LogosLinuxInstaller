@@ -12,6 +12,8 @@ import sys
 import time
 from pathlib import Path
 
+from ou_dedetai.app import App
+
 from . import config
 from . import constants
 from . import msg
@@ -31,16 +33,16 @@ def delete_log_file_contents():
         f.write('')
 
 
-def backup(app=None):
+def backup(app: App):
     backup_and_restore(mode='backup', app=app)
 
 
-def restore(app=None):
+def restore(app: App):
     backup_and_restore(mode='restore', app=app)
 
 
 # FIXME: consider moving this into it's own file/module.
-def backup_and_restore(mode='backup', app=None):
+def backup_and_restore(mode: str, app: App):
     data_dirs = ['Data', 'Documents', 'Users']
     # Ensure BACKUPDIR is defined.
     if config.BACKUPDIR is None:
