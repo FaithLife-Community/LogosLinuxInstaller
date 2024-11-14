@@ -334,7 +334,7 @@ def get_package_manager():
         config.QUERY_PREFIX = ''
         # config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.PACKAGES = (
-            "fuse3 fuse3-libs "  # appimages
+            "fuse3 fuse3-libs fuse"  # appimages
             "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract "  # wine  # noqa: E501
             "p7zip-plugins "  # winetricks
         )
