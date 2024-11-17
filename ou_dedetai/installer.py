@@ -777,7 +777,7 @@ def create_desktop_file(name, contents):
         logging.info(f"Removing desktop launcher at {launcher_path}.")
         launcher_path.unlink()
     # Ensure the parent directory exists
-    launcher_path.parent.mkdir(parents=True)
+    launcher_path.parent.mkdir(parents=True, exist_ok=True)
 
     logging.info(f"Creating desktop launcher at {launcher_path}.")
     with launcher_path.open('w') as f:
