@@ -17,7 +17,7 @@ from . import network
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.
-def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.CompletedProcess[any]]:
+def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.CompletedProcess[any]]:  # noqa: E501
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
     capture_output = kwargs.get("capture_output", True)
@@ -314,15 +314,36 @@ def get_superuser_command():
 
 
 def get_package_manager():
-    # Check for package manager and associated packages
-    if shutil.which('apt') is not None:  # debian, ubuntu
+    major_ver = distro.major_version()
+    logging.debug(f"{config.OS_NAME=}; {major_ver=}")
+    # Check for package manager and associated packages.
+    # NOTE: cabextract and sed are included in the appimage, so they have been
+    # removed from the dependencies lists.
+    if shutil.which('apt') is not None:  # debian, ubuntu, & derivatives
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["apt", "install", "-y"]
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["apt", "install", "--download-only", "-y"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["apt", "remove", "-y"]
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["dpkg", "-l"]
         config.QUERY_PREFIX = '.i  '
-        # NOTE: in 24.04 "p7zip-full" pkg is transitional toward "7zip"
-        config.PACKAGES = "binutils cabextract fuse3 p7zip-full wget winbind"
+        # Set default package list.
+        config.PACKAGES = (
+            "libfuse2 "  # appimages
+            "binutils wget winbind "  # wine
+            "p7zip-full "  # winetricks
+        )
+        # NOTE: Package names changed together for Ubuntu 24+, Debian 13+, and
+        # derivatives. This does not include an exhaustive list of distros that
+        # use 'apt', so others will have to be added as users report issues.
+        if (
+            (config.OS_NAME == 'ubuntu' and major_ver >= '24')
+            or (config.OS_NAME == 'debian' and major_ver >= '13')
+            or (config.OS_NAME == 'elementary' and major_ver >= '8')
+        ):
+            config.PACKAGES = (
+                "libfuse2t64 "  # appimages
+                "binutils wget winbind "  # wine
+                "7zip "  # winetricks
+            )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('dnf') is not None:  # rhel, fedora
@@ -334,8 +355,8 @@ def get_package_manager():
         config.QUERY_PREFIX = ''
         # config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         config.PACKAGES = (
-            "fuse3 fuse3-libs "  # appimages
-            "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract "  # wine  # noqa: E501
+            "fuse-libs "  # appimages
+            "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients "  # wine  # noqa: E501
             "p7zip-plugins "  # winetricks
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
@@ -346,7 +367,12 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["zypper", "--non-interactive", "remove"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["zypper", "se", "-si"]
         config.QUERY_PREFIX = 'i  | '
-        config.PACKAGES = "fuse patch wget sed grep gawk cabextract 7zip samba curl"  # noqa: E501
+        config.PACKAGES = (
+            "fuse2 "  # appimages
+            "samba wget "  # wine
+            "7zip "  # winetricks
+            "curl gawk grep patch "  # other
+        )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
@@ -355,7 +381,12 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pamac", "remove", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["pamac", "list", "-i"]
         config.QUERY_PREFIX = ''
-        config.PACKAGES = "patch wget sed grep gawk cabextract p7zip samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = (
+            "fuse2 "  # appimages
+            "samba wget "  # wine
+            "p7zip "  # winetricks
+            "bc curl gawk grep libxml2 patch "  # other
+        )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
@@ -369,8 +400,8 @@ def get_package_manager():
         else:  # arch
             # config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
             config.PACKAGES = (
-                "fuse2 fuse3 "  # appimages
-                "binutils cabextract libwbclient samba wget "  # wine
+                "fuse2 "  # appimages
+                "binutils libwbclient samba wget "  # wine
                 "p7zip "  # winetricks
                 "openjpeg2 libxcomposite libxinerama "  # display
                 "ocl-icd vulkan-icd-loader "  # hardware
@@ -380,7 +411,9 @@ def get_package_manager():
             )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
-    # Add more conditions for other package managers as needed
+    else:
+        # Add more conditions for other package managers as needed.
+        msg.logos_error("Your package manager is not yet supported. Please contact the developers.")  # noqa: E501
 
     # Add logging output.
     logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_INSTALL=}")
@@ -649,16 +682,18 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
 
         preinstall_command = preinstall_dependencies()
 
-        # libfuse: for AppImage use. This is the only known needed library.
-        if config.OS_NAME == "fedora":
-            fuse = "fuse"
-        else:
-            fuse = "libfuse"
+        # TODO: Remove the code below when it's confirmed that libfuse is
+        # properly handled in get_package_manager().
+        # # libfuse: for AppImage use. This is the only known needed library.
+        # if config.OS_NAME == "fedora":
+        #     fuse = "fuse"
+        # else:
+        #     fuse = "libfuse"
 
-        fuse_lib_installed = check_libs([f"{fuse}"], app=app)
-        logging.debug(f"{fuse_lib_installed=}")
-        # if not fuse_lib_installed:
-        #     missing_packages.append(fuse)
+        # fuse_lib_installed = check_libs([f"{fuse}"], app=app)
+        # logging.debug(f"{fuse_lib_installed=}")
+        # # if not fuse_lib_installed:
+        # #     missing_packages.append(fuse)
 
         if missing_packages:
             install_command = config.PACKAGE_MANAGER_COMMAND_INSTALL + missing_packages  # noqa: E501
@@ -779,37 +814,39 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
             if config.DIALOG == "curses":
                 app.installdeps_e.set()
 
+# TODO: Remove the code below when it's confirmed that libfuse is
+# properly handled in get_package_manager().
+# def have_lib(library, ld_library_path):
+#     available_library_paths = ['/usr/lib', '/lib']
+#     if ld_library_path is not None:
+#         available_library_paths = [*ld_library_path.split(':'), *available_library_paths]  # noqa: E501
 
-def have_lib(library, ld_library_path):
-    available_library_paths = ['/usr/lib', '/lib']
-    if ld_library_path is not None:
-        available_library_paths = [*ld_library_path.split(':'), *available_library_paths]  # noqa: E501
+#     roots = [root for root in available_library_paths if not Path(root).is_symlink()]  # noqa: E501
+#     logging.debug(f"Library Paths: {roots}")
+#     for root in roots:
+#         libs = []
+#         logging.debug(f"Have lib? Checking {root}")
+#         for lib in Path(root).rglob(f"{library}*"):
+#             logging.debug(f"DEV: {lib}")
+#             libs.append(lib)
+#             break
+#         if len(libs) > 0:
+#             logging.debug(f"'{library}' found at '{libs[0]}'")
+#             return True
+#     return False
 
-    roots = [root for root in available_library_paths if not Path(root).is_symlink()]  # noqa: E501
-    logging.debug(f"Library Paths: {roots}")
-    for root in roots:
-        libs = []
-        logging.debug(f"Have lib? Checking {root}")
-        for lib in Path(root).rglob(f"{library}*"):
-            logging.debug(f"DEV: {lib}")
-            libs.append(lib)
-            break
-        if len(libs) > 0:
-            logging.debug(f"'{library}' found at '{libs[0]}'")
-            return True
-    return False
-
-
-def check_libs(libraries, app=None):
-    ld_library_path = os.environ.get('LD_LIBRARY_PATH')
-    for library in libraries:
-        have_lib_result = have_lib(library, ld_library_path)
-        if have_lib_result:
-            logging.info(f"* {library} is installed!")
-            return True
-        else:
-            logging.info(f"* {library} is not installed!")
-            return False
+# TODO: Remove the code below when it's confirmed that libfuse is
+# properly handled in get_package_manager().
+# def check_libs(libraries, app=None):
+#     ld_library_path = os.environ.get('LD_LIBRARY_PATH')
+#     for library in libraries:
+#         have_lib_result = have_lib(library, ld_library_path)
+#         if have_lib_result:
+#             logging.info(f"* {library} is installed!")
+#             return True
+#         else:
+#             logging.info(f"* {library} is not installed!")
+#             return False
 
 
 def install_winetricks(
