@@ -340,7 +340,7 @@ def get_package_manager():
             or (config.OS_NAME == 'elementary' and major_ver >= '8')
         ):
             config.PACKAGES = (
-                "libfuse2t64 "  # appimages
+                "libfuse3-3 "  # appimages
                 "binutils wget winbind "  # wine
                 "7zip "  # winetricks
             )
