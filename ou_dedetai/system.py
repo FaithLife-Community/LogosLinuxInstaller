@@ -346,7 +346,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["zypper", "--non-interactive", "remove"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["zypper", "se", "-si"]
         config.QUERY_PREFIX = 'i  | '
-        config.PACKAGES = "fuse patch wget sed grep gawk cabextract 7zip samba curl"  # noqa: E501
+        config.PACKAGES = "fuse wget sed grep gawk cabextract 7zip samba curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
@@ -355,7 +355,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pamac", "remove", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["pamac", "list", "-i"]
         config.QUERY_PREFIX = ''
-        config.PACKAGES = "patch wget sed grep gawk cabextract p7zip samba bc libxml2 curl"  # noqa: E501
+        config.PACKAGES = "wget sed grep gawk cabextract p7zip samba curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
@@ -365,7 +365,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["pacman", "-Q"]
         config.QUERY_PREFIX = ''
         if config.OS_NAME == "steamos":  # steamOS
-            config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: #E501
+            config.PACKAGES = "wget sed grep gawk cabextract samba curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: #E501
         else:  # arch
             # config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
             config.PACKAGES = (
@@ -378,6 +378,15 @@ def get_package_manager():
                 "libva mpg123 v4l-utils "  # video
                 "libxslt sqlite "  # misc
             )
+        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.BADPACKAGES = ""  # appimagelauncher handled separately
+    elif shutil.which('guix') is not None:  # guix
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["guix", "package", "-i"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["guix", "build", "--no-grafts", "--keep-going"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["guix", "package", "-r"]  # noqa: E501
+        config.PACKAGE_MANAGER_COMMAND_QUERY = ["guix", "package", "-I"]
+        config.QUERY_PREFIX = ''
+        config.PACKAGES = "fuse wget sed grep gawk cabextract p7zip samba curl"  # noqa: E501
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     # Add more conditions for other package managers as needed
