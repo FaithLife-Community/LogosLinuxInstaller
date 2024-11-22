@@ -334,9 +334,15 @@ def get_package_manager():
         # NOTE: Package names changed together for Ubuntu 24+, Debian 13+, and
         # derivatives. This does not include an exhaustive list of distros that
         # use 'apt', so others will have to be added as users report issues.
+        # Ref:
+        # - https://askubuntu.com/a/445496
+        # - https://en.wikipedia.org/wiki/Linux_Mint
+        # - https://en.wikipedia.org/wiki/Elementary_OS
+        # - https://github.com/which-distro/os-release/tree/main
         if (
-            (config.OS_NAME == 'ubuntu' and major_ver >= '24')
-            or (config.OS_NAME == 'debian' and major_ver >= '13')
+            (config.OS_NAME == 'debian' and major_ver >= '13')
+            or (config.OS_NAME == 'ubuntu' and major_ver >= '24')
+            or (config.OS_NAME == 'linuxmint' and major_ver >= '22')
             or (config.OS_NAME == 'elementary' and major_ver >= '8')
         ):
             config.PACKAGES = (
@@ -371,7 +377,7 @@ def get_package_manager():
             "fuse2 "  # appimages
             "samba wget "  # wine
             "7zip "  # winetricks
-            "curl gawk grep patch "  # other
+            "curl gawk grep "  # other
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
@@ -385,7 +391,7 @@ def get_package_manager():
             "fuse2 "  # appimages
             "samba wget "  # wine
             "p7zip "  # winetricks
-            "bc curl gawk grep libxml2 patch "  # other
+            "curl gawk grep "  # other
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
