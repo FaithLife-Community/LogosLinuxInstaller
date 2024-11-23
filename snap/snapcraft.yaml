@@ -1,6 +1,6 @@
-name: logos-linux-installer
+name: oudedetai
 base: core24
-adopt-info: lli
+version: v4.0.0-beta.4
 summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
 description: |
   This repository contains a Python program for installing and maintaining
@@ -12,16 +12,19 @@ grade: stable
 confinement: strict
 
 apps:
-  logos-linux-installer:
-    command: bin/LogoLinuxInstaller
+  oudedetai:
+    command: bin/oudedetai
   run:
-    command: bin/LogosLinuxInstaller --run-installed-app
+    command: bin/oudedetai --run-installed-app
 
 parts:
   # wine:
   #   source: 
 
-  lli:
-    source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/v4.0.0-beta.1.tar.gz
-    plugin: dump
+  oudedetai:
+    source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
+    plugin: python
+    override-build: |
+      python3 -m pip install .[build]
+      ./scripts/build-binary.sh
     
