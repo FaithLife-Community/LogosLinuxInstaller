@@ -406,9 +406,9 @@ class InstallerWindow(GuiApp):
         # Start thread.
         utils.start_thread(
             utils.get_wine_options,
+            self,
             self.appimages,
             utils.find_wine_binary_files(release_version),
-            app=self,
         )
 
     def set_wine(self, evt=None):
@@ -754,7 +754,7 @@ class ControlWindow(GuiApp):
         self.gui.statusvar.set("Installing Winetricks…")
         utils.start_thread(
             system.install_winetricks,
-            config.APPDIR_BINDIR,
+            self.conf.installer_binary_directory,
             app=self
         )
         self.update_run_winetricks_button()

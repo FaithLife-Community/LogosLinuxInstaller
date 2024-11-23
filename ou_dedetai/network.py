@@ -483,14 +483,14 @@ def check_for_updates():
 
 def get_recommended_appimage(app: App):
     wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)  # noqa: E501
-    dest_path = Path(config.APPDIR_BINDIR) / wine64_appimage_full_filename
+    dest_path = Path(app.conf.installer_binary_directory) / wine64_appimage_full_filename
     if dest_path.is_file():
         return
     else:
         logos_reuse_download(
             config.RECOMMENDED_WINE64_APPIMAGE_URL,
             config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME,
-            config.APPDIR_BINDIR,
+            app.conf.installer_binary_directory,
             app=app
         )
 

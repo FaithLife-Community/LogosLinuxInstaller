@@ -69,6 +69,57 @@ class App(abc.ABC):
         """Updates the progress of the current operation"""
         pass
 
+# XXX: What about legacy envs? From the extended config?
+# Like APPDIR_BINDIR? This no longer can be modified directly, unless we store an override.
+
+@dataclass
+class LegacyEnvOverrides:
+    """Previous versions of the installer allowed some values to be overridden by environment.
+    This keeps that compatibility."""
+    APPIMAGE_LINK_SELECTION_NAME: Optional[str]
+    APPDIR_BINDIR: Optional[str]
+    CHECK_UPDATES: Optional[bool]
+    CONFIG_FILE: Optional[str]
+    CUSTOMBINPATH: Optional[str]
+    DEBUG: Optional[bool]
+    DELETE_LOG: Optional[str]
+    DIALOG: Optional[str]
+    # XXX: default used to be `os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log")`
+    LOGOS_LOG: Optional[str]
+    # XXX: default used to be `os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")`
+    wine_log: Optional[str]
+    LOGOS_EXE: Optional[str]
+    LOGOS_EXECUTABLE: Optional[str]
+    LOGOS_VERSION: Optional[str]
+    # XXX: Default value used to be "Logos-x64.msi", we may have to handle this
+    LOGOS64_MSI: Optional[str]
+    LOGOS64_URL: Optional[str]
+    REINSTALL_DEPENDENCIES: Optional[bool]
+    SELECTED_APPIMAGE_FILENAME: Optional[str]
+    SKIP_DEPENDENCIES: Optional[bool]
+    SKIP_FONTS: Optional[bool]
+    SKIP_WINETRICKS: Optional[bool]
+    use_python_dialog: Optional[str]
+    VERBOSE: Optional[bool]
+    WINEBIN_CODE: Optional[str]
+    # XXX: move this out of this struct
+    WINEDEBUG: Optional[str] = "fixme-all,err-all",
+    WINEDLLOVERRIDES: Optional[str]
+    WINEPREFIX: Optional[str]
+    WINE_EXE: Optional[str]
+    WINESERVER_EXE: Optional[str]
+    WINETRICKS_UNATTENDED: Optional[str]
+
+    @classmethod
+    def from_env() -> "LegacyEnvOverrides":
+        legacy_envs = LegacyEnvOverrides()
+        # Now update from ENV
+        for var in LegacyEnvOverrides().__dict__.keys():
+            if os.getenv(var) is not None:
+                legacy_envs[var] = os.getenv(var)
+        return legacy_envs
+
+
 # XXX: move these configs into config.py once it's cleared out
 @dataclass
 class LegacyConfiguration:
@@ -145,6 +196,28 @@ class LegacyConfiguration:
 
 
 @dataclass
+class EnvironmentOverrides:
+    """Allows some values to be overridden from environment.
+    
+    The actually name of the environment variables remains unchanged from before,
+    this translates the environment variable names to the new variable names"""
+
+    installer_binary_directory: Optional[str]
+    wineserver_binary: Optional[str]
+
+    @classmethod
+    def from_legacy(legacy: LegacyEnvOverrides) -> "EnvironmentOverrides":
+        EnvironmentOverrides(
+            installer_binary_directory=legacy.APPDIR_BINDIR,
+            wineserver_binary=legacy.WINESERVER_EXE
+        )
+
+    @classmethod
+    def from_env() -> "EnvironmentOverrides":
+        return EnvironmentOverrides.from_legacy(LegacyEnvOverrides.from_env())
+
+
+@dataclass
 class UserConfiguration:
     """This is the class that actually stores the values.
 
@@ -171,7 +244,7 @@ class UserConfiguration:
     @classmethod
     def read_from_file_and_env() -> "UserConfiguration":
         # First read in the legacy configuration
-        new_config = UserConfiguration.from_legacy(LegacyConfiguration.from_file_and_env())
+        new_config: UserConfiguration = UserConfiguration.from_legacy(LegacyConfiguration.from_file_and_env())
         # Then read the file again this time looking for the new keys
         config_file_path = LegacyConfiguration.config_file_path()
 
@@ -247,6 +320,9 @@ class Config:
 
     # Storage for the keys
     _raw: UserConfiguration
+
+    # Overriding programmatically generated values from ENV
+    _overrides: EnvironmentOverrides
     
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
 
@@ -368,8 +444,10 @@ class Config:
         return output
 
     @property
-    # XXX: used to be called APPDIR_BINDIR
+    # This used to be called APPDIR_BINDIR
     def installer_binary_directory(self) -> str:
+        if self._overrides.installer_binary_directory is not None:
+            return self._overrides.installer_binary_directory
         return f"{self.install_dir}/data/bin"
 
     @property
@@ -384,6 +462,7 @@ class Config:
             question = f"Which Wine AppImage or binary should the script use to install {self.faithlife_product} v{self.faithlife_product_version} in {self.install_dir}?: ",  # noqa: E501
             network.set_recommended_appimage_config()
             options = utils.get_wine_options(
+                self,
                 utils.find_appimage_files(self.faithlife_product_release),
                 utils.find_wine_binary_files(self.faithlife_product_release)
             )
@@ -416,7 +495,7 @@ class Config:
         return str(Path(self.wine_binary).parent / 'wine64')
     
     @property
-    # XXX: used to be called WINESERVER_EXE
+    # This used to be called WINESERVER_EXE
     def wineserver_binary(self) -> str:
         return str(Path(self.wine_binary).parent / 'wineserver')
         

@@ -17,36 +17,27 @@ from . import utils
 
 from .config import processes
 
-def check_wineserver():
+def check_wineserver(app: App):
     try:
-        process = run_wine_proc(config.WINESERVER, exe_args=["-p"])
+        # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of WINESERVER_EXE
+        # changed it to use wineserver_binary, this change may alter the behavior, to match what the code intended
+        process = run_wine_proc(app.conf.wineserver_binary, exe_args=["-p"])
         wait_pid(process)
         return process.returncode == 0
     except Exception:
         return False
 
 
-def wineserver_kill():
-    if check_wineserver():
-        process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-k"])
+def wineserver_kill(app: App):
+    if check_wineserver(app):
+        process = run_wine_proc(app.conf.wineserver_binary, exe_args=["-k"])
         wait_pid(process)
 
 
-def wineserver_wait():
-    if check_wineserver():
-        process = run_wine_proc(config.WINESERVER_EXE, exe_args=["-w"])
+def wineserver_wait(app: App):
+    if check_wineserver(app):
+        process = run_wine_proc(app.conf.wineserver_binary, exe_args=["-w"])
         wait_pid(process)
-
-
-# def light_wineserver_wait():
-#     command = [f"{config.WINESERVER_EXE}", "-w"]
-#     system.wait_on(command)
-
-
-# def heavy_wineserver_wait():
-#     utils.wait_process_using_dir(config.WINEPREFIX)
-#     # system.wait_on([f"{config.WINESERVER_EXE}", "-w"])
-#     wineserver_wait()
 
 
 def end_wine_processes():
@@ -230,7 +221,7 @@ def initializeWineBottle(app: App):
     return process
 
 
-def wine_reg_install(reg_file, wine64_binary):
+def wine_reg_install(app: App, reg_file, wine64_binary):
     reg_file = str(reg_file)
     msg.status(f"Installing registry file: {reg_file}")
     process = run_wine_proc(
@@ -247,18 +238,17 @@ def wine_reg_install(reg_file, wine64_binary):
         msg.logos_error(f"{failed}: {reg_file}")
     elif process.returncode == 0:
         logging.info(f"{reg_file} installed.")
-    # light_wineserver_wait()
-    wineserver_wait()
+    wineserver_wait(app)
 
 
-def disable_winemenubuilder(wine64_binary: str):
+def disable_winemenubuilder(app: App, wine64_binary: str):
     reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
     reg_file.write_text(r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
-    wine_reg_install(reg_file, wine64_binary)
+    wine_reg_install(app, reg_file, wine64_binary)
 
 
 def install_msi(app: App):
@@ -346,7 +336,7 @@ def run_wine_proc(winecmd, app: App, exe=None, exe_args=list(), init=False):
 def run_winetricks(app: App, cmd=None):
     process = run_wine_proc(app.conf.winetricks_binary, exe=cmd)
     wait_pid(process)
-    wineserver_wait()
+    wineserver_wait(app)
 
 # XXX: this function looks similar to the one above. duplicate?
 def run_winetricks_cmd(app: App, *args):
@@ -356,8 +346,7 @@ def run_winetricks_cmd(app: App, *args):
     process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
     wait_pid(process)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
-    # heavy_wineserver_wait()
-    wineserver_wait()
+    wineserver_wait(app)
     logging.debug(f"procs using {app.conf.wine_prefix}:")
     for proc in utils.get_procs_using_file(app.conf.wine_prefix):
         logging.debug(f"{proc=}")

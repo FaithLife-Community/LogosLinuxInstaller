@@ -78,7 +78,7 @@ def ensure_wine_choice(app: App):
     if str(app.conf.wine_binary).lower().endswith('.appimage'):
         config.SELECTED_APPIMAGE_FILENAME = str(app.conf.wine_binary)
     if not config.WINEBIN_CODE:
-        config.WINEBIN_CODE = utils.get_winebin_code_and_desc(app.conf.wine_binary)[0]  # noqa: E501
+        config.WINEBIN_CODE = utils.get_winebin_code_and_desc(app, app.conf.wine_binary)[0]  # noqa: E501
 
     logging.debug(f"> {config.SELECTED_APPIMAGE_FILENAME=}")
     logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_URL=}")
@@ -181,7 +181,7 @@ def ensure_install_dirs(app: App):
     logging.debug(f"> {bin_dir} exists?: {bin_dir.is_dir()}")
 
     logging.debug(f"> config.INSTALLDIR={app.conf.installer_binary_directory}")
-    logging.debug(f"> {config.APPDIR_BINDIR=}")
+    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_directory}")
 
     wine_dir = Path(f"{app.conf.wine_prefix}")
     wine_dir.mkdir(parents=True, exist_ok=True)
@@ -248,22 +248,17 @@ def ensure_wine_executables(app: App):
     logging.debug('- wine64')
     logging.debug('- wineserver')
 
-    # Add APPDIR_BINDIR to PATH.
     if not os.access(app.conf.wine_binary, os.X_OK):
         msg.status("Creating wine appimage symlinks…", app=app)
         create_wine_appimage_symlinks(app=app)
 
-    # Set WINESERVER_EXE.
-    config.WINESERVER_EXE = f"{config.APPDIR_BINDIR}/wineserver"
-
     # PATH is modified if wine appimage isn't found, but it's not modified
     # during a restarted installation, so shutil.which doesn't find the
     # executables in that case.
-    logging.debug(f"> {config.WINESERVER_EXE=}")
-    logging.debug(f"> wine path: {config.APPDIR_BINDIR}/wine")
-    logging.debug(f"> wine64 path: {config.APPDIR_BINDIR}/wine64")
-    logging.debug(f"> wineserver path: {config.APPDIR_BINDIR}/wineserver")
-    logging.debug(f"> winetricks path: {config.APPDIR_BINDIR}/winetricks")
+    logging.debug(f"> wine path: {app.conf.wine_binary}")
+    logging.debug(f"> wine64 path: {app.conf.wine64_binary}")
+    logging.debug(f"> wineserver path: {app.conf.wineserver_binary}")
+    logging.debug(f"> winetricks path: {app.conf.winetricks_binary}")
 
 
 def ensure_winetricks_executable(app: App):
@@ -363,7 +358,7 @@ def ensure_wineprefix_init(app: App):
             process = wine.initializeWineBottle(app)
             wine.wait_pid(process)
             # wine.light_wineserver_wait()
-            wine.wineserver_wait()
+            wine.wineserver_wait(app)
             logging.debug("Wine init complete.")
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
@@ -391,7 +386,7 @@ def ensure_winetricks_applied(app: App):
 
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
             msg.status("Disabling winemenubuilder…", app)
-            wine.disable_winemenubuilder(app.conf.wine64_binary)
+            wine.disable_winemenubuilder(app, app.conf.wine64_binary)
 
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
             msg.status("Setting Renderer to GDI…", app)
@@ -418,7 +413,7 @@ def ensure_winetricks_applied(app: App):
         msg.logos_msg(f"Setting {app.conf.faithlife_product} Bible Indexing to Win10 Mode…")  # noqa: E501
         wine.set_win_version(app, "indexer", "win10")
         # wine.light_wineserver_wait()
-        wine.wineserver_wait()
+        wine.wineserver_wait(app)
     logging.debug("> Done.")
 
 

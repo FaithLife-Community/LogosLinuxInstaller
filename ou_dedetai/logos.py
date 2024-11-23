@@ -90,7 +90,7 @@ class LogosManager:
         if not good_wine:
             msg.logos_error(reason, app=self)
         else:
-            wine.wineserver_kill()
+            wine.wineserver_kill(app=self.app)
             app = self.app
             if config.DIALOG == 'tk':
                 # Don't send "Running" message to GUI b/c it never clears.
@@ -138,7 +138,7 @@ class LogosManager:
             else:
                 logging.debug("No Logos processes to stop.")
                 self.logos_state = State.STOPPED
-        wine.wineserver_wait()
+        wine.wineserver_wait(app)
 
     def index(self):
         self.indexing_state = State.STARTING
@@ -171,9 +171,9 @@ class LogosManager:
             index_finished.wait()
             self.indexing_state = State.STOPPED
             msg.status("Indexing has finished.", self.app)
-            wine.wineserver_wait()
+            wine.wineserver_wait(app=self.app)
 
-        wine.wineserver_kill()
+        wine.wineserver_kill(app=self.app)
         msg.status("Indexing has begun…", self.app)
         index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
@@ -215,7 +215,7 @@ class LogosManager:
             else:
                 logging.debug("No LogosIndexer processes to stop.")
                 self.indexing_state = State.STOPPED
-        wine.wineserver_wait()
+        wine.wineserver_wait(app=self.app)
 
     def get_app_logging_state(self, init=False):
         state = 'DISABLED'
@@ -266,7 +266,7 @@ class LogosManager:
             exe_args=exe_args
         )
         wine.wait_pid(process)
-        wine.wineserver_wait()
+        wine.wineserver_wait(app=self.app)
         config.LOGS = state
         if config.DIALOG in ['curses', 'dialog', 'tk']:
             self.app.logging_q.put(state)

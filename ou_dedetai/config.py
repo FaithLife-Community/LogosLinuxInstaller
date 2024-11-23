@@ -23,7 +23,6 @@ lli_release_channel = None
 # Define and set additional variables that can be set in the env.
 extended_config = {
     'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
-    'APPDIR_BINDIR': None,
     'CHECK_UPDATES': False,
     'CONFIG_FILE': None,
     'CUSTOMBINPATH': None,
@@ -49,7 +48,6 @@ extended_config = {
     'WINEDLLOVERRIDES': '',
     'WINEPREFIX': None,
     'WINE_EXE': None,
-    'WINESERVER_EXE': None,
     'WINETRICKS_UNATTENDED': None,
 }
 for key, default in extended_config.items():
@@ -163,9 +161,6 @@ def set_config_env(config_file_path):
     for key, value in config_dict.items():
         globals()[key] = value
     installdir = config_dict.get('INSTALLDIR')
-    if installdir:
-        global APPDIR_BINDIR
-        APPDIR_BINDIR = f"{installdir}/data/bin"
 
 # XXX: remove this
 def get_env_config():
