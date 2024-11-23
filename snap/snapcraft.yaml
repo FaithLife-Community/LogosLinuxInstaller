@@ -1,7 +1,6 @@
 name: oudedetai
 base: core24
-# version: v4.0.0-beta.4
-version: git  # just for testing
+version: v4.0.0-beta.4
 summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
 description: |
   This repository contains a Python program for installing and maintaining
