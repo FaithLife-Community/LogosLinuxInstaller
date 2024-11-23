@@ -1,6 +1,7 @@
 name: oudedetai
 base: core24
-version: v4.0.0-beta.4
+# version: v4.0.0-beta.4
+version: git  # just for testing
 summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
 description: |
   This repository contains a Python program for installing and maintaining
@@ -22,7 +23,8 @@ parts:
   #   source: 
 
   oudedetai:
-    source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
+    # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
+    source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git  # just for testing
     plugin: python
     override-build: |
       python3 -m pip install .[build]
