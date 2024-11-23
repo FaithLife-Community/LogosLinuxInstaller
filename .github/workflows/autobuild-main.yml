@@ -27,7 +27,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: main-latest
-        target_commitish: ${{ needs.build.outputs.sha }}
+        # target_commitish: ${{ needs.build.outputs.sha }}
         body: ''
         prerelease: true
         files: ${{ needs.build.outputs.bin_name }}
