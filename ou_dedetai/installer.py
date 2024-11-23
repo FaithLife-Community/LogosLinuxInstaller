@@ -149,12 +149,11 @@ def ensure_installation_config(app: App):
     after_version_url_part = "/Verbum/" if app.conf.faithlife_product == "Verbum" else "/"
     config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{app.conf.faithlife_product_version}{after_version_url_part}Installer/{app.conf.faithlife_product_release}/{app.conf.faithlife_product}-x64.msi"  # noqa: E501
 
-    config.LOGOS_VERSION = app.conf.faithlife_product_version
     config.LOGOS64_MSI = Path(config.LOGOS64_URL).name
 
     logging.debug(f"> {config.LOGOS_ICON_URL=}")
     logging.debug(f"> {config.LOGOS_ICON_FILENAME=}")
-    logging.debug(f"> {config.LOGOS_VERSION=}")
+    logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
     logging.debug(f"> {config.LOGOS64_MSI=}")
     logging.debug(f"> {config.LOGOS64_URL=}")
 
@@ -320,7 +319,7 @@ def ensure_product_installer_download(app: App):
         app=app
     )
 
-    config.LOGOS_EXECUTABLE = f"{app.conf.faithlife_product}_v{config.LOGOS_VERSION}-x64.msi"  # noqa: E501
+    config.LOGOS_EXECUTABLE = f"{app.conf.faithlife_product}_v{app.conf.faithlife_product_version}-x64.msi"  # noqa: E501
     downloaded_file = utils.get_downloaded_file_path(config.LOGOS_EXECUTABLE)
     if not downloaded_file:
         downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE

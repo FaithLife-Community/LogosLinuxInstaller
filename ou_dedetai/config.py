@@ -30,9 +30,10 @@ extended_config = {
     'DIALOG': None,
     'LOGOS_LOG': os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log"),  # noqa: E501
     'wine_log': os.path.expanduser("~/.local/state/FaithLife-Community/wine.log"),  # noqa: #E501
+    # This is the installed Logos.exe
     'LOGOS_EXE': None,
+    # This is the logos installer executable (which is also called logos confusingly)
     'LOGOS_EXECUTABLE': None,
-    'LOGOS_VERSION': None,
     'LOGOS64_MSI': "Logos-x64.msi",
     'LOGOS64_URL': None,
     'REINSTALL_DEPENDENCIES': False,
@@ -60,7 +61,6 @@ INSTALL_STEP: int = 0
 INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
 LOG_LEVEL = logging.WARNING
-LOGOS_DIR = os.path.dirname(LOGOS_EXE) if LOGOS_EXE else None  # noqa: F821
 LOGOS_FORCE_ROOT: bool = False
 LOGOS_ICON_FILENAME: Optional[str] = None
 LOGOS_ICON_URL: Optional[str] = None

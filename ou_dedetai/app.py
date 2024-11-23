@@ -204,6 +204,8 @@ class EnvironmentOverrides:
 
     installer_binary_directory: Optional[str]
     wineserver_binary: Optional[str]
+    faithlife_product_version: Optional[str]
+
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
     custom_binary_path: Optional[str]
@@ -213,7 +215,8 @@ class EnvironmentOverrides:
         EnvironmentOverrides(
             installer_binary_directory=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
-            custom_binary_path=legacy.CUSTOMBINPATH
+            custom_binary_path=legacy.CUSTOMBINPATH,
+            faithlife_product_version=legacy.LOGOS_VERSION
         )
 
     @classmethod
@@ -228,6 +231,9 @@ class UserConfiguration:
     Normally shouldn't be used directly, as it's types may be None
     
     Easy reading to/from JSON and supports legacy keys"""
+
+    # XXX: store a version in this config? Just in case we need to do conditional logic reading old version's configurations
+
     faithlife_product: Optional[str] = None
     faithlife_product_version: Optional[str] = None
     faithlife_product_release: Optional[str] = None
@@ -384,6 +390,8 @@ class Config:
 
     @property
     def faithlife_product_version(self) -> str:
+        if self._overrides.faithlife_product_version is not None:
+            return self._overrides.faithlife_product_version
         question = f"Which version of {self.faithlife_product} should the script install?: ",  # noqa: E501
         options = ["10", "9"]
         return self._ask_if_not_found("faithlife_product_version", question, options, ["faithlife_product_version"])
