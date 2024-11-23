@@ -9,6 +9,8 @@ on:
       bin_name:
         description: "name of built binary"
         value: ${{ jobs.build.outputs.bin_name }}
+      sha:
+        value: ${{ github.sha }}
       sha_short:
         description: "1st few chars of commit SHA"
         value: ${{ jobs.build.outputs.sha_short }}
