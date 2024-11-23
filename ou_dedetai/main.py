@@ -235,7 +235,8 @@ def parse_args(args, parser):
 
     if args.custom_binary_path:
         if os.path.isdir(args.custom_binary_path):
-            config.CUSTOMBINPATH = args.custom_binary_path
+            # Set legacy environment variable for config to pick up
+            os.environ["CUSTOMBINPATH"] = args.custom_binary_path
         else:
             message = f"Custom binary path does not exist: \"{args.custom_binary_path}\"\n"  # noqa: E501
             parser.exit(status=1, message=message)

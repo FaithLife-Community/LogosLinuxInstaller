@@ -204,12 +204,16 @@ class EnvironmentOverrides:
 
     installer_binary_directory: Optional[str]
     wineserver_binary: Optional[str]
+    # Additional path to look for when searching for binaries.
+    # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
+    custom_binary_path: Optional[str]
 
     @classmethod
     def from_legacy(legacy: LegacyEnvOverrides) -> "EnvironmentOverrides":
         EnvironmentOverrides(
             installer_binary_directory=legacy.APPDIR_BINDIR,
-            wineserver_binary=legacy.WINESERVER_EXE
+            wineserver_binary=legacy.WINESERVER_EXE,
+            custom_binary_path=legacy.CUSTOMBINPATH
         )
 
     @classmethod
@@ -464,7 +468,7 @@ class Config:
             options = utils.get_wine_options(
                 self,
                 utils.find_appimage_files(self.faithlife_product_release),
-                utils.find_wine_binary_files(self.faithlife_product_release)
+                utils.find_wine_binary_files(self.app, self.faithlife_product_release)
             )
 
             choice = self.app.ask(question, options)

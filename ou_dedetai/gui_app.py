@@ -408,7 +408,7 @@ class InstallerWindow(GuiApp):
             utils.get_wine_options,
             self,
             self.appimages,
-            utils.find_wine_binary_files(release_version),
+            utils.find_wine_binary_files(self, release_version),
         )
 
     def set_wine(self, evt=None):

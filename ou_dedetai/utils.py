@@ -641,8 +641,9 @@ def find_appimage_files(app: App):
         app.conf.installer_binary_directory,
         config.MYDOWNLOADS
     ]
-    if config.CUSTOMBINPATH is not None:
-        directories.append(config.CUSTOMBINPATH)
+    # FIXME: consider what we should do with this, promote to top level config?
+    if app.conf._overrides.custom_binary_path is not None:
+        directories.append(app.conf._overrides.custom_binary_path)
 
     if sys.version_info < (3, 12):
         raise RuntimeError("Python 3.12 or higher is required for .rglob() flag `case-sensitive` ")  # noqa: E501
@@ -667,7 +668,7 @@ def find_appimage_files(app: App):
     return appimages
 
 
-def find_wine_binary_files(release_version):
+def find_wine_binary_files(app: App, release_version):
     wine_binary_path_list = [
         "/usr/local/bin",
         os.path.expanduser("~") + "/bin",
@@ -675,8 +676,8 @@ def find_wine_binary_files(release_version):
         os.path.expanduser("~") + "/.steam/steam/steamapps/common/Proton*/files/bin",  # noqa: E501
     ]
 
-    if config.CUSTOMBINPATH is not None:
-        wine_binary_path_list.append(config.CUSTOMBINPATH)
+    if app.conf._overrides.custom_binary_path is not None:
+        wine_binary_path_list.append(app.conf._overrides.custom_binary_path)
 
     # Temporarily modify PATH for additional WINE64 binaries.
     for p in wine_binary_path_list:
