@@ -208,6 +208,7 @@ class EnvironmentOverrides:
     wineserver_binary: Optional[str]
     faithlife_product_version: Optional[str]
     faithlife_installer_name: Optional[str]
+    faithlife_installer_download_url: Optional[str]
 
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
@@ -220,7 +221,8 @@ class EnvironmentOverrides:
             wineserver_binary=legacy.WINESERVER_EXE,
             custom_binary_path=legacy.CUSTOMBINPATH,
             faithlife_product_version=legacy.LOGOS_VERSION,
-            faithlife_installer_name=legacy.LOGOS_EXECUTABLE
+            faithlife_installer_name=legacy.LOGOS_EXECUTABLE,
+            faithlife_installer_download_url=legacy.LOGOS64_URL
         )
 
     @classmethod
@@ -430,6 +432,13 @@ class Config:
         if self._overrides.faithlife_installer_name is not None:
             return self._overrides.faithlife_installer_name
         return f"{self.faithlife_product}_v{self.faithlife_product_version}-x64.msi"
+
+    @property
+    def faithlife_installer_download_url(self) -> str:
+        if self._overrides.faithlife_installer_download_url is not None:
+            return self._overrides.faithlife_installer_download_url
+        after_version_url_part = "/Verbum/" if self.faithlife_product == "Verbum" else "/"
+        return f"https://downloads.logoscdn.com/LBS{self.faithlife_product_version}{after_version_url_part}Installer/{self.faithlife_product_release}/{self.faithlife_product}-x64.msi"  # noqa: E501
 
     @property
     def faithlife_product_release_channel(self) -> str:

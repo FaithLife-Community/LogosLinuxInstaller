@@ -145,13 +145,11 @@ def ensure_installation_config(app: App):
     # XXX: stop stting all these config keys
     config.LOGOS_ICON_URL = str(logos_icon_url)
     config.LOGOS_ICON_FILENAME = logos_icon_url.name
-    after_version_url_part = "/Verbum/" if app.conf.faithlife_product == "Verbum" else "/"
-    config.LOGOS64_URL = f"https://downloads.logoscdn.com/LBS{app.conf.faithlife_product_version}{after_version_url_part}Installer/{app.conf.faithlife_product_release}/{app.conf.faithlife_product}-x64.msi"  # noqa: E501
 
     logging.debug(f"> {config.LOGOS_ICON_URL=}")
     logging.debug(f"> {config.LOGOS_ICON_FILENAME=}")
     logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
-    logging.debug(f"> {config.LOGOS64_URL=}")
+    logging.debug(f"> config.LOGOS64_URL={app.conf.faithlife_installer_download_url}")
 
     # XXX: What does the install task do? Shouldn't that logic be here?
     if config.DIALOG in ['curses', 'dialog', 'tk']:
@@ -319,7 +317,7 @@ def ensure_product_installer_download(app: App):
     if not downloaded_file:
         downloaded_file = Path(config.MYDOWNLOADS) / app.conf.faithlife_installer_name
     network.logos_reuse_download(
-        config.LOGOS64_URL,
+        app.conf.faithlife_installer_download_url,
         app.conf.faithlife_installer_name,
         config.MYDOWNLOADS,
         app=app,
