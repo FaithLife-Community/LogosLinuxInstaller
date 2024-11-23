@@ -26,7 +26,4 @@ parts:
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git  # just for testing
     plugin: python
-    override-build: |
-      python3 -m pip install .[build]
-      ./scripts/build-binary.sh
     
