@@ -5,6 +5,7 @@ import shutil
 import signal
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from ou_dedetai.app import App
 
@@ -208,16 +209,15 @@ def initializeWineBottle(app: App):
     wine_exe = app.conf.wine64_binary
     logging.debug(f"{wine_exe=}")
     # Avoid wine-mono window
-    orig_overrides = config.WINEDLLOVERRIDES
-    config.WINEDLLOVERRIDES = f"{config.WINEDLLOVERRIDES};mscoree="
+    wine_dll_override="mscoree="
     logging.debug(f"Running: {wine_exe} wineboot --init")
     process = run_wine_proc(
         wine_exe,
         exe='wineboot',
         exe_args=['--init'],
-        init=True
+        init=True,
+        additional_wine_dll_overrides=wine_dll_override
     )
-    config.WINEDLLOVERRIDES = orig_overrides
     return process
 
 
@@ -267,9 +267,16 @@ def wait_pid(process):
     os.waitpid(-process.pid, 0)
 
 
-def run_wine_proc(winecmd, app: App, exe=None, exe_args=list(), init=False):
+def run_wine_proc(
+    winecmd,
+    app: App,
+    exe=None,
+    exe_args=list(),
+    init=False,
+    additional_wine_dll_overrides: Optional[str] = None
+):
     logging.debug("Getting wine environment.")
-    env = get_wine_env()
+    env = get_wine_env(app, additional_wine_dll_overrides)
     if not init and config.WINECMD_ENCODING is None:
         # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
         logging.debug("Getting wine system's cmd.exe encoding.")
@@ -445,7 +452,7 @@ def get_registry_value(reg_path, name, app: App):
     # NOTE: Can't use run_wine_proc here because of infinite recursion while
     # trying to determine WINECMD_ENCODING.
     value = None
-    env = get_wine_env()
+    env = get_wine_env(app)
 
     cmd = [
         app.conf.wine64_binary,
@@ -524,7 +531,7 @@ def get_wine_branch(binary):
     return get_mscoree_winebranch(mscoree64)
 
 
-def get_wine_env(app: App):
+def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
     wine_env = os.environ.copy()
     winepath = Path(app.conf.wine_binary)
     if winepath.name != 'wine64':  # AppImage
@@ -534,7 +541,7 @@ def get_wine_env(app: App):
     wine_env_defaults = {
         'WINE': str(winepath),
         'WINEDEBUG': config.WINEDEBUG,
-        'WINEDLLOVERRIDES': config.WINEDLLOVERRIDES,
+        'WINEDLLOVERRIDES': app.conf.wine_dll_overrides,
         'WINELOADER': str(winepath),
         'WINEPREFIX': app.conf.wine_prefix,
         'WINESERVER': app.conf.wineserver_binary,
@@ -545,6 +552,9 @@ def get_wine_env(app: App):
     }
     for k, v in wine_env_defaults.items():
         wine_env[k] = v
+
+    if additional_wine_dll_overrides is not None:
+        wine_env["WINEDLLOVERRIDES"] += ";" + additional_wine_dll_overrides # noqa: E501
 
     updated_env = {k: wine_env.get(k) for k in wine_env_defaults.keys()}
     logging.debug(f"Wine env: {updated_env}")

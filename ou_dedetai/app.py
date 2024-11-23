@@ -210,6 +210,8 @@ class EnvironmentOverrides:
     faithlife_installer_name: Optional[str]
     faithlife_installer_download_url: Optional[str]
 
+    wine_dll_overrides: Optional[str]
+
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
     custom_binary_path: Optional[str]
@@ -529,7 +531,13 @@ class Config:
     # This used to be called WINESERVER_EXE
     def wineserver_binary(self) -> str:
         return str(Path(self.wine_binary).parent / 'wineserver')
-        
+
+    @property
+    def wine_dll_overrides(self) -> str:
+        if self._overrides.wine_dll_overrides is not None:
+            return self._overrides.wine_dll_overrides
+        # Default is no overrides
+        return ''
 
     def toggle_faithlife_product_release_channel(self):
         if self._raw.faithlife_product_release_channel == "stable":

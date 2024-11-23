@@ -37,11 +37,11 @@ extended_config = {
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
     'SKIP_WINETRICKS': False,
+    # Dependent on DIALOG with env override
     'use_python_dialog': None,
     'VERBOSE': False,
     'WINEBIN_CODE': None,
     'WINEDEBUG': "fixme-all,err-all",
-    'WINEDLLOVERRIDES': '',
     'WINEPREFIX': None,
     'WINE_EXE': None,
     'WINETRICKS_UNATTENDED': None,
