@@ -22,14 +22,12 @@ jobs:
         name: ${{ needs.build.outputs.bin_name }}
     - name: Run shell tasks
       run: |
-        # echo "DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
         find -name oudedetai -type f -exec chmod +x {} \;
     - name: Upload release to test repo
       uses: softprops/action-gh-release@v1
       with:
-        # tag_name: main-${{ env.DATE }}-${{ needs.build.outputs.sha_short }}
         tag_name: main-latest
-        target_commitish: ${{ needs.build.outputs.sha_short }}
+        target_commitish: ${{ needs.build.outputs.sha }}
         body: ''
         prerelease: true
         files: ${{ needs.build.outputs.bin_name }}
