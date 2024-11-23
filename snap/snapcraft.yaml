@@ -22,8 +22,8 @@ parts:
     source: ./snap-data
     plugin: dump
     organize:
-      'run.sh': bin
-      'default-config.json': ${CRAFT_PRIME}/etc
+      'run.sh': bin/
+      'default-config.json': etc/
 
   # wine:
   #   source: 
