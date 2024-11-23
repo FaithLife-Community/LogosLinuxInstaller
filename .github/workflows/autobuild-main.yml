@@ -29,7 +29,7 @@ jobs:
       with:
         # tag_name: main-${{ env.DATE }}-${{ needs.build.outputs.sha_short }}
         tag_name: main-latest
-        target_commitish: https://github.com/FaithLife-Community/LogosLinuxInstaller/tree/main
+        target_commitish: ${{ needs.build.outputs.sha_short }}
         body: ''
         prerelease: true
         files: ${{ needs.build.outputs.bin_name }}
