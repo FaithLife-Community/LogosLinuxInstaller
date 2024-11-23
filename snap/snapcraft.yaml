@@ -1,6 +1,6 @@
 name: oudedetai
 base: core24
-version: v4.0.0-beta.4
+version: v4.0.0-beta.5
 summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
 description: |
   This repository contains a Python program for installing and maintaining
@@ -18,12 +18,17 @@ apps:
     command: bin/run.sh
 
 parts:
-  run:
-    source: ./snap-data
+  bin:
+    source: ./snap/bin
     plugin: dump
     organize:
-      'run.sh': bin/
-      'default-config.json': etc/
+      run.sh: bin/
+
+  etc:
+    source: ./snap/etc
+    plugin: dump
+    organize:
+      oudedetai.json: etc/oudedetai.json
 
   # wine:
   #   source: 
