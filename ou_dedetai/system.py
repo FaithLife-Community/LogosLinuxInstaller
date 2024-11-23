@@ -184,35 +184,6 @@ def popen_command(command, retries=1, delay=0, **kwargs):
     return None
 
 
-# def wait_on(command):
-#     try:
-#         # Start the process in the background
-#         # TODO: Convert to use popen_command()
-#         process = subprocess.Popen(
-#             command,
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE,
-#             text=True
-#         )
-#         msg.status(f"Waiting on \"{' '.join(command)}\" to finish.", end='')
-#         time.sleep(1.0)
-#         while process.poll() is None:
-#             msg.logos_progress()
-#             time.sleep(0.5)
-#         print()
-
-#         # Process has finished, check the result
-#         stdout, stderr = process.communicate()
-
-#         if process.returncode == 0:
-#             logging.info(f"\"{' '.join(command)}\" has ended properly.")
-#         else:
-#             logging.error(f"Error: {stderr}")
-
-#     except Exception as e:
-#         logging.critical(f"{e}")
-
-
 def get_pids(query):
     results = []
     for process in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -229,22 +200,6 @@ def get_logos_pids():
     config.processes[config.logos_login_cmd] = get_pids(config.logos_login_cmd)
     config.processes[config.logos_cef_cmd] = get_pids(config.logos_cef_cmd)
     config.processes[config.logos_indexer_exe] = get_pids(config.logos_indexer_exe)  # noqa: E501
-
-
-# def get_pids_using_file(file_path, mode=None):
-#     # Make list (set) of pids using 'directory'.
-#     pids = set()
-#     for proc in psutil.process_iter(['pid', 'open_files']):
-#         try:
-#             if mode is not None:
-#                 paths = [f.path for f in proc.open_files() if f.mode == mode]
-#             else:
-#                 paths = [f.path for f in proc.open_files()]
-#             if len(paths) > 0 and file_path in paths:
-#                 pids.add(proc.pid)
-#         except psutil.AccessDenied:
-#             pass
-#     return pids
 
 
 def reboot():
@@ -686,19 +641,6 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
 
         preinstall_command = preinstall_dependencies()
 
-        # TODO: Remove the code below when it's confirmed that libfuse is
-        # properly handled in get_package_manager().
-        # # libfuse: for AppImage use. This is the only known needed library.
-        # if config.OS_NAME == "fedora":
-        #     fuse = "fuse"
-        # else:
-        #     fuse = "libfuse"
-
-        # fuse_lib_installed = check_libs([f"{fuse}"], app=app)
-        # logging.debug(f"{fuse_lib_installed=}")
-        # # if not fuse_lib_installed:
-        # #     missing_packages.append(fuse)
-
         if missing_packages:
             install_command = config.PACKAGE_MANAGER_COMMAND_INSTALL + missing_packages  # noqa: E501
         else:
@@ -817,40 +759,6 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         if app:
             if config.DIALOG == "curses":
                 app.installdeps_e.set()
-
-# TODO: Remove the code below when it's confirmed that libfuse is
-# properly handled in get_package_manager().
-# def have_lib(library, ld_library_path):
-#     available_library_paths = ['/usr/lib', '/lib']
-#     if ld_library_path is not None:
-#         available_library_paths = [*ld_library_path.split(':'), *available_library_paths]  # noqa: E501
-
-#     roots = [root for root in available_library_paths if not Path(root).is_symlink()]  # noqa: E501
-#     logging.debug(f"Library Paths: {roots}")
-#     for root in roots:
-#         libs = []
-#         logging.debug(f"Have lib? Checking {root}")
-#         for lib in Path(root).rglob(f"{library}*"):
-#             logging.debug(f"DEV: {lib}")
-#             libs.append(lib)
-#             break
-#         if len(libs) > 0:
-#             logging.debug(f"'{library}' found at '{libs[0]}'")
-#             return True
-#     return False
-
-# TODO: Remove the code below when it's confirmed that libfuse is
-# properly handled in get_package_manager().
-# def check_libs(libraries, app=None):
-#     ld_library_path = os.environ.get('LD_LIBRARY_PATH')
-#     for library in libraries:
-#         have_lib_result = have_lib(library, ld_library_path)
-#         if have_lib_result:
-#             logging.info(f"* {library} is installed!")
-#             return True
-#         else:
-#             logging.info(f"* {library} is not installed!")
-#             return False
 
 
 def install_winetricks(
