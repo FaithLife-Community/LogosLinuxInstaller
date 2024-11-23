@@ -292,7 +292,7 @@ def ensure_premade_winebottle_download(app: App):
 
     downloaded_file = utils.get_downloaded_file_path(constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
     if not downloaded_file:
-        downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
+        downloaded_file = Path(config.MYDOWNLOADS) / app.conf.faithlife_installer_name
     network.logos_reuse_download(
         constants.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
         constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
@@ -319,18 +319,17 @@ def ensure_product_installer_download(app: App):
         app=app
     )
 
-    config.LOGOS_EXECUTABLE = f"{app.conf.faithlife_product}_v{app.conf.faithlife_product_version}-x64.msi"  # noqa: E501
-    downloaded_file = utils.get_downloaded_file_path(config.LOGOS_EXECUTABLE)
+    downloaded_file = utils.get_downloaded_file_path(app.conf.faithlife_installer_name)
     if not downloaded_file:
-        downloaded_file = Path(config.MYDOWNLOADS) / config.LOGOS_EXECUTABLE
+        downloaded_file = Path(config.MYDOWNLOADS) / app.conf.faithlife_installer_name
     network.logos_reuse_download(
         config.LOGOS64_URL,
-        config.LOGOS_EXECUTABLE,
+        app.conf.faithlife_installer_name,
         config.MYDOWNLOADS,
         app=app,
     )
     # Copy file into install dir.
-    installer = Path(f"{app.conf.install_dir}/data/{config.LOGOS_EXECUTABLE}")
+    installer = Path(f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}")
     if not installer.is_file():
         shutil.copy(downloaded_file, installer.parent)
 

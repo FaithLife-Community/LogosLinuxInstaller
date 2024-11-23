@@ -252,10 +252,10 @@ def disable_winemenubuilder(app: App, wine64_binary: str):
 
 
 def install_msi(app: App):
-    msg.status(f"Running MSI installer: {config.LOGOS_EXECUTABLE}.", app)
+    msg.status(f"Running MSI installer: {app.conf.faithlife_installer_name}.", app)
     # Execute the .MSI
     wine_exe = app.conf.wine64_binary
-    exe_args = ["/i", f"{app.conf.install_dir}/data/{config.LOGOS_EXECUTABLE}"]
+    exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"]
     if config.PASSIVE is True:
         exe_args.append('/passive')
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")

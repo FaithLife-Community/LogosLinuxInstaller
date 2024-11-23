@@ -89,6 +89,7 @@ class LegacyEnvOverrides:
     # XXX: default used to be `os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")`
     wine_log: Optional[str]
     LOGOS_EXE: Optional[str]
+    # This is the logos installer executable name (NOT path)
     LOGOS_EXECUTABLE: Optional[str]
     LOGOS_VERSION: Optional[str]
     # XXX: Default value used to be "Logos-x64.msi", we may have to handle this
@@ -205,6 +206,7 @@ class EnvironmentOverrides:
     installer_binary_directory: Optional[str]
     wineserver_binary: Optional[str]
     faithlife_product_version: Optional[str]
+    faithlife_installer_name: Optional[str]
 
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
@@ -216,7 +218,8 @@ class EnvironmentOverrides:
             installer_binary_directory=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
             custom_binary_path=legacy.CUSTOMBINPATH,
-            faithlife_product_version=legacy.LOGOS_VERSION
+            faithlife_product_version=legacy.LOGOS_VERSION,
+            faithlife_installer_name=legacy.LOGOS_EXECUTABLE
         )
 
     @classmethod
@@ -420,6 +423,12 @@ class Config:
         if self._raw.faithlife_product_release != value:
             self._raw.faithlife_product_release = value
             self._write()
+
+    @property
+    def faithlife_installer_name(self) -> str:
+        if self._overrides.faithlife_installer_name is not None:
+            return self._overrides.faithlife_installer_name
+        return f"{self.faithlife_product}_v{self.faithlife_product_version}-x64.msi"
 
     @property
     def faithlife_product_release_channel(self) -> str:
