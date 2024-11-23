@@ -260,14 +260,6 @@ def reboot():
     sys.exit(0)
 
 
-def tl(library):
-    try:
-        __import__(library)
-        return True
-    except ImportError:
-        return False
-
-
 def get_dialog():
     if not os.environ.get('DISPLAY'):
         msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
