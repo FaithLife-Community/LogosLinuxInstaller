@@ -368,7 +368,7 @@ def ensure_winetricks_applied(app: App):
     logging.debug('- settings fontsmooth=rgb')
     logging.debug('- d3dcompiler_47')
 
-    if not config.SKIP_WINETRICKS:
+    if not app.conf.skip_winetricks:
         usr_reg = None
         sys_reg = None
         workdir = Path(f"{config.WORKDIR}")

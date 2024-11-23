@@ -219,7 +219,7 @@ def parse_args(args, parser):
         config.SKIP_FONTS = True
 
     if args.skip_winetricks:
-        config.SKIP_WINETRICKS = True
+        os.environ["SKIP_WINETRICKS"] = "True"
 
     if network.check_for_updates:
         config.CHECK_UPDATES = True

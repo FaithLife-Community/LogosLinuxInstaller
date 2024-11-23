@@ -36,7 +36,6 @@ extended_config = {
     'SELECTED_APPIMAGE_FILENAME': None,
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
-    'SKIP_WINETRICKS': False,
     # Dependent on DIALOG with env override
     'use_python_dialog': None,
     'VERBOSE': False,

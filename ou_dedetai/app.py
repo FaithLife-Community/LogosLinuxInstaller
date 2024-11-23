@@ -115,9 +115,9 @@ class LegacyEnvOverrides:
     @classmethod
     def from_env() -> "LegacyEnvOverrides":
         legacy_envs = LegacyEnvOverrides()
-        # Now update from ENV
         for var in LegacyEnvOverrides().__dict__.keys():
             if os.getenv(var) is not None:
+                # XXX: this doesn't load bools properly. Use get_type_hints to fid this.
                 legacy_envs[var] = os.getenv(var)
         return legacy_envs
 
@@ -210,6 +210,8 @@ class EnvironmentOverrides:
     faithlife_installer_name: Optional[str]
     faithlife_installer_download_url: Optional[str]
 
+    winetricks_skip: Optional[bool]
+
     wine_dll_overrides: Optional[str]
 
     # Additional path to look for when searching for binaries.
@@ -224,7 +226,8 @@ class EnvironmentOverrides:
             custom_binary_path=legacy.CUSTOMBINPATH,
             faithlife_product_version=legacy.LOGOS_VERSION,
             faithlife_installer_name=legacy.LOGOS_EXECUTABLE,
-            faithlife_installer_download_url=legacy.LOGOS64_URL
+            faithlife_installer_download_url=legacy.LOGOS64_URL,
+            winetricks_skip=legacy.SKIP_WINETRICKS
         )
 
     @classmethod
@@ -611,3 +614,9 @@ class Config:
     def logos_login_exe(self) -> Optional[str]:
         if self.wine_user is not None:
             return f'C:\\users\\{self.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
+
+    @property
+    def skip_winetricks(self) -> bool:
+        if self._overrides.winetricks_skip is not None:
+            return self._overrides.winetricks_skip
+        return False
