@@ -138,7 +138,7 @@ class LogosManager:
             else:
                 logging.debug("No Logos processes to stop.")
                 self.logos_state = State.STOPPED
-        wine.wineserver_wait(app)
+        wine.wineserver_wait(self.app)
 
     def index(self):
         self.indexing_state = State.STARTING

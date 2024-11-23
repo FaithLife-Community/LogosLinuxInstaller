@@ -96,7 +96,6 @@ class LegacyEnvOverrides:
     # nor was it used in the python version (at 8926435)
     # LOGOS64_MSI: Optional[str]
     LOGOS64_URL: Optional[str]
-    REINSTALL_DEPENDENCIES: Optional[bool]
     SELECTED_APPIMAGE_FILENAME: Optional[str]
     SKIP_DEPENDENCIES: Optional[bool]
     SKIP_FONTS: Optional[bool]
@@ -616,6 +615,7 @@ class Config:
             return f'C:\\users\\{self.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
 
     @property
+    # XXX: don't like this pattern.
     def skip_winetricks(self) -> bool:
         if self._overrides.winetricks_skip is not None:
             return self._overrides.winetricks_skip

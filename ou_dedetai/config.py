@@ -32,7 +32,6 @@ extended_config = {
     'wine_log': os.path.expanduser("~/.local/state/FaithLife-Community/wine.log"),  # noqa: #E501
     # This is the installed Logos.exe
     'LOGOS_EXE': None,
-    'REINSTALL_DEPENDENCIES': False,
     'SELECTED_APPIMAGE_FILENAME': None,
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
