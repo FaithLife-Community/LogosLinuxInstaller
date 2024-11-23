@@ -29,6 +29,7 @@ jobs:
       with:
         # tag_name: main-${{ env.DATE }}-${{ needs.build.outputs.sha_short }}
         tag_name: main-latest
+        body: ''
         prerelease: true
         files: ${{ needs.build.outputs.bin_name }}
         repository: FaithLife-Community/test-builds
