@@ -92,8 +92,9 @@ class LegacyEnvOverrides:
     # This is the logos installer executable name (NOT path)
     LOGOS_EXECUTABLE: Optional[str]
     LOGOS_VERSION: Optional[str]
-    # XXX: Default value used to be "Logos-x64.msi", we may have to handle this
-    LOGOS64_MSI: Optional[str]
+    # This wasn't overridable in the bash version of this installer (at 554c9a6),
+    # nor was it used in the python version (at 8926435)
+    # LOGOS64_MSI: Optional[str]
     LOGOS64_URL: Optional[str]
     REINSTALL_DEPENDENCIES: Optional[bool]
     SELECTED_APPIMAGE_FILENAME: Optional[str]
