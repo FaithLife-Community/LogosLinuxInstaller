@@ -19,7 +19,7 @@ apps:
 
 parts:
   run:
-    source: ./snap
+    source: ./snap-data
     plugin: dump
     organize:
       'run.sh': bin
