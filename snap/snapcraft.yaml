@@ -10,14 +10,21 @@ description: |
   licensed under the MIT License.
 grade: stable
 confinement: strict
+environment:
+  CONFIG_FILE: ${SNAP_USER_COMMON}/${SNAPCRAFT_PROJECT_NAME}.json
 
 apps:
   oudedetai:
-    command: bin/oudedetai
-  run:
-    command: bin/oudedetai --run-installed-app
+    command: bin/run.sh
 
 parts:
+  run:
+    source: ./snap
+    plugin: dump
+    organize:
+      'run.sh': bin
+      'default-config.json': ${CRAFT_PRIME}/etc
+
   # wine:
   #   source: 
 

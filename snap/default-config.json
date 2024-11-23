@@ -1,0 +1,19 @@
+{
+    "BACKUPDIR": null,
+    "FLPRODUCT": "Logos",
+    "INSTALLDIR": "$SNAP_USER_COMMON",
+    "LAST_UPDATED": null,
+    "LLI_LATEST_VERSION": null,
+    "LOGS": null,
+    "RECOMMENDED_WINE64_APPIMAGE_URL": null,
+    "TARGETVERSION": "10",
+    "TARGET_RELEASE_VERSION": "37.2.0.0012",
+    "WINEBIN_CODE": "Recommended",
+    "WINECMD_ENCODING": null,
+    "WINETRICKSBIN": null,
+    "WINE_EXE": null,
+    "current_logos_version": null,
+    "curses_colors": null,
+    "lli_release_channel": null,
+    "logos_release_channel": null
+}
