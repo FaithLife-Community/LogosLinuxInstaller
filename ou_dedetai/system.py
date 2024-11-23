@@ -317,8 +317,8 @@ def get_package_manager():
     major_ver = distro.major_version()
     logging.debug(f"{config.OS_NAME=}; {major_ver=}")
     # Check for package manager and associated packages.
-    # NOTE: cabextract and sed are included in the appimage, so they have been
-    # removed from the dependencies lists.
+    # NOTE: cabextract and sed are included in the appimage, so they are not
+    # included as system dependencies.
     if shutil.which('apt') is not None:  # debian, ubuntu, & derivatives
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["apt", "install", "-y"]
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["apt", "install", "--download-only", "-y"]  # noqa: E501
@@ -356,7 +356,13 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["dnf", "install", "-y"]
         config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["dnf", "install", "--downloadonly", "-y"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["dnf", "remove", "-y"]
+        # Fedora < 41 uses dnf4, while Fedora  41 uses dnf5. The dnf list
+        # command is sligtly different between the two.
+        # https://discussion.fedoraproject.org/t/after-f41-upgrade-dnf-says-no-packages-are-installed/135391  # noqa: E501
+        # Fedora < 41
         # config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "installed"]
+        # Fedora 41
+        # config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "--installed"]
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["rpm", "-qa"]  # workaround
         config.QUERY_PREFIX = ''
         # config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
