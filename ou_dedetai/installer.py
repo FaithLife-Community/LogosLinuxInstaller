@@ -138,8 +138,7 @@ def ensure_installation_config(app: App):
 
     # Set icon variables.
     app_dir = Path(__file__).parent
-    flproducti = get_flproducti_name(app.conf.faithlife_product)
-    logos_icon_url = app_dir / 'img' / f"{flproducti}-128-icon.png"
+    logos_icon_url = app_dir / 'img' / f"{app.conf.faithlife_product}-128-icon.png"
     # XXX: stop stting all these config keys
     config.LOGOS_ICON_URL = str(logos_icon_url)
 
@@ -554,14 +553,6 @@ def create_wine_appimage_symlinks(app: App):
         p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
 
 
-def get_flproducti_name(product_name) -> str:
-    lname = product_name.lower()
-    if lname == 'logos':
-        return 'logos4'
-    elif lname == 'verbum':
-        return lname
-
-
 def create_config_file():
     config_dir = Path(constants.DEFAULT_CONFIG_PATH).parent
     config_dir.mkdir(exist_ok=True, parents=True)
@@ -595,9 +586,8 @@ def create_launcher_shortcuts(app: App):
         reason = "because the FaithLife product is not defined."
         msg.logos_warning(f"{m} {reason}")  # noqa: E501
         return
-    flproducti = get_flproducti_name(flproduct)
     src_dir = Path(__file__).parent
-    logos_icon_src = src_dir / 'img' / f"{flproducti}-128-icon.png"
+    logos_icon_src = src_dir / 'img' / f"{flproduct}-128-icon.png"
     app_icon_src = src_dir / 'img' / 'icon.png'
 
     if installdir is None:
