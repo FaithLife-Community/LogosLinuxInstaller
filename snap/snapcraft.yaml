@@ -37,20 +37,25 @@ parts:
       '*': $SNAP_USER_COMMON
 
   wine:
-    source: https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
-    # source: .  # "Failed to pull source" when URL is given here
+    source: squashfs-root/  # "Failed to pull source" when URL is given here
     plugin: dump
-    source-type: local
-    # build-packages:
-    #   - wget
-    # override-pull: |
-    #   wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
-    override-build: |
-      chmod +x *.AppImage
+    # source-type: local
+    build-packages:
+      - wget
+    override-pull: |
+      file=wine-devel_9.19-x86_64.AppImage
+      wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
+      if [[ ! -r $file ]]; then
+        exit 1
+      fi
+      chmod +x "$file"
       ./*.AppImage --appimage-extract >/dev/null
+      if [[ ! -d squashfs-root ]]; then
+        exit 1
+      fi
       rm -f *.AppImage
-      cp -r squashfs-root/* .
-      rm -rf squashfs-root
+    # override-build: |
+    #   cp -r ./* .
     prime:
       - -AppRun*
       - -.bundle.yml
