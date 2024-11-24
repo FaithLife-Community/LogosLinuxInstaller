@@ -63,5 +63,5 @@ parts:
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git  # just for testing
     plugin: python
     stage-packages:
-      python3-tk
+      - python3-tk
     
