@@ -444,7 +444,7 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
-def check_for_updates(install_dir: Optional[str]):
+def check_for_updates(install_dir: Optional[str], force: bool = False):
     # We limit the number of times set_recommended_appimage_config is run in
     # order to avoid GitHub API limits. This sets the check to once every 12
     # hours.
@@ -456,7 +456,7 @@ def check_for_updates(install_dir: Optional[str]):
     # TODO: Check for New Logos Versions. See #116.
 
     now = datetime.now().replace(microsecond=0)
-    if config.CHECK_UPDATES:
+    if force:
         check_again = now
     elif config.LAST_UPDATED is not None:
         check_again = datetime.strptime(

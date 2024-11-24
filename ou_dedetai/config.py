@@ -20,7 +20,6 @@ lli_release_channel = None
 # Define and set additional variables that can be set in the env.
 extended_config = {
     'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
-    'CHECK_UPDATES': False,
     'CONFIG_FILE': None,
     'DIALOG': None,
     'SELECTED_APPIMAGE_FILENAME': None,

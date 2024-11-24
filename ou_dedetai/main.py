@@ -226,8 +226,10 @@ def parse_args(args, parser) -> EphemeralConfiguration:
     if args.skip_winetricks:
         ephemeral_config.winetricks_skip = True
 
+    # FIXME: Should this have been args.check_for_updates?
+    # Should this even be an option?
     if network.check_for_updates:
-        config.CHECK_UPDATES = True
+        ephemeral_config.check_updates_now = True
 
     if args.skip_dependencies:
         config.SKIP_DEPENDENCIES = True
@@ -474,7 +476,7 @@ def main():
 
     # XXX: Consider how to get the install dir from here, we'd have to read the config...which isn't done yet.
     # I suppose we could read the persistent config at this point
-    network.check_for_updates(None)
+    network.check_for_updates(None, bool(ephemeral_config.check_updates_now))
 
     run(ephemeral_config)
 

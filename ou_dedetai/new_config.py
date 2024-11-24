@@ -175,6 +175,9 @@ class EphemeralConfiguration:
     delete_log: Optional[bool]
     """Whether to clear the log on startup"""
 
+    check_updates_now: Optional[bool]
+    """Whether or not to check updates regardless of if one's due"""    
+
     # Start internal values
     config_path: str
     """Path this config was loaded from"""
@@ -210,7 +213,9 @@ class EphemeralConfiguration:
             app_wine_log_path=legacy.wine_log,
             app_log_path=legacy.LOGOS_LOG,
             app_winetricks_unattended=legacy.WINETRICKS_UNATTENDED,
-            config_path=legacy.CONFIG_FILE
+            config_path=legacy.CONFIG_FILE,
+            check_updates_now=legacy.CHECK_UPDATES,
+            delete_log=legacy.DELETE_LOG
         )
 
     @classmethod
