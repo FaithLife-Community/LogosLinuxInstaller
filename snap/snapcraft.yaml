@@ -62,4 +62,6 @@ parts:
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git  # just for testing
     plugin: python
+    stage-packages:
+      python3-tk
     
