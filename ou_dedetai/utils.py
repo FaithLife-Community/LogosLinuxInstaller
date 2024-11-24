@@ -421,10 +421,6 @@ def write_progress_bar(percent, screen_width=80):
         print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
 
 
-def app_is_installed():
-    return config.LOGOS_EXE is not None and os.access(config.LOGOS_EXE, os.X_OK)  # noqa: E501
-
-
 def find_installed_product(faithlife_product: str, wine_prefix: str) -> Optional[str]:
     if faithlife_product and wine_prefix:
         drive_c = Path(f"{wine_prefix}/drive_c/")
@@ -645,6 +641,7 @@ def find_appimage_files(app: App):
                 output1, output2 = wine.check_wine_version_and_branch(
                     release_version,
                     p,
+                    app.conf.faithlife_product_version
                 )
                 if output1 is not None and output1:
                     appimages.append(str(p))
@@ -688,6 +685,7 @@ def find_wine_binary_files(app: App, release_version):
         output1, output2 = wine.check_wine_version_and_branch(
             release_version,
             binary,
+            app.conf.faithlife_product_version
         )
         if output1 is not None and output1:
             continue

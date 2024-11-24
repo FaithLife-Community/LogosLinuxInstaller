@@ -63,7 +63,7 @@ class LogosManager:
                 self.logos_state = State.RUNNING
 
     def monitor(self):
-        if utils.app_is_installed():
+        if self.app.is_installed():
             system.get_logos_pids(self.app)
             try:
                 self.monitor_indexing()
@@ -79,13 +79,15 @@ class LogosManager:
         def run_logos():
             wine.run_wine_proc(
                 self.app.conf.wine_binary,
+                self.app,
                 exe=self.app.conf.logos_exe
             )
 
         # Ensure wine version is compatible with Logos release version.
         good_wine, reason = wine.check_wine_rules(
             wine_release,
-            config.current_logos_version
+            config.current_logos_version,
+            self.app.conf.faithlife_product_version
         )
         if not good_wine:
             msg.logos_error(reason, app=self)

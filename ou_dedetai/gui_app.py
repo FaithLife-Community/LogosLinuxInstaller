@@ -648,7 +648,7 @@ class ControlWindow(GuiApp):
         self.root.bind(self.check_evt, self.update_file_check_progress)
 
         # Start function to determine app logging state.
-        if utils.app_is_installed():
+        if self.is_installed():
             self.gui.statusvar.set('Getting current app logging status…')
             self.start_indeterminate_progress()
             utils.start_thread(self.logos.get_app_logging_state)
@@ -657,7 +657,7 @@ class ControlWindow(GuiApp):
         control.edit_file(self.conf.config_file_path)
 
     def configure_app_button(self, evt=None):
-        if utils.app_is_installed():
+        if self.is_installed():
             # wine.set_logos_paths()
             self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
             self.gui.app_button.config(command=self.run_logos)
@@ -679,7 +679,7 @@ class ControlWindow(GuiApp):
 
     def on_action_radio_clicked(self, evt=None):
         logging.debug("gui_app.ControlPanel.on_action_radio_clicked START")
-        if utils.app_is_installed():
+        if self.is_installed():
             self.gui.actions_button.state(['!disabled'])
             if self.gui.actionsvar.get() == 'run-indexing':
                 self.actioncmd = self.run_indexing

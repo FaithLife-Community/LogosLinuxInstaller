@@ -2,7 +2,7 @@
 import argparse
 import curses
 
-from ou_dedetai.new_config import EphemeralConfiguration
+from ou_dedetai.new_config import EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
 
 try:
     import dialog  # noqa: F401
@@ -395,6 +395,15 @@ def check_incompatibilities():
         system.remove_appimagelauncher()
 
 
+def is_app_installed(ephemeral_config: EphemeralConfiguration):
+    persistent_config = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
+    if persistent_config.faithlife_product is None or persistent_config.install_dir is None:
+        # Not enough information stored to find the product
+        return False
+    wine_prefix = ephemeral_config.wine_prefix or get_wine_prefix_path(persistent_config.install_dir)
+    return utils.find_installed_product(persistent_config.faithlife_product, wine_prefix)
+
+
 def run(ephemeral_config: EphemeralConfiguration):
     # Run desired action (requested function, defaults to control_panel)
     if config.ACTION == "disabled":
@@ -427,7 +436,7 @@ def run(ephemeral_config: EphemeralConfiguration):
     if config.ACTION.__name__ not in install_required:
         logging.info(f"Running function: {config.ACTION.__name__}")
         config.ACTION(ephemeral_config)
-    elif utils.app_is_installed():  # install_required; checking for app
+    elif is_app_installed(ephemeral_config):  # install_required; checking for app
         # wine.set_logos_paths()
         # Run the desired Logos action.
         logging.info(f"Running function: {config.ACTION.__name__}")  # noqa: E501

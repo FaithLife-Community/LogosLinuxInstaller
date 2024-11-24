@@ -180,7 +180,7 @@ def check_wine_rules(wine_release, release_version, faithlife_product_version: s
     return result
 
 
-def check_wine_version_and_branch(release_version, test_binary):
+def check_wine_version_and_branch(release_version, test_binary, faithlife_product_version):
     if not os.path.exists(test_binary):
         reason = "Binary does not exist."
         return False, reason
@@ -194,7 +194,7 @@ def check_wine_version_and_branch(release_version, test_binary):
     if wine_release is False and error_message is not None:
         return False, error_message
 
-    result, message = check_wine_rules(wine_release, release_version)
+    result, message = check_wine_rules(wine_release, release_version, faithlife_product_version)
     if not result:
         return result, message
 

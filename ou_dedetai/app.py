@@ -1,5 +1,6 @@
 
 import abc
+import os
 from typing import Optional
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
@@ -59,6 +60,13 @@ class App(abc.ABC):
     def _config_updated(self):
         """A hook for any changes the individual apps want to do when the config changes"""
         pass
+
+    def is_installed(self) -> bool:
+        """Returns whether the install was successful by
+        checking if the installed exe exists and is executable"""
+        if self.conf.logos_exe is not None:
+            return os.access(self.conf.logos_exe, os.X_OK)
+        return False
 
     # XXX: unused at present
     # @abc.abstractmethod

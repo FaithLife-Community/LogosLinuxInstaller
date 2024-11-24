@@ -715,7 +715,7 @@ class TUI(App):
             else:
                 logging.error(f"{error_message}")
 
-        if utils.app_is_installed():
+        if self.is_installed():
             if self.logos.logos_state in [logos.State.STARTING, logos.State.RUNNING]:  # noqa: E501
                 run = f"Stop {self.conf.faithlife_product}"
             elif self.logos.logos_state in [logos.State.STOPPING, logos.State.STOPPED]:  # noqa: E501

@@ -179,6 +179,7 @@ class EphemeralConfiguration:
     # XXX: does this belong here, or should we have a cache file?
     # Start cache
     _faithlife_product_releases: Optional[list[str]] = None
+    _logos_exe: Optional[str] = None
 
     @classmethod
     def from_legacy(cls, legacy: LegacyConfiguration) -> "EphemeralConfiguration":
@@ -324,6 +325,10 @@ last_updated: Optional[datetime] = None
 recommended_wine_url: Optional[str] = None
 latest_installer_version: Optional[str] = None
 
+
+# Needed this logic outside this class too for before when when the app is initialized
+def get_wine_prefix_path(install_dir: str) -> str:
+    return f"{install_dir}/data/wine64_bottle"
 
 class Config:
     """Set of configuration values. 
@@ -496,7 +501,7 @@ class Config:
     def wine_prefix(self) -> str:
         if self._overrides.wine_prefix is not None:
             return self._overrides.wine_prefix
-        return f"{self.install_dir}/data/wine64_bottle"
+        return get_wine_prefix_path(self.install_dir)
 
     @property
     def wine_binary(self) -> str:
@@ -622,8 +627,10 @@ class Config:
 
     @property
     def logos_exe(self) -> Optional[str]:
-        # XXX: consider caching this value? This is a directory walk, and it's called by a wine user and logos_*_exe 
-        return utils.find_installed_product(self.faithlife_product, self.wine_prefix)
+        # Cache a successful result
+        if self._overrides._logos_exe is None:
+            self._overrides._logos_exe = utils.find_installed_product(self.faithlife_product, self.wine_prefix)
+        return self._overrides._logos_exe
 
     @property
     def wine_user(self) -> Optional[str]:
