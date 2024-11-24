@@ -18,26 +18,26 @@ from . import utils
 
 from .config import processes
 
-def check_wineserver(app: App):
+def check_wineserver(wineserver_binary: str):
     try:
         # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of WINESERVER_EXE
         # changed it to use wineserver_binary, this change may alter the behavior, to match what the code intended
-        process = run_wine_proc(app.conf.wineserver_binary, exe_args=["-p"])
+        process = run_wine_proc(wineserver_binary, exe_args=["-p"])
         wait_pid(process)
         return process.returncode == 0
     except Exception:
         return False
 
 
-def wineserver_kill(app: App):
-    if check_wineserver(app):
-        process = run_wine_proc(app.conf.wineserver_binary, exe_args=["-k"])
+def wineserver_kill(wineserver_binary: str):
+    if check_wineserver(wineserver_binary):
+        process = run_wine_proc(wineserver_binary, exe_args=["-k"])
         wait_pid(process)
 
 
-def wineserver_wait(app: App):
-    if check_wineserver(app):
-        process = run_wine_proc(app.conf.wineserver_binary, exe_args=["-w"])
+def wineserver_wait(wineserver_binary: str):
+    if check_wineserver(wineserver_binary):
+        process = run_wine_proc(wineserver_binary, exe_args=["-w"])
         wait_pid(process)
 
 
@@ -204,15 +204,14 @@ def check_wine_version_and_branch(release_version, test_binary):
     return True, "None"
 
 
-def initializeWineBottle(app: App):
+def initializeWineBottle(wine64_binary: str):
     msg.status("Initializing wine bottle…")
-    wine_exe = app.conf.wine64_binary
-    logging.debug(f"{wine_exe=}")
+    logging.debug(f"{wine64_binary=}")
     # Avoid wine-mono window
     wine_dll_override="mscoree="
-    logging.debug(f"Running: {wine_exe} wineboot --init")
+    logging.debug(f"Running: {wine64_binary} wineboot --init")
     process = run_wine_proc(
-        wine_exe,
+        wine64_binary,
         exe='wineboot',
         exe_args=['--init'],
         init=True,

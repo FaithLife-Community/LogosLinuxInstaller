@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from ou_dedetai.new_config import App
+from ou_dedetai.app import App
 
 from . import config
 from . import constants
@@ -347,7 +347,7 @@ def ensure_wineprefix_init(app: App):
             )
         else:
             logging.debug("Initializing wineprefix.")
-            process = wine.initializeWineBottle(app)
+            process = wine.initializeWineBottle(app.conf.wine64_binary)
             wine.wait_pid(process)
             # wine.light_wineserver_wait()
             wine.wineserver_wait(app)

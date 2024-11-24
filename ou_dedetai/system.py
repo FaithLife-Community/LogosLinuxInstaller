@@ -198,6 +198,7 @@ def get_pids(query):
     return results
 
 
+# XXX: should this be in config?
 def get_logos_pids(app: App):
     config.processes[app.conf.logos_exe] = get_pids(app.conf.logos_exe)
     config.processes[app.conf.logos_indexer_exe] = get_pids(app.conf.logos_indexer_exe)
@@ -391,7 +392,7 @@ def get_runmode():
         return 'script'
 
 
-def query_packages(packages, mode="install", app=None):
+def query_packages(packages, mode="install"):
     result = ""
     missing_packages = []
     conflicting_packages = []
@@ -507,6 +508,7 @@ def test_dialog_version():
 def remove_appimagelauncher(app=None):
     pkg = "appimagelauncher"
     cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, pkg]  # noqa: E501
+    # FIXME: should this status be higher? (the caller of this function)
     msg.status("Removing AppImageLauncher…", app)
     try:
         logging.debug(f"Running command: {cmd}")
@@ -547,7 +549,7 @@ def postinstall_dependencies_steamos():
     return command
 
 
-def preinstall_dependencies(app=None):
+def preinstall_dependencies():
     command = []
     logging.debug("Performing pre-install dependencies…")
     if config.OS_NAME == "Steam":
@@ -557,7 +559,7 @@ def preinstall_dependencies(app=None):
     return command
 
 
-def postinstall_dependencies(app=None):
+def postinstall_dependencies():
     command = []
     logging.debug("Performing post-install dependencies…")
     if config.OS_NAME == "Steam":
@@ -567,6 +569,7 @@ def postinstall_dependencies(app=None):
     return command
 
 
+# XXX: move this to control, prompts additional values from app
 def install_dependencies(packages, bad_packages, logos9_packages=None, app=None):  # noqa: E501
     if config.SKIP_DEPENDENCIES:
         return
@@ -599,12 +602,10 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         logging.debug("Querying packages…")
         missing_packages = query_packages(
             package_list,
-            app=app
         )
         conflicting_packages = query_packages(
             bad_package_list,
             mode="remove",
-            app=app
         )
 
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
@@ -658,7 +659,7 @@ def install_dependencies(packages, bad_packages, logos9_packages=None, app=None)
         else:
             logging.debug("No conflicting packages detected.")
 
-        postinstall_command = postinstall_dependencies(app)
+        postinstall_command = postinstall_dependencies()
 
         if preinstall_command:
             command.extend(preinstall_command)

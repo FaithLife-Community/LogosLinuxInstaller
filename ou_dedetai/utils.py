@@ -178,6 +178,7 @@ def delete_symlink(symlink_path):
             logging.error(f"Error removing symlink: {e}")
 
 
+# XXX: seems like it should be in control
 def install_dependencies(app: App):
     if app.conf.faithlife_product_version:
         targetversion = int(app.conf.faithlife_product_version)
@@ -771,6 +772,7 @@ def update_to_latest_lli_release(app=None):
         logging.debug(f"{constants.APP_NAME} is at a newer version than the latest.") # noqa: 501
 
 
+# XXX: seems like this should be in control
 def update_to_latest_recommended_appimage(app: App):
     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
     status, _ = compare_recommended_appimage_version(app)

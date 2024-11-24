@@ -90,7 +90,7 @@ class LogosManager:
         if not good_wine:
             msg.logos_error(reason, app=self)
         else:
-            wine.wineserver_kill(app=self.app)
+            wine.wineserver_kill(self.app.conf.wineserver_binary)
             app = self.app
             if config.DIALOG == 'tk':
                 # Don't send "Running" message to GUI b/c it never clears.
@@ -173,7 +173,7 @@ class LogosManager:
             msg.status("Indexing has finished.", self.app)
             wine.wineserver_wait(app=self.app)
 
-        wine.wineserver_kill(app=self.app)
+        wine.wineserver_kill(self.app.conf.wineserver_binary)
         msg.status("Indexing has begun…", self.app)
         index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
