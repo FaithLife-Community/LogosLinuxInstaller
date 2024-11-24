@@ -1,11 +1,15 @@
 import logging
 import os
+from pathlib import Path
 
 # Define app name variables.
 APP_NAME = 'Ou Dedetai'
 BINARY_NAME = 'oudedetai'
 PACKAGE_NAME = 'ou_dedetai'
 REPOSITORY_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
+
+# This is relative to this file itself
+APP_IMAGE_DIR = Path(__file__).parent / "img"
 
 # Set other run-time variables not set in the env.
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{BINARY_NAME}.json")  # noqa: E501

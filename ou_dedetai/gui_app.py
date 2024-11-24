@@ -125,8 +125,7 @@ class Root(Tk):
         self.rowconfigure(0, weight=1)
 
         # Set panel icon.
-        app_dir = Path(__file__).parent
-        self.icon = app_dir / 'img' / 'icon.png'
+        self.icon = constants.APP_IMAGE_DIR / 'icon.png'
         self.pi = PhotoImage(file=f'{self.icon}')
         self.iconphoto(False, self.pi)
 
@@ -454,7 +453,7 @@ class InstallerWindow(GuiApp):
 
     def on_okay_released(self, evt=None):
         # Update desktop panel icon.
-        self.root.icon = config.LOGOS_ICON_URL
+        self.root.icon = self.conf.faithlife_product_icon_path
         self.start_install_thread()
 
     def on_cancel_released(self, evt=None):
@@ -667,7 +666,7 @@ class ControlWindow(GuiApp):
         classname = constants.BINARY_NAME
         self.installer_win = Toplevel()
         InstallerWindow(self.installer_win, self.root, app=self, class_=classname)
-        self.root.icon = config.LOGOS_ICON_URL
+        self.root.icon = self.conf.faithlife_product_icon_path
 
     def run_logos(self, evt=None):
         utils.start_thread(self.logos.start)

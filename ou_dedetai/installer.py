@@ -136,13 +136,7 @@ def ensure_installation_config(app: App):
     # XXX: This doesn't prompt the user for anything, all values are derived from other user-supplied values
     # these "config" values probably don't need to be stored independently of the values they're derived from
 
-    # Set icon variables.
-    app_dir = Path(__file__).parent
-    logos_icon_url = app_dir / 'img' / f"{app.conf.faithlife_product}-128-icon.png"
-    # XXX: stop stting all these config keys
-    config.LOGOS_ICON_URL = str(logos_icon_url)
-
-    logging.debug(f"> {config.LOGOS_ICON_URL=}")
+    logging.debug(f"> config.LOGOS_ICON_URL={app.conf.faithlife_product_icon_path}")
     logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
     logging.debug(f"> config.LOGOS64_URL={app.conf.faithlife_installer_download_url}")
 
@@ -586,9 +580,8 @@ def create_launcher_shortcuts(app: App):
         reason = "because the FaithLife product is not defined."
         msg.logos_warning(f"{m} {reason}")  # noqa: E501
         return
-    src_dir = Path(__file__).parent
-    logos_icon_src = src_dir / 'img' / f"{flproduct}-128-icon.png"
-    app_icon_src = src_dir / 'img' / 'icon.png'
+    logos_icon_src = constants.APP_IMAGE_DIR / f"{flproduct}-128-icon.png"
+    app_icon_src = constants.APP_IMAGE_DIR / 'icon.png'
 
     if installdir is None:
         reason = "because the installation folder is not defined."

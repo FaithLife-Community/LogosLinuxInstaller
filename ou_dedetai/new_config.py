@@ -457,6 +457,10 @@ class Config:
             self._write()
 
     @property
+    def faithlife_product_icon_path(self) -> str:
+        return str(constants.APP_IMAGE_DIR / f"{self.faithlife_product}-128-icon.png")
+
+    @property
     def faithlife_installer_name(self) -> str:
         if self._overrides.faithlife_installer_name is not None:
             return self._overrides.faithlife_installer_name
