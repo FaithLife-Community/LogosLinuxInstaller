@@ -39,7 +39,7 @@ parts:
   wine:
     source: squashfs-root/  # "Failed to pull source" when URL is given here
     plugin: dump
-    # source-type: local
+    source-type: local
     build-packages:
       - wget
     override-pull: |
