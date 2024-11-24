@@ -10,7 +10,6 @@ from . import constants
 # XXX: slowly kill these
 current_logos_version = None
 WINEBIN_CODE = None
-WINE_EXE = None
 WINECMD_ENCODING = None
 LOGS = None
 LAST_UPDATED = None
@@ -33,7 +32,6 @@ extended_config = {
     # Dependent on DIALOG with env override
     'use_python_dialog': None,
     'WINEBIN_CODE': None,
-    'WINE_EXE': None,
     'WINETRICKS_UNATTENDED': None,
 }
 for key, default in extended_config.items():
