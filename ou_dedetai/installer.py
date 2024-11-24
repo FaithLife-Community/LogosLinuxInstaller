@@ -373,8 +373,8 @@ def ensure_winetricks_applied(app: App):
         sys_reg = None
         workdir = Path(f"{config.WORKDIR}")
         workdir.mkdir(parents=True, exist_ok=True)
-        usr_reg = Path(f"{config.WINEPREFIX}/user.reg")
-        sys_reg = Path(f"{config.WINEPREFIX}/system.reg")
+        usr_reg = Path(f"{app.conf.wine_prefix}/user.reg")
+        sys_reg = Path(f"{app.conf.wine_prefix}/system.reg")
 
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
             msg.status("Disabling winemenubuilder…", app)
@@ -434,10 +434,10 @@ def ensure_product_installed(app: App):
         app=app
     )
 
-    if not utils.find_installed_product(app.conf.faithlife_product, config.WINEPREFIX):
+    if not utils.find_installed_product(app.conf.faithlife_product, app.conf.wine_prefix):
         process = wine.install_msi(app)
         wine.wait_pid(process)
-        config.LOGOS_EXE = utils.find_installed_product(app.conf.faithlife_product, config.WINEPREFIX)
+        config.LOGOS_EXE = utils.find_installed_product(app.conf.faithlife_product, app.conf.wine_prefix)
         config.current_logos_version = app.conf.faithlife_product_release
 
     # Clean up temp files, etc.

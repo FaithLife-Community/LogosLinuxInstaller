@@ -222,6 +222,8 @@ class EnvironmentOverrides:
     wine_dll_overrides: Optional[str]
     # Corresponds to wine's WINEDEBUG
     wine_debug: Optional[str]
+    # Corresponds to wine's WINEPREFIX
+    wine_prefix: Optional[str]
 
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
@@ -247,7 +249,8 @@ class EnvironmentOverrides:
             faithlife_installer_download_url=legacy.LOGOS64_URL,
             winetricks_skip=legacy.SKIP_WINETRICKS,
             log_level=log_level,
-            wine_debug=wine_debug
+            wine_debug=wine_debug,
+            wine_prefix=legacy.WINEPREFIX
         )
 
     @classmethod
@@ -507,8 +510,10 @@ class Config:
         return f"{self.install_dir}/data/bin"
 
     @property
-    # XXX: used to be called WINEPREFIX
+    # This used to be called WINEPREFIX
     def wine_prefix(self) -> str:
+        if self._overrides.wine_prefix is not None:
+            return self._overrides.wine_prefix
         return f"{self.install_dir}/data/wine64_bottle"
 
     @property

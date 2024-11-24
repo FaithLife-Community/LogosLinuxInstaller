@@ -37,7 +37,6 @@ extended_config = {
     # Dependent on DIALOG with env override
     'use_python_dialog': None,
     'WINEBIN_CODE': None,
-    'WINEPREFIX': None,
     'WINE_EXE': None,
     'WINETRICKS_UNATTENDED': None,
 }
