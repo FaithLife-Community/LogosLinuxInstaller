@@ -12,13 +12,21 @@ grade: stable
 confinement: strict
 environment:
   CONFIG_FILE: ${SNAP_USER_COMMON}/${SNAPCRAFT_PROJECT_NAME}.json
-  PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
-  PYTHON_APT_PACKAGES_PATH: $SNAP/usr/lib/python3.12
-  PYTHON_LIB_DYNLOAD_PATH: $SNAP/usr/lib/python3.12/lib-dynload
-  TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
-  TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
-  PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY
-
+  # PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
+  # PYTHON_APT_PACKAGES_PATH: $SNAP/usr/lib/python3.12
+  # PYTHON_LIB_DYNLOAD_PATH: $SNAP/usr/lib/python3.12/lib-dynload
+  # TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
+  # TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
+  # PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY
+plugs:
+  - audio-playback
+  - desktop
+  - home
+  - network
+  - opengl
+  - removable-media
+  - wayland
+  - x11
 
 apps:
   oudedetai:
