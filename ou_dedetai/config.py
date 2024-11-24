@@ -41,8 +41,6 @@ for key, default in extended_config.items():
 ACTION: str = 'app'
 APPIMAGE_FILE_PATH: Optional[str] = None
 BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
-INSTALL_STEP: int = 0
-INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
 LOGOS_FORCE_ROOT: bool = False
 LOGOS_ICON_FILENAME: Optional[str] = None

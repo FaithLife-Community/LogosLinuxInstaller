@@ -1,11 +1,17 @@
 
 import abc
+from dataclasses import dataclass
 from typing import Optional
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
 
 
 class App(abc.ABC):
+    installer_step_count: int = 0
+    """Total steps in the installer, only set the installation process has started."""
+    installer_step: int = 1
+    """Step the installer is on. Starts at 0"""
+
     def __init__(self, **kwargs) -> None:
         # This lazy load is required otherwise it would be a circular import
         from ou_dedetai.new_config import Config

@@ -266,8 +266,8 @@ class InstallerWindow(GuiApp):
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
-        config.INSTALL_STEP = 1
-        config.INSTALL_STEPS_COUNT = 0
+        self.installer_step = 0
+        self.installer_step_count = 0
         self.config_thread = utils.start_thread(
             installer.ensure_installation_config,
             app=self,

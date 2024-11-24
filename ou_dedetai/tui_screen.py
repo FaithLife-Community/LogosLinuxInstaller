@@ -3,6 +3,8 @@ import logging
 import time
 from pathlib import Path
 
+from ou_dedetai.app import App
+
 from . import config
 from . import installer
 from . import system
@@ -13,7 +15,7 @@ if system.have_dep("dialog"):
 
 
 class Screen:
-    def __init__(self, app, screen_id, queue, event):
+    def __init__(self, app: App, screen_id, queue, event):
         self.app = app
         self.stdscr = ""
         self.screen_id = screen_id
@@ -353,8 +355,8 @@ class TextDialog(DialogScreen):
     def display(self):
         if self.running == 0:
             if self.wait:
-                if config.INSTALL_STEPS_COUNT > 0:
-                    self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                if self.app.installer_step_count > 0:
+                    self.percent = installer.get_progress_pct(self.app.installer_step, self.app.installer_step_count)
                 else:
                     self.percent = 0
 
@@ -365,8 +367,8 @@ class TextDialog(DialogScreen):
             self.running = 1
         elif self.running == 1:
             if self.wait:
-                if config.INSTALL_STEPS_COUNT > 0:
-                    self.percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+                if self.app.installer_step_count > 0:
+                    self.percent = installer.get_progress_pct(self.app.installer_step, self.app.installer_step_count)
                 else:
                     self.percent = 0
 

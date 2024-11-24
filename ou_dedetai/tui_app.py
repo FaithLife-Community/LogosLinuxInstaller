@@ -388,8 +388,8 @@ class TUI(App):
             self.llirunning = False
         elif choice.startswith("Install"):
             self.reset_screen()
-            config.INSTALL_STEPS_COUNT = 0
-            config.INSTALL_STEP = 0
+            self.installer_step = 0
+            self.installer_step_count = 0
             utils.start_thread(
                 installer.ensure_launcher_shortcuts,
                 daemon_bool=True,
@@ -651,7 +651,8 @@ class TUI(App):
     def get_waiting(self, dialog, screen_id=8):
         text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
-        percent = installer.get_progress_pct(config.INSTALL_STEP, config.INSTALL_STEPS_COUNT)
+        
+        percent = installer.get_progress_pct(self.installer_step, self.installer_step_count)
         self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text,
                                           wait=True, percent=percent, dialog=dialog))
 
