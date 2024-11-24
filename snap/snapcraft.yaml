@@ -73,8 +73,11 @@ parts:
       - -wrapper
 
   oudedetai:
+    ## just for testing
+    source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
+    source-branch: snap-pkg
+    ##
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
-    source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git  # just for testing
     plugin: python
 
   tk:
