@@ -210,8 +210,8 @@ def file_exists(file_path):
         return False
 
 
-def get_current_logos_version():
-    path_regex = f"{config.INSTALLDIR}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"  # noqa: E501
+def get_current_logos_version(install_dir: str):
+    path_regex = f"{install_dir}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"  # noqa: E501
     file_paths = glob.glob(path_regex)
     logos_version_number = None
     if file_paths:

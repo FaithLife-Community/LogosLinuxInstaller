@@ -16,6 +16,7 @@ from xml.etree import ElementTree as ET
 
 from ou_dedetai import wine
 from ou_dedetai.app import App
+from ou_dedetai.new_config import EnvironmentOverrides
 
 from . import config
 from . import constants
@@ -444,13 +445,21 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
-# XXX: this may be a bit of an issue, this is before the app initializes. I supposed we could load a proto-config that doesn't have any of the ensuring the user is prompted
 def check_for_updates():
     # We limit the number of times set_recommended_appimage_config is run in
     # order to avoid GitHub API limits. This sets the check to once every 12
     # hours.
 
-    config.current_logos_version = utils.get_current_logos_version()
+    # Get config based on env and configuration file
+    # This loads from file/env, but won't prompt the user if it can't find something.
+    # The downside of this is: these values may not be set
+    # XXX: rename
+    conf = EnvironmentOverrides.load()
+    install_dir = config.installer_binary_dir
+    del conf
+
+    if install_dir is not None:
+        config.current_logos_version = utils.get_current_logos_version(install_dir)
     utils.write_config(config.CONFIG_FILE)
 
     # TODO: Check for New Logos Versions. See #116.

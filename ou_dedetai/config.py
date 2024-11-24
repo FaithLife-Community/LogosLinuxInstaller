@@ -9,7 +9,6 @@ from . import constants
 # Define and set variables that are required in the config file.
 # XXX: slowly kill these
 current_logos_version = None
-INSTALLDIR = None
 WINEBIN_CODE = None
 WINE_EXE = None
 WINECMD_ENCODING = None
@@ -142,12 +141,8 @@ def set_config_env(config_file_path):
         return
         # msg.logos_error(f"Error: Unable to get config at {config_file_path}")
     logging.info(f"Setting {len(config_dict)} variables from config file.")
-    # XXX: this could literally set any of the global values, but they're normally read from config.
-    # Does that still work? What's going on here?
-    # Guess I could read all legacy keys and legacy env from the file... YIKES.
     for key, value in config_dict.items():
         globals()[key] = value
-    installdir = config_dict.get('INSTALLDIR')
 
 # XXX: remove this
 def get_env_config():

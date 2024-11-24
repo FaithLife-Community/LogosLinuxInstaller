@@ -85,7 +85,6 @@ def initialize_logging():
     # The downside of this is: these values may not be set
     config = EnvironmentOverrides.load()
     log_level = config.log_level or constants.DEFAULT_LOG_LEVEL
-    # XXX: somehow this tis tuple
     app_log_path = config.app_log_path or constants.DEFAULT_APP_LOG_PATH
     del config
 
