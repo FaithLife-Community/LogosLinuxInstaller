@@ -217,7 +217,7 @@ def reboot():
 
 def get_dialog():
     if not os.environ.get('DISPLAY'):
-        msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
+        logging.critical("The installer does not work unless you are running a display")  # noqa: E501
 
     dialog = os.getenv('DIALOG')
     # Set config.DIALOG.
