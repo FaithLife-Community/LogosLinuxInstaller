@@ -36,7 +36,6 @@ APPIMAGE_FILE_PATH: Optional[str] = None
 BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
 L9PACKAGES = None
 LOGOS_FORCE_ROOT: bool = False
-LOGOS_ICON_FILENAME: Optional[str] = None
 LOGOS_ICON_URL: Optional[str] = None
 LOGOS_LATEST_VERSION_FILENAME = constants.APP_NAME
 LOGOS_LATEST_VERSION_URL: Optional[str] = None

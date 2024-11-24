@@ -130,7 +130,6 @@ def ensure_installation_config(app: App):
     app.installer_step += 1
     update_install_feedback("Ensuring installation config is set…", app=app)
     logging.debug('- config.LOGOS_ICON_URL')
-    logging.debug('- config.LOGOS_ICON_FILENAME')
     logging.debug('- config.LOGOS_VERSION')
     logging.debug('- config.LOGOS64_URL')
 
@@ -143,10 +142,8 @@ def ensure_installation_config(app: App):
     logos_icon_url = app_dir / 'img' / f"{flproducti}-128-icon.png"
     # XXX: stop stting all these config keys
     config.LOGOS_ICON_URL = str(logos_icon_url)
-    config.LOGOS_ICON_FILENAME = logos_icon_url.name
 
     logging.debug(f"> {config.LOGOS_ICON_URL=}")
-    logging.debug(f"> {config.LOGOS_ICON_FILENAME=}")
     logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
     logging.debug(f"> config.LOGOS64_URL={app.conf.faithlife_installer_download_url}")
 
