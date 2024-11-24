@@ -48,7 +48,9 @@ parts:
     override-build: |
       chmod +x *.AppImage
       ./*.AppImage --appimage-extract
-      mv squashfs-root/* .
+      rm -f *.AppImage
+      cp -r squashfs-root/* .
+      rm -rf squashfs-root
     prime:
       - -AppRun*
       - -.bundle.yml
