@@ -504,19 +504,7 @@ def get_recommended_appimage(app: App):
         )
 
 def get_logos_releases(app: App) -> list[str]:
-    # Use already-downloaded list if requested again.
-    downloaded_releases = None
-    if app.conf.faithlife_product_version == '9' and config.LOGOS9_RELEASES:
-        downloaded_releases = config.LOGOS9_RELEASES
-    elif app.conf.faithlife_product_version == '10' and config.LOGOS10_RELEASES:
-        downloaded_releases = config.LOGOS10_RELEASES
-    if downloaded_releases:
-        logging.debug(f"Using already-downloaded list of v{app.conf.faithlife_product_version} releases")  # noqa: E501
-        if app:
-            app.releases_q.put(downloaded_releases)
-            app.root.event_generate(app.release_evt)
-        return downloaded_releases
-
+    # TODO: Use already-downloaded list if requested again.
     msg.status(f"Downloading release list for {app.conf.faithlife_product} {app.conf.faithlife_product_version}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
     if app.conf.faithlife_product_release_channel == "beta":

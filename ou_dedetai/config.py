@@ -32,7 +32,6 @@ extended_config = {
     # Dependent on DIALOG with env override
     'use_python_dialog': None,
     'WINEBIN_CODE': None,
-    'WINETRICKS_UNATTENDED': None,
 }
 for key, default in extended_config.items():
     globals()[key] = os.getenv(key, default)
@@ -47,8 +46,6 @@ LOGOS_ICON_FILENAME: Optional[str] = None
 LOGOS_ICON_URL: Optional[str] = None
 LOGOS_LATEST_VERSION_FILENAME = constants.APP_NAME
 LOGOS_LATEST_VERSION_URL: Optional[str] = None
-LOGOS9_RELEASES = None      # used to save downloaded releases list # FIXME: not set #noqa: E501
-LOGOS10_RELEASES = None     # used to save downloaded releases list # FIXME: not set #noqa: E501
 MYDOWNLOADS: Optional[str] = None # FIXME: Should this use ~/.cache?
 OS_NAME: Optional[str] = None
 OS_RELEASE: Optional[str] = None

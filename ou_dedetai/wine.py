@@ -346,6 +346,9 @@ def run_winetricks(app: App, cmd=None):
 # XXX: this function looks similar to the one above. duplicate?
 def run_winetricks_cmd(app: App, *args):
     cmd = [*args]
+    # FIXME: test this to ensure it behaves as expected
+    if "-q" not in args and app.conf.winetricks_binary:
+        cmd.insert(0, "-q")
     msg.status(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
@@ -361,8 +364,6 @@ def run_winetricks_cmd(app: App, *args):
 
 def install_d3d_compiler(app: App):
     cmd = ['d3dcompiler_47']
-    if config.WINETRICKS_UNATTENDED is None:
-        cmd.insert(0, '-q')
     run_winetricks_cmd(app, *cmd)
 
 
@@ -372,16 +373,12 @@ def install_fonts(app: App):
     if not config.SKIP_FONTS:
         for f in fonts:
             args = [f]
-            if config.WINETRICKS_UNATTENDED:
-                args.insert(0, '-q')
             run_winetricks_cmd(app, *args)
 
 
 def install_font_smoothing(app: App):
     msg.status("Setting font smoothing…")
     args = ['settings', 'fontsmooth=rgb']
-    if config.WINETRICKS_UNATTENDED:
-        args.insert(0, '-q')
     run_winetricks_cmd(app, *args)
 
 

@@ -152,8 +152,12 @@ class EnvironmentOverrides:
     faithlife_installer_download_url: Optional[str]
     log_level: Optional[str | int]
     app_log_path: Optional[str]
-    # Path to log wine's output to
     app_wine_log_path: Optional[str]
+    """Path to log wine's output to"""
+    app_winetricks_unattended: Optional[bool]
+    """Whether or not to send -q to winetricks for all winetricks commands.
+    
+    Some commands always send -q"""
 
     winetricks_skip: Optional[bool]
 
@@ -192,7 +196,8 @@ class EnvironmentOverrides:
             wine_dll_overrides=legacy.WINEDLLOVERRIDES,
             wine_prefix=legacy.WINEPREFIX,
             app_wine_log_path=legacy.wine_log,
-            app_log_path=legacy.LOGOS_LOG
+            app_log_path=legacy.LOGOS_LOG,
+            app_winetricks_unattended=legacy.WINETRICKS_UNATTENDED
         )
 
     @classmethod
@@ -543,6 +548,13 @@ class Config:
         if self._overrides.app_log_path is not None:
             return self._overrides.app_log_path
         return constants.DEFAULT_APP_LOG_PATH
+
+    @property
+    def app_winetricks_unattended(self) -> bool:
+        """If true, pass -q to winetricks"""
+        if self._overrides.app_winetricks_unattended is not None:
+            return self._overrides.app_winetricks_unattended
+        return False
 
     def toggle_faithlife_product_release_channel(self):
         if self._raw.faithlife_product_release_channel == "stable":
