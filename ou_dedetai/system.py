@@ -370,6 +370,13 @@ def get_package_manager():
             )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
         config.BADPACKAGES = ""  # appimagelauncher handled separately
+    elif os.environ.get('SNAP_NAME') == config.name_binary:
+        # Snap package.
+        config.PACKAGE_MANAGER_COMMAND_INSTALL = None
+        config.PACKAGE_MANAGER_COMMAND_REMOVE = None
+        config.PACKAGE_MANAGER_COMMAND_QUERY = None
+        config.PACKAGES = None
+        config.BADPACKAGES = None
     else:
         # Add more conditions for other package managers as needed.
         msg.logos_error("Your package manager is not yet supported. Please contact the developers.")  # noqa: E501
