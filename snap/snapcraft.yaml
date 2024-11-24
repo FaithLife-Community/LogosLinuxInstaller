@@ -62,7 +62,7 @@ parts:
       fi
       rm -f *.AppImage
     override-build: |
-      cp -r squashfs-root/* .
+      cp -r squashfs-root/* $CRAFT_PART_INSTALL
     prime:
       - -AppRun*
       - -.bundle.yml
