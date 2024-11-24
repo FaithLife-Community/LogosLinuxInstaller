@@ -11,8 +11,6 @@ description: |
 grade: stable
 confinement: strict
 environment:
-  WINE64_APPIMAGE_URL: https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
-  ICU_URL: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
   CONFIG_FILE: ${SNAP_USER_COMMON}/${SNAPCRAFT_PROJECT_NAME}.json
 
 apps:
@@ -33,13 +31,13 @@ parts:
       oudedetai.json: etc/oudedetai.json
 
   icu:
-    source: $ICU_URL
+    source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
     plugin: dump
     organize:
       '*': $SNAP_USER_COMMON
 
   wine:
-    source: $WINE64_APPIMAGE_URL
+    source: https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
     plugin: dump
     override-build: |
       *.appimage --appimage-extract
