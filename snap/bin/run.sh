@@ -12,7 +12,7 @@ if [[ ! -r ${SNAP_USER_COMMON}/${SNAP_NAME}.json ]]; then
 fi
 
 # Ensure Logos is installed.
-app_exe="$(find "${SNAP_USER_COMMON}/wine64_bottle" -wholename '*Logos/Logos.exe')"
+app_exe="$(find "${SNAP_USER_COMMON}/wine64_bottle" -wholename '*Logos/Logos.exe' 2>/dev/null)"
 if [[ -z $app_exe ]]; then
     oudedetai --install-app -PFK
     ec=$?
