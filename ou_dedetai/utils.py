@@ -287,7 +287,7 @@ def get_winebin_code_and_desc(app: App, binary):
     # Does it work?
     if isinstance(binary, Path):
         binary = str(binary)
-    if binary == f"{app.conf.installer_binary_directory}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":  # noqa: E501
+    if binary == f"{app.conf.installer_binary_dir}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":  # noqa: E501
         code = "Recommended"
     elif binary.lower().endswith('.appimage'):
         code = "AppImage"
@@ -311,7 +311,7 @@ def get_wine_options(app: App, appimages, binaries) -> Union[List[List[str]], Li
 
     # Add AppImages to list
     # if config.DIALOG == 'tk':
-    wine_binary_options.append(f"{app.conf.installer_binary_directory}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
+    wine_binary_options.append(f"{app.conf.installer_binary_dir}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
     wine_binary_options.extend(appimages)
     # else:
     #     appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
@@ -628,7 +628,7 @@ def find_appimage_files(app: App):
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",
-        app.conf.installer_binary_directory,
+        app.conf.installer_binary_dir,
         config.MYDOWNLOADS
     ]
     # FIXME: consider what we should do with this, promote to top level config?
@@ -706,16 +706,16 @@ def set_appimage_symlink(app: App):
     logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
     logging.debug(f"{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME=}")
     appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
-    appdir_bindir = Path(app.conf.installer_binary_directory)
+    appdir_bindir = Path(app.conf.installer_binary_dir)
     appimage_symlink_path = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
     if appimage_file_path.name == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
         # Default case.
         network.get_recommended_appimage(app)
         selected_appimage_file_path = appdir_bindir / appimage_file_path.name  # noqa: E501
-        bindir_appimage = selected_appimage_file_path / app.conf.installer_binary_directory  # noqa: E501
+        bindir_appimage = selected_appimage_file_path / app.conf.installer_binary_dir  # noqa: E501
         if not bindir_appimage.exists():
-            logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_directory}.")  # noqa: E501
-            shutil.copy(selected_appimage_file_path, f"{app.conf.installer_binary_directory}")
+            logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_dir}.")  # noqa: E501
+            shutil.copy(selected_appimage_file_path, f"{app.conf.installer_binary_dir}")
     else:
         selected_appimage_file_path = appimage_file_path
         # Verify user-selected AppImage.
@@ -725,7 +725,7 @@ def set_appimage_symlink(app: App):
         # Determine if user wants their AppImage in the app bin dir.
         copy_message = (
             f"Should the program copy {selected_appimage_file_path} to the"
-            f" {app.conf.installer_binary_directory} directory?"
+            f" {app.conf.installer_binary_dir} directory?"
         )
         # XXX: move this to .ask
         # FIXME: What if user cancels the confirmation dialog?
@@ -744,10 +744,10 @@ def set_appimage_symlink(app: App):
 
         # Copy AppImage if confirmed.
         if confirm is True or confirm == 'yes':
-            logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_directory}.")  # noqa: E501
+            logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_dir}.")  # noqa: E501
             dest = appdir_bindir / selected_appimage_file_path.name
             if not dest.exists():
-                shutil.copy(selected_appimage_file_path, f"{app.conf.installer_binary_directory}")  # noqa: E501
+                shutil.copy(selected_appimage_file_path, f"{app.conf.installer_binary_dir}")  # noqa: E501
             selected_appimage_file_path = dest
 
     delete_symlink(appimage_symlink_path)

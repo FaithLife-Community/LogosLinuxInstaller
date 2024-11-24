@@ -754,7 +754,7 @@ class ControlWindow(GuiApp):
         self.gui.statusvar.set("Installing Winetricks…")
         utils.start_thread(
             system.install_winetricks,
-            self.conf.installer_binary_directory,
+            self.conf.installer_binary_dir,
             app=self
         )
         self.update_run_winetricks_button()

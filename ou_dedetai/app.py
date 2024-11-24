@@ -108,7 +108,7 @@ class LegacyConfiguration:
     DIALOG: Optional[str] = None
     # XXX: default used to be `os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log")`
     LOGOS_LOG: Optional[str] = None
-    # XXX: default used to be `os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")`
+    # Default used to be `os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")`
     wine_log: Optional[str] = None
     LOGOS_EXE: Optional[str] = None
     # This is the logos installer executable name (NOT path)
@@ -209,7 +209,7 @@ class EnvironmentOverrides:
     The actually name of the environment variables remains unchanged from before,
     this translates the environment variable names to the new variable names"""
 
-    installer_binary_directory: Optional[str]
+    installer_binary_dir: Optional[str]
     wineserver_binary: Optional[str]
     faithlife_product_version: Optional[str]
     faithlife_installer_name: Optional[str]
@@ -224,6 +224,9 @@ class EnvironmentOverrides:
     wine_debug: Optional[str]
     # Corresponds to wine's WINEPREFIX
     wine_prefix: Optional[str]
+
+    # Our concept of logging wine's output to a separate file
+    wine_log_path: Optional[str]
 
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
@@ -241,7 +244,7 @@ class EnvironmentOverrides:
             log_level = logging.INFO
             wine_debug = ""
         EnvironmentOverrides(
-            installer_binary_directory=legacy.APPDIR_BINDIR,
+            installer_binary_dir=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
             custom_binary_path=legacy.CUSTOMBINPATH,
             faithlife_product_version=legacy.LOGOS_VERSION,
@@ -250,7 +253,8 @@ class EnvironmentOverrides:
             winetricks_skip=legacy.SKIP_WINETRICKS,
             log_level=log_level,
             wine_debug=wine_debug,
-            wine_prefix=legacy.WINEPREFIX
+            wine_prefix=legacy.WINEPREFIX,
+            wine_log_path=legacy.wine_log
         )
 
     @classmethod
@@ -276,7 +280,7 @@ class UserConfiguration:
     wine_binary: Optional[str] = None
     # This is where to search for wine
     wine_binary_code: Optional[str] = None
-    backup_directory: Optional[Path] = None
+    backup_dir: Optional[Path] = None
 
     # Color to use in curses. Either "Logos", "Light", or "Dark"
     curses_colors: str = "Logos"
@@ -310,7 +314,7 @@ class UserConfiguration:
     def from_legacy(legacy: LegacyConfiguration) -> "UserConfiguration":
         return UserConfiguration(
             faithlife_product=legacy.FLPRODUCT,
-            backup_directory=legacy.BACKUPDIR,
+            backup_dir=legacy.BACKUPDIR,
             curses_colors=legacy.curses_colors,
             faithlife_product_release=legacy.TARGET_RELEASE_VERSION,
             faithlife_product_release_channel=legacy.logos_release_channel,
@@ -360,7 +364,16 @@ latest_installer_version: Optional[str] = None
 class Config:
     """Set of configuration values. 
     
-    If the user hasn't selected a particular value yet, they will be prompted in their UI."""
+    If the user hasn't selected a particular value yet, they will be prompted in their UI.
+    """
+
+    # Naming conventions:
+    # Use `dir` instead of `directory`
+    # Use snake_case
+    # scope with faithlife if it's theirs
+    # suffix with _binary if it's a linux binary
+    # suffix with _exe if it's a windows binary
+    # suffix with _path if it's a file path
 
     # Storage for the keys
     _raw: UserConfiguration
@@ -504,9 +517,9 @@ class Config:
 
     @property
     # This used to be called APPDIR_BINDIR
-    def installer_binary_directory(self) -> str:
-        if self._overrides.installer_binary_directory is not None:
-            return self._overrides.installer_binary_directory
+    def installer_binary_dir(self) -> str:
+        if self._overrides.installer_binary_dir is not None:
+            return self._overrides.installer_binary_dir
         return f"{self.install_dir}/data/bin"
 
     @property
@@ -575,6 +588,13 @@ class Config:
             return self._overrides.wine_debug
         return "fixme-all,err-all"
 
+    @property
+    def wine_log_path(self) -> str:
+        """Our concept of logging wine to a separate file."""
+        if self._overrides.wine_log_path is not None:
+            return self._overrides.wine_log_path
+        return constants.DEFAULT_WINE_LOG_PATH
+
     def toggle_faithlife_product_release_channel(self):
         if self._raw.faithlife_product_release_channel == "stable":
             new_channel = "beta"
@@ -592,10 +612,10 @@ class Config:
         self._write()
     
     @property
-    def backup_directory(self) -> Path:
+    def backup_dir(self) -> Path:
         question = "New or existing folder to store backups in: "
         options = [PROMPT_OPTION_DIRECTORY]
-        output = Path(self._ask_if_not_found("backup_directory", question, options))
+        output = Path(self._ask_if_not_found("backup_dir", question, options))
         output.mkdir(parents=True)
         return output
     

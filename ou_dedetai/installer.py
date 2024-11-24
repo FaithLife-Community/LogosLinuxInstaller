@@ -57,7 +57,7 @@ def ensure_install_dir_choice(app: App):
     # Accessing this sets install_dir and bin_dir
     app.conf.install_dir
     logging.debug(f"> config.INSTALLDIR={app.conf.install_dir=}")
-    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_directory}")
+    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_dir}")
 
 
 def ensure_wine_choice(app: App):
@@ -169,12 +169,12 @@ def ensure_install_dirs(app: App):
     logging.debug('- data/wine64_bottle')
     wine_dir = Path("")
 
-    bin_dir = Path(app.conf.installer_binary_directory)
+    bin_dir = Path(app.conf.installer_binary_dir)
     bin_dir.mkdir(parents=True, exist_ok=True)
     logging.debug(f"> {bin_dir} exists?: {bin_dir.is_dir()}")
 
-    logging.debug(f"> config.INSTALLDIR={app.conf.installer_binary_directory}")
-    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_directory}")
+    logging.debug(f"> config.INSTALLDIR={app.conf.installer_binary_dir}")
+    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_dir}")
 
     wine_dir = Path(f"{app.conf.wine_prefix}")
     wine_dir.mkdir(parents=True, exist_ok=True)
@@ -267,7 +267,7 @@ def ensure_winetricks_executable(app: App):
         # Either previous system winetricks is no longer accessible, or the
         # or the user has chosen to download it.
         msg.status("Downloading winetricks from the Internet…", app=app)
-        system.install_winetricks(app.conf.installer_binary_directory, app=app)
+        system.install_winetricks(app.conf.installer_binary_dir, app=app)
 
     logging.debug(f"> {app.conf.winetricks_binary} is executable?: {os.access(app.conf.winetricks_binary, os.X_OK)}")  # noqa: E501
     return 0
@@ -524,8 +524,8 @@ def get_progress_pct(current, total):
 
 
 def create_wine_appimage_symlinks(app: App):
-    appdir_bindir = Path(app.conf.installer_binary_directory)
-    os.environ['PATH'] = f"{app.conf.installer_binary_directory}:{os.getenv('PATH')}"
+    appdir_bindir = Path(app.conf.installer_binary_dir)
+    os.environ['PATH'] = f"{app.conf.installer_binary_dir}:{os.getenv('PATH')}"
     # Ensure AppImage symlink.
     appimage_link = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
     appimage_file = Path(config.SELECTED_APPIMAGE_FILENAME)

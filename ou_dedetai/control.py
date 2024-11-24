@@ -44,14 +44,14 @@ def restore(app: App):
 # FIXME: consider moving this into it's own file/module.
 def backup_and_restore(mode: str, app: App):
     data_dirs = ['Data', 'Documents', 'Users']
-    backup_dir = Path(app.conf.backup_directory).expanduser().resolve()
+    backup_dir = Path(app.conf.backup_dir).expanduser().resolve()
 
     # FIXME: Why is this different per UI? Should this always accept?
     if config.DIALOG == 'tk' or config.DIALOG == 'curses':
         pass  # user confirms in GUI or TUI
     else:
         verb = 'Use' if mode == 'backup' else 'Restore backup from'
-        if not msg.cli_question(f"{verb} existing backups folder \"{app.conf.backup_directory}\"?", ""):  # noqa: E501
+        if not msg.cli_question(f"{verb} existing backups folder \"{app.conf.backup_dir}\"?", ""):  # noqa: E501
             answer = None
             while answer is None or (mode == 'restore' and not answer.is_dir()):  # noqa: E501
                 answer = msg.cli_ask_filepath("Please provide a backups folder path:")
@@ -61,7 +61,7 @@ def backup_and_restore(mode: str, app: App):
             config.app.conf.backup_directory = answer
 
     # Set source folders.
-    backup_dir = Path(app.conf.backup_directory)
+    backup_dir = Path(app.conf.backup_dir)
     try:
         backup_dir.mkdir(exist_ok=True, parents=True)
     except PermissionError:
@@ -72,7 +72,7 @@ def backup_and_restore(mode: str, app: App):
         return
 
     if mode == 'restore':
-        restore_dir = utils.get_latest_folder(app.conf.backup_directory)
+        restore_dir = utils.get_latest_folder(app.conf.backup_dir)
         restore_dir = Path(restore_dir).expanduser().resolve()
         if config.DIALOG == 'tk':
             pass
@@ -263,9 +263,9 @@ def set_winetricks(app: App):
             return 0
         # Continue executing the download if it wasn't valid
 
-    system.install_winetricks(app.conf.installer_binary_directory, app)
+    system.install_winetricks(app.conf.installer_binary_dir, app)
     app.conf.wine_binary = os.path.join(
-        app.conf.installer_binary_directory,
+        app.conf.installer_binary_dir,
         "winetricks"
     )
     return 0

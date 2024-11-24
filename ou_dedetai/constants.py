@@ -9,6 +9,7 @@ REPOSITORY_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
 
 # Set other run-time variables not set in the env.
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{BINARY_NAME}.json")  # noqa: E501
+DEFAULT_WINE_LOG_PATH= os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")  # noqa: E501
 LEGACY_CONFIG_FILES = [
     os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),  # noqa: E501
     os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
