@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Install & run Logos.
+
+# Ensure correct environment.
+if [[ $SNAP_NAME != oudedetai ]]; then
+    echo "ERROR: Not running in oudedetai snap environment."
+    exit 1
+fi
 
 # Ensure config file.
 if [[ ! -r ${SNAP_USER_COMMON}/${SNAP_NAME}.json ]]; then
-    cp $SNAP/etc/default-config.json ${SNAP_USER_COMMON}/${SNAP_NAME}.json
+    cp $SNAP/etc/${SNAP_NAME}.json ${SNAP_USER_COMMON}/${SNAP_NAME}.json
 fi
 
 # Ensure Logos is installed.
