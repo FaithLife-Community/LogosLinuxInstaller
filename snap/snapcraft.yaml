@@ -44,7 +44,7 @@ parts:
       '*': $SNAP_USER_COMMON
 
   wine:
-    source: squashfs-root/  # "Failed to pull source" when URL is given here
+    source: .  # "Failed to pull source" when URL is given here
     plugin: dump
     source-type: local
     build-packages:
@@ -61,9 +61,8 @@ parts:
         exit 1
       fi
       rm -f *.AppImage
-      craftctl default
-    # override-build: |
-    #   cp -r ./* .
+    override-build: |
+      cp -r squashfs-root/* .
     prime:
       - -AppRun*
       - -.bundle.yml
