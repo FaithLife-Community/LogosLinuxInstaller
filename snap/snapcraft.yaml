@@ -12,6 +12,13 @@ grade: stable
 confinement: strict
 environment:
   CONFIG_FILE: ${SNAP_USER_COMMON}/${SNAPCRAFT_PROJECT_NAME}.json
+  PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
+  PYTHON_APT_PACKAGES_PATH: $SNAP/usr/lib/python3.12
+  PYTHON_LIB_DYNLOAD_PATH: $SNAP/usr/lib/python3.12/lib-dynload
+  TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
+  TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
+  PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY
+
 
 apps:
   oudedetai:
@@ -70,8 +77,9 @@ parts:
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git  # just for testing
     plugin: python
-    build-packages:
+
+  tk:
+    plugin: nil
+    stage-packages:
       - python3-tk
-    # stage-packages:
-    #   - python3-tk
     
