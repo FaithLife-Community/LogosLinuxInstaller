@@ -7,7 +7,6 @@ import shutil
 import sys
 
 from pathlib import Path
-from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import config
 from . import constants
@@ -68,7 +67,7 @@ def get_log_level_name(level):
     return name
 
 
-def initialize_logging():
+def initialize_logging(log_level: str| int, app_log_path: str):
     '''
     Log levels:
         Level       Value   Description
@@ -79,14 +78,6 @@ def initialize_logging():
         DEBUG       10      detailed, dev-level information
         NOTSET      0       all events are handled
     '''
-
-    # Get config based on env and configuration file
-    # This loads from file/env, but won't prompt the user if it can't find something.
-    # The downside of this is: these values may not be set
-    config = EphemeralConfiguration.load()
-    log_level = config.log_level or constants.DEFAULT_LOG_LEVEL
-    app_log_path = config.app_log_path or constants.DEFAULT_APP_LOG_PATH
-    del config
 
     # Ensure the application log's directory exists
     os.makedirs(os.path.dirname(app_log_path), exist_ok=True)

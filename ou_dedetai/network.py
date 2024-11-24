@@ -16,7 +16,6 @@ from xml.etree import ElementTree as ET
 
 from ou_dedetai import wine
 from ou_dedetai.app import App
-from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import config
 from . import constants
@@ -445,18 +444,10 @@ def set_recommended_appimage_config():
     config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
 
 
-def check_for_updates():
+def check_for_updates(install_dir: Optional[str]):
     # We limit the number of times set_recommended_appimage_config is run in
     # order to avoid GitHub API limits. This sets the check to once every 12
     # hours.
-
-    # Get config based on env and configuration file
-    # This loads from file/env, but won't prompt the user if it can't find something.
-    # The downside of this is: these values may not be set
-    # XXX: rename
-    conf = EphemeralConfiguration.load()
-    install_dir = config.installer_binary_dir
-    del conf
 
     if install_dir is not None:
         config.current_logos_version = utils.get_current_logos_version(install_dir)

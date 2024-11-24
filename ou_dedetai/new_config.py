@@ -61,7 +61,7 @@ class LegacyConfiguration:
     use_python_dialog: Optional[str] = None
     VERBOSE: Optional[bool] = None
     WINEBIN_CODE: Optional[str] = None
-    WINEDEBUG: Optional[str] = None,
+    WINEDEBUG: Optional[str] = None
     WINEDLLOVERRIDES: Optional[str] = None
     WINEPREFIX: Optional[str] = None
     WINE_EXE: Optional[str] = None
@@ -144,7 +144,7 @@ class EphemeralConfiguration:
 
     Changes to this are not saved to disk, but remain while the program runs
     """
-
+    # Start user overridable via env or cli arg
     installer_binary_dir: Optional[str]
     wineserver_binary: Optional[str]
     faithlife_product_version: Optional[str]
@@ -172,8 +172,13 @@ class EphemeralConfiguration:
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
     custom_binary_path: Optional[str]
 
+    # Start internal values
     config_path: str
     """Path this config was loaded from"""
+
+    # XXX: does this belong here, or should we have a cache file?
+    # Start cache
+    _faithlife_product_releases: Optional[list[str]] = None
 
     @classmethod
     def from_legacy(cls, legacy: LegacyConfiguration) -> "EphemeralConfiguration":
@@ -345,7 +350,7 @@ class Config:
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
 
     # Singleton logic, this enforces that only one config object exists at a time.
-    def __new__(cls, self) -> "Config":
+    def __new__(cls, *args, **kwargs) -> "Config":
         if not hasattr(cls, '_instance'):
             cls._instance = super(Config, cls).__new__(cls)
         return cls._instance
@@ -421,7 +426,9 @@ class Config:
     @property
     def faithlife_product_release(self) -> str:
         question = f"Which version of {self.faithlife_product} {self.faithlife_product_version} do you want to install?: ",  # noqa: E501
-        options = network.get_logos_releases(None)
+        if self._overrides._faithlife_product_releases is None:
+            self._overrides._faithlife_product_releases = network.get_logos_releases(self.app)
+        options = self._overrides._faithlife_product_releases
         return self._ask_if_not_found("faithlife_product_release", question, options)
 
     @faithlife_product_release.setter

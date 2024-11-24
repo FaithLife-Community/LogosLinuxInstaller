@@ -327,9 +327,16 @@ def setup_config() -> EphemeralConfiguration:
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
+    # Get config based on env and configuration file temporarily just to load a couple values out
+    # We'll load this fully later.
+    temp = EphemeralConfiguration.load()
+    log_level = temp.log_level or constants.DEFAULT_LOG_LEVEL
+    app_log_path = temp.app_log_path or constants.DEFAULT_APP_LOG_PATH
+    del temp
+
     # Set runtime config.
     # Initialize logging.
-    msg.initialize_logging()
+    msg.initialize_logging(log_level, app_log_path)
 
     # Set default config; incl. defining CONFIG_FILE.
     utils.set_default_config()
@@ -448,7 +455,9 @@ def main():
 
     check_incompatibilities()
 
-    network.check_for_updates()
+    # XXX: Consider how to get the install dir from here, we'd have to read the config...which isn't done yet.
+    # I suppose we could read the persistent config at this point
+    network.check_for_updates(None)
 
     run(ephemeral_config)
 

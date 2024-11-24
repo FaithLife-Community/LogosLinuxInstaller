@@ -400,6 +400,7 @@ def set_win_version(app: App, exe: str, windows_version: str):
             ]
         process = run_wine_proc(
             app.conf.wine_binary,
+            app,
             exe='reg',
             exe_args=exe_args
         )
