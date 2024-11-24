@@ -37,9 +37,13 @@ parts:
       '*': $SNAP_USER_COMMON
 
   wine:
-    source: https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
+    source: .  # "Failed to pull source" when URL is given here
     plugin: dump
-    source-type: local
+    # source-type: local
+    # build-packages:
+    #   - wget
+    override-pull: |
+      wget https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
     override-build: |
       *.appimage --appimage-extract
       mv squashfs-root/* .
