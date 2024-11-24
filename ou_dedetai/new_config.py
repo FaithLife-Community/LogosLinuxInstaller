@@ -161,16 +161,19 @@ class EphemeralConfiguration:
 
     winetricks_skip: Optional[bool]
 
-    # Corresponds to wine's WINEDLLOVERRIDES
     wine_dll_overrides: Optional[str]
-    # Corresponds to wine's WINEDEBUG
+    """Corresponds to wine's WINEDLLOVERRIDES"""
     wine_debug: Optional[str]
-    # Corresponds to wine's WINEPREFIX
+    """Corresponds to wine's WINEDEBUG"""
     wine_prefix: Optional[str]
+    """Corresponds to wine's WINEPREFIX"""
 
-    # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
     custom_binary_path: Optional[str]
+    """Additional path to look for when searching for binaries."""
+
+    delete_log: Optional[bool]
+    """Whether to clear the log on startup"""
 
     # Start internal values
     config_path: str

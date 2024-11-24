@@ -215,8 +215,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
         msg.update_log_level(logging.DEBUG)
 
     if args.delete_log:
-        # XXX: what to do about this? Logging is already initialized, I guess we could clear from underneath?
-        config.DELETE_LOG = True
+        ephemeral_config.delete_log = True
 
     if args.set_appimage:
         config.APPIMAGE_FILE_PATH = args.set_appimage[0]
@@ -450,6 +449,15 @@ def main():
     set_dialog()
 
     # XXX: consider configuration migration from legacy to new
+
+    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
+    # can be run in conjunction with other actions, so it gets special
+    # treatment here once config is set.
+    app_log_path = ephemeral_config.app_log_path | constants.DEFAULT_APP_LOG_PATH
+    if ephemeral_config.delete_log and os.path.isfile(app_log_path):
+        # Write empty file.
+        with open(app_log_path, 'w') as f:
+            f.write('')
 
     # Run safety checks.
     # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI

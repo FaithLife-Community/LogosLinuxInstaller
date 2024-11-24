@@ -22,7 +22,6 @@ extended_config = {
     'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
     'CHECK_UPDATES': False,
     'CONFIG_FILE': None,
-    'DELETE_LOG': None,
     'DIALOG': None,
     'SELECTED_APPIMAGE_FILENAME': None,
     'SKIP_DEPENDENCIES': False,

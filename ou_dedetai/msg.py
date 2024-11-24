@@ -67,7 +67,7 @@ def get_log_level_name(level):
     return name
 
 
-def initialize_logging(log_level: str| int, app_log_path: str):
+def initialize_logging(log_level: str | int, app_log_path: str):
     '''
     Log levels:
         Level       Value   Description
@@ -81,14 +81,6 @@ def initialize_logging(log_level: str| int, app_log_path: str):
 
     # Ensure the application log's directory exists
     os.makedirs(os.path.dirname(app_log_path), exist_ok=True)
-
-    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
-    # can be run in conjunction with other actions, so it gets special
-    # treatment here once config is set.
-    # if config.DELETE_LOG and os.path.isfile(app_log_path):
-    #     # Write empty file.
-    #     with open(app_log_path, 'w') as f:
-    #         f.write('')
 
     # Ensure log file parent folders exist.
     log_parent = Path(app_log_path).parent
