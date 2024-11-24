@@ -50,11 +50,13 @@ parts:
       ./*.AppImage --appimage-extract
       mv squashfs-root/* .
     prime:
-      - bin
-      - etc
-      - opt
-      - runtime
-      - usr
+      - -AppRun*
+      - -.bundle.yml
+      - -.DirIcon
+      - -*.desktop
+      - -*.svg
+      - -winedata
+      - -wrapper
 
   oudedetai:
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
