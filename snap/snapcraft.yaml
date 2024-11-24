@@ -37,13 +37,14 @@ parts:
       '*': $SNAP_USER_COMMON
 
   wine:
-    source: .  # "Failed to pull source" when URL is given here
+    source: https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
+    # source: .  # "Failed to pull source" when URL is given here
     plugin: dump
-    # source-type: local
-    build-packages:
-      - wget
-    override-pull: |
-      wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
+    source-type: local
+    # build-packages:
+    #   - wget
+    # override-pull: |
+    #   wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
     override-build: |
       chmod +x *.AppImage
       ./*.AppImage --appimage-extract >/dev/null
