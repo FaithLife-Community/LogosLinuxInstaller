@@ -162,6 +162,8 @@ class EphemeralConfiguration:
     winetricks_skip: Optional[bool]
     install_dependencies_skip: Optional[bool]
     """Whether to skip installing system package dependencies"""
+    install_fonts_skip: Optional[bool]
+    """Whether to skip installing fonts in the wineprefix"""
 
     wine_dll_overrides: Optional[str]
     """Corresponds to wine's WINEDLLOVERRIDES"""
@@ -218,7 +220,8 @@ class EphemeralConfiguration:
             config_path=legacy.CONFIG_FILE,
             check_updates_now=legacy.CHECK_UPDATES,
             delete_log=legacy.DELETE_LOG,
-            install_dependencies_skip=legacy.SKIP_DEPENDENCIES
+            install_dependencies_skip=legacy.SKIP_DEPENDENCIES,
+            install_fonts_skip=legacy.SKIP_FONTS
         )
 
     @classmethod
@@ -676,7 +679,7 @@ class Config:
     @property
     def skip_winetricks(self) -> bool:
         return bool(self._overrides.winetricks_skip)
-    
+
     @property
     def skip_install_system_dependencies(self) -> bool:
         return bool(self._overrides.install_dependencies_skip)
@@ -684,3 +687,11 @@ class Config:
     @skip_install_system_dependencies.setter
     def skip_install_system_dependencies(self, val: bool):
         self._overrides.install_dependencies_skip = val
+
+    @property
+    def skip_install_fonts(self) -> bool:
+        return bool(self._overrides.install_fonts_skip)
+
+    @skip_install_fonts.setter
+    def skip_install_fonts(self, val: bool):
+        self._overrides.install_fonts_skip = val

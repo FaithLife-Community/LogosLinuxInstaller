@@ -221,7 +221,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
         config.APPIMAGE_FILE_PATH = args.set_appimage[0]
 
     if args.skip_fonts:
-        config.SKIP_FONTS = True
+        ephemeral_config.install_fonts_skip = True
 
     if args.skip_winetricks:
         ephemeral_config.winetricks_skip = True

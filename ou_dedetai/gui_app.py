@@ -425,7 +425,7 @@ class InstallerWindow(GuiApp):
         else:
             self.wine_q.put(
                 utils.get_relative_path(
-                    utils.get_config_var(self.gui.wine_exe),
+                    utils.get_config_var(self.conf.wine_binary),
                     self.conf.install_dir
                 )
             )
@@ -445,9 +445,8 @@ class InstallerWindow(GuiApp):
         self.start_wine_versions_check(self.conf.faithlife_product_release)
 
     def set_skip_fonts(self, evt=None):
-        self.gui.skip_fonts = 1 - self.gui.fontsvar.get()  # invert True/False
-        config.SKIP_FONTS = self.gui.skip_fonts
-        logging.debug(f"> {config.SKIP_FONTS=}")
+        self.conf.skip_install_fonts = 1 - self.gui.fontsvar.get()  # invert True/False
+        logging.debug(f"> config.SKIP_FONTS={self.conf.skip_install_fonts}")
 
     def set_skip_dependencies(self, evt=None):
         self.conf.skip_install_system_dependencies = 1 - self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501

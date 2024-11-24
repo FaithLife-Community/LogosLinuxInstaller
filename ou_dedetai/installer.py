@@ -100,14 +100,14 @@ def ensure_winetricks_choice(app: App):
 
 
 # XXX: huh? What does this do?
-def ensure_install_fonts_choice(app=None):
+def ensure_install_fonts_choice(app: App):
     app.installer_step_count += 1
     ensure_winetricks_choice(app=app)
     app.installer_step += 1
     update_install_feedback("Ensuring install fonts choice…", app=app)
     logging.debug('- config.SKIP_FONTS')
 
-    logging.debug(f"> {config.SKIP_FONTS=}")
+    logging.debug(f"> config.SKIP_FONTS={app.conf.skip_install_fonts}")
 
 
 # XXX: huh? What does this do?
@@ -387,7 +387,7 @@ def ensure_winetricks_applied(app: App):
             msg.status("Setting Font Smooting to RGB…", app)
             wine.install_font_smoothing(app)
 
-        if not config.SKIP_FONTS and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
+        if not app.conf.skip_install_fonts and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
             msg.status("Installing fonts…", app)
             wine.install_fonts(app)
 

@@ -370,7 +370,7 @@ def install_d3d_compiler(app: App):
 def install_fonts(app: App):
     msg.status("Configuring fonts…")
     fonts = ['corefonts', 'tahoma']
-    if not config.SKIP_FONTS:
+    if not app.conf.skip_fonts:
         for f in fonts:
             args = [f]
             run_winetricks_cmd(app, *args)

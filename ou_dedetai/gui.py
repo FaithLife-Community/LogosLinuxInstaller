@@ -62,13 +62,6 @@ class InstallerGui(Frame):
 
         self.app = app
 
-        # XXX: remove these
-        # Initialize vars from ENV.
-        self.wine_exe = app.conf.wine_binary
-        self.skip_fonts = config.SKIP_FONTS
-        if self.skip_fonts is None:
-            self.skip_fonts = 0
-
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
         # product drop-down menu
@@ -112,9 +105,10 @@ class InstallerGui(Frame):
         self.wine_dropdown = Combobox(self, textvariable=self.winevar)
         self.wine_dropdown.state(['readonly'])
         self.wine_dropdown['values'] = []
-        if self.wine_exe:
-            self.wine_dropdown['values'] = [self.wine_exe]
-            self.winevar.set(self.wine_exe)
+        # Conditional only if wine_binary is actually set, don't prompt if it's not
+        if self.app.conf._raw.wine_binary:
+            self.wine_dropdown['values'] = [self.app.conf.wine_binary]
+            self.winevar.set(self.app.conf.wine_binary)
         self.wine_check_button = Button(self, text="Get EXE List")
         self.wine_check_button.state(['disabled'])
 
@@ -131,7 +125,7 @@ class InstallerGui(Frame):
 
         # Fonts row.
         self.fonts_label = Label(self, text="Install Fonts: ")
-        self.fontsvar = BooleanVar(value=1-self.skip_fonts)
+        self.fontsvar = BooleanVar(value=1-self.app.conf.skip_install_fonts)
         self.fonts_checkbox = Checkbutton(self, variable=self.fontsvar)
 
         # Skip Dependencies row.
