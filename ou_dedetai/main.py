@@ -232,7 +232,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
         ephemeral_config.check_updates_now = True
 
     if args.skip_dependencies:
-        config.SKIP_DEPENDENCIES = True
+        ephemeral_config.install_dependencies_skip = True
 
     if args.force_root:
         config.LOGOS_FORCE_ROOT = True

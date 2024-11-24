@@ -23,7 +23,6 @@ extended_config = {
     'CONFIG_FILE': None,
     'DIALOG': None,
     'SELECTED_APPIMAGE_FILENAME': None,
-    'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
     # Dependent on DIALOG with env override
     'use_python_dialog': None,

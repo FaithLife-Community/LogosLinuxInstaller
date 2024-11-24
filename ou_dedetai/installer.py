@@ -111,7 +111,7 @@ def ensure_install_fonts_choice(app=None):
 
 
 # XXX: huh? What does this do?
-def ensure_check_sys_deps_choice(app=None):
+def ensure_check_sys_deps_choice(app: App):
     app.installer_step_count += 1
     ensure_install_fonts_choice(app=app)
     app.installer_step += 1
@@ -121,7 +121,7 @@ def ensure_check_sys_deps_choice(app=None):
     )
     logging.debug('- config.SKIP_DEPENDENCIES')
 
-    logging.debug(f"> {config.SKIP_DEPENDENCIES=}")
+    logging.debug(f"> config.SKIP_DEPENDENCIES={app.conf._overrides.winetricks_skip}")
 
 
 def ensure_installation_config(app: App):
@@ -186,13 +186,13 @@ def ensure_install_dirs(app: App):
         utils.send_task(app, 'INSTALLING')
 
 
-def ensure_sys_deps(app=None):
+def ensure_sys_deps(app: App):
     app.installer_step_count += 1
     ensure_install_dirs(app=app)
     app.installer_step += 1
     update_install_feedback("Ensuring system dependencies are met…", app=app)
 
-    if not config.SKIP_DEPENDENCIES:
+    if not app.conf.skip_install_system_dependencies:
         utils.install_dependencies(app)
         if config.DIALOG == "curses":
             app.installdeps_e.wait()

@@ -450,9 +450,8 @@ class InstallerWindow(GuiApp):
         logging.debug(f"> {config.SKIP_FONTS=}")
 
     def set_skip_dependencies(self, evt=None):
-        self.gui.skip_dependencies = 1 - self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
-        config.SKIP_DEPENDENCIES = self.gui.skip_dependencies
-        logging.debug(f"> {config.SKIP_DEPENDENCIES=}")
+        self.conf.skip_install_system_dependencies = 1 - self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
+        logging.debug(f"> config.SKIP_DEPENDENCIES={self.conf.skip_install_system_dependencies}")
 
     def on_okay_released(self, evt=None):
         # Update desktop panel icon.

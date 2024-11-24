@@ -570,8 +570,8 @@ def postinstall_dependencies():
 
 
 # XXX: move this to control, prompts additional values from app
-def install_dependencies(packages, bad_packages, logos9_packages=None, app=None):  # noqa: E501
-    if config.SKIP_DEPENDENCIES:
+def install_dependencies(app: App, packages, bad_packages, logos9_packages=None):  # noqa: E501
+    if app.conf.skip_install_system_dependencies:
         return
 
     install_deps_failed = False

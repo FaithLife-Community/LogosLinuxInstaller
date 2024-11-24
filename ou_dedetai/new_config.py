@@ -160,6 +160,8 @@ class EphemeralConfiguration:
     Some commands always send -q"""
 
     winetricks_skip: Optional[bool]
+    install_dependencies_skip: Optional[bool]
+    """Whether to skip installing system package dependencies"""
 
     wine_dll_overrides: Optional[str]
     """Corresponds to wine's WINEDLLOVERRIDES"""
@@ -215,7 +217,8 @@ class EphemeralConfiguration:
             app_winetricks_unattended=legacy.WINETRICKS_UNATTENDED,
             config_path=legacy.CONFIG_FILE,
             check_updates_now=legacy.CHECK_UPDATES,
-            delete_log=legacy.DELETE_LOG
+            delete_log=legacy.DELETE_LOG,
+            install_dependencies_skip=legacy.SKIP_DEPENDENCIES
         )
 
     @classmethod
@@ -671,8 +674,13 @@ class Config:
         return constants.DEFAULT_LOG_LEVEL
 
     @property
-    # XXX: don't like this pattern.
     def skip_winetricks(self) -> bool:
-        if self._overrides.winetricks_skip is not None:
-            return self._overrides.winetricks_skip
-        return False
+        return bool(self._overrides.winetricks_skip)
+    
+    @property
+    def skip_install_system_dependencies(self) -> bool:
+        return bool(self._overrides.install_dependencies_skip)
+
+    @skip_install_system_dependencies.setter
+    def skip_install_system_dependencies(self, val: bool):
+        self._overrides.install_dependencies_skip = val

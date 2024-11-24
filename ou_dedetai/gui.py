@@ -68,9 +68,6 @@ class InstallerGui(Frame):
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
             self.skip_fonts = 0
-        self.skip_dependencies = config.SKIP_DEPENDENCIES
-        if self.skip_dependencies is None:
-            self.skip_dependencies = 0
 
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
@@ -139,7 +136,7 @@ class InstallerGui(Frame):
 
         # Skip Dependencies row.
         self.skipdeps_label = Label(self, text="Install Dependencies: ")
-        self.skipdepsvar = BooleanVar(value=1-self.skip_dependencies)
+        self.skipdepsvar = BooleanVar(value=1-self.app.conf.skip_install_system_dependencies)
         self.skipdeps_checkbox = Checkbutton(self, variable=self.skipdepsvar)
 
         # Cancel/Okay buttons row.
