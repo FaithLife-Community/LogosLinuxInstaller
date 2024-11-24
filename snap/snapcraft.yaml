@@ -54,6 +54,7 @@ parts:
         exit 1
       fi
       rm -f *.AppImage
+      craftctl default
     # override-build: |
     #   cp -r ./* .
     prime:
