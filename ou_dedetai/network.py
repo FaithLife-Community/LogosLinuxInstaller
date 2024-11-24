@@ -473,7 +473,7 @@ def check_for_updates():
         set_logoslinuxinstaller_latest_release_config()
         utils.compare_logos_linux_installer_version()
         set_recommended_appimage_config()
-        wine.enforce_icu_data_files()
+        # wine.enforce_icu_data_files()
 
         config.LAST_UPDATED = now.isoformat()
         utils.write_config(config.CONFIG_FILE)

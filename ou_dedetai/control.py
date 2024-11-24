@@ -12,7 +12,7 @@ import sys
 import time
 from pathlib import Path
 
-from ou_dedetai.app import DOWNLOAD, App
+from ou_dedetai.app import App
 
 from . import config
 from . import constants
@@ -25,12 +25,6 @@ from . import utils
 
 def edit_file(config_file: str):
     subprocess.Popen(['xdg-open', config_file])
-
-
-def delete_log_file_contents():
-    # Write empty file.
-    with open(config.LOGOS_LOG, 'w') as f:
-        f.write('')
 
 
 def backup(app: App):
@@ -246,7 +240,7 @@ def remove_library_catalog():
 
 def set_winetricks(app: App):
     msg.status("Preparing winetricks…")
-    if app.conf.winetricks_binary != DOWNLOAD:
+    if app.conf.winetricks_binary != constants.DOWNLOAD:
         valid = True
         # Double check it's a valid winetricks
         if not Path(app.conf.winetricks_binary).exists():

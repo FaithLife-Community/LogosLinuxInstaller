@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 from typing import Optional
-from warnings import deprecated
 
 from . import constants
 
@@ -27,7 +26,6 @@ extended_config = {
     'CONFIG_FILE': None,
     'DELETE_LOG': None,
     'DIALOG': None,
-    'LOGOS_LOG': os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log"),  # noqa: E501
     # This is the installed Logos.exe
     'LOGOS_EXE': None,
     'SELECTED_APPIMAGE_FILENAME': None,
@@ -96,7 +94,6 @@ check_if_indexing = None
 
 
 # XXX: remove this
-@deprecated
 def get_config_file_dict(config_file_path):
     config_dict = {}
     if config_file_path.endswith('.json'):

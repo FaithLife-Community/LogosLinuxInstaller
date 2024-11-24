@@ -8,7 +8,8 @@ from pathlib import Path
 from queue import Queue
 from typing import Optional
 
-from ou_dedetai.app import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE, App
+from ou_dedetai.app import App
+from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
 
 from . import config
 from . import control

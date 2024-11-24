@@ -2,7 +2,6 @@
 import argparse
 import curses
 
-from ou_dedetai.app import EnvironmentOverrides
 try:
     import dialog  # noqa: F401
 except ImportError:
@@ -212,6 +211,7 @@ def parse_args(args, parser):
         msg.update_log_level(logging.DEBUG)
 
     if args.delete_log:
+        # XXX: what to do about this? Logging is already initialized, I guess we could clear from underneath?
         config.DELETE_LOG = True
 
     if args.set_appimage:
@@ -323,12 +323,9 @@ def set_config():
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
-    # Get config based on env and configuration file
-    log_level = EnvironmentOverrides.load().log_level | constants.DEFAULT_LOG_LEVEL
-
     # Set runtime config.
     # Initialize logging.
-    msg.initialize_logging(log_level)
+    msg.initialize_logging()
 
     # Set default config; incl. defining CONFIG_FILE.
     utils.set_default_config()
@@ -432,12 +429,6 @@ def main():
     set_config()
     set_dialog()
 
-    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
-    # can be run in conjunction with other actions, so it gets special
-    # treatment here once config is set.
-    if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
-        control.delete_log_file_contents()
-
     # Run safety checks.
     # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
     # self-update when updating LLI as it asks for a confirmation in the CLI.
@@ -448,7 +439,6 @@ def main():
 
     # Print terminal banner
     logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501
-    logging.debug(f"Installer log file: {config.LOGOS_LOG}")
 
     check_incompatibilities()
 

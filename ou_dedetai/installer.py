@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from ou_dedetai.app import DOWNLOAD, App
+from ou_dedetai.new_config import App
 
 from . import config
 from . import constants
@@ -263,7 +263,7 @@ def ensure_winetricks_executable(app: App):
         app=app
     )
 
-    if app.conf.winetricks_binary == DOWNLOAD or not os.access(app.conf.winetricks_binary, os.X_OK):
+    if app.conf.winetricks_binary == constants.DOWNLOAD or not os.access(app.conf.winetricks_binary, os.X_OK):
         # Either previous system winetricks is no longer accessible, or the
         # or the user has chosen to download it.
         msg.status("Downloading winetricks from the Internet…", app=app)

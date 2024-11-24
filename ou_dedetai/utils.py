@@ -61,7 +61,6 @@ def set_default_config():
     if config.CONFIG_FILE is None:
         config.CONFIG_FILE = constants.DEFAULT_CONFIG_PATH
     config.MYDOWNLOADS = get_user_downloads_dir()
-    os.makedirs(os.path.dirname(config.LOGOS_LOG), exist_ok=True)
 
 
 # XXX: remove, no need.

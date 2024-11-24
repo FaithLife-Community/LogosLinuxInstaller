@@ -304,7 +304,7 @@ def run_wine_proc(
     cmd = f"subprocess cmd: '{' '.join(command)}'"
     logging.debug(cmd)
     try:
-        with open(app.conf.wine_log_path, 'a') as wine_log:
+        with open(app.conf.app_wine_log_path, 'a') as wine_log:
             print(f"{utils.get_timestamp()}: {cmd}", file=wine_log)
             process = system.popen_command(
                 command,

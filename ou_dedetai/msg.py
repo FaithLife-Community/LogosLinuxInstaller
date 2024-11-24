@@ -7,6 +7,7 @@ import shutil
 import sys
 
 from pathlib import Path
+from ou_dedetai.new_config import EnvironmentOverrides
 
 from . import config
 from . import constants
@@ -67,7 +68,7 @@ def get_log_level_name(level):
     return name
 
 
-def initialize_logging(stderr_log_level):
+def initialize_logging():
     '''
     Log levels:
         Level       Value   Description
@@ -79,14 +80,36 @@ def initialize_logging(stderr_log_level):
         NOTSET      0       all events are handled
     '''
 
+    # Get config based on env and configuration file
+    # This loads from file/env, but won't prompt the user if it can't find something.
+    # The downside of this is: these values may not be set
+    config = EnvironmentOverrides.load()
+    log_level = config.log_level or constants.DEFAULT_LOG_LEVEL
+    # XXX: somehow this tis tuple
+    app_log_path = config.app_log_path or constants.DEFAULT_APP_LOG_PATH
+    del config
+
+    # Ensure the application log's directory exists
+    os.makedirs(os.path.dirname(app_log_path), exist_ok=True)
+
+    # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
+    # can be run in conjunction with other actions, so it gets special
+    # treatment here once config is set.
+    # if config.DELETE_LOG and os.path.isfile(app_log_path):
+    #     # Write empty file.
+    #     with open(app_log_path, 'w') as f:
+    #         f.write('')
+
     # Ensure log file parent folders exist.
-    log_parent = Path(config.LOGOS_LOG).parent
+    log_parent = Path(app_log_path).parent
     if not log_parent.is_dir():
         log_parent.mkdir(parents=True)
 
+    logging.debug(f"Installer log file: {app_log_path}")
+
     # Define logging handlers.
     file_h = GzippedRotatingFileHandler(
-        config.LOGOS_LOG,
+        app_log_path,
         maxBytes=10*1024*1024,
         backupCount=5,
         encoding='UTF8'
@@ -98,7 +121,7 @@ def initialize_logging(stderr_log_level):
     # stdout_h.setLevel(stdout_log_level)
     stderr_h = logging.StreamHandler(sys.stderr)
     stderr_h.name = "terminal"
-    stderr_h.setLevel(stderr_log_level)
+    stderr_h.setLevel(log_level)
     stderr_h.addFilter(DeduplicateFilter())
     handlers = [
         file_h,
