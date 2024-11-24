@@ -24,8 +24,6 @@ extended_config = {
     'CONFIG_FILE': None,
     'DELETE_LOG': None,
     'DIALOG': None,
-    # This is the installed Logos.exe
-    'LOGOS_EXE': None,
     'SELECTED_APPIMAGE_FILENAME': None,
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,

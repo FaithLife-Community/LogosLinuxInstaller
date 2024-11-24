@@ -433,16 +433,15 @@ def ensure_product_installed(app: App):
         app=app
     )
 
-    if not utils.find_installed_product(app.conf.faithlife_product, app.conf.wine_prefix):
+    if not app.is_installed():
         process = wine.install_msi(app)
         wine.wait_pid(process)
-        config.LOGOS_EXE = utils.find_installed_product(app.conf.faithlife_product, app.conf.wine_prefix)
         config.current_logos_version = app.conf.faithlife_product_release
 
     # Clean up temp files, etc.
     utils.clean_all()
 
-    logging.debug(f"> Product path: {config.LOGOS_EXE}")
+    logging.debug(f"> Product path: config.LOGOS_EXE={app.conf.logos_exe}")
 
 
 def ensure_config_file(app: App):

@@ -106,7 +106,7 @@ class LogosManager:
             # if config.DIALOG == 'cli':
             #     run_logos()
             #     self.monitor()
-            #     while config.processes.get(config.LOGOS_EXE) is None:
+            #     while config.processes.get(app.conf.logos_exe) is None:
             #         time.sleep(0.1)
             #     while self.logos_state != State.STOPPED:
             #         time.sleep(0.1)

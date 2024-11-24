@@ -415,7 +415,7 @@ class TUI(App):
         elif choice == "Remove Library Catalog":
             self.active_screen.running = 0
             self.active_screen.choice = "Processing"
-            control.remove_library_catalog()
+            control.remove_library_catalog(self)
         elif choice.startswith("Winetricks"):
             self.reset_screen()
             self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu",
@@ -473,11 +473,11 @@ class TUI(App):
     def utilities_menu_select(self, choice):
         if choice == "Remove Library Catalog":
             self.reset_screen()
-            control.remove_library_catalog()
+            control.remove_library_catalog(self)
             self.go_to_main_menu()
         elif choice == "Remove All Index Files":
             self.reset_screen()
-            control.remove_all_index_files()
+            control.remove_all_index_files(self)
             self.go_to_main_menu()
         elif choice == "Edit Config":
             self.reset_screen()
@@ -803,11 +803,11 @@ class TUI(App):
 
     def set_utilities_menu_options(self, dialog=False):
         labels = []
-        if utils.file_exists(config.LOGOS_EXE):
+        if self.is_installed():
             labels_catalog = [
-            "Remove Library Catalog",
-            "Remove All Index Files",
-            "Install ICU"
+                "Remove Library Catalog",
+                "Remove All Index Files",
+                "Install ICU"
             ]
             labels.extend(labels_catalog)
 
@@ -817,7 +817,7 @@ class TUI(App):
         ]
         labels.extend(labels_utilities)
 
-        if utils.file_exists(config.LOGOS_EXE):
+        if self.is_installed():
             labels_utils_installed = [
                 "Change Logos Release Channel",
                 f"Change {constants.APP_NAME} Release Channel",

@@ -53,13 +53,13 @@ class CLI(App):
         wine.enforce_icu_data_files()
 
     def remove_index_files(self):
-        control.remove_all_index_files()
+        control.remove_all_index_files(self)
 
     def remove_install_dir(self):
         control.remove_install_dir(self)
 
     def remove_library_catalog(self):
-        control.remove_library_catalog()
+        control.remove_library_catalog(self)
 
     def restore(self):
         control.restore(app=self)

@@ -89,7 +89,7 @@ def backup_and_restore(mode: str, app: App):
                 restore_dir = msg.cli_ask_filepath("Path to backup set that you want to restore:")  # noqa: E501
         source_dir_base = restore_dir
     else:
-        source_dir_base = Path(config.LOGOS_EXE).parent
+        source_dir_base = Path(app.conf.logos_exe).parent
     src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]  # noqa: E501
     logging.debug(f"{src_dirs=}")
     if not src_dirs:
@@ -126,7 +126,7 @@ def backup_and_restore(mode: str, app: App):
 
     # Set destination folder.
     if mode == 'restore':
-        dst_dir = Path(config.LOGOS_EXE).parent
+        dst_dir = Path(app.conf.logos_exe).parent
         # Remove existing data.
         for d in data_dirs:
             dst = Path(dst_dir) / d
@@ -202,8 +202,8 @@ def remove_install_dir(app: App):
         logging.info(f"Folder doesn't exist: {folder}")
 
 
-def remove_all_index_files(app=None):
-    logos_dir = os.path.dirname(config.LOGOS_EXE)
+def remove_all_index_files(app: App):
+    logos_dir = os.path.dirname(app.conf.logos_exe)
     index_paths = [
         os.path.join(logos_dir, "Data", "*", "BibleIndex"),
         os.path.join(logos_dir, "Data", "*", "LibraryIndex"),
@@ -227,8 +227,8 @@ def remove_all_index_files(app=None):
     sys.exit(0)
 
 
-def remove_library_catalog():
-    logos_dir = os.path.dirname(config.LOGOS_EXE)
+def remove_library_catalog(app: App):
+    logos_dir = os.path.dirname(app.conf.logos_exe)
     files_to_remove = glob.glob(f"{logos_dir}/Data/*/LibraryCatalog/*")
     for file_to_remove in files_to_remove:
         try:

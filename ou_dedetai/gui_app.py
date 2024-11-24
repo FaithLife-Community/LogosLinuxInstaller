@@ -694,7 +694,7 @@ class ControlWindow(GuiApp):
         utils.start_thread(self.logos.index)
 
     def remove_library_catalog(self, evt=None):
-        control.remove_library_catalog()
+        control.remove_library_catalog(self)
 
     def remove_indexes(self, evt=None):
         self.gui.statusvar.set("Removing indexes…")
