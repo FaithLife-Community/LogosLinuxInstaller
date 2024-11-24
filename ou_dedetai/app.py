@@ -72,61 +72,13 @@ class App(abc.ABC):
 # XXX: What about legacy envs? From the extended config?
 # Like APPDIR_BINDIR? This no longer can be modified directly, unless we store an override.
 
-@dataclass
-class LegacyEnvOverrides:
-    """Previous versions of the installer allowed some values to be overridden by environment.
-    This keeps that compatibility."""
-    APPIMAGE_LINK_SELECTION_NAME: Optional[str]
-    APPDIR_BINDIR: Optional[str]
-    CHECK_UPDATES: Optional[bool]
-    CONFIG_FILE: Optional[str]
-    CUSTOMBINPATH: Optional[str]
-    DEBUG: Optional[bool]
-    DELETE_LOG: Optional[str]
-    DIALOG: Optional[str]
-    # XXX: default used to be `os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log")`
-    LOGOS_LOG: Optional[str]
-    # XXX: default used to be `os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")`
-    wine_log: Optional[str]
-    LOGOS_EXE: Optional[str]
-    # This is the logos installer executable name (NOT path)
-    LOGOS_EXECUTABLE: Optional[str]
-    LOGOS_VERSION: Optional[str]
-    # This wasn't overridable in the bash version of this installer (at 554c9a6),
-    # nor was it used in the python version (at 8926435)
-    # LOGOS64_MSI: Optional[str]
-    LOGOS64_URL: Optional[str]
-    SELECTED_APPIMAGE_FILENAME: Optional[str]
-    SKIP_DEPENDENCIES: Optional[bool]
-    SKIP_FONTS: Optional[bool]
-    SKIP_WINETRICKS: Optional[bool]
-    use_python_dialog: Optional[str]
-    VERBOSE: Optional[bool]
-    WINEBIN_CODE: Optional[str]
-    # XXX: move this out of this struct
-    WINEDEBUG: Optional[str] = "fixme-all,err-all",
-    WINEDLLOVERRIDES: Optional[str]
-    WINEPREFIX: Optional[str]
-    WINE_EXE: Optional[str]
-    WINESERVER_EXE: Optional[str]
-    WINETRICKS_UNATTENDED: Optional[str]
-
-    @classmethod
-    def from_env() -> "LegacyEnvOverrides":
-        legacy_envs = LegacyEnvOverrides()
-        for var in LegacyEnvOverrides().__dict__.keys():
-            if os.getenv(var) is not None:
-                # XXX: this doesn't load bools properly. Use get_type_hints to fid this.
-                legacy_envs[var] = os.getenv(var)
-        return legacy_envs
-
-
 # XXX: move these configs into config.py once it's cleared out
 @dataclass
 class LegacyConfiguration:
     """Configuration and it's keys from before the user configuration class existed.
     
     Useful for one directional compatibility"""
+    # Legacy Core Configuration
     FLPRODUCT: Optional[str] = None
     TARGETVERSION: Optional[str] = None
     TARGET_RELEASE_VERSION: Optional[str] = None
@@ -145,12 +97,63 @@ class LegacyConfiguration:
     logos_release_channel: Optional[str] = None
     lli_release_channel: Optional[str] = None
 
-    @classmethod
-    def config_file_path() -> str:
-        return os.getenv(constants.CONFIG_FILE_ENV) or constants.DEFAULT_CONFIG_PATH
+    # Legacy Extended Configuration
+    APPIMAGE_LINK_SELECTION_NAME: Optional[str] = None
+    APPDIR_BINDIR: Optional[str] = None
+    CHECK_UPDATES: Optional[bool] = None
+    CONFIG_FILE: Optional[str] = None
+    CUSTOMBINPATH: Optional[str] = None
+    DEBUG: Optional[bool] = None
+    DELETE_LOG: Optional[str] = None
+    DIALOG: Optional[str] = None
+    # XXX: default used to be `os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log")`
+    LOGOS_LOG: Optional[str] = None
+    # XXX: default used to be `os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")`
+    wine_log: Optional[str] = None
+    LOGOS_EXE: Optional[str] = None
+    # This is the logos installer executable name (NOT path)
+    LOGOS_EXECUTABLE: Optional[str] = None
+    LOGOS_VERSION: Optional[str] = None
+    # This wasn't overridable in the bash version of this installer (at 554c9a6),
+    # nor was it used in the python version (at 8926435)
+    # LOGOS64_MSI: Optional[str]
+    LOGOS64_URL: Optional[str] = None
+    SELECTED_APPIMAGE_FILENAME: Optional[str] = None
+    SKIP_DEPENDENCIES: Optional[bool] = None
+    SKIP_FONTS: Optional[bool] = None
+    SKIP_WINETRICKS: Optional[bool] = None
+    use_python_dialog: Optional[str] = None
+    VERBOSE: Optional[bool] = None
+    WINEBIN_CODE: Optional[str] = None
+    # Default was "fixme-all,err-all"
+    WINEDEBUG: Optional[str] = None,
+    WINEDLLOVERRIDES: Optional[str] = None
+    WINEPREFIX: Optional[str] = None
+    WINE_EXE: Optional[str] = None
+    WINESERVER_EXE: Optional[str] = None
+    WINETRICKS_UNATTENDED: Optional[str] = None
+
 
     @classmethod
-    def from_file_and_env() -> "LegacyConfiguration":
+    def config_file_path() -> str:
+        # XXX: consider legacy config files
+        return os.getenv("CONFIG_PATH") or constants.DEFAULT_CONFIG_PATH
+
+    @classmethod
+    def load() -> "LegacyConfiguration":
+        """Find the relevant config file and load it"""
+        # Update config from CONFIG_FILE.
+        if not utils.file_exists(LegacyConfiguration.config_file_path):  # noqa: E501
+            for legacy_config in constants.LEGACY_CONFIG_FILES:
+                if utils.file_exists(legacy_config):
+                    return LegacyConfiguration._load(legacy_config)
+        else:
+            return LegacyConfiguration._load(legacy_config)
+        logging.debug("Couldn't find config file, loading defaults...")
+        return LegacyConfiguration()
+
+    @classmethod
+    def _load(path: str) -> "LegacyConfiguration":
         config_file_path = LegacyConfiguration.config_file_path()
         config_dict = LegacyConfiguration()
         if config_file_path.endswith('.json'):
@@ -196,6 +199,9 @@ class LegacyConfiguration:
         return config_dict
 
 
+# XXX: rename, this is a set of overrides set by the user (via env) for values that are normally programatic.
+# These DO NOT represent normal user choices, however normally fallback to defaults
+# We can recover from all of these being optional (assuming the user choices are filled out), while in the case of UserConfigration we'd have to call out to the app.
 @dataclass
 class EnvironmentOverrides:
     """Allows some values to be overridden from environment.
@@ -208,17 +214,30 @@ class EnvironmentOverrides:
     faithlife_product_version: Optional[str]
     faithlife_installer_name: Optional[str]
     faithlife_installer_download_url: Optional[str]
+    log_level: Optional[str | int]
 
     winetricks_skip: Optional[bool]
 
+    # Corresponds to wine's WINEDLLOVERRIDES
     wine_dll_overrides: Optional[str]
+    # Corresponds to wine's WINEDEBUG
+    wine_debug: Optional[str]
 
     # Additional path to look for when searching for binaries.
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
     custom_binary_path: Optional[str]
 
     @classmethod
-    def from_legacy(legacy: LegacyEnvOverrides) -> "EnvironmentOverrides":
+    def from_legacy(legacy: LegacyConfiguration) -> "EnvironmentOverrides":
+        log_level = None
+        wine_debug = legacy.WINEDEBUG
+        if legacy.DEBUG:
+            log_level = logging.DEBUG
+            # FIXME: shouldn't this be `fixme-all,err-all`?
+            wine_debug = ""
+        elif legacy.VERBOSE:
+            log_level = logging.INFO
+            wine_debug = ""
         EnvironmentOverrides(
             installer_binary_directory=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
@@ -226,12 +245,14 @@ class EnvironmentOverrides:
             faithlife_product_version=legacy.LOGOS_VERSION,
             faithlife_installer_name=legacy.LOGOS_EXECUTABLE,
             faithlife_installer_download_url=legacy.LOGOS64_URL,
-            winetricks_skip=legacy.SKIP_WINETRICKS
+            winetricks_skip=legacy.SKIP_WINETRICKS,
+            log_level=log_level,
+            wine_debug=wine_debug
         )
 
     @classmethod
-    def from_env() -> "EnvironmentOverrides":
-        return EnvironmentOverrides.from_legacy(LegacyEnvOverrides.from_env())
+    def load() -> "EnvironmentOverrides":
+        return EnvironmentOverrides.from_legacy(LegacyConfiguration.load())
 
 
 @dataclass
@@ -264,7 +285,7 @@ class UserConfiguration:
     @classmethod
     def read_from_file_and_env() -> "UserConfiguration":
         # First read in the legacy configuration
-        new_config: UserConfiguration = UserConfiguration.from_legacy(LegacyConfiguration.from_file_and_env())
+        new_config: UserConfiguration = UserConfiguration.from_legacy(LegacyConfiguration.load())
         # Then read the file again this time looking for the new keys
         config_file_path = LegacyConfiguration.config_file_path()
 
@@ -536,10 +557,18 @@ class Config:
 
     @property
     def wine_dll_overrides(self) -> str:
+        """Used to set WINEDLLOVERRIDES"""
         if self._overrides.wine_dll_overrides is not None:
             return self._overrides.wine_dll_overrides
         # Default is no overrides
         return ''
+
+    @property
+    def wine_debug(self) -> str:
+        """Used to set WINEDEBUG"""
+        if self._overrides.wine_debug is not None:
+            return self._overrides.wine_debug
+        return "fixme-all,err-all"
 
     def toggle_faithlife_product_release_channel(self):
         if self._raw.faithlife_product_release_channel == "stable":
@@ -613,6 +642,12 @@ class Config:
     def logos_login_exe(self) -> Optional[str]:
         if self.wine_user is not None:
             return f'C:\\users\\{self.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe'  # noqa: E501
+
+    @property
+    def log_level(self) -> str | int:
+        if self._overrides.log_level is not None:
+            return self._overrides.log_level
+        return constants.DEFAULT_LOG_LEVEL
 
     @property
     # XXX: don't like this pattern.

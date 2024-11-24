@@ -540,7 +540,7 @@ def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
         winepath = app.conf.wine64_binary
     wine_env_defaults = {
         'WINE': str(winepath),
-        'WINEDEBUG': config.WINEDEBUG,
+        'WINEDEBUG': app.conf.wine_debug,
         'WINEDLLOVERRIDES': app.conf.wine_dll_overrides,
         'WINELOADER': str(winepath),
         'WINEPREFIX': app.conf.wine_prefix,

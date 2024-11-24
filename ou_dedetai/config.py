@@ -25,7 +25,6 @@ extended_config = {
     'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
     'CHECK_UPDATES': False,
     'CONFIG_FILE': None,
-    'DEBUG': False,
     'DELETE_LOG': None,
     'DIALOG': None,
     'LOGOS_LOG': os.path.expanduser(f"~/.local/state/FaithLife-Community/{constants.BINARY_NAME}.log"),  # noqa: E501
@@ -37,9 +36,7 @@ extended_config = {
     'SKIP_FONTS': False,
     # Dependent on DIALOG with env override
     'use_python_dialog': None,
-    'VERBOSE': False,
     'WINEBIN_CODE': None,
-    'WINEDEBUG': "fixme-all,err-all",
     'WINEPREFIX': None,
     'WINE_EXE': None,
     'WINETRICKS_UNATTENDED': None,
@@ -54,7 +51,6 @@ BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if n
 INSTALL_STEP: int = 0
 INSTALL_STEPS_COUNT: int = 0
 L9PACKAGES = None
-LOG_LEVEL = logging.WARNING
 LOGOS_FORCE_ROOT: bool = False
 LOGOS_ICON_FILENAME: Optional[str] = None
 LOGOS_ICON_URL: Optional[str] = None
@@ -151,6 +147,9 @@ def set_config_env(config_file_path):
         return
         # msg.logos_error(f"Error: Unable to get config at {config_file_path}")
     logging.info(f"Setting {len(config_dict)} variables from config file.")
+    # XXX: this could literally set any of the global values, but they're normally read from config.
+    # Does that still work? What's going on here?
+    # Guess I could read all legacy keys and legacy env from the file... YIKES.
     for key, value in config_dict.items():
         globals()[key] = value
     installdir = config_dict.get('INSTALLDIR')

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import curses
+
+from ou_dedetai.app import EnvironmentOverrides
 try:
     import dialog  # noqa: F401
 except ImportError:
@@ -204,10 +206,10 @@ def parse_args(args, parser):
         config.set_config_env(config.CONFIG_FILE)
 
     if args.verbose:
-        utils.set_verbose()
+        msg.update_log_level(logging.INFO)
 
     if args.debug:
-        utils.set_debug()
+        msg.update_log_level(logging.DEBUG)
 
     if args.delete_log:
         config.DELETE_LOG = True
@@ -229,9 +231,6 @@ def parse_args(args, parser):
 
     if args.force_root:
         config.LOGOS_FORCE_ROOT = True
-
-    if args.debug:
-        utils.set_debug()
 
     if args.custom_binary_path:
         if os.path.isdir(args.custom_binary_path):
@@ -319,17 +318,23 @@ def run_control_panel():
             raise e
 
 
+# XXX: fold this into new config
 def set_config():
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
+    # Get config based on env and configuration file
+    log_level = EnvironmentOverrides.load().log_level | constants.DEFAULT_LOG_LEVEL
+
     # Set runtime config.
     # Initialize logging.
-    msg.initialize_logging(config.LOG_LEVEL)
-    current_log_level = config.LOG_LEVEL
+    msg.initialize_logging(log_level)
 
     # Set default config; incl. defining CONFIG_FILE.
     utils.set_default_config()
+
+    # XXX: do this in the new scheme (read then write the config).
+    # We also want to remove the old file, that may be tricky.
 
     # Update config from CONFIG_FILE.
     if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
@@ -344,21 +349,6 @@ def set_config():
 
     # Parse CLI args and update affected config vars.
     parse_args(cli_args, parser)
-    # Update terminal log level if set in CLI and changed from current level.
-    if config.LOG_LEVEL != current_log_level:
-        msg.update_log_level(config.LOG_LEVEL)
-        current_log_level = config.LOG_LEVEL
-
-    # Update config based on environment variables.
-    config.get_env_config()
-    # Update terminal log level if set in environment and changed from current
-    # level.
-    if config.VERBOSE:
-        config.LOG_LEVEL = logging.VERBOSE
-    if config.DEBUG:
-        config.LOG_LEVEL = logging.DEBUG
-    if config.LOG_LEVEL != current_log_level:
-        msg.update_log_level(config.LOG_LEVEL)
 
 
 def set_dialog():

@@ -137,16 +137,6 @@ def restart_lli():
     sys.exit()
 
 
-def set_verbose():
-    config.LOG_LEVEL = logging.INFO
-    config.WINEDEBUG = ''
-
-
-def set_debug():
-    config.LOG_LEVEL = logging.DEBUG
-    config.WINEDEBUG = ""
-
-
 def clean_all():
     logging.info("Cleaning all temp files…")
     os.system("rm -fr /tmp/LBS.*")
