@@ -43,11 +43,10 @@ parts:
     build-packages:
       - wget
     override-pull: |
-      rm -f *.AppImage
-      wget https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
+      wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/wine-devel_9.19-x86_64.AppImage
     override-build: |
       chmod +x *.AppImage
-      ./*.AppImage --appimage-extract
+      ./*.AppImage --appimage-extract >/dev/null
       rm -f *.AppImage
       cp -r squashfs-root/* .
       rm -rf squashfs-root
