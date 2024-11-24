@@ -18,19 +18,19 @@ environment:
   # TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
   # TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
   # PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY
-plugs:
-  - audio-playback
-  - desktop
-  - home
-  - network
-  - opengl
-  - removable-media
-  - wayland
-  - x11
 
 apps:
   oudedetai:
     command: bin/run.sh
+    plugs: # &allplugs
+      - audio-playback
+      - desktop
+      - home
+      - network
+      - opengl
+      - removable-media
+      - wayland
+      - x11
 
 parts:
   bin:
