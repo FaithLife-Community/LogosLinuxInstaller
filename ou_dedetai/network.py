@@ -16,7 +16,7 @@ from xml.etree import ElementTree as ET
 
 from ou_dedetai import wine
 from ou_dedetai.app import App
-from ou_dedetai.new_config import EnvironmentOverrides
+from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import config
 from . import constants
@@ -454,7 +454,7 @@ def check_for_updates():
     # This loads from file/env, but won't prompt the user if it can't find something.
     # The downside of this is: these values may not be set
     # XXX: rename
-    conf = EnvironmentOverrides.load()
+    conf = EphemeralConfiguration.load()
     install_dir = config.installer_binary_dir
     del conf
 

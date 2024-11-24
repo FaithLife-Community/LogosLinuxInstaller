@@ -7,7 +7,7 @@ import shutil
 import sys
 
 from pathlib import Path
-from ou_dedetai.new_config import EnvironmentOverrides
+from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import config
 from . import constants
@@ -83,7 +83,7 @@ def initialize_logging():
     # Get config based on env and configuration file
     # This loads from file/env, but won't prompt the user if it can't find something.
     # The downside of this is: these values may not be set
-    config = EnvironmentOverrides.load()
+    config = EphemeralConfiguration.load()
     log_level = config.log_level or constants.DEFAULT_LOG_LEVEL
     app_log_path = config.app_log_path or constants.DEFAULT_APP_LOG_PATH
     del config

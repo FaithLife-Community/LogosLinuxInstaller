@@ -68,7 +68,6 @@ class LegacyConfiguration:
     WINESERVER_EXE: Optional[str] = None
     WINETRICKS_UNATTENDED: Optional[str] = None
 
-
     @classmethod
     def config_file_path(cls) -> str:
         # XXX: consider legacy config files
@@ -82,15 +81,14 @@ class LegacyConfiguration:
         if not utils.file_exists(config_file_path):  # noqa: E501
             for legacy_config in constants.LEGACY_CONFIG_FILES:
                 if utils.file_exists(legacy_config):
-                    return LegacyConfiguration._load(legacy_config)
+                    return LegacyConfiguration.load_from_path(legacy_config)
         else:
-            return LegacyConfiguration._load(config_file_path)
+            return LegacyConfiguration.load_from_path(config_file_path)
         logging.debug("Couldn't find config file, loading defaults...")
         return LegacyConfiguration()
 
     @classmethod
-    def _load(cls, path: str) -> "LegacyConfiguration":
-        config_file_path = LegacyConfiguration.config_file_path()
+    def load_from_path(cls, config_file_path: str) -> "LegacyConfiguration":
         config_dict = {}
         if config_file_path.endswith('.json'):
             try:
@@ -132,18 +130,20 @@ class LegacyConfiguration:
             if os.getenv(var) is not None:
                 config_dict[var] = os.getenv(var)
 
+        # Populate the path this config was loaded from
+        config_dict["CONFIG_FILE"] = config_file_path
+
         return LegacyConfiguration(**config_dict)
 
 
-# XXX: rename, this is a set of overrides set by the user (via env) for values that are normally programatic.
-# These DO NOT represent normal user choices, however normally fallback to defaults
-# We can recover from all of these being optional (assuming the user choices are filled out), while in the case of UserConfigration we'd have to call out to the app.
 @dataclass
-class EnvironmentOverrides:
-    """Allows some values to be overridden from environment.
-    
-    The actually name of the environment variables remains unchanged from before,
-    this translates the environment variable names to the new variable names"""
+class EphemeralConfiguration:
+    """A set of overrides that don't need to be stored.
+
+    Populated from environment/command arguments/etc
+
+    Changes to this are not saved to disk, but remain while the program runs
+    """
 
     installer_binary_dir: Optional[str]
     wineserver_binary: Optional[str]
@@ -172,8 +172,11 @@ class EnvironmentOverrides:
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process)
     custom_binary_path: Optional[str]
 
+    config_path: str
+    """Path this config was loaded from"""
+
     @classmethod
-    def from_legacy(cls, legacy: LegacyConfiguration) -> "EnvironmentOverrides":
+    def from_legacy(cls, legacy: LegacyConfiguration) -> "EphemeralConfiguration":
         log_level = None
         wine_debug = legacy.WINEDEBUG
         if legacy.DEBUG:
@@ -183,7 +186,7 @@ class EnvironmentOverrides:
         elif legacy.VERBOSE:
             log_level = logging.INFO
             wine_debug = ""
-        return EnvironmentOverrides(
+        return EphemeralConfiguration(
             installer_binary_dir=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
             custom_binary_path=legacy.CUSTOMBINPATH,
@@ -197,21 +200,32 @@ class EnvironmentOverrides:
             wine_prefix=legacy.WINEPREFIX,
             app_wine_log_path=legacy.wine_log,
             app_log_path=legacy.LOGOS_LOG,
-            app_winetricks_unattended=legacy.WINETRICKS_UNATTENDED
+            app_winetricks_unattended=legacy.WINETRICKS_UNATTENDED,
+            config_path=legacy.CONFIG_FILE
         )
 
     @classmethod
-    def load(cls) -> "EnvironmentOverrides":
-        return EnvironmentOverrides.from_legacy(LegacyConfiguration.load())
+    def load(cls) -> "EphemeralConfiguration":
+        return EphemeralConfiguration.from_legacy(LegacyConfiguration.load())
+
+    @classmethod
+    def load_from_path(cls, path: str) -> "EphemeralConfiguration":
+        return EphemeralConfiguration.from_legacy(LegacyConfiguration.load_from_path(path))
 
 
 @dataclass
-class UserConfiguration:
-    """This is the class that actually stores the values.
+class PersistentConfiguration:
+    """This class stores the options the user chose
 
-    Normally shouldn't be used directly, as it's types may be None
+    Normally shouldn't be used directly, as it's types may be None,
+    doesn't handle updates. Use through the `App`'s `Config` instead.
     
-    Easy reading to/from JSON and supports legacy keys"""
+    Easy reading to/from JSON and supports legacy keys
+    
+    These values should be stored across invocations
+    
+    MUST be saved explicitly
+    """
 
     # XXX: store a version in this config? Just in case we need to do conditional logic reading old version's configurations
 
@@ -233,11 +247,11 @@ class UserConfiguration:
     installer_release_channel: str = "stable"
 
     @classmethod
-    def read_from_file_and_env(cls) -> "UserConfiguration":
+    def load_from_path(cls, config_file_path: str) -> "PersistentConfiguration":
+        # XXX: handle legacy migration
+
         # First read in the legacy configuration
-        new_config: UserConfiguration = UserConfiguration.from_legacy(LegacyConfiguration.load())
-        # Then read the file again this time looking for the new keys
-        config_file_path = LegacyConfiguration.config_file_path()
+        new_config: PersistentConfiguration = PersistentConfiguration.from_legacy(LegacyConfiguration.load_from_path(config_file_path))
 
         new_keys = new_config.__dict__.keys()
 
@@ -253,11 +267,11 @@ class UserConfiguration:
         else:
             logging.info("Not reading new values from non-json config")
 
-        return UserConfiguration(**config_dict)
+        return PersistentConfiguration(**config_dict)
 
     @classmethod
-    def from_legacy(cls, legacy: LegacyConfiguration) -> "UserConfiguration":
-        return UserConfiguration(
+    def from_legacy(cls, legacy: LegacyConfiguration) -> "PersistentConfiguration":
+        return PersistentConfiguration(
             faithlife_product=legacy.FLPRODUCT,
             backup_dir=legacy.BACKUPDIR,
             curses_colors=legacy.curses_colors,
@@ -323,10 +337,10 @@ class Config:
     # suffix with _path if it's a file path
 
     # Storage for the keys
-    _raw: UserConfiguration
+    _raw: PersistentConfiguration
 
     # Overriding programmatically generated values from ENV
-    _overrides: EnvironmentOverrides
+    _overrides: EphemeralConfiguration
     
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
 
@@ -336,11 +350,10 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, app) -> None:
-        # This lazy load is required otherwise it would be a circular import
-        from ou_dedetai.app import App
-        self.app: App = app
-        self._raw = UserConfiguration.read_from_file_and_env()
+    def __init__(self, ephemeral_config: EphemeralConfiguration, app) -> None:
+        self.app = app
+        self._raw = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
+        self._overrides = ephemeral_config
         logging.debug("Current persistent config:")
         for k, v in self._raw.__dict__.items():
             logging.debug(f"{k}: {v}")

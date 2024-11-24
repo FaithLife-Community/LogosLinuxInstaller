@@ -50,6 +50,7 @@ MYDOWNLOADS: Optional[str] = None # FIXME: Should this use ~/.cache?
 OS_NAME: Optional[str] = None
 OS_RELEASE: Optional[str] = None
 PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None
+PACKAGE_MANAGER_COMMAND_DOWNLOAD: Optional[list[str]] = None
 PACKAGE_MANAGER_COMMAND_REMOVE: Optional[list[str]] = None
 PACKAGE_MANAGER_COMMAND_QUERY: Optional[list[str]] = None
 PACKAGES: Optional[str] = None

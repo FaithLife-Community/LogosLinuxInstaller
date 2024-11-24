@@ -1,6 +1,5 @@
 
 import abc
-from dataclasses import dataclass
 from typing import Optional
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
@@ -12,10 +11,10 @@ class App(abc.ABC):
     installer_step: int = 1
     """Step the installer is on. Starts at 0"""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, config, **kwargs) -> None:
         # This lazy load is required otherwise it would be a circular import
         from ou_dedetai.new_config import Config
-        self.conf = Config(self)
+        self.conf = Config(config, self)
         pass
 
     def ask(self, question: str, options: list[str]) -> str:

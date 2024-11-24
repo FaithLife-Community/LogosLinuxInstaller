@@ -2,6 +2,8 @@
 import argparse
 import curses
 
+from ou_dedetai.new_config import EphemeralConfiguration
+
 try:
     import dialog  # noqa: F401
 except ImportError:
@@ -199,11 +201,13 @@ def get_parser():
     return parser
 
 
-def parse_args(args, parser):
+def parse_args(args, parser) -> EphemeralConfiguration:
     if args.config:
-        config.CONFIG_FILE = args.config
-        config.set_config_env(config.CONFIG_FILE)
+        ephemeral_config = EphemeralConfiguration.load_from_path(args.config)
+    else:
+        ephemeral_config = EphemeralConfiguration.load()
 
+    # XXX: move the following options into the ephemeral_config
     if args.verbose:
         msg.update_log_level(logging.INFO)
 
@@ -221,7 +225,7 @@ def parse_args(args, parser):
         config.SKIP_FONTS = True
 
     if args.skip_winetricks:
-        os.environ["SKIP_WINETRICKS"] = "True"
+        ephemeral_config.winetricks_skip = True
 
     if network.check_for_updates:
         config.CHECK_UPDATES = True
@@ -292,15 +296,16 @@ def parse_args(args, parser):
     if config.ACTION is None:
         config.ACTION = run_control_panel
     logging.debug(f"{config.ACTION=}")
+    return ephemeral_config
 
 
-def run_control_panel():
+def run_control_panel(ephemeral_config: EphemeralConfiguration):
     logging.info(f"Using DIALOG: {config.DIALOG}")
     if config.DIALOG is None or config.DIALOG == 'tk':
-        gui_app.control_panel_app()
+        gui_app.control_panel_app(ephemeral_config)
     else:
         try:
-            curses.wrapper(tui_app.control_panel_app)
+            curses.wrapper(tui_app.control_panel_app, ephemeral_config)
         except KeyboardInterrupt:
             raise
         except SystemExit:
@@ -318,8 +323,7 @@ def run_control_panel():
             raise e
 
 
-# XXX: fold this into new config
-def set_config():
+def setup_config() -> EphemeralConfiguration:
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
@@ -331,7 +335,7 @@ def set_config():
     utils.set_default_config()
 
     # XXX: do this in the new scheme (read then write the config).
-    # We also want to remove the old file, that may be tricky.
+    # We also want to remove the old file, (stored in CONFIG_FILE?)
 
     # Update config from CONFIG_FILE.
     if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
@@ -345,7 +349,7 @@ def set_config():
         config.set_config_env(config.CONFIG_FILE)
 
     # Parse CLI args and update affected config vars.
-    parse_args(cli_args, parser)
+    return parse_args(cli_args, parser)
 
 
 def set_dialog():
@@ -384,14 +388,14 @@ def check_incompatibilities():
         system.remove_appimagelauncher()
 
 
-def run():
+def run(ephemeral_config: EphemeralConfiguration):
     # Run desired action (requested function, defaults to control_panel)
     if config.ACTION == "disabled":
         msg.logos_error("That option is disabled.", "info")
     if config.ACTION.__name__ == 'run_control_panel':
         # if utils.app_is_installed():
         #     wine.set_logos_paths()
-        config.ACTION()  # run control_panel right away
+        config.ACTION(ephemeral_config)  # run control_panel right away
         return
 
     # Only control_panel ACTION uses TUI/GUI interface; all others are CLI.
@@ -415,19 +419,21 @@ def run():
     ]
     if config.ACTION.__name__ not in install_required:
         logging.info(f"Running function: {config.ACTION.__name__}")
-        config.ACTION()
+        config.ACTION(ephemeral_config)
     elif utils.app_is_installed():  # install_required; checking for app
         # wine.set_logos_paths()
         # Run the desired Logos action.
         logging.info(f"Running function: {config.ACTION.__name__}")  # noqa: E501
-        config.ACTION()
+        config.ACTION(ephemeral_config)
     else:  # install_required, but app not installed
         msg.logos_error("App not installed…")
 
 
 def main():
-    set_config()
+    ephemeral_config = setup_config()
     set_dialog()
+
+    # XXX: consider configuration migration from legacy to new
 
     # Run safety checks.
     # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
@@ -444,7 +450,7 @@ def main():
 
     network.check_for_updates()
 
-    run()
+    run(ephemeral_config)
 
 
 def close():

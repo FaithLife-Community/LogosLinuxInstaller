@@ -10,6 +10,7 @@ from typing import Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
+from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import config
 from . import control
@@ -29,8 +30,8 @@ console_message = ""
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
 class TUI(App):
-    def __init__(self, stdscr):
-        super().__init__()
+    def __init__(self, stdscr, ephemeral_config: EphemeralConfiguration):
+        super().__init__(ephemeral_config)
         self.stdscr = stdscr
         # if config.current_logos_version is not None:
         self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
@@ -917,6 +918,6 @@ class TUI(App):
         return self.menu_window
 
 
-def control_panel_app(stdscr):
+def control_panel_app(stdscr, ephemeral_config: EphemeralConfiguration):
     os.environ.setdefault('ESCDELAY', '100')
-    TUI(stdscr).run()
+    TUI(stdscr, ephemeral_config).run()

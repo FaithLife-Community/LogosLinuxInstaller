@@ -2,6 +2,7 @@ import queue
 import threading
 
 from ou_dedetai.app import App
+from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import control
 from . import installer
@@ -11,8 +12,8 @@ from . import utils
 
 
 class CLI(App):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, ephemeral_config: EphemeralConfiguration):
+        super().__init__(ephemeral_config)
         self.running: bool = True
         self.choice_q = queue.Queue()
         self.input_q = queue.Queue()
@@ -141,85 +142,87 @@ class CLI(App):
 # NOTE: These subcommands are outside the CLI class so that the class can be
 # instantiated at the moment the subcommand is run. This lets any CLI-specific
 # code get executed along with the subcommand.
-def backup():
-    CLI().backup()
+
+# NOTE: we should be able to achieve the same effect without re-declaring these functions
+def backup(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).backup()
 
 
-def create_shortcuts():
-    CLI().create_shortcuts()
+def create_shortcuts(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).create_shortcuts()
 
 
-def edit_config():
-    CLI().edit_config()
+def edit_config(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).edit_config()
 
 
-def get_winetricks():
-    CLI().get_winetricks()
+def get_winetricks(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).get_winetricks()
 
 
-def install_app():
-    CLI().install_app()
+def install_app(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).install_app()
 
 
-def install_d3d_compiler():
-    CLI().install_d3d_compiler()
+def install_d3d_compiler(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).install_d3d_compiler()
 
 
-def install_dependencies():
-    CLI().install_dependencies()
+def install_dependencies(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).install_dependencies()
 
 
-def install_fonts():
-    CLI().install_fonts()
+def install_fonts(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).install_fonts()
 
 
-def install_icu():
-    CLI().install_icu()
+def install_icu(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).install_icu()
 
 
-def remove_index_files():
-    CLI().remove_index_files()
+def remove_index_files(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).remove_index_files()
 
 
-def remove_install_dir():
-    CLI().remove_install_dir()
+def remove_install_dir(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).remove_install_dir()
 
 
-def remove_library_catalog():
-    CLI().remove_library_catalog()
+def remove_library_catalog(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).remove_library_catalog()
 
 
-def restore():
-    CLI().restore()
+def restore(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).restore()
 
 
-def run_indexing():
-    CLI().run_indexing()
+def run_indexing(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).run_indexing()
 
 
-def run_installed_app():
-    CLI().run_installed_app()
+def run_installed_app(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).run_installed_app()
 
 
-def run_winetricks():
-    CLI().run_winetricks()
+def run_winetricks(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).run_winetricks()
 
 
-def set_appimage():
-    CLI().set_appimage()
+def set_appimage(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).set_appimage()
 
 
-def toggle_app_logging():
-    CLI().toggle_app_logging()
+def toggle_app_logging(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).toggle_app_logging()
 
 
-def update_latest_appimage():
-    CLI().update_latest_appimage()
+def update_latest_appimage(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).update_latest_appimage()
 
 
-def update_self():
-    CLI().update_self()
+def update_self(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).update_self()
 
 
-def winetricks():
-    CLI().winetricks()
+def winetricks(ephemeral_config: EphemeralConfiguration):
+    CLI(ephemeral_config).winetricks()

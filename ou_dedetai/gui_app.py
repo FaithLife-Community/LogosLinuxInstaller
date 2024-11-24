@@ -17,6 +17,7 @@ from typing import Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
+from ou_dedetai.new_config import EphemeralConfiguration
 
 from . import config
 from . import constants
@@ -34,8 +35,8 @@ class GuiApp(App):
 
     _exit_option: Optional[str] = None
 
-    def __init__(self, root: "Root", **kwargs):
-        super().__init__()
+    def __init__(self, root: "Root", ephemeral_config: EphemeralConfiguration, **kwargs):
+        super().__init__(ephemeral_config)
         self.root_to_destory_on_none = root
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
@@ -550,8 +551,8 @@ class InstallerWindow(GuiApp):
 
 
 class ControlWindow(GuiApp):
-    def __init__(self, root, *args, **kwargs):
-        super().__init__(root)
+    def __init__(self, root, ephemeral_config: EphemeralConfiguration, *args, **kwargs):
+        super().__init__(root, ephemeral_config)
         # Set root parameters.
         self.root = root
         self.root.title(f"{constants.APP_NAME} Control Panel")
@@ -902,9 +903,9 @@ class ControlWindow(GuiApp):
         self.gui.progressvar.set(0)
 
 
-def control_panel_app():
+def control_panel_app(ephemeral_config: EphemeralConfiguration):
     utils.set_debug()
     classname = constants.BINARY_NAME
     root = Root(className=classname)
-    ControlWindow(root, class_=classname)
+    ControlWindow(root, ephemeral_config, class_=classname)
     root.mainloop()
