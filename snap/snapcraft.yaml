@@ -25,13 +25,10 @@ apps:
     extensions: [gnome]
     plugs: # &allplugs
       - audio-playback
-      # - desktop
-      # - home
+      - home
       - network
       - opengl
       - removable-media
-      # - wayland
-      # - x11
 
 parts:
   bin:
