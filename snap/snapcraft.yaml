@@ -41,53 +41,53 @@ parts:
     organize:
       run.sh: bin/run.sh
 
-  etc:
-    source: ./snap/etc
-    plugin: dump
-    organize:
-      oudedetai.json: etc/oudedetai.json
+  # etc:
+  #   source: ./snap/etc
+  #   plugin: dump
+  #   organize:
+  #     oudedetai.json: etc/oudedetai.json
 
-  icu:
-    source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
-    plugin: dump
-    organize:
-      '*': ${SNAP_USER_COMMON}/
+  # icu:
+  #   source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
+  #   plugin: dump
+  #   organize:
+  #     '*': etc/
 
-  wine:
-    source: .  # "Failed to pull source" when URL is given here
-    plugin: dump
-    source-type: local
-    build-packages:
-      - wget
-    override-pull: |
-      file=wine-devel_9.19-x86_64.AppImage
-      wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
-      if [[ ! -r $file ]]; then
-        exit 1
-      fi
-      chmod +x $file
-      ./$file --appimage-extract >/dev/null
-      if [[ ! -d squashfs-root ]]; then
-        exit 1
-      fi
-      rm -f $file
-    override-build: |
-      cp --archive --link --no-dereference squashfs-root/* $CRAFT_PART_INSTALL
-    stage:
-      - -AppRun*
-      - -.bundle.yml
-      - -.DirIcon
-      - -*.desktop
-      - -*.svg
-      - -lib64
-      - -winedata
-      - -wrapper
-    # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
-    #   - libcapi20-dev  # libcapi20.so.3
-    #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
-    #   - ocl-icd-opencl-dev  # libOpenCL.so.1
-    #   - libsane-dev  # libsane.so.1
-    #   - libusb-1.0-0-dev  # libusb-1.0.so.0
+  # wine:
+  #   source: .  # "Failed to pull source" when URL is given here
+  #   plugin: dump
+  #   source-type: local
+  #   build-packages:
+  #     - wget
+  #   override-pull: |
+  #     file=wine-devel_9.19-x86_64.AppImage
+  #     wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
+  #     if [[ ! -r $file ]]; then
+  #       exit 1
+  #     fi
+  #     chmod +x $file
+  #     ./$file --appimage-extract >/dev/null
+  #     if [[ ! -d squashfs-root ]]; then
+  #       exit 1
+  #     fi
+  #     rm -f $file
+  #   override-build: |
+  #     cp --archive --link --no-dereference squashfs-root/* $CRAFT_PART_INSTALL
+  #   stage:
+  #     - -AppRun*
+  #     - -.bundle.yml
+  #     - -.DirIcon
+  #     - -*.desktop
+  #     - -*.svg
+  #     - -lib64
+  #     - -winedata
+  #     - -wrapper
+  #   # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
+  #   #   - libcapi20-dev  # libcapi20.so.3
+  #   #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
+  #   #   - ocl-icd-opencl-dev  # libOpenCL.so.1
+  #   #   - libsane-dev  # libsane.so.1
+  #   #   - libusb-1.0-0-dev  # libusb-1.0.so.0
 
 
   oudedetai:
