@@ -70,7 +70,7 @@ parts:
       fi
       rm -f $file
     override-build: |
-      cp -r squashfs-root/* $CRAFT_PART_INSTALL
+      cp --archive --no-dereference squashfs-root/* $CRAFT_PART_INSTALL
     stage:
       - -AppRun*
       - -.bundle.yml
