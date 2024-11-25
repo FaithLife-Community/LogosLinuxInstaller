@@ -56,6 +56,7 @@ parts:
     plugin: dump
     source-type: local
     build-packages:
+      - rsync
       - wget
     override-pull: |
       file=wine-devel_9.19-x86_64.AppImage
@@ -70,8 +71,8 @@ parts:
       fi
       rm -f $file
     override-build: |
-      cd squashfs-root
-      cp --archive --link --no-dereference . $CRAFT_PART_INSTALL
+      # cp --archive --link --no-dereference squashfs-root/* $CRAFT_PART_INSTALL
+      rsync -a squashfs-root/* $CRAFT_PART_INSTALL
     stage:
       - -AppRun*
       - -.bundle.yml
