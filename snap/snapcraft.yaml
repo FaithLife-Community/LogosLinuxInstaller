@@ -106,6 +106,6 @@ parts:
   oudedetai-pkgs:
     plugin: nil
     stage-packages:
-      - libtinfo6
+      - libncurses6
       - python3-tk
     
