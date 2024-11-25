@@ -71,8 +71,11 @@ parts:
         exit 1
       fi
       rm -f $file
+      # Fix file permissions.
+      chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
     override-build: |
       cp --archive --link --no-dereference squashfs-root/* $CRAFT_PART_INSTALL
+      ls -l $CRAFT_PART_INSTALL
     stage:
       - -AppRun*
       - -.bundle.yml
