@@ -22,15 +22,16 @@ environment:
 apps:
   oudedetai:
     command: bin/run.sh
+    extensions: [gnome]
     plugs: # &allplugs
       - audio-playback
-      - desktop
-      - home
+      # - desktop
+      # - home
       - network
       - opengl
       - removable-media
-      - wayland
-      - x11
+      # - wayland
+      # - x11
 
 parts:
   bin:
