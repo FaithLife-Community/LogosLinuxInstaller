@@ -21,7 +21,7 @@ environment:
   # PYTHON_LIB_DYNLOAD_PATH: $SNAP/usr/lib/python3.12/lib-dynload
   # TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
   # TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
-  # PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY
+  PYTHONPATH: $SNAP/usr/$PYTHONPATH #$PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY
 
 apps:
   oudedetai:
@@ -106,6 +106,7 @@ parts:
       - python3-tk
     override-prime: |
       echo '<TODO>'
+      craftctl default
 
 # Reported unused libs:
 # lib/x86_64-linux-gnu/libapprun_hooks.so
