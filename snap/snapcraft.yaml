@@ -41,17 +41,17 @@ parts:
     organize:
       run.sh: bin/run.sh
 
-  # etc:
-  #   source: ./snap/etc
-  #   plugin: dump
-  #   organize:
-  #     oudedetai.json: etc/oudedetai.json
+  etc:
+    source: ./snap/etc
+    plugin: dump
+    organize:
+      oudedetai.json: etc/oudedetai.json
 
-  # icu:
-  #   source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
-  #   plugin: dump
-  #   organize:
-  #     '*': etc/
+  icu:
+    source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
+    plugin: dump
+    organize:
+      '*': etc/
 
   # wine:
   #   source: .  # "Failed to pull source" when URL is given here
