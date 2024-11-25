@@ -27,13 +27,12 @@ apps:
   oudedetai:
     command: bin/run.sh
     extensions: [gnome]
-
-plugs: # &allplugs
-  audio-playback:
-  home:
-  network:
-  opengl:
-  removable-media:
+    plugs: &allplugs
+      - audio-playback
+      - home
+      - network
+      - opengl
+      - removable-media
 
 parts:
   bin:
