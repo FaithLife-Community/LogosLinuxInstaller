@@ -55,6 +55,7 @@ parts:
     source: .  # "Failed to pull source" when URL is given here
     plugin: dump
     source-type: local
+    after: [oudedetai]
     build-packages:
       - wget
     override-pull: |
@@ -87,6 +88,7 @@ parts:
     ##
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     plugin: python
+    after: [tk]
 
   tk:
     plugin: nil
