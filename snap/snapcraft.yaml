@@ -103,6 +103,8 @@ parts:
     stage-packages:
       - libncurses6
       - libncursesw6
+      - libproxy1v5
+      - glib-networking
       - python3-tk
     override-prime: |
       echo '<TODO>'
