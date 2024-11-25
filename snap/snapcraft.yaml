@@ -41,7 +41,7 @@ parts:
     source: ./snap/etc
     plugin: dump
     organize:
-      oudedetai.json: etc/oudedetai.json
+      oudedetai.json: etc/
 
   icu:
     source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
@@ -85,13 +85,8 @@ parts:
     #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
     #   - ocl-icd-opencl-dev  # libOpenCL.so.1
     #   - libsane-dev  # libsane.so.1
-    #   - libasound2-dev  # libasound.so.2
-    #   - libgstreamer-plugins-base1.0-dev  # libgstaudio-1.0.so.0, libgsttag-1.0.so.0, libgstvideo-1.0.so.0
-    #   - libgstreamer1.0-dev  # libgstreamer-1.0.so.0
-    #   - libpulse-dev  # libpulse.so.0
     #   - libusb-1.0-0-dev  # libusb-1.0.so.0
-    #   - libgl-dev  # libGL.so.1
-    #   - libwayland-dev  # libwayland-client.so.0
+
 
   oudedetai:
     ## just for testing
@@ -101,9 +96,44 @@ parts:
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     plugin: python
 
-  oudedetai-pkgs:
+  cleanup:
     plugin: nil
     stage-packages:
       - libncurses6
+      - libncursesw6
       - python3-tk
-    
+    override-prime: |
+      echo '<TODO>'
+
+# Reported unused libs:
+# lib/x86_64-linux-gnu/libapprun_hooks.so
+# lib/x86_64-linux-gnu/libulockmgr.so.1.0.1
+# opt/glibc/lib/x86_64-linux-gnu/libBrokenLocale-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libSegFault.so
+# opt/glibc/lib/x86_64-linux-gnu/libanl-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libc-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libcrypt.so.1.1.0
+# opt/glibc/lib/x86_64-linux-gnu/libdl-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libgcc_s.so.1
+# opt/glibc/lib/x86_64-linux-gnu/libm-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libmemusage.so
+# opt/glibc/lib/x86_64-linux-gnu/libmvec-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnsl-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnss_compat-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnss_dns-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnss_files-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnss_hesiod-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnss_nis-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libnss_nisplus-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libpcprofile.so
+# opt/glibc/lib/x86_64-linux-gnu/libpthread-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libresolv-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/librt-2.31.so
+# opt/glibc/lib/x86_64-linux-gnu/libthread_db-1.0.so
+# opt/glibc/lib/x86_64-linux-gnu/libutil-2.31.so
+# opt/glibstdcpp/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.28
+# usr/lib/libBLTlite.2.5.so.8.6
+# usr/lib/x86_64-linux-gnu/libform.so.6.4
+# usr/lib/x86_64-linux-gnu/libmenu.so.6.4
+# usr/lib/x86_64-linux-gnu/libpanel.so.6.4
+# usr/lib/x86_64-linux-gnu/libtic.so.6.2
