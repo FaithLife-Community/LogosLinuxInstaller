@@ -80,6 +80,18 @@ parts:
       - -lib64
       - -winedata
       - -wrapper
+    stage-packages:
+      - libcapi20-dev  # libcapi20.so.3
+      - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
+      - ocl-icd-opencl-dev  # libOpenCL.so.1
+      - libsane-dev  # libsane.so.1
+      - libasound2-dev  # libasound.so.2
+      - libgstreamer-plugins-base1.0-dev  # libgstaudio-1.0.so.0, libgsttag-1.0.so.0, libgstvideo-1.0.so.0
+      - libgstreamer1.0-dev  # libgstreamer-1.0.so.0
+      - libpulse-dev  # libpulse.so.0
+      - libusb-1.0-0-dev  # libusb-1.0.so.0
+      - libgl-dev  # libGL.so.1
+      - libwayland-dev  # libwayland-client.so.0
 
   oudedetai:
     ## just for testing
@@ -89,8 +101,9 @@ parts:
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     plugin: python
 
-  tk:
+  oudedetai-pkgs:
     plugin: nil
     stage-packages:
+      - libtinfo6
       - python3-tk
     
