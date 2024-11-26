@@ -56,6 +56,7 @@ parts:
   wine:
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
+    source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
       - --enable-win64
