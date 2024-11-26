@@ -93,6 +93,7 @@ parts:
       - --enable-archs=i386,x86_64
       - --prefix=/opt/wine-devel
     build-packages:
+      - flex  # added by me
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
       # - libsdl2  # not found
@@ -101,7 +102,6 @@ parts:
       - gcc-9
       - g++-9
       # - wget  # already?
-      # - git  # already?
       - gcc-mingw-w64
       - g++-mingw-w64
       - libxpresent-dev
