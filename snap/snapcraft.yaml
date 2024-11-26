@@ -93,15 +93,15 @@ parts:
       - --enable-archs=i386,x86_64
       - --prefix=/opt/wine-devel
     build-packages:
-      - build-dep
+      # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
-      # - libsdl2
+      # - libsdl2  # not found
       - libvulkan1
       - ccache
       - gcc-9
       - g++-9
-      # - wget
-      # - git
+      # - wget  # already?
+      # - git  # already?
       - gcc-mingw-w64
       - g++-mingw-w64
       - libxpresent-dev
