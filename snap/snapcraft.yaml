@@ -93,7 +93,10 @@ parts:
       - --enable-archs=i386,x86_64
       - --prefix=/opt/wine-devel
     build-packages:
-      - flex  # added by me
+      # added by me
+      - flex 
+      - bison
+      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
       # - libsdl2  # not found
