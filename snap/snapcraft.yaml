@@ -54,7 +54,8 @@ parts:
       '*': etc/
 
   wine:
-    source: https://gitlab.winehq.org/wine/wine/-/releases/wine-9.19/downloads/wine-9.19.tar.xz
+    source: https://gitlab.winehq.org/wine/wine.git
+    source-tag: wine-9.19
     plugin: autotools
     autotools-configure-parameters:
       - --enable-win64
