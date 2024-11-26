@@ -54,7 +54,7 @@ parts:
       '*': etc/
 
   wine:
-    source: squashfs-root/  # "Failed to pull source" when URL is given here
+    source: .  # "Failed to pull source" when URL is given here
     plugin: dump
     source-type: local
     build-packages:
@@ -73,7 +73,7 @@ parts:
       rm -f $file
       # Fix file permissions.
       chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
-      craftctl default
+      # craftctl default
     # override-build: |
     #   cp --archive --link --no-dereference squashfs-root/* $CRAFT_PART_INSTALL
     #   ls -l $CRAFT_PART_INSTALL
@@ -86,8 +86,8 @@ parts:
       # - -lib64
       - -winedata
       - -wrapper
-    # organize:
-    #   'lib64/*': lib
+    organize:
+      'squashfs-root/*': .
     # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
     #   - libcapi20-dev  # libcapi20.so.3
     #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
