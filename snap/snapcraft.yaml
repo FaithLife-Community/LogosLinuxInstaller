@@ -116,7 +116,7 @@ parts:
       - libgphoto2-dev
       - liblcms2-dev
       - libcapi20-dev
-      - libjpeg62-dev
+      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
       - samba-dev
       - libpcsclite-dev
       - libcups2-dev
