@@ -54,41 +54,54 @@ parts:
       '*': etc/
 
   wine:
-    source: .  # "Failed to pull source" when URL is given here
-    plugin: dump
-    source-type: local
-    build-packages:
-      - wget
-    override-pull: |
-      file=wine-devel_9.19-x86_64.AppImage
-      wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
-      if [[ ! -r $file ]]; then
-        exit 1
-      fi
-      chmod +x $file
-      ./$file --appimage-extract >/dev/null
-      if [[ ! -d squashfs-root ]]; then
-        exit 1
-      fi
-      rm -f $file
-      # Fix file permissions.
-      chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
-    stage:
-      - -AppRun*
-      - -.bundle.yml
-      - -.DirIcon
-      - -*.desktop
-      - -*.svg
-      - -winedata
-      - -wrapper
-    organize:
-      'squashfs-root/*': .
-    # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
-    #   - libcapi20-dev  # libcapi20.so.3
-    #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
-    #   - ocl-icd-opencl-dev  # libOpenCL.so.1
-    #   - libsane-dev  # libsane.so.1
-    #   - libusb-1.0-0-dev  # libusb-1.0.so.0
+    source: https://gitlab.winehq.org/wine/wine/-/releases/wine-9.19/downloads/wine-9.19.tar.xz
+    plugin: autotools
+    autotools-configure-parameters:
+      - --enable-win64
+      - --without-ldap
+      - --without-oss
+      - --disable-winemenubuilder
+      - --disable-win16
+      - --disable-tests
+      - --enable-archs=i386,x86_64
+      - --prefix=opt/wine-devel
+
+  # wine-appimage:
+  #   source: .  # "Failed to pull source" when URL is given here
+  #   plugin: dump
+  #   source-type: local
+  #   build-packages:
+  #     - wget
+  #   override-pull: |
+  #     file=wine-devel_9.19-x86_64.AppImage
+  #     wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
+  #     if [[ ! -r $file ]]; then
+  #       exit 1
+  #     fi
+  #     chmod +x $file
+  #     ./$file --appimage-extract >/dev/null
+  #     if [[ ! -d squashfs-root ]]; then
+  #       exit 1
+  #     fi
+  #     rm -f $file
+  #     # Fix file permissions.
+  #     chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
+  #   stage:
+  #     - -AppRun*
+  #     - -.bundle.yml
+  #     - -.DirIcon
+  #     - -*.desktop
+  #     - -*.svg
+  #     - -winedata
+  #     - -wrapper
+  #   organize:
+  #     'squashfs-root/*': .
+  #   # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
+  #   #   - libcapi20-dev  # libcapi20.so.3
+  #   #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
+  #   #   - ocl-icd-opencl-dev  # libOpenCL.so.1
+  #   #   - libsane-dev  # libsane.so.1
+  #   #   - libusb-1.0-0-dev  # libusb-1.0.so.0
 
   oudedetai:
     ## just for testing
