@@ -95,7 +95,7 @@ parts:
     build-packages:
       - build-dep
       - wine-development
-      - libsdl2
+      # - libsdl2
       - libvulkan1
       - ccache
       - gcc-9
