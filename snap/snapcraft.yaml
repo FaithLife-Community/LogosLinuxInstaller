@@ -59,6 +59,7 @@ parts:
 
   wine:
     plugin: nil
+    build-packages: [wget]
     override-stage: |
       dpkg --add-architecture i386
       mkdir -pm755 /etc/apt/keyrings
