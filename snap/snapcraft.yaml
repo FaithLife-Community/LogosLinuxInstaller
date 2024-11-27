@@ -92,18 +92,19 @@ parts:
       rm -f $file
       # Fix file permissions.
       chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
-      rsync -at squashfs-root/ .
-      rm -rf squashfs-root
-    stage:
-      - -AppRun*
-      - -.bundle.yml
-      - -.DirIcon
-      - -*.desktop
-      - -*.svg
-      - -winedata
-      - -wrapper
-    # organize:
-    #   'squashfs-root/*': .  # clobbers existing dirs: bin, etc.
+    # stage:
+    #   - -AppRun*
+    #   - -.bundle.yml
+    #   - -.DirIcon
+    #   - -*.desktop
+    #   - -*.svg
+    #   - -winedata
+    #   - -wrapper
+    organize:
+      'squashfs-root/bin/winetricks': bin/winetricks
+      'squashfs-root/lib/*': lib
+      'squashfs-root/lib64/*': lib64
+      'squashfs-root/opt/*': opt
     # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
     #   - libcapi20-dev  # libcapi20.so.3
     #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
