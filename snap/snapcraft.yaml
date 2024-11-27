@@ -60,7 +60,7 @@ parts:
   wine:
     plugin: nil
     build-packages: [wget]
-    override-stage: |
+    override-pull: |
       dpkg --add-architecture i386
       mkdir -pm755 /etc/apt/keyrings
       wget -qO /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
