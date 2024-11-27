@@ -14,11 +14,11 @@ if [[ $SNAP_NAME != oudedetai ]]; then
 fi
 
 # Ensure config file.
-config_file="${SNAP_NAME}.json"
-tmp=$(mktemp)
-user_config="${SNAP_USER_DATA}/${config_file}"
+config_json="${SNAP_NAME}.json"
+user_config="${SNAP_USER_DATA}/${config_json}"
 if [[ ! -r $user_config ]]; then
-    cp "${SNAP}/etc/${config_file}" "$user_config"
+    tmp=$(mktemp)
+    cp "${SNAP}/etc/${config_json}" "$user_config"
     jq --arg a "$FLPRODUCT" '.FLPRODUCT = $a' "$user_config" > "$tmp"
     mv "$tmp" "$user_config"
     jq --arg a "$INSTALLDIR" '.INSTALLDIR = $a' "$user_config" > "$tmp"
@@ -29,6 +29,12 @@ if [[ ! -r $user_config ]]; then
     mv "$tmp" "$user_config"
     jq --arg a "$WINE_EXE" '.WINE_EXE = $a' "$user_config" > "$tmp"
     mv "$tmp" "$user_config"
+fi
+
+# Ensure ICU downloaded files.
+icu_gz=icu-win.tar.gz
+if [[ ! -r ${SNAP_USER_COMMON}/${icu_gz} ]]; then
+    cp "${SNAP}/etc/${icu_gz}" "$SNAP_USER_COMMON"
 fi
 
 # Ensure Logos is installed.
