@@ -199,6 +199,8 @@ def mkdir_critical(directory):
 
 
 def get_user_downloads_dir():
+    if os.getenv('SNAP_USER_COMMON'):
+        return Path(os.getenv('SNAP_USER_COMMON'))
     home = Path.home()
     xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
     user_dirs_file = xdg_config / 'user-dirs.dirs'
