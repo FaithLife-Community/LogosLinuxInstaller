@@ -92,7 +92,8 @@ parts:
       rm -f $file
       # Fix file permissions.
       chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
-    # stage:
+    stage:
+      - -lib/libselinux.so*
     #   - -AppRun*
     #   - -.bundle.yml
     #   - -.DirIcon
