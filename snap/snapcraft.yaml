@@ -60,16 +60,16 @@ parts:
   wine:
     plugin: nil
     build-packages: [wget]
-    override-pull: |
+    override-stage: |
       dpkg --add-architecture i386
       mkdir -pm755 /etc/apt/keyrings
       wget -qO /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
       wget -qNP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
       apt-get update
-      # apt -y install --install-recommends winehq-devel=9.19~noble-1
+      apt-get -y install --install-recommends winehq-devel=9.19~noble-1
       craftctl default
-    stage-packages:
-      - winehq-devel=9.19~noble-1
+    # stage-packages:
+    #   - winehq-devel=9.19~noble-1
 
   # # REF:
   # # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
