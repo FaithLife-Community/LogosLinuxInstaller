@@ -69,121 +69,117 @@ parts:
   #     apt-get -y install --install-recommends winehq-devel
   #     craftctl default
 
-  # This is tricky b/c the folder structure seems non-standard, so other parts
-  # may have trouble working correctly with wine.
-  wine-appimage:
-    source: .  # "Failed to pull source" when URL is given here
-    plugin: dump
-    source-type: local
-    build-packages:
-      - wget
-      - rsync
-    override-pull: |
-      file=wine-devel_9.19-x86_64.AppImage
-      wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
-      if [[ ! -r $file ]]; then
-        exit 1
-      fi
-      chmod +x $file
-      ./$file --appimage-extract >/dev/null
-      if [[ ! -d squashfs-root ]]; then
-        exit 1
-      fi
-      rm -f $file
-      # Fix file permissions.
-      chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
-    stage:
-      - -lib/libselinux.so*
-    #   - -AppRun*
-    #   - -.bundle.yml
-    #   - -.DirIcon
-    #   - -*.desktop
-    #   - -*.svg
-    #   - -winedata
-    #   - -wrapper
-    organize:
-      'squashfs-root/bin/winetricks': bin/winetricks
-      'squashfs-root/lib/*': lib
-      'squashfs-root/lib64/*': lib64
-      'squashfs-root/opt/*': opt
-    # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
-    #   - libcapi20-dev  # libcapi20.so.3
-    #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
-    #   - ocl-icd-opencl-dev  # libOpenCL.so.1
-    #   - libsane-dev  # libsane.so.1
-    #   - libusb-1.0-0-dev  # libusb-1.0.so.0
-
-  # # REF:
-  # # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
-  # # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
-
-  # # export CC="gcc-9"
-  # # export CXX="g++-9"
-
-  # # export CROSSCC_X32="i686-w64-mingw32-gcc"
-  # # export CROSSCXX_X32="i686-w64-mingw32-g++"
-  # # export CROSSCC_X64="x86_64-w64-mingw32-gcc"
-  # # export CROSSCXX_X64="x86_64-w64-mingw32-g++"
-
-  # # export CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-  # # export CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-  # # export LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
-
-  # # export CROSSCFLAGS_X32="${CFLAGS_X32}"
-  # # export CROSSCFLAGS_X64="${CFLAGS_X64}"
-  # # export CROSSLDFLAGS="${LDFLAGS}"
-  # # export CROSSCC="${CROSSCC_X64}"
-  # # export CROSSCXX="${CROSSCXX_X64}"
-  # # export CFLAGS="${CFLAGS_X64}"
-  # # export CXXFLAGS="${CFLAGS_X64}"
-  # # export CROSSCFLAGS="${CROSSCFLAGS_X64}"
-  # # export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
-  # wine64:
-  #   source: https://gitlab.winehq.org/wine/wine.git
-  #   source-tag: wine-9.19
-  #   source-depth: 1
-  #   plugin: autotools
-  #   autotools-configure-parameters:
-  #     - --enable-win64
-  #     # - --without-ldap
-  #     - --without-oss
-  #     - --disable-winemenubuilder
-  #     - --disable-win16
-  #     - --disable-tests
-  #     - --enable-archs=i386,x86_64
-  #     - --prefix=/opt/wine-devel
+  # # This is tricky b/c the included libs are different from those in other
+  # # parts, so binaries from different parts seem to have trouble working.
+  # wine-appimage:
+  #   source: .  # "Failed to pull source" when URL is given here
+  #   plugin: dump
+  #   source-type: local
   #   build-packages:
-  #     # added by me
-  #     - flex 
-  #     - bison
-  #     # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-  #     # - build-dep  # not found
-  #     # - wine-development  # probably requires winehq repo
-  #     # - libsdl2  # not found
-  #     - libvulkan1
-  #     - ccache
-  #     - gcc-9
-  #     - g++-9
-  #     # - wget  # already?
-  #     - gcc-mingw-w64
-  #     - g++-mingw-w64
-  #     - libxpresent-dev
-  #     - libjxr-dev
-  #     - libusb-1.0-0-dev
-  #     - libgcrypt20-dev
-  #     - libpulse-dev
-  #     - libudev-dev
-  #     - libsane-dev
-  #     - libv4l-dev
-  #     - libkrb5-dev
-  #     - libgphoto2-dev
-  #     - liblcms2-dev
-  #     - libcapi20-dev
-  #     # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
-  #     - samba-dev
-  #     - libpcsclite-dev
-  #     - libcups2-dev
-  #     - libxcb-xkb-dev
+  #     - wget
+  #     - rsync
+  #   override-pull: |
+  #     file=wine-devel_9.19-x86_64.AppImage
+  #     wget -q https://github.com/FaithLife-Community/wine-appimages/releases/download/9.19-devel/$file
+  #     if [[ ! -r $file ]]; then
+  #       exit 1
+  #     fi
+  #     chmod +x $file
+  #     ./$file --appimage-extract >/dev/null
+  #     if [[ ! -d squashfs-root ]]; then
+  #       exit 1
+  #     fi
+  #     rm -f $file
+  #     # Fix file permissions.
+  #     chmod -R go+rX .  # https://forum.snapcraft.io/t/openaudible-bounty/16835/5
+  #   stage:
+  #     - -lib/libselinux.so*
+  #   #   - -AppRun*
+  #   #   - -.bundle.yml
+  #   #   - -.DirIcon
+  #   #   - -*.desktop
+  #   #   - -*.svg
+  #   #   - -winedata
+  #   #   - -wrapper
+  #   organize:
+  #     'squashfs-root/bin/winetricks': bin/winetricks
+  #     'squashfs-root/lib/*': lib
+  #     'squashfs-root/lib64/*': lib64
+  #     'squashfs-root/opt/*': opt
+  #   # stage-packages:  # when pkg-config runs it can lead to OOM error on my VPS
+  #   #   - libcapi20-dev  # libcapi20.so.3
+  #   #   - libgphoto2-dev  # libgphoto2.so.6, libgphoto2_port.so.12, 
+  #   #   - ocl-icd-opencl-dev  # libOpenCL.so.1
+  #   #   - libsane-dev  # libsane.so.1
+  #   #   - libusb-1.0-0-dev  # libusb-1.0.so.0
+
+  # REF:
+  # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
+  # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
+  # export CC="gcc-9"
+  # export CXX="g++-9"
+  # export CROSSCC_X32="i686-w64-mingw32-gcc"
+  # export CROSSCXX_X32="i686-w64-mingw32-g++"
+  # export CROSSCC_X64="x86_64-w64-mingw32-gcc"
+  # export CROSSCXX_X64="x86_64-w64-mingw32-g++"
+  # export CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
+  # export CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
+  # export LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
+  # export CROSSCFLAGS_X32="${CFLAGS_X32}"
+  # export CROSSCFLAGS_X64="${CFLAGS_X64}"
+  # export CROSSLDFLAGS="${LDFLAGS}"
+  # export CROSSCC="${CROSSCC_X64}"
+  # export CROSSCXX="${CROSSCXX_X64}"
+  # export CFLAGS="${CFLAGS_X64}"
+  # export CXXFLAGS="${CFLAGS_X64}"
+  # export CROSSCFLAGS="${CROSSCFLAGS_X64}"
+  # export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
+  wine64:
+    source: https://gitlab.winehq.org/wine/wine.git
+    source-tag: wine-9.19
+    source-depth: 1
+    plugin: autotools
+    autotools-configure-parameters:
+      - --enable-win64
+      # - --without-ldap
+      - --without-oss
+      - --disable-winemenubuilder
+      - --disable-win16
+      - --disable-tests
+      - --enable-archs=i386,x86_64
+      - --prefix=/opt/wine-devel
+    build-packages:
+      # added by me
+      - flex 
+      - bison
+      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      # - build-dep  # not found
+      # - wine-development  # probably requires winehq repo
+      # - libsdl2  # not found
+      - libvulkan1
+      - ccache
+      - gcc-9
+      - g++-9
+      # - wget  # already?
+      - gcc-mingw-w64
+      - g++-mingw-w64
+      - libxpresent-dev
+      - libjxr-dev
+      - libusb-1.0-0-dev
+      - libgcrypt20-dev
+      - libpulse-dev
+      - libudev-dev
+      - libsane-dev
+      - libv4l-dev
+      - libkrb5-dev
+      - libgphoto2-dev
+      - liblcms2-dev
+      - libcapi20-dev
+      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
+      - samba-dev
+      - libpcsclite-dev
+      - libcups2-dev
+      - libxcb-xkb-dev
 
   # wine32-tools:
   #   after: [wine64]
