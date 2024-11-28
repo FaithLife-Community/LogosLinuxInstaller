@@ -149,6 +149,7 @@ parts:
       - CXXFLAGS: "${CFLAGS_X64}"
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
+      - MAKEFLAGS: "-j2"
     build-packages:
       # added by me
       - flex 
