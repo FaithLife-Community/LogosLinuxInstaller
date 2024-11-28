@@ -140,15 +140,16 @@ parts:
       - CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
       - LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
-      - CROSSCFLAGS_X32="${CFLAGS_X32}"
-      - CROSSCFLAGS_X64="${CFLAGS_X64}"
-      - CROSSLDFLAGS="${LDFLAGS}"
-      - CROSSCC="${CROSSCC_X64}"
-      - CROSSCXX="${CROSSCXX_X64}"
-      - CFLAGS="${CFLAGS_X64}"
-      - CXXFLAGS="${CFLAGS_X64}"
-      - CROSSCFLAGS="${CROSSCFLAGS_X64}"
-      - CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
+      # updated with values in place of variables
+      - CROSSCFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"  #"${CFLAGS_X32}"
+      - CROSSCFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"  #"${CFLAGS_X64}"
+      - CROSSLDFLAGS="-Wl,-O1,--sort-common,--as-needed"  #"${LDFLAGS}"
+      - CROSSCC="x86_64-w64-mingw32-g++"  #"${CROSSCC_X64}"
+      - CROSSCXX="x86_64-w64-mingw32-g++"  #"${CROSSCXX_X64}"
+      - CFLAGS="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"  #"${CFLAGS_X64}"
+      - CXXFLAGS="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"  #"${CFLAGS_X64}"
+      - CROSSCFLAGS="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"  #"${CROSSCFLAGS_X64}"
+      - CROSSCXXFLAGS="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"  #"${CROSSCFLAGS_X64}"
     build-packages:
       # added by me
       - flex 
