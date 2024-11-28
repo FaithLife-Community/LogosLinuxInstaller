@@ -116,24 +116,6 @@ parts:
   # REF:
   # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
   # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
-  # export CC="gcc-9"
-  # export CXX="g++-9"
-  # export CROSSCC_X32="i686-w64-mingw32-gcc"
-  # export CROSSCXX_X32="i686-w64-mingw32-g++"
-  # export CROSSCC_X64="x86_64-w64-mingw32-gcc"
-  # export CROSSCXX_X64="x86_64-w64-mingw32-g++"
-  # export CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-  # export CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-  # export LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
-  # export CROSSCFLAGS_X32="${CFLAGS_X32}"
-  # export CROSSCFLAGS_X64="${CFLAGS_X64}"
-  # export CROSSLDFLAGS="${LDFLAGS}"
-  # export CROSSCC="${CROSSCC_X64}"
-  # export CROSSCXX="${CROSSCXX_X64}"
-  # export CFLAGS="${CFLAGS_X64}"
-  # export CXXFLAGS="${CFLAGS_X64}"
-  # export CROSSCFLAGS="${CROSSCFLAGS_X64}"
-  # export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
   wine64:
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
@@ -141,13 +123,32 @@ parts:
     plugin: autotools
     autotools-configure-parameters:
       - --enable-win64
-      # - --without-ldap
+      # - --without-ldap  # doesn't exist
       - --without-oss
       - --disable-winemenubuilder
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
       - --prefix=/opt/wine-devel
+    build-environment:
+      - CC="gcc-9"
+      - CXX="g++-9"
+      - CROSSCC_X32="i686-w64-mingw32-gcc"
+      - CROSSCXX_X32="i686-w64-mingw32-g++"
+      - CROSSCC_X64="x86_64-w64-mingw32-gcc"
+      - CROSSCXX_X64="x86_64-w64-mingw32-g++"
+      - CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      - CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      - LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
+      - CROSSCFLAGS_X32="${CFLAGS_X32}"
+      - CROSSCFLAGS_X64="${CFLAGS_X64}"
+      - CROSSLDFLAGS="${LDFLAGS}"
+      - CROSSCC="${CROSSCC_X64}"
+      - CROSSCXX="${CROSSCXX_X64}"
+      - CFLAGS="${CFLAGS_X64}"
+      - CXXFLAGS="${CFLAGS_X64}"
+      - CROSSCFLAGS="${CROSSCFLAGS_X64}"
+      - CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
     build-packages:
       # added by me
       - flex 
