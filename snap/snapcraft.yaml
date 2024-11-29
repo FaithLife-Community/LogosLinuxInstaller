@@ -209,6 +209,7 @@ parts:
       - --prefix=/opt/wine-devel-x86
     override-build: |
       dpkg --add-architecture i386
+      apt-get update
       craftctl default
     build-packages:
       # added by me
@@ -296,6 +297,7 @@ parts:
       - --prefix=/opt/wine-devel-amd64
     override-build: |
       dpkg --add-architecture i386
+      apt-get update
       craftctl default
     build-environment:
       ## added by me
