@@ -182,13 +182,6 @@ parts:
       - libpcsclite-dev
       - libcups2-dev
       - libxcb-xkb-dev
-    stage-packages:
-      - libcapi20-3t64
-      - libexif12
-      - libgphoto2-6t64
-      - libgphoto2-port12t64
-      - libsane1
-      - libusb-1.0-0
 
   wine32-tools:
     # after: [wine64]
@@ -259,15 +252,35 @@ parts:
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
       - MAKEFLAGS: "-j$(nproc)"
-    prime:
+
+  wine-cleanup:
+    after:
+      - wine64
+      - wine32-tools
+      - wine32
+    plugin: nil
+    stage:
       - -include
-      - -share/applications
-      - -share/man
-      - -bin/wine
-      - -bin/wine-preloader
-    override-prime: |
+      - -usr/include
+      - -usr/share/man
+      - -opt/wine-devel/include
+      - -opt/wine-devel/share
+      - -opt/wine-devel/applications
+      - -opt/wine-devel/bin/wine
+      - -opt/wine-devel/bin/wine-preloader
+    override-stage: |
       craftctl default
-      ln ${CRAFT_PRIME}/bin/wine64 ${CRAFT_PRIME}/bin/wine
+      ln opt/wine-devel/bin/wine opt/wine-devel/bin/wine64
+      find . - type d -empty -delete
+    stage-packages:
+      - libcapi20-3t64
+      - libexif12
+      - libgphoto2-6t64
+      - libgphoto2-port12t64
+      - libsane1
+      - libusb-1.0-0
+      # - libproxy1v5  # doesn't fix libpxbackend-1.0.so: cannot open shared object file: No such file or directory
+      # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
   oudedetai:
     ## just for testing
@@ -279,48 +292,25 @@ parts:
     stage:
       - -lib64  # only a symlink to lib, which collides with lib64 in wine part
 
-  cleanup:
+  oudedetai-cleanup:
+    after: [oudedetai]
     plugin: nil
     stage-packages:
       - jq
       - libncurses6
       - libncursesw6
-      # - libproxy1v5  # doesn't fix libpxbackend-1.0.so: cannot open shared object file: No such file or directory
-      # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
       - python3-tk
-    override-prime: |
-      echo '<TODO>'
-      craftctl default
 
 # Reported unused libs:
-# lib/x86_64-linux-gnu/libapprun_hooks.so
-# lib/x86_64-linux-gnu/libulockmgr.so.1.0.1
-# opt/glibc/lib/x86_64-linux-gnu/libBrokenLocale-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libSegFault.so
-# opt/glibc/lib/x86_64-linux-gnu/libanl-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libc-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libcrypt.so.1.1.0
-# opt/glibc/lib/x86_64-linux-gnu/libdl-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libgcc_s.so.1
-# opt/glibc/lib/x86_64-linux-gnu/libm-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libmemusage.so
-# opt/glibc/lib/x86_64-linux-gnu/libmvec-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnsl-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnss_compat-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnss_dns-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnss_files-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnss_hesiod-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnss_nis-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libnss_nisplus-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libpcprofile.so
-# opt/glibc/lib/x86_64-linux-gnu/libpthread-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libresolv-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/librt-2.31.so
-# opt/glibc/lib/x86_64-linux-gnu/libthread_db-1.0.so
-# opt/glibc/lib/x86_64-linux-gnu/libutil-2.31.so
-# opt/glibstdcpp/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.28
 # usr/lib/libBLTlite.2.5.so.8.6
 # usr/lib/x86_64-linux-gnu/libform.so.6.4
+# usr/lib/x86_64-linux-gnu/libformw.so.6.4
 # usr/lib/x86_64-linux-gnu/libmenu.so.6.4
+# usr/lib/x86_64-linux-gnu/libmenuw.so.6.4
 # usr/lib/x86_64-linux-gnu/libpanel.so.6.4
-# usr/lib/x86_64-linux-gnu/libtic.so.6.2
+# usr/lib/x86_64-linux-gnu/libpanelw.so.6.4
+
+# Runtime errors:
+# libpxbackend-1.0.so: cannot open shared object file: No such file or directory
+# Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.s
+# "oudedetai --help" output is duplicated
