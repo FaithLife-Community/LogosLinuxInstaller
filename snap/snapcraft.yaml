@@ -206,7 +206,6 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
-      - --extra-cflags=-fno-cf-protection
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
