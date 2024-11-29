@@ -206,6 +206,7 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
+      - --extra-cflags=-fno-cf-protection
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -215,7 +216,7 @@ parts:
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
-      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize -fcf-protection=none"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
