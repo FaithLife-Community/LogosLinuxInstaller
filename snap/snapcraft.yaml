@@ -279,7 +279,6 @@ parts:
       - libgphoto2-port12t64
       - libsane1
       - libusb-1.0-0
-      # - libproxy1v5  # doesn't fix libpxbackend-1.0.so: cannot open shared object file: No such file or directory
       # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
   oudedetai:
@@ -308,7 +307,21 @@ parts:
 # usr/lib/x86_64-linux-gnu/libpanel.so.6.4
 # usr/lib/x86_64-linux-gnu/libpanelw.so.6.4
 
-# Runtime errors:
+## Runtime errors:
 # libpxbackend-1.0.so: cannot open shared object file: No such file or directory
-# Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.s
-# "oudedetai --help" output is duplicated
+# > But file exists:
+# > $ find $SNAP -name libpxbackend-1.0.so
+# > /snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy/libpxbackend-1.0.so
+# > $ echo $LD_LIBRARY_PATH | grep -Eo ':[0-9a-z/_-]*/libproxy'
+# > :/snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy
+
+# Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
+# > But file exists:
+# > $ ls -al $SNAP_USER_COMMON/.cache/gio-modules/libgiolibproxy.so
+# > lrwxrwxrwx 1 nate nate 88 Nov 29 05:52 /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so -> /snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so
+# > $ ls -al $SNAP/gnome-platform/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so
+# > -rw-r--r-- 1 root root 18584 Jul 16 05:16 /snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so
+
+# "oudedetai --help" output is duplicated (in user mode, but not in snap shell)
+
+# cp: cannot stat '/snap/oudedetai/x6/etc/icu-win.tar.gz': No such file or directory
