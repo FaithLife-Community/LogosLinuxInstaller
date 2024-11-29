@@ -137,6 +137,7 @@ parts:
       # added by me
       - flex 
       - bison
+      - gcc-9-multilib
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
@@ -210,6 +211,7 @@ parts:
       # added by me
       - flex 
       - bison
+      - gcc-9-multilib
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
