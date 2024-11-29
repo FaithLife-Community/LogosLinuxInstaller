@@ -57,6 +57,12 @@ parts:
     organize:
       '*.tar.gz': etc/
 
+  add-i386:
+    plugin: nil
+    override-pull: |
+      dpkg --add-architecture i386
+      apt-get update
+
   # wine:
   #   plugin: nil
   #   build-packages: [wget]
@@ -192,7 +198,7 @@ parts:
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
-    # after: [wine64]
+    after: [add-i386]
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
@@ -207,10 +213,6 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
-    override-build: |
-      dpkg --add-architecture i386
-      apt-get update
-      craftctl default
     build-packages:
       # added by me
       - flex 
@@ -295,10 +297,6 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-amd64
-    override-build: |
-      dpkg --add-architecture i386
-      apt-get update
-      craftctl default
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
