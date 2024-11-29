@@ -186,11 +186,6 @@ class EphemeralConfiguration:
     config_path: str
     """Path this config was loaded from"""
 
-    # XXX: does this belong here, or should we have a cache file?
-    # Start cache
-    _faithlife_product_releases: Optional[list[str]] = None
-    _logos_exe: Optional[str] = None
-
     @classmethod
     def from_legacy(cls, legacy: LegacyConfiguration) -> "EphemeralConfiguration":
         log_level = None
@@ -232,6 +227,21 @@ class EphemeralConfiguration:
     def load_from_path(cls, path: str) -> "EphemeralConfiguration":
         return EphemeralConfiguration.from_legacy(LegacyConfiguration.load_from_path(path))
 
+
+@dataclass
+class NetworkCache:
+    """Separate class to store values that while they can be retrieved programmatically
+    it would take additional time or network connectivity.
+    
+    This class handles freshness, does whatever conditional logic it needs to determine if it's values are still up to date"""
+
+    # XXX: consider storing this, but if we do figure out some way to determine freshness
+
+    # Start cache
+    _faithlife_product_releases: Optional[list[str]] = None
+    _downloads_dir: Optional[str] = None
+
+    # XXX: add @property defs to automatically retrieve if not found
 
 @dataclass
 class PersistentConfiguration:
@@ -327,7 +337,7 @@ class PersistentConfiguration:
             # Continue, the installer can still operate even if it fails to write.
 
 
-# XXX: what to do with these?
+# XXX: Move these into the cache & store
 # Used to be called current_logos_version, but actually could be used in Verbium too.
 installed_faithlife_product_release: Optional[str] = None
 # Whether or not the installed faithlife product is configured for additional logging.
@@ -365,7 +375,14 @@ class Config:
 
     # Overriding programmatically generated values from ENV
     _overrides: EphemeralConfiguration
-    
+
+    # Cache, may or may not be stale, freshness logic is stored within
+    _cache: NetworkCache
+
+    # Start Cache, values unlikely to change during operation
+    _logos_exe: Optional[str] = None
+
+    # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
 
     # Singleton logic, this enforces that only one config object exists at a time.
@@ -400,6 +417,8 @@ class Config:
     def _write(self):
         """Writes configuration to file and lets the app know something changed"""
         self._raw.write_config()
+        from ou_dedetai.app import App
+        app: "App" = self.app
         self.app._config_updated()
 
     @property
@@ -445,9 +464,9 @@ class Config:
     @property
     def faithlife_product_release(self) -> str:
         question = f"Which version of {self.faithlife_product} {self.faithlife_product_version} do you want to install?: ",  # noqa: E501
-        if self._overrides._faithlife_product_releases is None:
-            self._overrides._faithlife_product_releases = network.get_logos_releases(self.app)
-        options = self._overrides._faithlife_product_releases
+        if self._cache._faithlife_product_releases is None:
+            self._cache._faithlife_product_releases = network.get_logos_releases(self.app)
+        options = self._cache._faithlife_product_releases
         return self._ask_if_not_found("faithlife_product_release", question, options)
 
     @faithlife_product_release.setter
@@ -646,9 +665,9 @@ class Config:
     @property
     def logos_exe(self) -> Optional[str]:
         # Cache a successful result
-        if self._overrides._logos_exe is None:
-            self._overrides._logos_exe = utils.find_installed_product(self.faithlife_product, self.wine_prefix)
-        return self._overrides._logos_exe
+        if self._logos_exe is None:
+            self._logos_exe = utils.find_installed_product(self.faithlife_product, self.wine_prefix)
+        return self._logos_exe
 
     @property
     def wine_user(self) -> Optional[str]:
@@ -699,3 +718,7 @@ class Config:
     @skip_install_fonts.setter
     def skip_install_fonts(self, val: bool):
         self._overrides.install_fonts_skip = val
+
+    @property
+    def download_dir(self) -> str:
+        return utils.get_user_downloads_dir()
