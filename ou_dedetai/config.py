@@ -38,7 +38,6 @@ L9PACKAGES = None
 LOGOS_FORCE_ROOT: bool = False
 LOGOS_LATEST_VERSION_FILENAME = constants.APP_NAME
 LOGOS_LATEST_VERSION_URL: Optional[str] = None
-MYDOWNLOADS: Optional[str] = None # FIXME: Should this use ~/.cache?
 PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None
 PACKAGE_MANAGER_COMMAND_DOWNLOAD: Optional[list[str]] = None
 PACKAGE_MANAGER_COMMAND_REMOVE: Optional[list[str]] = None

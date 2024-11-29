@@ -204,13 +204,13 @@ def ensure_appimage_download(app: App):
 
     downloaded_file = None
     filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
-    downloaded_file = utils.get_downloaded_file_path(filename)
+    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, filename)
     if not downloaded_file:
-        downloaded_file = Path(f"{config.MYDOWNLOADS}/{filename}")
+        downloaded_file = Path(f"{app.conf.download_dir}/{filename}")
     network.logos_reuse_download(
         config.RECOMMENDED_WINE64_APPIMAGE_URL,
         filename,
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
         app=app,
     )
     if downloaded_file:
@@ -273,20 +273,20 @@ def ensure_premade_winebottle_download(app: App):
         app=app
     )
 
-    downloaded_file = utils.get_downloaded_file_path(constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
+    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
     if not downloaded_file:
-        downloaded_file = Path(config.MYDOWNLOADS) / app.conf.faithlife_installer_name
+        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name
     network.logos_reuse_download(
         constants.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
         constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
         app=app,
     )
     # Install bottle.
     bottle = Path(app.conf.wine_prefix)
     if not bottle.is_dir():
         utils.install_premade_wine_bottle(
-            config.MYDOWNLOADS,
+            app.conf.download_dir,
             f"{app.conf.install_dir}/data"
         )
 
@@ -302,13 +302,13 @@ def ensure_product_installer_download(app: App):
         app=app
     )
 
-    downloaded_file = utils.get_downloaded_file_path(app.conf.faithlife_installer_name)
+    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, app.conf.faithlife_installer_name)
     if not downloaded_file:
-        downloaded_file = Path(config.MYDOWNLOADS) / app.conf.faithlife_installer_name
+        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name
     network.logos_reuse_download(
         app.conf.faithlife_installer_download_url,
         app.conf.faithlife_installer_name,
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
         app=app,
     )
     # Copy file into install dir.
@@ -331,7 +331,7 @@ def ensure_wineprefix_init(app: App):
         logging.debug(f"{init_file} does not exist")
         if app.conf.faithlife_product_version == '9':
             utils.install_premade_wine_bottle(
-                config.MYDOWNLOADS,
+                app.conf.download_dir,
                 f"{app.conf.install_dir}/data",
             )
         else:
@@ -520,7 +520,7 @@ def create_wine_appimage_symlinks(app: App):
     appimage_filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
     if config.WINEBIN_CODE in ['AppImage', 'Recommended']:
         # Ensure appimage is copied to appdir_bindir.
-        downloaded_file = utils.get_downloaded_file_path(appimage_filename)
+        downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename)
         if not appimage_file.is_file():
             msg.status(
                 f"Copying: {downloaded_file} into: {appdir_bindir}",

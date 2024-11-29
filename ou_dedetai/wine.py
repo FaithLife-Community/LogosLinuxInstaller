@@ -422,11 +422,11 @@ def enforce_icu_data_files(app: App):
     network.logos_reuse_download(
         icu_url,
         icu_filename,
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
         app=app
     )
     drive_c = f"{app.conf.wine_prefix}/drive_c"
-    utils.untar_file(f"{config.MYDOWNLOADS}/{icu_filename}", drive_c)
+    utils.untar_file(f"{app.conf.download_dir}/{icu_filename}", drive_c)
 
     # Ensure the target directory exists
     icu_win_dir = f"{drive_c}/icu-win/windows"

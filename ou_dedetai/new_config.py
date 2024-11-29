@@ -394,8 +394,10 @@ class Config:
     # Cache, may or may not be stale, freshness logic is stored within
     _cache: NetworkCache
 
-    # Start Cache, values unlikely to change during operation
+    # Start Cache of values unlikely to change during operation.
+    # i.e. filesystem traversals
     _logos_exe: Optional[str] = None
+    _download_dir: Optional[str] = None
 
     # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
@@ -744,4 +746,6 @@ class Config:
 
     @property
     def download_dir(self) -> str:
-        return utils.get_user_downloads_dir()
+        if self._download_dir is None:
+            self._download_dir = utils.get_user_downloads_dir()
+        return self._download_dir

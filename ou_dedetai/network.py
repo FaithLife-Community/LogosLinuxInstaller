@@ -165,7 +165,7 @@ def logos_reuse_download(
     dirs = [
         app.conf.install_dir,
         os.getcwd(),
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
     ]
     found = 1
     for i in dirs:
@@ -190,7 +190,7 @@ def logos_reuse_download(
                 else:
                     logging.info(f"Incomplete file: {file_path}.")
     if found == 1:
-        file_path = os.path.join(config.MYDOWNLOADS, file)
+        file_path = os.path.join(app.conf.download_dir, file)
         if config.DIALOG == 'tk' and app:
             # Ensure progress bar.
             app.stop_indeterminate_progress()
@@ -209,7 +209,7 @@ def logos_reuse_download(
         ):
             msg.status(f"Copying: {file} into: {targetdir}")
             try:
-                shutil.copy(os.path.join(config.MYDOWNLOADS, file), targetdir)
+                shutil.copy(os.path.join(app.conf.download_dir, file), targetdir)
             except shutil.SameFileError:
                 pass
         else:
@@ -546,8 +546,8 @@ def get_logos_releases(app: App) -> list[str]:
 
 def update_lli_binary(app=None):
     lli_file_path = os.path.realpath(sys.argv[0])
-    lli_download_path = Path(config.MYDOWNLOADS) / constants.BINARY_NAME
-    temp_path = Path(config.MYDOWNLOADS) / f"{constants.BINARY_NAME}.tmp"
+    lli_download_path = Path(app.conf.download_dir) / constants.BINARY_NAME
+    temp_path = Path(app.conf.download_dir) / f"{constants.BINARY_NAME}.tmp"
     logging.debug(
         f"Updating {constants.APP_NAME} to latest version by overwriting: {lli_file_path}")  # noqa: E501
 
@@ -563,7 +563,7 @@ def update_lli_binary(app=None):
     logos_reuse_download(
         config.LOGOS_LATEST_VERSION_URL,
         constants.BINARY_NAME,
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
         app=app,
     )
     shutil.copy(lli_download_path, temp_path)

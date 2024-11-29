@@ -787,10 +787,10 @@ def install_winetricks(
     network.logos_reuse_download(
         f"{base_url}/{version}",
         zip_name,
-        config.MYDOWNLOADS,
+        app.conf.download_dir,
         app=app,
     )
-    wtzip = f"{config.MYDOWNLOADS}/{zip_name}"
+    wtzip = f"{app.conf.download_dir}/{zip_name}"
     logging.debug(f"Extracting winetricks script into {installdir}…")
     with zipfile.ZipFile(wtzip) as z:
         for zi in z.infolist():

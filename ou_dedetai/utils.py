@@ -59,7 +59,6 @@ def set_default_config():
     system.get_package_manager()
     if config.CONFIG_FILE is None:
         config.CONFIG_FILE = constants.DEFAULT_CONFIG_PATH
-    config.MYDOWNLOADS = get_user_downloads_dir()
 
 
 # XXX: remove, no need.
@@ -624,7 +623,7 @@ def find_appimage_files(app: App):
     directories = [
         os.path.expanduser("~") + "/bin",
         app.conf.installer_binary_dir,
-        config.MYDOWNLOADS
+        app.conf.download_dir
     ]
     # FIXME: consider what we should do with this, promote to top level config?
     if app.conf._overrides.custom_binary_path is not None:
@@ -781,9 +780,9 @@ def update_to_latest_recommended_appimage(app: App):
         logging.debug("The AppImage version is newer than the latest recommended.")  # noqa: E501
 
 
-def get_downloaded_file_path(filename):
+def get_downloaded_file_path(download_dir: str, filename: str):
     dirs = [
-        config.MYDOWNLOADS,
+        Path(download_dir),
         Path.home(),
         Path.cwd(),
     ]
