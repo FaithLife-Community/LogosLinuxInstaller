@@ -35,3 +35,24 @@ where = ["."]
 
 [tool.setuptools.package-data]
 "ou_dedetai.img" = ["*icon.png"]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
+[tool.mypy]
+warn_unreachable = true
+disallow_untyped_defs = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+extra_checks = true
+
+[[tool.mypy.overrides]]
+# XXX: change this to config after refactor is complete
+module = "ou_dedetai.new_config"
+disallow_untyped_calls = true
+check_untyped_defs = true
+
+disallow_any_generic = false
+strict_equality = true

@@ -23,14 +23,18 @@ class App(abc.ABC):
 
         Returns the option the user picked.
 
-        If the internal ask function returns None, the process will exit with an error code 1
+        If the internal ask function returns None, the process will exit with 1
         """
-        if len(options) == 1 and (PROMPT_OPTION_DIRECTORY in options or PROMPT_OPTION_FILE in options):
+        passed_options: list[str] | str = options
+        if len(passed_options) == 1 and (
+            PROMPT_OPTION_DIRECTORY in passed_options
+            or PROMPT_OPTION_FILE in passed_options
+        ):
             # Set the only option to be the follow up prompt
-            options = options[0]
-        elif options is not None and self._exit_option is not None:
-            options += [self._exit_option]
-        answer = self._ask(question, options)
+            passed_options = options[0]
+        elif passed_options is not None and self._exit_option is not None:
+            passed_options = options + [self._exit_option]
+        answer = self._ask(question, passed_options)
         if answer == self._exit_option:
             answer = None
         
@@ -57,8 +61,9 @@ class App(abc.ABC):
         """
         raise NotImplementedError()
 
-    def _config_updated(self):
-        """A hook for any changes the individual apps want to do when the config changes"""
+    def _config_updated(self) -> None:
+        """A hook for any changes the individual apps want to do when the config changes
+        """
         pass
 
     def is_installed(self) -> bool:

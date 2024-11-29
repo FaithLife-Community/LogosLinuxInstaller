@@ -423,7 +423,7 @@ def set_logoslinuxinstaller_latest_release_config():
     logging.info(f"{config.LLI_LATEST_VERSION=}")
 
 
-def set_recommended_appimage_config():
+def set_recommended_appimage_config() -> None:
     repo = "FaithLife-Community/wine-appimages"
     if not config.RECOMMENDED_WINE64_APPIMAGE_URL:
         json_data = get_latest_release_data(repo)

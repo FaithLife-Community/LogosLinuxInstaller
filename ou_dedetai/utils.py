@@ -150,7 +150,7 @@ def mkdir_critical(directory):
         msg.logos_error(f"Can't create the {directory} directory")
 
 
-def get_user_downloads_dir():
+def get_user_downloads_dir() -> str:
     home = Path.home()
     xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
     user_dirs_file = xdg_config / 'user-dirs.dirs'
@@ -202,7 +202,7 @@ def install_dependencies(app: App):
         app.root.event_generate('<<StopIndeterminateProgress>>')
 
 
-def file_exists(file_path):
+def file_exists(file_path: Optional[str | bytes | Path]) -> bool:
     if file_path is not None:
         expanded_path = os.path.expanduser(file_path)
         return os.path.isfile(expanded_path)
@@ -303,7 +303,7 @@ def get_winebin_code_and_desc(app: App, binary):
     return code, desc
 
 
-def get_wine_options(app: App, appimages, binaries) -> Union[List[List[str]], List[str]]:  # noqa: E501
+def get_wine_options(app: App, appimages, binaries) -> List[str]:  # noqa: E501
     logging.debug(f"{appimages=}")
     logging.debug(f"{binaries=}")
     wine_binary_options = []
@@ -347,7 +347,7 @@ def get_wine_options(app: App, appimages, binaries) -> Union[List[List[str]], Li
     return wine_binary_options
 
 
-def get_winetricks_options():
+def get_winetricks_options() -> list[str]:
     local_winetricks_path = shutil.which('winetricks')
     winetricks_options = ['Download']
     if local_winetricks_path is not None:
@@ -852,13 +852,13 @@ def untar_file(file_path, output_dir):
         logging.error(f"Error extracting '{file_path}': {e}")
 
 
-def is_relative_path(path):
+def is_relative_path(path: str | Path) -> bool:
     if isinstance(path, str):
         path = Path(path)
     return not path.is_absolute()
 
 
-def get_relative_path(path, base_path):
+def get_relative_path(path: Path | str, base_path: str) -> str | Path:
     if is_relative_path(path):
         return path
     else:
@@ -907,3 +907,6 @@ def stopwatch(start_time=None, interval=10.0):
 
 def get_timestamp():
     return datetime.today().strftime('%Y-%m-%dT%H%M%S')
+
+def parse_bool(string: str) -> bool:
+    return string.lower() in ['true', '1', 'y', 'yes']

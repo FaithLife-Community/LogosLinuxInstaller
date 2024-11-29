@@ -195,7 +195,7 @@ def ui_message(message, secondary=None, detail=None, app=None, parent=None, fata
 
 
 # TODO: I think detail is doing the same thing as secondary.
-def logos_error(message, secondary=None, detail=None, app=None, parent=None):
+def logos_error(message: str, secondary=None, detail=None, app=None, parent=None):
     # if detail is None:
     #     detail = ''
     # WIKI_LINK = f"{constants.REPOSITORY_LINK}/wiki"
