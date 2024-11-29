@@ -227,8 +227,11 @@ parts:
       - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
+      - i386_LDFLAGS: "$CROSSLDFLAGS"
       - CROSSCC: "${CROSSCC_X32}"  # not used?
+      - i386_CC: "$CROSSCC"
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      - i386_CFLAGS: "$CROSSCFLAGS"
       - CROSSCXX: "${CROSSCXX_X32}"  # not used?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
