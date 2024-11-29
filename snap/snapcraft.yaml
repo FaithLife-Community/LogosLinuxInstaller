@@ -227,6 +227,7 @@ parts:
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
+    plugin: autotools
     autotools-configure-parameters:
       - --with-wine64=parts/wine64/build  # ref $PWD of wine64 build
       - --with-wine-tools=parts/wine32-tools/build  # ref $PWD of wine32-tools build
