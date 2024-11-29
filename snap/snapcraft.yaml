@@ -116,6 +116,7 @@ parts:
   # REF:
   # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
   # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
+  # https://gitlab.winehq.org/wine/wine/-/blob/wine-9.19/configure?ref_type=tags
   wine64:
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
@@ -132,26 +133,30 @@ parts:
       ##
       - --enable-win64
       - --prefix=/opt/wine-devel-amd64
-    build-environment:
-      - CC: "gcc-9"
-      - CXX: "g++-9"
+    build-environment:  # see L2551 of wine/configure
+      ## added by me
+      - MAKEFLAGS: "-j$(nproc)"
+      ## from mmtrt
+      # stored values to be referenced later
       - CROSSCC_X32: "i686-w64-mingw32-gcc"
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X64}"
-      - CROSSCXX: "${CROSSCXX_X64}"
+      # needed for build
+      - CC: "gcc-9"
       - CFLAGS: "${CFLAGS_X64}"
+      - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X64}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
+      - CROSSCC: "${CROSSCC_X64}"  # not used?
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
-      - MAKEFLAGS: "-j$(nproc)"
+      - CROSSCXX: "${CROSSCXX_X64}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
     build-packages:
       # added by me
       - flex 
@@ -202,26 +207,30 @@ parts:
       ##
       - --prefix=/opt/wine-devel-x86
     build-environment:
-      - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
-      - CC: "gcc-9"
-      - CXX: "g++-9"
+      ## added by me
+      - MAKEFLAGS: "-j$(nproc)"
+      ## mmtrt
+      # stored values to be referenced later
       - CROSSCC_X32: "i686-w64-mingw32-gcc"
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X32}"
-      - CROSSCXX: "${CROSSCXX_X32}"
+      # needed for build
+      - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
+      - CC: "gcc-9"
       - CFLAGS: "${CFLAGS_X32}"
+      - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X32}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
+      - CROSSCC: "${CROSSCC_X32}"  # not used?
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"
-      - MAKEFLAGS: "-j$(nproc)"
+      - CROSSCXX: "${CROSSCXX_X32}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
   wine32:
     after:
@@ -234,7 +243,7 @@ parts:
     autotools-configure-parameters:
       - --with-wine64=parts/wine64/build  # ref $PWD of wine64 build
       - --with-wine-tools=parts/wine32-tools/build  # ref $PWD of wine32-tools build
-      ## WINE_BUILD_OPTIONS:
+      ## from mmtrt, WINE_BUILD_OPTIONS:
       # - --without-ldap  # doesn't exist
       - --without-oss
       - --disable-winemenubuilder
@@ -244,26 +253,30 @@ parts:
       ##
       - --prefix=/opt/wine-devel-amd64
     build-environment:
-      - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
-      - CC: "gcc-9"
-      - CXX: "g++-9"
+      ## added by me
+      - MAKEFLAGS: "-j$(nproc)"
+      ## mmtrt
+      # stored values to be referenced later
       - CROSSCC_X32: "i686-w64-mingw32-gcc"
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X64}"
-      - CROSSCXX: "${CROSSCXX_X64}"
+      # needed for build
+      - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
+      - CC: "gcc-9"
       - CFLAGS: "${CFLAGS_X64}"
+      - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X64}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
+      - CROSSCC: "${CROSSCC_X64}"  # not used?
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
-      - MAKEFLAGS: "-j$(nproc)"
+      - CROSSCXX: "${CROSSCXX_X64}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine-cleanup:
     after:
