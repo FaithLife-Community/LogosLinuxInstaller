@@ -216,14 +216,14 @@ parts:
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
-      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize -fcf-protection=none"
+      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       - CC: "gcc-9"
-      - CFLAGS: "${CFLAGS_X32}"
+      - CFLAGS: "${CFLAGS_X32} -fno-cf-protection"
       - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
