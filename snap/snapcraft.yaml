@@ -59,7 +59,7 @@ parts:
 
   add-i386:
     plugin: nil
-    override-pull: |
+    override-build: |
       dpkg --add-architecture i386
       apt-get update
 
