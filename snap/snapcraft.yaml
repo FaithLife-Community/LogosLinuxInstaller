@@ -59,7 +59,7 @@ parts:
 
   add-i386:
     plugin: nil
-    override-build: |
+    override-pull: |
       dpkg --add-architecture i386
       apt-get update
 
@@ -198,7 +198,8 @@ parts:
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
-    after: [add-i386]
+    after:
+      - add-i386
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
