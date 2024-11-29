@@ -207,6 +207,9 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
+    override-pull: |
+      dpkg --add-architecture i386
+      craftctl default
     build-packages:
       # added by me
       - flex 
@@ -215,33 +218,33 @@ parts:
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
-      # - libsdl2  # not found
-      - libvulkan1
+      # - libsdl2-dev:i386  # joystick support
+      - libvulkan1:i386
       - ccache
       - gcc-9
       - g++-9
       # - wget  # already?
       - gcc-mingw-w64
       - g++-mingw-w64
-      - libxpresent-dev
-      - libjxr-dev
-      - libusb-1.0-0-dev
-      - libgcrypt20-dev
-      - libpulse-dev
-      - libudev-dev
-      - libsane-dev
-      - libv4l-dev
-      - libkrb5-dev
-      - libgphoto2-dev
-      - liblcms2-dev
-      - libcapi20-dev
+      - libxpresent-dev:i386
+      - libjxr-dev:i386
+      - libusb-1.0-0-dev:i386
+      - libgcrypt20-dev:i386
+      - libpulse-dev:i386
+      - libudev-dev:i386
+      - libsane-dev:i386
+      - libv4l-dev:i386
+      - libkrb5-dev:i386
+      - libgphoto2-dev:i386
+      - liblcms2-dev:i386
+      - libcapi20-dev:i386
       # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
-      - samba-dev
-      - libpcsclite-dev
-      - libcups2-dev
-      - libxcb-xkb-dev
-      - libwayland-bin
-      - libwayland-dev
+      - samba-dev:i386
+      - libpcsclite-dev:i386
+      - libcups2-dev:i386
+      - libxcb-xkb-dev:i386
+      - libwayland-bin:i386
+      - libwayland-dev:i386
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -291,6 +294,9 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-amd64
+    override-pull: |
+      dpkg --add-architecture i386
+      craftctl default
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -324,7 +330,7 @@ parts:
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
-      # - libsdl2  # not found
+      # - libsdl2-dev:i386  # joystick support
       - libvulkan1:i386
       - ccache
       - gcc-9
