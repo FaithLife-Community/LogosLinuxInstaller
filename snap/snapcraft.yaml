@@ -133,30 +133,6 @@ parts:
       ##
       - --enable-win64
       - --prefix=/opt/wine-devel-amd64
-    build-environment:  # see L2551 of wine/configure
-      ## added by me
-      - MAKEFLAGS: "-j$(nproc)"
-      ## from mmtrt
-      # stored values to be referenced later
-      - CROSSCC_X32: "i686-w64-mingw32-gcc"
-      - CROSSCXX_X32: "i686-w64-mingw32-g++"
-      - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
-      - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
-      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
-      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      # needed for build
-      - CC: "gcc-9"
-      - CFLAGS: "${CFLAGS_X64}"
-      - CXX: "g++-9"
-      - CXXFLAGS: "${CFLAGS_X64}"
-      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
-      - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X64}"  # not used?
-      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
-      - CROSSCXX: "${CROSSCXX_X64}"  # not used?
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
     build-packages:
       # added by me
       - flex 
@@ -189,6 +165,30 @@ parts:
       - libpcsclite-dev
       - libcups2-dev
       - libxcb-xkb-dev
+    build-environment:  # see L2551 of wine/configure
+      ## added by me
+      - MAKEFLAGS: "-j$(nproc)"
+      ## from mmtrt
+      # stored values to be referenced later
+      - CROSSCC_X32: "i686-w64-mingw32-gcc"
+      - CROSSCXX_X32: "i686-w64-mingw32-g++"
+      - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
+      - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
+      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
+      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
+      # needed for build
+      - CC: "gcc-9"
+      - CFLAGS: "${CFLAGS_X64}"
+      - CXX: "g++-9"
+      - CXXFLAGS: "${CFLAGS_X64}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
+      - CROSSCC: "${CROSSCC_X64}"  # not used?
+      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
+      - CROSSCXX: "${CROSSCXX_X64}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
     # after: [wine64]
@@ -206,6 +206,38 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
+    build-packages:
+      # added by me
+      - flex 
+      - bison
+      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      # - build-dep  # not found
+      # - wine-development  # probably requires winehq repo
+      # - libsdl2  # not found
+      - libvulkan1
+      - ccache
+      - gcc-9
+      - g++-9
+      # - wget  # already?
+      - gcc-mingw-w64
+      - g++-mingw-w64
+      - libxpresent-dev
+      - libjxr-dev
+      - libusb-1.0-0-dev
+      - libgcrypt20-dev
+      - libpulse-dev
+      - libudev-dev
+      - libsane-dev
+      - libv4l-dev
+      - libkrb5-dev
+      - libgphoto2-dev
+      - liblcms2-dev
+      - libcapi20-dev
+      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
+      - samba-dev
+      - libpcsclite-dev
+      - libcups2-dev
+      - libxcb-xkb-dev
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
