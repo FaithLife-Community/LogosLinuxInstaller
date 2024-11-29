@@ -197,7 +197,7 @@ parts:
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
-      - --prefix opt/wine-devel-x86
+      - --prefix=/opt/wine-devel-x86
     build-environment:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       - CC: "gcc-9"
@@ -231,7 +231,7 @@ parts:
     autotools-configure-parameters:
       - --with-wine64=parts/wine64/build  # ref $PWD of wine64 build
       - --with-wine-tools=parts/wine32-tools/build  # ref $PWD of wine32-tools build
-      - --prefix opt/wine-devel-amd64
+      - --prefix=/opt/wine-devel-amd64
     build-environment:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       - CC: "gcc-9"
