@@ -289,8 +289,6 @@ parts:
     ##
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     plugin: python
-    stage:
-      - -lib64  # only a symlink to lib, which collides with lib64 in wine part
 
   oudedetai-cleanup:
     after: [oudedetai]
