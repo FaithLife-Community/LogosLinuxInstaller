@@ -115,11 +115,6 @@ def die_if_running():
         f.write(str(os.getpid()))
 
 
-def die_if_root():
-    if os.getuid() == 0 and not config.LOGOS_FORCE_ROOT:
-        msg.logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")  # noqa: E501
-
-
 def die(message):
     logging.critical(message)
     sys.exit(1)

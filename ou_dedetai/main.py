@@ -75,8 +75,8 @@ def get_parser():
     cfg.add_argument(
         '-f', '--force-root', action='store_true',
         help=(
-            "set LOGOS_FORCE_ROOT to true, which permits "
-            "the root user to use the script"
+            "Running Wine/winetricks as root is highly discouraged. "
+            "Set this to do allow it anyways"
         ),
     )
     cfg.add_argument(
@@ -235,7 +235,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
         ephemeral_config.install_dependencies_skip = True
 
     if args.force_root:
-        config.LOGOS_FORCE_ROOT = True
+        ephemeral_config.app_run_as_root_permitted = True
 
     if args.custom_binary_path:
         if os.path.isdir(args.custom_binary_path):
@@ -246,7 +246,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
             parser.exit(status=1, message=message)
 
     if args.passive:
-        config.PASSIVE = True
+        ephemeral_config.faithlife_install_passive = True
 
     # Set ACTION function.
     actions = {
@@ -467,7 +467,8 @@ def main():
     # Disabled until it can be fixed. Avoid running multiple instances of the
     # program.
     # utils.die_if_running()
-    utils.die_if_root()
+    if os.getuid() == 0 and not ephemeral_config.app_run_as_root_permitted:
+        msg.logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")  # noqa: E501
 
     # Print terminal banner
     logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501

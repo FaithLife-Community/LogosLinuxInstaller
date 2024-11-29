@@ -255,10 +255,10 @@ def install_msi(app: App):
     # Execute the .MSI
     wine_exe = app.conf.wine64_binary
     exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"]
-    if config.PASSIVE is True:
+    if app.conf._overrides.faithlife_install_passive is True:
         exe_args.append('/passive')
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
-    process = run_wine_proc(wine_exe, exe="msiexec", exe_args=exe_args)
+    process = run_wine_proc(wine_exe, app, exe="msiexec", exe_args=exe_args)
     return process
 
 

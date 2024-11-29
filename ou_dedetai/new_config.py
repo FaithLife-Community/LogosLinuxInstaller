@@ -184,6 +184,10 @@ class EphemeralConfiguration:
     config_path: str
     """Path this config was loaded from"""
 
+    # Start of values just set via cli arg
+    faithlife_install_passive: bool = False
+    app_run_as_root_permitted: bool = False
+
     @classmethod
     def from_legacy(cls, legacy: LegacyConfiguration) -> "EphemeralConfiguration":
         log_level = None
