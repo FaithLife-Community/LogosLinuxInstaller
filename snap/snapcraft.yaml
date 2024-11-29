@@ -279,6 +279,7 @@ parts:
 
   wine32:
     after:
+      - add-i386
       - wine64
       - wine32-tools
     source: https://gitlab.winehq.org/wine/wine.git
