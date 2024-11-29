@@ -207,7 +207,7 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
-    override-pull: |
+    override-build: |
       dpkg --add-architecture i386
       craftctl default
     build-packages:
@@ -294,7 +294,7 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-amd64
-    override-pull: |
+    override-build: |
       dpkg --add-architecture i386
       craftctl default
     build-environment:
