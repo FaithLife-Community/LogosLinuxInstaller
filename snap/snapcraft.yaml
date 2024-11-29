@@ -122,13 +122,15 @@ parts:
     source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
-      - --enable-win64
+      ## WINE_BUILD_OPTIONS:
       # - --without-ldap  # doesn't exist
       - --without-oss
       - --disable-winemenubuilder
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
+      ##
+      - --enable-win64
       - --prefix=/opt/wine-devel-amd64
     build-environment:
       - CC: "gcc-9"
@@ -190,13 +192,14 @@ parts:
     source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
-      - --enable-win64
+      ## WINE_BUILD_OPTIONS:
       # - --without-ldap  # doesn't exist
       - --without-oss
       - --disable-winemenubuilder
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
+      ##
       - --prefix=/opt/wine-devel-x86
     build-environment:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
@@ -231,6 +234,14 @@ parts:
     autotools-configure-parameters:
       - --with-wine64=parts/wine64/build  # ref $PWD of wine64 build
       - --with-wine-tools=parts/wine32-tools/build  # ref $PWD of wine32-tools build
+      ## WINE_BUILD_OPTIONS:
+      # - --without-ldap  # doesn't exist
+      - --without-oss
+      - --disable-winemenubuilder
+      - --disable-win16
+      - --disable-tests
+      - --enable-archs=i386,x86_64
+      ##
       - --prefix=/opt/wine-devel-amd64
     build-environment:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
