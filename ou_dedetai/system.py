@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 import distro
 import logging
 import os
@@ -236,14 +236,20 @@ def get_dialog():
         config.DIALOG = 'tk'
 
 
-def get_os():
+def get_os() -> Tuple[str, str]:
+    """Gets OS information
+    
+    Returns:
+        OS name
+        OS release
+    """
     # FIXME: Not working? Returns "Linux" on some systems? On Ubuntu 24.04 it
     # correctly returns "ubuntu".
-    config.OS_NAME = distro.id()
-    logging.info(f"OS name: {config.OS_NAME}")
-    config.OS_RELEASE = distro.version()
-    logging.info(f"OS release: {config.OS_RELEASE}")
-    return config.OS_NAME, config.OS_RELEASE
+    os_name = distro.id()
+    logging.info(f"OS name: {os_name}")
+    os_release = distro.version()
+    logging.info(f"OS release: {os_release}")
+    return os_name, os_release
 
 
 def get_superuser_command():
@@ -266,7 +272,8 @@ def get_superuser_command():
 
 def get_package_manager():
     major_ver = distro.major_version()
-    logging.debug(f"{config.OS_NAME=}; {major_ver=}")
+    os_name = distro.id()
+    logging.debug(f"{os_name=}; {major_ver=}")
     # Check for package manager and associated packages.
     # NOTE: cabextract and sed are included in the appimage, so they are not
     # included as system dependencies.
@@ -291,10 +298,10 @@ def get_package_manager():
         # - https://en.wikipedia.org/wiki/Elementary_OS
         # - https://github.com/which-distro/os-release/tree/main
         if (
-            (config.OS_NAME == 'debian' and major_ver >= '13')
-            or (config.OS_NAME == 'ubuntu' and major_ver >= '24')
-            or (config.OS_NAME == 'linuxmint' and major_ver >= '22')
-            or (config.OS_NAME == 'elementary' and major_ver >= '8')
+            (os_name == 'debian' and major_ver >= '13')
+            or (os_name == 'ubuntu' and major_ver >= '24')
+            or (os_name == 'linuxmint' and major_ver >= '22')
+            or (os_name == 'elementary' and major_ver >= '8')
         ):
             config.PACKAGES = (
                 "libfuse3-3 "  # appimages
@@ -358,7 +365,7 @@ def get_package_manager():
         config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pacman", "-R", "--no-confirm"]  # noqa: E501
         config.PACKAGE_MANAGER_COMMAND_QUERY = ["pacman", "-Q"]
         config.QUERY_PREFIX = ''
-        if config.OS_NAME == "steamos":  # steamOS
+        if os_name == "steamos":  # steamOS
             config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: #E501
         else:  # arch
             # config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
@@ -552,7 +559,8 @@ def postinstall_dependencies_steamos():
 def preinstall_dependencies():
     command = []
     logging.debug("Performing pre-install dependencies…")
-    if config.OS_NAME == "Steam":
+    os_name, _ = get_os()
+    if os_name == "Steam":
         command = preinstall_dependencies_steamos()
     else:
         logging.debug("No pre-install dependencies required.")
@@ -562,7 +570,8 @@ def preinstall_dependencies():
 def postinstall_dependencies():
     command = []
     logging.debug("Performing post-install dependencies…")
-    if config.OS_NAME == "Steam":
+    os_name, _ = get_os()
+    if os_name == "Steam":
         command = postinstall_dependencies_steamos()
     else:
         logging.debug("No post-install dependencies required.")
@@ -608,21 +617,22 @@ def install_dependencies(app: App, packages, bad_packages, logos9_packages=None)
             mode="remove",
         )
 
+    os_name, _ = get_os()
     if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-        if config.OS_NAME in ['fedora', 'arch']:
+        if os_name in ['fedora', 'arch']:
             message = False
             no_message = False
             secondary = False
         elif missing_packages and conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires installing and removing some software.\nProceed?"  # noqa: E501
+            message = f"Your {os_name} computer requires installing and removing some software.\nProceed?"  # noqa: E501
             no_message = "User refused to install and remove software via the application"  # noqa: E501
             secondary = f"To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nand will remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}"  # noqa: E501
         elif missing_packages:
-            message = f"Your {config.OS_NAME} computer requires installing some software.\nProceed?"  # noqa: E501
+            message = f"Your {os_name} computer requires installing some software.\nProceed?"  # noqa: E501
             no_message = "User refused to install software via the application."  # noqa: E501
             secondary = f"To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}"  # noqa: E501
         elif conflicting_packages:
-            message = f"Your {config.OS_NAME} computer requires removing some software.\nProceed?"  # noqa: E501
+            message = f"Your {os_name} computer requires removing some software.\nProceed?"  # noqa: E501
             no_message = "User refused to remove software via the application."  # noqa: E501
             secondary = f"To continue, the program will attempt to remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}"  # noqa: E501
         else:
@@ -690,7 +700,7 @@ def install_dependencies(app: App, packages, bad_packages, logos9_packages=None)
         ]
         command_str = ' '.join(final_command)
         # TODO: Fix fedora/arch handling.
-        if config.OS_NAME in ['fedora', 'arch']:
+        if os_name in ['fedora', 'arch']:
             manual_install_required = True
             sudo_command = command_str.replace("pkexec", "sudo")
             message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
@@ -741,9 +751,10 @@ def install_dependencies(app: App, packages, bad_packages, logos9_packages=None)
                 install_deps_failed = True
     else:
         msg.logos_error(
-            f"The script could not determine your {config.OS_NAME} install's package manager or it is unsupported. "  # noqa: E501
+            f"The script could not determine your {os_name} install's package manager or it is unsupported. "  # noqa: E501
             f"Your computer is missing the command(s) {missing_packages}. "
-            f"Please install your distro's package(s) associated with {missing_packages} for {config.OS_NAME}.")  # noqa: E501
+            f"Please install your distro's package(s) associated with {missing_packages} for {os_name}."  # noqa: E501
+        )
 
     if config.REBOOT_REQUIRED:
         question = "Should the program reboot the host now?"  # noqa: E501
