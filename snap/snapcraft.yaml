@@ -157,7 +157,7 @@ parts:
       - libudev-dev
       - libsane-dev
       - libv4l-dev
-      - libkrb5-dev
+      # - libkrb5-dev  # for kerberos
       - libgphoto2-dev
       - liblcms2-dev
       - libcapi20-dev
@@ -235,7 +235,7 @@ parts:
       - libudev-dev:i386
       - libsane-dev:i386
       - libv4l-dev:i386
-      - libkrb5-dev:i386
+      # - libkrb5-dev:i386  # for kerberos
       - libgphoto2-dev:i386
       - liblcms2-dev:i386
       - libcapi20-dev:i386
@@ -348,7 +348,7 @@ parts:
       - libudev-dev:i386
       - libsane-dev:i386
       - libv4l-dev:i386
-      - libkrb5-dev:i386
+      # - libkrb5-dev:i386  # for kerberos
       - libgphoto2-dev:i386
       - liblcms2-dev:i386
       - libcapi20-dev:i386
