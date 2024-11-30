@@ -439,41 +439,6 @@ def get_recommended_appimage_url() -> str:
     return appimage_url
 
 
-def check_for_updates(install_dir: Optional[str], force: bool = False):
-    # We limit the number of times set_recommended_appimage_config is run in
-    # order to avoid GitHub API limits. This sets the check to once every 12
-    # hours.
-
-    utils.write_config(config.CONFIG_FILE)
-
-    # TODO: Check for New Logos Versions. See #116.
-
-    now = datetime.now().replace(microsecond=0)
-    if force:
-        check_again = now
-    elif config.LAST_UPDATED is not None:
-        check_again = datetime.strptime(
-            config.LAST_UPDATED.strip(),
-            '%Y-%m-%dT%H:%M:%S'
-        )
-        check_again += timedelta(hours=12)
-    else:
-        check_again = now
-
-    if now >= check_again:
-        # FIXME: refresh network config cache?
-        logging.debug("Running self-update.")
-
-        # XXX: can't run this here without a network cache
-        # utils.compare_logos_linux_installer_version()
-        # wine.enforce_icu_data_files()
-
-        config.LAST_UPDATED = now.isoformat()
-        utils.write_config(config.CONFIG_FILE)
-    else:
-        logging.debug("Skipping self-update.")
-
-
 def get_recommended_appimage(app: App):
     wine64_appimage_full_filename = Path(app.conf.wine_appimage_recommended_file_name)  # noqa: E501
     dest_path = Path(app.conf.installer_binary_dir) / wine64_appimage_full_filename

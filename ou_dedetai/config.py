@@ -6,11 +6,6 @@ from typing import Optional
 
 from . import constants
 
-# Define and set variables that are required in the config file.
-# XXX: slowly kill these
-LAST_UPDATED = None
-lli_release_channel = None
-
 # Define and set additional variables that can be set in the env.
 extended_config = {
     'CONFIG_FILE': None,

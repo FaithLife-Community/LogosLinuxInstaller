@@ -411,7 +411,9 @@ def set_win_version(app: App, exe: str, windows_version: str):
         wait_pid(process)
 
 
+# FIXME: consider when to run this (in the update case)
 def enforce_icu_data_files(app: App):
+    # XXX: consider moving the version and url information into config (and cached)
     repo = "FaithLife-Community/icu"
     json_data = network.get_latest_release_data(repo)
     icu_url = network.get_first_asset_url(json_data)

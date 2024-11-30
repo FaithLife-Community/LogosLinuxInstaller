@@ -11,6 +11,9 @@ REPOSITORY_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
 # This is relative to this file itself
 APP_IMAGE_DIR = Path(__file__).parent / "img"
 
+CACHE_LIFETIME_HOURS = 12
+"""How long to wait before considering our version cache invalid"""
+
 # Set other run-time variables not set in the env.
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{BINARY_NAME}.json")  # noqa: E501
 DEFAULT_APP_WINE_LOG_PATH= os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")  # noqa: E501

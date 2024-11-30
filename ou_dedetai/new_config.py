@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 import os
@@ -255,25 +255,6 @@ class EphemeralConfiguration:
 
 
 @dataclass
-class NetworkCache:
-    """Separate class to store values that while they can be retrieved programmatically
-    it would take additional time or network connectivity.
-    
-    This class handles freshness, does whatever conditional logic it needs to determine if it's values are still up to date""" #noqa: E501
-
-    # XXX: consider storing this and enforce freshness
-
-    # Start cache
-    _faithlife_product_releases: Optional[list[str]] = None
-    # FIXME: pull from legacy RECOMMENDED_WINE64_APPIMAGE_URL?
-    # in legacy refresh wasn't handled properly
-    wine_appimage_url: Optional[str] = None
-    app_latest_version_url: Optional[str] = None
-    app_latest_version: Optional[str] = None
-
-    # XXX: add @property defs to automatically retrieve if not found
-
-@dataclass
 class PersistentConfiguration:
     """This class stores the options the user chose
 
@@ -310,6 +291,18 @@ class PersistentConfiguration:
     # The Installer's release channel. Either "stable" or "beta"
     app_release_channel: str = "stable"
 
+    # Start Cache
+    # Some of these values are cached to avoid github api rate-limits
+    faithlife_product_releases: Optional[list[str]] = None
+    # FIXME: pull from legacy RECOMMENDED_WINE64_APPIMAGE_URL?
+    # in legacy refresh wasn't handled properly
+    wine_appimage_url: Optional[str] = None
+    app_latest_version_url: Optional[str] = None
+    app_latest_version: Optional[str] = None
+
+    last_updated: Optional[datetime] = None
+    # End Cache
+
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "PersistentConfiguration":
         # XXX: handle legacy migration
@@ -341,6 +334,9 @@ class PersistentConfiguration:
         install_dir = None
         if legacy.INSTALLDIR is not None:
             install_dir = Path(legacy.INSTALLDIR)
+        faithlife_product_logging = None
+        if legacy.LOGS is not None:
+            faithlife_product_logging = utils.parse_bool(legacy.LOGS)
         return PersistentConfiguration(
             faithlife_product=legacy.FLPRODUCT,
             backup_dir=backup_dir,
@@ -353,7 +349,7 @@ class PersistentConfiguration:
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
             winetricks_binary=legacy.WINETRICKSBIN,
-            faithlife_product_logging=legacy.LOGS
+            faithlife_product_logging=faithlife_product_logging
         )
     
     def write_config(self) -> None:
@@ -378,12 +374,6 @@ class PersistentConfiguration:
         except IOError as e:
             msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
             # Continue, the installer can still operate even if it fails to write.
-
-
-# XXX: Move these into the cache & store
-last_updated: Optional[datetime] = None
-recommended_wine_url: Optional[str] = None
-latest_installer_version: Optional[str] = None
 
 
 # Needed this logic outside this class too for before when when the app is initialized
@@ -413,9 +403,6 @@ class Config:
     # Overriding programmatically generated values from ENV
     _overrides: EphemeralConfiguration
 
-    # Cache, may or may not be stale, freshness logic is stored within
-    _cache: NetworkCache
-
     # Start Cache of values unlikely to change during operation.
     # i.e. filesystem traversals
     _logos_exe: Optional[str] = None
@@ -437,6 +424,23 @@ class Config:
         self.app: "App" = app
         self._raw = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
         self._overrides = ephemeral_config
+
+        # Now check to see if the persistent cache is still valid
+        if (
+            ephemeral_config.check_updates_now 
+            or self._raw.last_updated is None 
+            or self._raw.last_updated + timedelta(hours=constants.CACHE_LIFETIME_HOURS) <= datetime.now() #noqa: E501
+        ):
+            logging.debug("Cleaning out old cache.")
+            self._raw.faithlife_product_releases = None
+            self._raw.app_latest_version = None
+            self._raw.app_latest_version_url = None
+            self._raw.wine_appimage_url = None
+            self._raw.last_updated = datetime.now()
+            self._write()
+        else:
+            logging.debug("Cache is valid.")
+
         logging.debug("Current persistent config:")
         for k, v in self._raw.__dict__.items():
             logging.debug(f"{k}: {v}")
@@ -505,9 +509,10 @@ class Config:
     @property
     def faithlife_product_release(self) -> str:
         question = f"Which version of {self.faithlife_product} {self.faithlife_product_version} do you want to install?: "  # noqa: E501
-        if self._cache._faithlife_product_releases is None:
-            self._cache._faithlife_product_releases = network.get_logos_releases(self.app) # noqa: E501
-        options = self._cache._faithlife_product_releases
+        if self._raw.faithlife_product_releases is None:
+            self._raw.faithlife_product_releases = network.get_logos_releases(self.app) # noqa: E501
+            self._write()
+        options = self._raw.faithlife_product_releases
         return self._ask_if_not_found("faithlife_product_release", question, options)
 
     @faithlife_product_release.setter
@@ -639,6 +644,7 @@ class Config:
         """"""
         if self._raw.wine_binary_code is None:
             self._raw.wine_binary_code = utils.get_winebin_code_and_desc(self.app, self.wine_binary)[0]  # noqa: E501
+            self._write()
         return self._raw.wine_binary_code
 
     @property
@@ -683,9 +689,10 @@ class Config:
         """URL to recommended appimage.
         
         Talks to the network if required"""
-        if self._cache.wine_appimage_url is None:
-            self._cache.wine_appimage_url = network.get_recommended_appimage_url()
-        return self._cache.wine_appimage_url
+        if self._raw.wine_appimage_url is None:
+            self._raw.wine_appimage_url = network.get_recommended_appimage_url()
+            self._write()
+        return self._raw.wine_appimage_url
     
     @property
     def wine_appimage_recommended_file_name(self) -> str:
@@ -719,8 +726,8 @@ class Config:
         if self._overrides.wine_output_encoding is not None:
             return self._overrides.wine_output_encoding
         if self._wine_output_encoding is None:
-            return wine.get_winecmd_encoding(self.app)
-        return None
+            self._wine_output_encoding = wine.get_winecmd_encoding(self.app)
+        return self._wine_output_encoding
 
     @property
     def app_wine_log_path(self) -> str:
@@ -859,12 +866,14 @@ class Config:
 
     @property
     def app_latest_version_url(self) -> str:
-        if self._cache.app_latest_version_url is None:
-            self._cache.app_latest_version_url, self._cache.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
-        return self._cache.app_latest_version_url
+        if self._raw.app_latest_version_url is None:
+            self._raw.app_latest_version_url, self._raw.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
+            self._write()
+        return self._raw.app_latest_version_url
 
     @property
     def app_latest_version(self) -> str:
-        if self._cache.app_latest_version is None:
-            self._cache.app_latest_version_url, self._cache.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
-        return self._cache.app_latest_version
+        if self._raw.app_latest_version is None:
+            self._raw.app_latest_version_url, self._raw.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
+            self._write()
+        return self._raw.app_latest_version
