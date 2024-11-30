@@ -268,6 +268,8 @@ class NetworkCache:
     # FIXME: pull from legacy RECOMMENDED_WINE64_APPIMAGE_URL?
     # in legacy refresh wasn't handled properly
     wine_appimage_url: Optional[str] = None
+    app_latest_version_url: Optional[str] = None
+    app_latest_version: Optional[str] = None
 
     # XXX: add @property defs to automatically retrieve if not found
 
@@ -306,7 +308,7 @@ class PersistentConfiguration:
     # Faithlife's release channel. Either "stable" or "beta"
     faithlife_product_release_channel: str = "stable"
     # The Installer's release channel. Either "stable" or "beta"
-    installer_release_channel: str = "stable"
+    app_release_channel: str = "stable"
 
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "PersistentConfiguration":
@@ -347,7 +349,7 @@ class PersistentConfiguration:
             faithlife_product_release_channel=legacy.logos_release_channel or 'stable',
             faithlife_product_version=legacy.TARGETVERSION,
             install_dir=install_dir,
-            installer_release_channel=legacy.lli_release_channel or 'stable',
+            app_release_channel=legacy.lli_release_channel or 'stable',
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
             winetricks_binary=legacy.WINETRICKSBIN,
@@ -549,8 +551,8 @@ class Config:
         return self._raw.faithlife_product_release_channel
 
     @property
-    def installer_release_channel(self) -> str:
-        return self._raw.installer_release_channel
+    def app_release_channel(self) -> str:
+        return self._raw.app_release_channel
 
     @property
     def winetricks_binary(self) -> str:
@@ -748,11 +750,11 @@ class Config:
         self._write()
     
     def toggle_installer_release_channel(self):
-        if self._raw.installer_release_channel == "stable":
+        if self._raw.app_release_channel == "stable":
             new_channel = "dev"
         else:
             new_channel = "stable"
-        self._raw.installer_release_channel = new_channel
+        self._raw.app_release_channel = new_channel
         self._write()
     
     @property
@@ -854,3 +856,15 @@ class Config:
         if self._installed_faithlife_product_release is None:
             self._installed_faithlife_product_release = utils.get_current_logos_version(self.install_dir) # noqa: E501
         return self._installed_faithlife_product_release
+
+    @property
+    def app_latest_version_url(self) -> str:
+        if self._cache.app_latest_version_url is None:
+            self._cache.app_latest_version_url, self._cache.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
+        return self._cache.app_latest_version_url
+
+    @property
+    def app_latest_version(self) -> str:
+        if self._cache.app_latest_version is None:
+            self._cache.app_latest_version_url, self._cache.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
+        return self._cache.app_latest_version

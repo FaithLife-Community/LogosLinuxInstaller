@@ -558,8 +558,7 @@ class ControlWindow(GuiApp):
 
         text = self.gui.update_lli_label.cget('text')
         ver = constants.LLI_CURRENT_VERSION
-        new = config.LLI_LATEST_VERSION
-        text = f"{text}\ncurrent: v{ver}\nlatest: v{new}"
+        text = f"{text}\ncurrent: v{ver}\nlatest: v{self.conf.app_latest_version}"
         self.gui.update_lli_label.config(text=text)
         self.configure_app_button()
         self.gui.run_indexing_radio.config(
@@ -806,15 +805,16 @@ class ControlWindow(GuiApp):
 
     def update_latest_lli_release_button(self, evt=None):
         msg = None
+        result = utils.compare_logos_linux_installer_version(self)
         if system.get_runmode() != 'binary':
             state = 'disabled'
             msg = "This button is disabled. Can't run self-update from script."
-        elif config.logos_linux_installer_status == 0:
+        elif result == utils.VersionComparison.OUT_OF_DATE:
             state = '!disabled'
-        elif config.logos_linux_installer_status == 1:
+        elif result == utils.VersionComparison.UP_TO_DATE:
             state = 'disabled'
             msg = f"This button is disabled. {constants.APP_NAME} is up-to-date."  # noqa: E501
-        elif config.logos_linux_installer_status == 2:
+        elif result == utils.VersionComparison.DEVELOPMENT:
             state = 'disabled'
             msg = f"This button is disabled. {constants.APP_NAME} is newer than the latest release."  # noqa: E501
         if msg:

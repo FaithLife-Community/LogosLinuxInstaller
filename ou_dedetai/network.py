@@ -405,22 +405,28 @@ def get_tag_name(json_data) -> Optional[str]:
     return tag_name
 
 
-def set_logoslinuxinstaller_latest_release_config():
-    if config.lli_release_channel is None or config.lli_release_channel == "stable":  # noqa: E501
+def get_oudedetai_latest_release_config(channel: str = "stable") -> tuple[str, str]:
+    """Get latest release information
+    
+    Returns:
+        url
+        version
+    """
+    if channel == "stable":
         repo = "FaithLife-Community/LogosLinuxInstaller"
     else:
         repo = "FaithLife-Community/test-builds"
     json_data = get_latest_release_data(repo)
-    logoslinuxinstaller_url = get_first_asset_url(json_data)
-    if logoslinuxinstaller_url is None:
+    oudedetai_url = get_first_asset_url(json_data)
+    if oudedetai_url is None:
         logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501
-        return
-    config.LOGOS_LATEST_VERSION_URL = logoslinuxinstaller_url
-    config.LOGOS_LATEST_VERSION_FILENAME = os.path.basename(logoslinuxinstaller_url)  # noqa: #501
+        raise ValueError("Failed to find latest installer version")
     # Getting version relies on the the tag_name field in the JSON data. This
     # is already parsed down to vX.X.X. Therefore we must strip the v.
-    config.LLI_LATEST_VERSION = get_tag_name(json_data).lstrip('v')
-    logging.info(f"{config.LLI_LATEST_VERSION=}")
+    latest_version = get_tag_name(json_data).lstrip('v')
+    logging.info(f"config.LLI_LATEST_VERSION={latest_version}")
+
+    return oudedetai_url, latest_version
 
 
 def get_recommended_appimage_url() -> str:
@@ -458,8 +464,8 @@ def check_for_updates(install_dir: Optional[str], force: bool = False):
         # FIXME: refresh network config cache?
         logging.debug("Running self-update.")
 
-        set_logoslinuxinstaller_latest_release_config()
-        utils.compare_logos_linux_installer_version()
+        # XXX: can't run this here without a network cache
+        # utils.compare_logos_linux_installer_version()
         # wine.enforce_icu_data_files()
 
         config.LAST_UPDATED = now.isoformat()
@@ -531,7 +537,7 @@ def get_logos_releases(app: App) -> list[str]:
     return filtered_releases
 
 
-def update_lli_binary(app=None):
+def update_lli_binary(app: App):
     lli_file_path = os.path.realpath(sys.argv[0])
     lli_download_path = Path(app.conf.download_dir) / constants.BINARY_NAME
     temp_path = Path(app.conf.download_dir) / f"{constants.BINARY_NAME}.tmp"
@@ -542,13 +548,13 @@ def update_lli_binary(app=None):
     if lli_download_path.is_file():
         logging.info("Checking if existing LLI binary is latest version.")
         lli_download_ver = utils.get_lli_release_version(lli_download_path)
-        if not lli_download_ver or lli_download_ver != config.LLI_LATEST_VERSION:  # noqa: E501
+        if not lli_download_ver or lli_download_ver != app.conf.app_latest_version:  # noqa: E501
             logging.info(f"Removing \"{lli_download_path}\", version: {lli_download_ver}")  # noqa: E501
             # Remove incompatible file.
             lli_download_path.unlink()
 
     logos_reuse_download(
-        config.LOGOS_LATEST_VERSION_URL,
+        app.conf.app_latest_version_url,
         constants.BINARY_NAME,
         app.conf.download_dir,
         app=app,

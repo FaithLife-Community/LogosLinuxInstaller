@@ -9,7 +9,6 @@ from . import constants
 # Define and set variables that are required in the config file.
 # XXX: slowly kill these
 LAST_UPDATED = None
-LLI_LATEST_VERSION = None
 lli_release_channel = None
 
 # Define and set additional variables that can be set in the env.
@@ -24,21 +23,12 @@ for key, default in extended_config.items():
 
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
-LOGOS_LATEST_VERSION_FILENAME = constants.APP_NAME
-LOGOS_LATEST_VERSION_URL: Optional[str] = None
 SUPERUSER_COMMAND: Optional[str] = None
 wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 console_log = []
 processes = {}
 threads = []
-logos_linux_installer_status = None
-logos_linux_installer_status_info = {
-    0: "yes",
-    1: "uptodate",
-    2: "no",
-    None: "constants.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set.",  # noqa: E501
-}
 
 
 # XXX: remove this

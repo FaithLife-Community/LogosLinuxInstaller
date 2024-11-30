@@ -33,7 +33,7 @@ class TUI(App):
     def __init__(self, stdscr: curses.window, ephemeral_config: EphemeralConfiguration):
         super().__init__(ephemeral_config)
         self.stdscr = stdscr
-        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
         self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         # else:
         #    self.title = f"Welcome to {constants.APP_NAME} ({constants.LLI_CURRENT_VERSION})"  # noqa: E501
@@ -215,7 +215,7 @@ class TUI(App):
 
     def update_main_window_contents(self):
         self.clear()
-        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
         self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)  # noqa: E501
         self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
@@ -402,7 +402,7 @@ class TUI(App):
                 app=self,
             )
         elif choice.startswith(f"Update {constants.APP_NAME}"):
-            utils.update_to_latest_lli_release()
+            utils.update_to_latest_lli_release(self)
         elif choice == f"Run {self.conf.faithlife_product}":
             self.reset_screen()
             self.logos.start()
@@ -706,19 +706,18 @@ class TUI(App):
 
     def set_tui_menu_options(self, dialog=False):
         labels = []
-        if config.LLI_LATEST_VERSION and system.get_runmode() == 'binary':
-            status = config.logos_linux_installer_status
-            error_message = config.logos_linux_installer_status_info.get(status)  # noqa: E501
-            if status == 0:
+        if system.get_runmode() == 'binary':
+            status = utils.compare_logos_linux_installer_version(self)
+            if status == utils.VersionComparison.OUT_OF_DATE:
                 labels.append(f"Update {constants.APP_NAME}")
-            elif status == 1:
+            elif status == utils.VersionComparison.UP_TO_DATE:
                 # logging.debug("Logos Linux Installer is up-to-date.")
                 pass
-            elif status == 2:
+            elif status == utils.VersionComparison.DEVELOPMENT:
                 # logging.debug("Logos Linux Installer is newer than the latest release.")  # noqa: E501
                 pass
             else:
-                logging.error(f"{error_message}")
+                logging.error(f"Unknown result: {status}")
 
         if self.is_installed():
             if self.logos.logos_state in [logos.State.STARTING, logos.State.RUNNING]:  # noqa: E501

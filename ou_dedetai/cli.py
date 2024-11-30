@@ -86,7 +86,7 @@ class CLI(App):
         utils.update_to_latest_recommended_appimage(self)
 
     def update_self(self):
-        utils.update_to_latest_lli_release()
+        utils.update_to_latest_lli_release(self)
 
     def winetricks(self):
         import config

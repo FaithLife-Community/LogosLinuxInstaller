@@ -1,5 +1,6 @@
 import atexit
 from datetime import datetime
+import enum
 import glob
 import inspect
 import json
@@ -483,39 +484,28 @@ def install_premade_wine_bottle(srcdir, appdir):
         appdir
     )
 
+class VersionComparison(enum.Enum):
+    OUT_OF_DATE = enum.auto()
+    UP_TO_DATE = enum.auto()
+    DEVELOPMENT = enum.auto()
 
-def compare_logos_linux_installer_version(
-        current=constants.LLI_CURRENT_VERSION,
-        latest=config.LLI_LATEST_VERSION,
-):
-    # NOTE: The above params evaluate the variables when the module is
-    # imported. The following re-evaluates when the function is called.
-    if latest is None:
-        latest = config.LLI_LATEST_VERSION
 
-    # Check if status has already been evaluated.
-    if config.logos_linux_installer_status is not None:
-        status = config.logos_linux_installer_status
-        message = config.logos_linux_installer_status_info.get(status)
-        return status, message
+def compare_logos_linux_installer_version(app: App) -> Optional[VersionComparison]:
+    current = constants.LLI_CURRENT_VERSION
+    latest = app.conf.app_latest_version
 
-    status = None
-    message = None
-    if current is not None and latest is not None:
-        if version.parse(current) < version.parse(latest):
-            # Current release is older than recommended.
-            status = 0
-        elif version.parse(current) == version.parse(latest):
-            # Current release is latest.
-            status = 1
-        elif version.parse(current) > version.parse(latest):
-            # Installed version is custom.
-            status = 2
+    if version.parse(current) < version.parse(latest):
+        # Current release is older than recommended.
+        output = VersionComparison.OUT_OF_DATE
+    elif version.parse(current) > version.parse(latest):
+        # Installed version is custom.
+        output = VersionComparison.DEVELOPMENT
+    elif version.parse(current) == version.parse(latest):
+        # Current release is latest.
+        output = VersionComparison.UP_TO_DATE
 
-    config.logos_linux_installer_status = status
-    message = config.logos_linux_installer_status_info.get(status)
-    logging.debug(f"LLI self-update check: {status=}; {message=}")
-    return status, message
+    logging.debug(f"LLI self-update check: {output=}")
+    return output
 
 
 def compare_recommended_appimage_version(app: App):
@@ -757,16 +747,16 @@ def set_appimage_symlink(app: App):
         app.root.event_generate("<<UpdateLatestAppImageButton>>")
 
 
-def update_to_latest_lli_release(app=None):
-    status, _ = compare_logos_linux_installer_version()
+def update_to_latest_lli_release(app: App):
+    result = compare_logos_linux_installer_version(app)
 
     if system.get_runmode() != 'binary':
         logging.error(f"Can't update {constants.APP_NAME} when run as a script.")
-    elif status == 0:
+    elif result == VersionComparison.OUT_OF_DATE:
         network.update_lli_binary(app=app)
-    elif status == 1:
+    elif result == VersionComparison.UP_TO_DATE:
         logging.debug(f"{constants.APP_NAME} is already at the latest version.")
-    elif status == 2:
+    elif result == VersionComparison.DEVELOPMENT:
         logging.debug(f"{constants.APP_NAME} is at a newer version than the latest.") # noqa: 501
 
 
