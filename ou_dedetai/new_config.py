@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from ou_dedetai import msg, network, utils, constants
+from ou_dedetai import msg, network, utils, constants, wine
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY
 
@@ -172,6 +172,8 @@ class EphemeralConfiguration:
     """Corresponds to wine's WINEDEBUG"""
     wine_prefix: Optional[str]
     """Corresponds to wine's WINEPREFIX"""
+    wine_output_encoding: Optional[str]
+    """Override for what encoding wine's output is using"""
 
     # FIXME: seems like the wine appimage logic can be simplified
     wine_appimage_link_file_name: Optional[str]
@@ -239,7 +241,8 @@ class EphemeralConfiguration:
             install_dependencies_skip=legacy.SKIP_DEPENDENCIES,
             install_fonts_skip=legacy.SKIP_FONTS,
             wine_appimage_link_file_name=legacy.APPIMAGE_LINK_SELECTION_NAME,
-            wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME
+            wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME,
+            wine_output_encoding=legacy.WINECMD_ENCODING
         )
 
     @classmethod
@@ -379,8 +382,6 @@ installed_faithlife_product_release: Optional[str] = None
 # Whether or not the installed faithlife product is configured for additional logging.
 # Used to be called "LOGS"
 installed_faithlife_logging: Optional[bool] = None
-# Text encoding of the wine command. This calue can be retrieved from the system
-winecmd_encoding: Optional[str] = None
 last_updated: Optional[datetime] = None
 recommended_wine_url: Optional[str] = None
 latest_installer_version: Optional[str] = None
@@ -420,6 +421,7 @@ class Config:
     # i.e. filesystem traversals
     _logos_exe: Optional[str] = None
     _download_dir: Optional[str] = None
+    _wine_output_encoding: Optional[str] = None
 
     # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
@@ -697,6 +699,16 @@ class Config:
         if self._overrides.wine_debug is not None:
             return self._overrides.wine_debug
         return constants.DEFAULT_WINEDEBUG
+
+    @property
+    def wine_output_encoding(self) -> Optional[str]:
+        """Attempt to guess the encoding of the wine output"""
+        if self._overrides.wine_output_encoding is not None:
+            return self._overrides.wine_output_encoding
+        if self._wine_output_encoding is None:
+            return wine.get_winecmd_encoding(self.app)
+        return None
+
 
     @property
     def app_wine_log_path(self) -> str:

@@ -9,7 +9,6 @@ from . import constants
 # Define and set variables that are required in the config file.
 # XXX: slowly kill these
 current_logos_version = None
-WINECMD_ENCODING = None
 LOGS = None
 LAST_UPDATED = None
 LLI_LATEST_VERSION = None

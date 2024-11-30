@@ -267,6 +267,23 @@ def wait_pid(process):
     os.waitpid(-process.pid, 0)
 
 
+def get_winecmd_encoding(app: App) -> Optional[str]:
+    # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
+    logging.debug("Getting wine system's cmd.exe encoding.")
+    registry_value = get_registry_value(
+        'HKCU\\Software\\Wine\\Fonts',
+        'Codepages',
+        app
+    )
+    if registry_value is not None:
+        codepages: str = registry_value.split(',')
+        return codepages[-1]
+    else:
+        m = "wine.wine_proc: wine.get_registry_value returned None."
+        logging.error(m)
+        return None
+
+
 def run_wine_proc(
     winecmd,
     app: App,
@@ -277,20 +294,6 @@ def run_wine_proc(
 ):
     logging.debug("Getting wine environment.")
     env = get_wine_env(app, additional_wine_dll_overrides)
-    if not init and config.WINECMD_ENCODING is None:
-        # Get wine system's cmd.exe encoding for proper decoding to UTF8 later.
-        logging.debug("Getting wine system's cmd.exe encoding.")
-        registry_value = get_registry_value(
-            'HKCU\\Software\\Wine\\Fonts',
-            'Codepages',
-            app
-        )
-        if registry_value is not None:
-            codepages = registry_value.split(',')  # noqa: E501
-            config.WINECMD_ENCODING = codepages[-1]
-        else:
-            m = "wine.wine_proc: wine.get_registry_value returned None."
-            logging.error(m)
     if isinstance(winecmd, Path):
         winecmd = str(winecmd)
     logging.debug(f"run_wine_proc: {winecmd}; {exe=}; {exe_args=}")
@@ -325,10 +328,10 @@ def run_wine_proc(
                                 try:
                                     logging.info(line.decode().rstrip())
                                 except UnicodeDecodeError:
-                                    if config.WINECMD_ENCODING is not None:
-                                        logging.info(line.decode(config.WINECMD_ENCODING).rstrip())  # noqa: E501
+                                    if not init and app.conf.wine_output_encoding is not None: # noqa: E501
+                                        logging.info(line.decode(app.conf.wine_output_encoding).rstrip())  # noqa: E501
                                     else:
-                                        logging.error("wine.run_wine_proc: Error while decoding: WINECMD_ENCODING is None.")  # noqa: E501
+                                        logging.error("wine.run_wine_proc: Error while decoding: wine output encoding could not be found.")  # noqa: E501
                 return process
             else:
                 return None
@@ -446,8 +449,9 @@ def enforce_icu_data_files(app: App):
 
 def get_registry_value(reg_path, name, app: App):
     logging.debug(f"Get value for: {reg_path=}; {name=}")
+    # FIXME: consider breaking run_wine_proc into a helper function before decoding is attempted # noqa: E501
     # NOTE: Can't use run_wine_proc here because of infinite recursion while
-    # trying to determine WINECMD_ENCODING.
+    # trying to determine wine_output_encoding.
     value = None
     env = get_wine_env(app)
 
@@ -456,7 +460,7 @@ def get_registry_value(reg_path, name, app: App):
         'reg', 'query', reg_path, '/v', name,
     ]
     err_msg = f"Failed to get registry value: {reg_path}\\{name}"
-    encoding = config.WINECMD_ENCODING
+    encoding = app.conf.wine_output_encoding
     if encoding is None:
         encoding = 'UTF-8'
     try:
@@ -534,7 +538,7 @@ def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
     if winepath.name != 'wine64':  # AppImage
         # Winetricks commands can fail if 'wine64' is not explicitly defined.
         # https://github.com/Winetricks/winetricks/issues/2084#issuecomment-1639259359
-        winepath = app.conf.wine64_binary
+        winepath = Path(app.conf.wine64_binary)
     wine_env_defaults = {
         'WINE': str(winepath),
         'WINEDEBUG': app.conf.wine_debug,
