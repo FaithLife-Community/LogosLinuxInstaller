@@ -232,25 +232,32 @@ parts:
       # - wget  # already?
       - gcc-mingw-w64
       - g++-mingw-w64
-      - libxpresent-dev:i386
-      - libjxr-dev:i386
-      - libusb-1.0-0-dev:i386
-      - libgcrypt20-dev:i386
-      - libpulse-dev:i386
-      - libudev-dev:i386
-      - libsane-dev:i386
-      - libv4l-dev:i386
-      # - libkrb5-dev:i386  # for kerberos
-      - libgphoto2-dev:i386
-      - liblcms2-dev:i386
-      - libcapi20-dev:i386
-      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
-      - samba-dev:i386
-      - libpcsclite-dev:i386
-      - libcups2-dev:i386
-      - libxcb-xkb-dev:i386
-      - libwayland-bin:i386
-      - libwayland-dev:i386
+      # All build-pkgs seem to be installed before any parts' scriptlets, so
+      # i386 pkgs are not found when placed here.
+      # - libxpresent-dev:i386
+      # - libjxr-dev:i386
+      # - libusb-1.0-0-dev:i386
+      # - libgcrypt20-dev:i386
+      # - libpulse-dev:i386
+      # - libudev-dev:i386
+      # - libsane-dev:i386
+      # - libv4l-dev:i386
+      ## - libkrb5-dev:i386  # for kerberos
+      # - libgphoto2-dev:i386
+      # - liblcms2-dev:i386
+      # - libcapi20-dev:i386
+      ## - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
+      # - samba-dev:i386
+      # - libpcsclite-dev:i386
+      # - libcups2-dev:i386
+      # - libxcb-xkb-dev:i386
+      # - libwayland-bin:i386
+      # - libwayland-dev:i386
+    override-pull: |
+      dpkg --add-architecture i386
+      apt-get update
+      apt-get install libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
+      craftctl default
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -300,6 +307,48 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-amd64
+    build-packages:
+      # added by me
+      - flex 
+      - bison
+      - gcc-9-multilib
+      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      # - build-dep  # not found
+      # - wine-development  # probably requires winehq repo
+      # - libsdl2-dev:i386  # joystick support
+      - libvulkan1:i386
+      - ccache
+      - gcc-9
+      - g++-9
+      # - wget  # already?
+      - gcc-mingw-w64
+      - g++-mingw-w64
+      # All build-pkgs seem to be installed before any parts' scriptlets, so
+      # i386 pkgs are not found when placed here.
+      # - libxpresent-dev:i386
+      # - libjxr-dev:i386
+      # - libusb-1.0-0-dev:i386
+      # - libgcrypt20-dev:i386
+      # - libpulse-dev:i386
+      # - libudev-dev:i386
+      # - libsane-dev:i386
+      # - libv4l-dev:i386
+      # # - libkrb5-dev:i386  # for kerberos
+      # - libgphoto2-dev:i386
+      # - liblcms2-dev:i386
+      # - libcapi20-dev:i386
+      # # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
+      # - samba-dev:i386
+      # - libpcsclite-dev:i386
+      # - libcups2-dev:i386
+      # - libxcb-xkb-dev:i386
+      # - libwayland-bin:i386
+      # - libwayland-dev:i386
+    override-pull: |
+      dpkg --add-architecture i386
+      apt-get update
+      apt-get install libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
+      craftctl default
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -325,41 +374,6 @@ parts:
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXX: "${CROSSCXX_X64}"  # not used?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
-    build-packages:
-      # added by me
-      - flex 
-      - bison
-      - gcc-9-multilib
-      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-      # - build-dep  # not found
-      # - wine-development  # probably requires winehq repo
-      # - libsdl2-dev:i386  # joystick support
-      - libvulkan1:i386
-      - ccache
-      - gcc-9
-      - g++-9
-      # - wget  # already?
-      - gcc-mingw-w64
-      - g++-mingw-w64
-      - libxpresent-dev:i386
-      - libjxr-dev:i386
-      - libusb-1.0-0-dev:i386
-      - libgcrypt20-dev:i386
-      - libpulse-dev:i386
-      - libudev-dev:i386
-      - libsane-dev:i386
-      - libv4l-dev:i386
-      # - libkrb5-dev:i386  # for kerberos
-      - libgphoto2-dev:i386
-      - liblcms2-dev:i386
-      - libcapi20-dev:i386
-      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
-      - samba-dev:i386
-      - libpcsclite-dev:i386
-      - libcups2-dev:i386
-      - libxcb-xkb-dev:i386
-      - libwayland-bin:i386
-      - libwayland-dev:i386
 
   wine-cleanup:
     after:
