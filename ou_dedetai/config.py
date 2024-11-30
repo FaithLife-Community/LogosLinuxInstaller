@@ -41,7 +41,6 @@ logos_linux_installer_status_info = {
     2: "no",
     None: "constants.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set.",  # noqa: E501
 }
-check_if_indexing = None
 
 
 # XXX: remove this

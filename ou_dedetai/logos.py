@@ -193,8 +193,8 @@ class LogosManager:
         wait_thread = utils.start_thread(wait_on_indexing, daemon_bool=False)
         main.threads.extend([index_thread, check_thread, wait_thread])
         config.processes[self.app.conf.logos_indexer_exe] = index_thread
-        config.processes[config.check_if_indexing] = check_thread
-        config.processes[wait_on_indexing] = wait_thread
+        config.processes["check_if_indexing"] = check_thread
+        config.processes["wait_on_indexing"] = wait_thread
 
     def stop_indexing(self):
         self.indexing_state = State.STOPPING
