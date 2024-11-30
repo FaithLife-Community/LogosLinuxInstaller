@@ -67,6 +67,9 @@ DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{name_b
 FLPRODUCTi: Optional[str] = None
 INSTALL_STEP: int = 0
 INSTALL_STEPS_COUNT: int = 0
+architecture = None
+bits = None
+ELFPACKAGES = None
 L9PACKAGES = None
 LEGACY_CONFIG_FILES = [
     os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),  # noqa: E501
