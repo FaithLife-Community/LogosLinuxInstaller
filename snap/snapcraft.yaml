@@ -249,13 +249,13 @@ parts:
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"
-      # - CFLAGS: "${CFLAGS_X32}"
+      - CFLAGS: "${CFLAGS_X32}"
       - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X32}"
-      # - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
-      # - CROSSLDFLAGS: "${LDFLAGS}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
       # - i386_LDFLAGS: "$CROSSLDFLAGS"
-      - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
+      # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
       # - i386_CC: "$CROSSCC"
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       # - i386_CFLAGS: "$CROSSCFLAGS"
