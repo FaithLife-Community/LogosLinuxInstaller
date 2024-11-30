@@ -36,8 +36,11 @@ class CLI(App):
         control.set_winetricks(self)
 
     def install_app(self):
+        def install(app: CLI):
+            installer.install(app)
+            app.exit("Install has finished", intended=True)
         self.thread = utils.start_thread(
-            installer.install,
+            install,
             app=self
         )
         self.user_input_processor()
@@ -78,9 +81,6 @@ class CLI(App):
     def set_appimage(self):
         utils.set_appimage_symlink(app=self)
 
-    def stop(self):
-        self.running = False
-
     def toggle_app_logging(self):
         self.logos.switch_logging()
 
@@ -113,13 +113,13 @@ class CLI(App):
         output: str = self.choice_q.get()
         return output
 
-    def exit(self, reason: str):
+    def exit(self, reason: str, intended: bool = False):
         # Signal CLI.user_input_processor to stop.
         self.input_q.put(None)
         self.input_event.set()
         # Signal CLI itself to stop.
-        self.stop()
-        return super().exit(reason)
+        self.running = False
+        return super().exit(reason, intended)
     
     @property
     def superuser_command(self) -> str:

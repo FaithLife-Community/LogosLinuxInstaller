@@ -685,9 +685,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         m = "Your distro requires manual dependency installation."
         logging.error(m)
     else:
-        if not app.approve_or_exit(message, secondary):
-            logging.debug("User refused to install packages. Exiting...")
-            return
+        app.approve_or_exit(message, secondary)
 
     preinstall_command = preinstall_dependencies(app.superuser_command)
 
@@ -764,16 +762,16 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     if reboot_required:
         question = "The system has installed or removed a package that requires a reboot. Do you want to restart now?"  # noqa: E501
         if app.approve_or_exit(question):
-            reboot(app.superuser_command())
+            reboot(app.superuser_command)
         else:
             logging.error("Please reboot then launch the installer again.")
             sys.exit(1)
 
 
 def install_winetricks(
-        installdir,
-        app: App,
-        version=constants.WINETRICKS_VERSION,
+    installdir,
+    app: App,
+    version=constants.WINETRICKS_VERSION,
 ):
     msg.status(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501

@@ -86,7 +86,6 @@ def ensure_winetricks_choice(app: App):
     update_install_feedback("Choose winetricks binary…", app=app)
     logging.debug('- config.WINETRICKSBIN')
     # Accessing the winetricks_binary variable will do this.
-    app.conf.winetricks_binary
     logging.debug(f"> config.WINETRICKSBIN={app.conf.winetricks_binary}")
 
 
@@ -213,9 +212,7 @@ def ensure_wine_executables(app: App):
     logging.debug('- wine64')
     logging.debug('- wineserver')
 
-    if not os.access(app.conf.wine_binary, os.X_OK):
-        msg.status("Creating wine appimage symlinks…", app=app)
-        create_wine_appimage_symlinks(app=app)
+    create_wine_appimage_symlinks(app=app)
 
     # PATH is modified if wine appimage isn't found, but it's not modified
     # during a restarted installation, so shutil.which doesn't find the
@@ -235,11 +232,8 @@ def ensure_winetricks_executable(app: App):
         app=app
     )
 
-    if app.conf.winetricks_binary == constants.DOWNLOAD or not os.access(app.conf.winetricks_binary, os.X_OK):
-        # Either previous system winetricks is no longer accessible, or the
-        # or the user has chosen to download it.
-        msg.status("Downloading winetricks from the Internet…", app=app)
-        system.install_winetricks(app.conf.installer_binary_dir, app=app)
+    msg.status("Downloading winetricks from the Internet…", app=app)
+    system.install_winetricks(app.conf.installer_binary_dir, app=app)
 
     logging.debug(f"> {app.conf.winetricks_binary} is executable?: {os.access(app.conf.winetricks_binary, os.X_OK)}")  # noqa: E501
     return 0
@@ -480,39 +474,41 @@ def get_progress_pct(current, total):
     return round(current * 100 / total)
 
 
-# FIXME: Consider moving the condition for whether to run this inside the function
-# Right now the condition is outside
 def create_wine_appimage_symlinks(app: App):
+    app.status("Creating wine appimage symlinks…")
     appdir_bindir = Path(app.conf.installer_binary_dir)
     os.environ['PATH'] = f"{app.conf.installer_binary_dir}:{os.getenv('PATH')}"
     # Ensure AppImage symlink.
     appimage_link = appdir_bindir / app.conf.wine_appimage_link_file_name
-    if app.conf.wine_binary_code in ['AppImage', 'Recommended'] and app.conf.wine_appimage_path is not None: #noqa: E501
-        appimage_file = Path(app.conf.wine_appimage_path)
-        appimage_filename = Path(app.conf.wine_appimage_path).name
-        # Ensure appimage is copied to appdir_bindir.
-        downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename) #noqa: E501
-        if not appimage_file.is_file():
-            msg.status(
-                f"Copying: {downloaded_file} into: {appdir_bindir}",
-                app=app
-            )
-            shutil.copy(downloaded_file, str(appdir_bindir))
-        os.chmod(appimage_file, 0o755)
-        appimage_filename = appimage_file.name
-    elif app.conf.wine_binary_code in ["System", "Proton", "PlayOnLinux", "Custom"]:
-        appimage_filename = "none.AppImage"
-    else:
-        msg.logos_error(
-            f"WINEBIN_CODE error. WINEBIN_CODE is {app.conf.wine_binary_code}. Installation canceled!",  # noqa: E501
+    if app.conf.wine_binary_code not in ['AppImage', 'Recommended'] or app.conf.wine_appimage_path is None: #noqa: E501
+        logging.debug("No need to symlink non-appimages")
+        return
+
+    appimage_file = Path(app.conf.wine_appimage_path)
+    appimage_filename = Path(app.conf.wine_appimage_path).name
+    # Ensure appimage is copied to appdir_bindir.
+    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename) #noqa: E501
+    if downloaded_file is None:
+        logging.critical("Failed to get a valid wine appimage")
+        return
+    if Path(downloaded_file).parent != appdir_bindir:
+        msg.status(
+            f"Copying: {downloaded_file} into: {appdir_bindir}",
             app=app
         )
+        shutil.copy(downloaded_file, appdir_bindir)
+    os.chmod(appimage_file, 0o755)
+    appimage_filename = appimage_file.name
 
     appimage_link.unlink(missing_ok=True)  # remove & replace
     appimage_link.symlink_to(f"./{appimage_filename}")
 
+    # NOTE: if we symlink "winetricks" then the log is polluted with:
+    # "Executing: cd /tmp/.mount_winet.../bin"
+    (appdir_bindir / "winetricks").unlink(missing_ok=True)
+
     # Ensure wine executables symlinks.
-    for name in ["wine", "wine64", "wineserver", "winetricks"]:
+    for name in ["wine", "wine64", "wineserver"]:
         p = appdir_bindir / name
         p.unlink(missing_ok=True)
         p.symlink_to(f"./{app.conf.wine_appimage_link_file_name}")

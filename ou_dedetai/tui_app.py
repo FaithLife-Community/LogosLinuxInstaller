@@ -93,7 +93,15 @@ class TUI(App):
         self.main_window_ratio = self.main_window_ratio = self.menu_window_ratio = self.main_window_min = None
         self.menu_window_min = self.main_window_height = self.menu_window_height = self.main_window = None
         self.menu_window = self.resize_window = None
+
+        # For menu dialogs.
+        # a new MenuDialog is created every loop, so we can't store it there.
+        self.current_option: int = 0
+        self.current_page: int = 0
+        self.total_pages: int = 0
+
         self.set_window_dimensions()
+
 
     def set_window_dimensions(self):
         self.update_tty_dimensions()

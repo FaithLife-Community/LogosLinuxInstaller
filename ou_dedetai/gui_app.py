@@ -77,9 +77,9 @@ class GuiApp(App):
     def approve(self, question: str, context: str | None = None) -> bool:
         return messagebox.askquestion(question, context) == 'yes'
 
-    def exit(self, reason: str):
+    def exit(self, reason: str, intended: bool = False):
         self.root.destroy()
-        return super().exit(reason)
+        return super().exit(reason, intended)
     
 
     def superuser_command(self) -> str:

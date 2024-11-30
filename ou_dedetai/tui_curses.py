@@ -198,10 +198,6 @@ class MenuDialog(CursesDialog):
         self.question_start_y = None
         self.question_lines = None
 
-        self.current_option: int = 0
-        self.current_page: int = 0
-        self.total_pages: int = 0
-
     def __str__(self):
         return f"Menu Curses Dialog"
 
@@ -214,7 +210,7 @@ class MenuDialog(CursesDialog):
         # Display the options, centered
         options_start_y = self.question_start_y + len(self.question_lines) + 2
         for i in range(self.app.options_per_page):
-            index = self.current_page * self.app.options_per_page + i
+            index = self.app.current_page * self.app.options_per_page + i
             if index < len(self.options):
                 option = self.options[index]
                 if type(option) is list:
@@ -245,7 +241,7 @@ class MenuDialog(CursesDialog):
                     y = options_start_y + i + j
                     x = max(0, self.app.window_width // 2 - len(line) // 2)
                     if y < self.app.menu_window_height:
-                        if index == self.current_option:
+                        if index == self.app.current_option:
                             write_line(self.app, self.stdscr, y, x, line, self.app.window_width, curses.A_REVERSE)
                         else:
                             write_line(self.app, self.stdscr, y, x, line, self.app.window_width)
@@ -255,33 +251,33 @@ class MenuDialog(CursesDialog):
                     options_start_y += (len(option_lines))
 
         # Display pagination information
-        page_info = f"Page {self.current_page + 1}/{self.total_pages} | Selected Option: {self.current_option + 1}/{len(self.options)}"
+        page_info = f"Page {self.app.current_page + 1}/{self.total_pages} | Selected Option: {self.app.current_option + 1}/{len(self.options)}"
         write_line(self.app, self.stdscr, max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
 
     def do_menu_up(self):
-        if self.current_option == self.current_page * self.app.options_per_page and self.current_page > 0:
+        if self.app.current_option == self.app.current_page * self.app.options_per_page and self.app.current_page > 0:
             # Move to the previous page
-            self.current_page -= 1
-            self.current_option = min(len(self.app.menu_options) - 1, (self.current_page + 1) * self.app.options_per_page - 1)
-        elif self.current_option == 0:
+            self.app.current_page -= 1
+            self.app.current_option = min(len(self.app.menu_options) - 1, (self.app.current_page + 1) * self.app.options_per_page - 1)
+        elif self.app.current_option == 0:
             if self.total_pages == 1:
-                self.current_option = len(self.app.menu_options) - 1
+                self.app.current_option = len(self.app.menu_options) - 1
             else:
-                self.current_page = self.total_pages - 1
-                self.current_option = len(self.app.menu_options) - 1
+                self.app.current_page = self.total_pages - 1
+                self.app.current_option = len(self.app.menu_options) - 1
         else:
-            self.current_option = max(0, self.current_option - 1)
+            self.app.current_option = max(0, self.app.current_option - 1)
 
     def do_menu_down(self):
-        if self.current_option == (self.current_page + 1) * self.app.options_per_page - 1 and self.current_page < self.total_pages - 1:
+        if self.app.current_option == (self.app.current_page + 1) * self.app.options_per_page - 1 and self.app.current_page < self.total_pages - 1:
             # Move to the next page
-            self.current_page += 1
-            self.current_option = min(len(self.app.menu_options) - 1, self.current_page * self.app.options_per_page)
-        elif self.current_option == len(self.app.menu_options) - 1:
-            self.current_page = 0
-            self.current_option = 0
+            self.app.current_page += 1
+            self.app.current_option = min(len(self.app.menu_options) - 1, self.app.current_page * self.app.options_per_page)
+        elif self.app.current_option == len(self.app.menu_options) - 1:
+            self.app.current_page = 0
+            self.app.current_option = 0
         else:
-            self.current_option = min(len(self.app.menu_options) - 1, self.current_option + 1)
+            self.app.current_option = min(len(self.app.menu_options) - 1, self.app.current_option + 1)
 
     def input(self):
         if len(self.app.tui_screens) > 0:
@@ -306,7 +302,7 @@ class MenuDialog(CursesDialog):
                     elif final_key == 66:
                         self.do_menu_down()
             elif key == ord('\n') or key == 10:  # Enter key
-                self.user_input = self.options[self.current_option]
+                self.user_input = self.options[self.app.current_option]
             elif key == ord('\x1b'):
                 signal.signal(signal.SIGINT, self.app.end)
             else:

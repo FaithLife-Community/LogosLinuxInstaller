@@ -17,7 +17,6 @@ from . import network
 from . import system
 from . import utils
 
-from .config import processes
 
 def check_wineserver(wineserver_binary: str):
     try:
@@ -43,7 +42,7 @@ def wineserver_wait(wineserver_binary: str):
 
 
 def end_wine_processes():
-    for process_name, process in processes.items():
+    for process_name, process in config.processes.items():
         if isinstance(process, subprocess.Popen):
             logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")  # noqa: E501
             try:
@@ -396,6 +395,7 @@ def set_renderer(app: App, renderer: str):
 def set_win_version(app: App, exe: str, windows_version: str):
     if exe == "logos":
         run_winetricks_cmd(app, '-q', 'settings', f'{windows_version}')
+
     elif exe == "indexer":
         reg = f"HKCU\\Software\\Wine\\AppDefaults\\{app.conf.faithlife_product}Indexer.exe"  # noqa: E501
         exe_args = [

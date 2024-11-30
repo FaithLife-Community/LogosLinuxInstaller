@@ -205,7 +205,7 @@ class EphemeralConfiguration:
 
     # FIXME: seems like the wine appimage logic can be simplified
     wine_appimage_link_file_name: Optional[str]
-    """Syslink file name to the active wine appimage."""
+    """Symlink file name to the active wine appimage."""
 
     wine_appimage_path: Optional[str]
     """Path to the selected appimage"""
@@ -597,7 +597,10 @@ class Config:
         """
         question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {self.faithlife_product} requires on Linux."  # noqa: E501
         options = utils.get_winetricks_options()
-        return self._ask_if_not_found("winetricks_binary", question, options)
+        output = self._ask_if_not_found("winetricks_binary", question, options)
+        if (Path(self.install_dir) / output).exists():
+            return str(Path(self.install_dir) / output)
+        return output
     
     @winetricks_binary.setter
     def winetricks_binary(self, value: Optional[str | Path]):
@@ -673,7 +676,9 @@ class Config:
 
     @property
     def wine_binary_code(self) -> str:
-        """"""
+        """Wine binary code.
+        
+        One of: Recommended, AppImage, System, Proton, PlayOnLinux, Custom"""
         if self._raw.wine_binary_code is None:
             self._raw.wine_binary_code = utils.get_winebin_code_and_desc(self.app, self.wine_binary)[0]  # noqa: E501
             self._write()

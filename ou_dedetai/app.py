@@ -56,10 +56,13 @@ class App(abc.ABC):
         options = ["Yes", "No"]
         return self.ask(question, options) == "Yes"
 
-    def exit(self, reason: str):
+    def exit(self, reason: str, intended:bool=False):
         """Exits the application cleanly with a reason"""
-        logging.error(f"Cannot continue because {reason}")
-        sys.exit(1)
+        if intended:
+            sys.exit(0)
+        else:
+            logging.error(f"Cannot continue because {reason}")
+            sys.exit(1)
 
     _exit_option: Optional[str] = "Exit"
 
@@ -88,10 +91,6 @@ class App(abc.ABC):
 
     def status(self, message: str, percent: Optional[int] = None):
         """A status update"""
-        if percent:
-            # XXX: consider using utils.write_progress_bar
-            # Print out 20 periods or spaces proportional to progress
-            print("[" + "." * int(percent / 5) + " " * int((100 - percent) / 5) + "] ", end='') #noqa: E501
         print(f"{message}")
 
     @property

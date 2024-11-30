@@ -16,11 +16,10 @@ import sys
 import tarfile
 import threading
 import time
-import tkinter as tk
 from ou_dedetai.app import App
 from packaging import version
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from . import config
 from . import constants
@@ -366,15 +365,6 @@ def get_procs_using_file(file_path, mode=None):
 #     logging.info("* End of wait_process_using_dir.")
 
 
-def write_progress_bar(percent, screen_width=80):
-    y = '.'
-    n = ' '
-    l_f = int(screen_width * 0.75)  # progress bar length
-    l_y = int(l_f * percent / 100)  # num. of chars. complete
-    l_n = l_f - l_y  # num. of chars. incomplete
-    msg.status(f" [{y * l_y}{n * l_n}] {percent:>3}%",end="\r\n")
-
-
 def find_installed_product(faithlife_product: str, wine_prefix: str) -> Optional[str]:
     if faithlife_product and wine_prefix:
         drive_c = Path(f"{wine_prefix}/drive_c/")
@@ -645,7 +635,7 @@ def set_appimage_symlink(app: App):
         logging.debug("AppImage commands disabled since we're not using an appimage")  # noqa: E501
         return
     if app.conf.wine_appimage_path is None:
-        logging.debug("No need to set appimage syslink, as it wasn't set")
+        logging.debug("No need to set appimage symlink, as it wasn't set")
         return
 
     logging.debug(f"config.APPIMAGE_FILE_PATH={app.conf.wine_appimage_path}")
