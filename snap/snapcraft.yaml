@@ -167,7 +167,7 @@ parts:
       # added by me
       - flex 
       - bison
-      # - gcc-9-multilib
+      - gcc-multilib
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
@@ -211,15 +211,15 @@ parts:
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       # needed for build
       # - CC: "gcc-9"
-      # - CFLAGS: "${CFLAGS_X64}"
+      - CFLAGS: "${CFLAGS_X64}"
       # - CXX: "g++-9"
-      # - CXXFLAGS: "${CFLAGS_X64}"
+      - CXXFLAGS: "${CFLAGS_X64}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      # - CROSSCC: "${CROSSCC_X64}"  # not used?
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
-      # - CROSSCXX: "${CROSSCXX_X64}"  # not used?
-      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
+      - CROSSCC: "${CROSSCC_X64}"  # not used?
+      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
+      - CROSSCXX: "${CROSSCXX_X64}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
     after:
