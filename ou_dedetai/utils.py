@@ -56,7 +56,6 @@ def append_unique(list, item):
 # Set "global" variables.
 # XXX: fold this into config
 def set_default_config():
-    system.get_superuser_command()
     system.get_package_manager()
     if config.CONFIG_FILE is None:
         config.CONFIG_FILE = constants.DEFAULT_CONFIG_PATH

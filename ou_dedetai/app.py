@@ -1,6 +1,9 @@
 
 import abc
+import logging
 import os
+import shutil
+import sys
 from typing import Optional
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
@@ -14,7 +17,7 @@ class App(abc.ABC):
 
     def __init__(self, config, **kwargs) -> None:
         # This lazy load is required otherwise it would be a circular import
-        from ou_dedetai.new_config import Config
+        from ou_dedetai.config import Config
         self.conf = Config(config, self)
         pass
 
@@ -42,6 +45,22 @@ class App(abc.ABC):
             exit(1)
 
         return answer
+
+    def approve_or_exit(self, question: str, context: Optional[str] = None):
+        """Asks the user a question, if they refuse, shutdown"""
+        if not self._confirm(question, context):
+            self.exit(f"User refused the prompt: {question}")
+
+    def _confirm(self, question: str, context: Optional[str] = None) -> bool:
+        """Asks the user a y/n question"""
+        question = f"{context}\n" if context is not None else "" + question
+        options = ["Yes", "No"]
+        return self.ask(question, options) == "Yes"
+
+    def exit(self, reason: str):
+        """Exits the application cleanly with a reason"""
+        logging.error(f"Cannot continue because {reason}")
+        sys.exit(1)
 
     _exit_option: Optional[str] = "Exit"
 
@@ -73,8 +92,18 @@ class App(abc.ABC):
             return os.access(self.conf.logos_exe, os.X_OK)
         return False
 
-    # XXX: unused at present
-    # @abc.abstractmethod
-    # def update_progress(self, message: str, percent: Optional[int] = None):
-    #     """Updates the progress of the current operation"""
-    #     pass
+    def update_progress(self, message: str, percent: Optional[int] = None):
+        """Updates the progress of the current operation"""
+        # XXX: reformat to the cli's normal format (probably in msg.py)
+        print(f"{percent}% - {message}")
+
+    @property
+    def superuser_command(self) -> str:
+        """Command when root privileges are needed.
+
+        Raises:
+            SuperuserCommandNotFound
+
+        May be sudo or pkexec for example"""
+        from ou_dedetai.system import get_superuser_command
+        return get_superuser_command()

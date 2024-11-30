@@ -175,8 +175,6 @@ def ensure_sys_deps(app: App):
 
     if not app.conf.skip_install_system_dependencies:
         utils.install_dependencies(app)
-        if config.DIALOG == "curses":
-            app.installdeps_e.wait()
         logging.debug("> Done.")
     else:
         logging.debug("> Skipped.")

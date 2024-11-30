@@ -10,7 +10,7 @@ from typing import Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
-from ou_dedetai.new_config import EphemeralConfiguration
+from ou_dedetai.config import EphemeralConfiguration
 
 from . import config
 from . import control
@@ -66,8 +66,6 @@ class TUI(App):
         # Install and Options
         self.manualinstall_q = Queue()
         self.manualinstall_e = threading.Event()
-        self.installdeps_q = Queue()
-        self.installdeps_e = threading.Event()
         self.deps_q = Queue()
         self.deps_e = threading.Event()
         self.finished_q = Queue()
@@ -653,6 +651,10 @@ class TUI(App):
         # XXX: can there be some sort of feedback if this directory path isn't valid?
         if choice is not None and Path(choice).exists() and Path(choice).is_dir():
             self.handle_ask_response(choice)
+
+    def update_progress(self, message: str, percent: int | None = None):
+        # XXX: update some screen? Something like get_waiting?
+        pass
 
     def get_waiting(self, dialog, screen_id=8):
         text = ["Install is running…\n"]

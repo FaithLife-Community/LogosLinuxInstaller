@@ -2,7 +2,7 @@ import queue
 import threading
 
 from ou_dedetai.app import App
-from ou_dedetai.new_config import EphemeralConfiguration
+from ou_dedetai.config import EphemeralConfiguration
 
 from . import control
 from . import installer

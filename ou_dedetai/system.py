@@ -207,9 +207,9 @@ def get_logos_pids(app: App):
     config.processes[app.conf.logos_indexer_exe] = get_pids(app.conf.logos_indexer_exe)  # noqa: E501
 
 
-def reboot():
+def reboot(superuser_command: str):
     logging.info("Rebooting system.")
-    command = f"{config.SUPERUSER_COMMAND} reboot now"
+    command = f"{superuser_command} reboot now"
     subprocess.run(
         command,
         stdout=subprocess.PIPE,
@@ -253,22 +253,19 @@ def get_os() -> Tuple[str, str]:
     return os_name, os_release
 
 
-def get_superuser_command():
-    if config.DIALOG == 'tk':
-        if shutil.which('pkexec'):
-            config.SUPERUSER_COMMAND = "pkexec"
-        else:
-            msg.logos_error("No superuser command found. Please install pkexec.")  # noqa: E501
+class SuperuserCommandNotFound(Exception):
+    """Superuser command not found. Install pkexec or sudo or doas"""
+
+
+def get_superuser_command() -> str:
+    if shutil.which('pkexec'):
+        return "pkexec"
+    elif shutil.which('sudo'):
+        return "sudo"
+    elif shutil.which('doas'):
+        return "doas"
     else:
-        if shutil.which('pkexec'):
-            config.SUPERUSER_COMMAND = "pkexec"
-        elif shutil.which('sudo'):
-            config.SUPERUSER_COMMAND = "sudo"
-        elif shutil.which('doas'):
-            config.SUPERUSER_COMMAND = "doas"
-        else:
-            msg.logos_error("No superuser command found. Please install sudo or doas.")  # noqa: E501
-    logging.debug(f"{config.SUPERUSER_COMMAND=}")
+        raise SuperuserCommandNotFound
 
 
 @dataclass
@@ -549,11 +546,14 @@ def test_dialog_version():
         return None
 
 
-def remove_appimagelauncher(app=None):
-    pkg = "appimagelauncher"
-    cmd = [config.SUPERUSER_COMMAND, *package_manager.remove, pkg]  # noqa: E501
-    # FIXME: should this status be higher? (the caller of this function)
+def remove_appimagelauncher(app: App):
     msg.status("Removing AppImageLauncher…", app)
+    pkg = "appimagelauncher"
+    package_manager = get_package_manager()
+    if package_manager is None:
+        msg.logos_error("Failed to find the package manager to uninstall AppImageLauncher.")
+        sys.exit(1)
+    cmd = [app.superuser_command, *package_manager.remove, pkg]  # noqa: E501
     try:
         logging.debug(f"Running command: {cmd}")
         run_command(cmd)
@@ -569,47 +569,47 @@ def remove_appimagelauncher(app=None):
     sys.exit()
 
 
-def preinstall_dependencies_steamos():
+def preinstall_dependencies_steamos(superuser_command: str):
     logging.debug("Disabling read only, updating pacman keys…")
     command = [
-        config.SUPERUSER_COMMAND, "steamos-readonly", "disable", "&&",
-        config.SUPERUSER_COMMAND, "pacman-key", "--init", "&&",
-        config.SUPERUSER_COMMAND, "pacman-key", "--populate", "archlinux",
+        superuser_command, "steamos-readonly", "disable", "&&",
+        superuser_command, "pacman-key", "--init", "&&",
+        superuser_command, "pacman-key", "--populate", "archlinux",
     ]
     return command
 
 
-def postinstall_dependencies_steamos():
+def postinstall_dependencies_steamos(superuser_command: str):
     logging.debug("Updating DNS settings & locales, enabling services & read-only system…")  # noqa: E501
     command = [
-        config.SUPERUSER_COMMAND, "sed", '-i',
+        superuser_command, "sed", '-i',
         's/mymachines resolve/mymachines mdns_minimal [NOTFOUND=return] resolve/',  # noqa: E501
         '/etc/nsswitch.conf', '&&',
-        config.SUPERUSER_COMMAND, "locale-gen", '&&',
-        config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "avahi-daemon", "&&",  # noqa: E501
-        config.SUPERUSER_COMMAND, "systemctl", "enable", "--now", "cups", "&&",  # noqa: E501
-        config.SUPERUSER_COMMAND, "steamos-readonly", "enable",
+        superuser_command, "locale-gen", '&&',
+        superuser_command, "systemctl", "enable", "--now", "avahi-daemon", "&&",  # noqa: E501
+        superuser_command, "systemctl", "enable", "--now", "cups", "&&",  # noqa: E501
+        superuser_command, "steamos-readonly", "enable",
     ]
     return command
 
 
-def preinstall_dependencies():
+def preinstall_dependencies(superuser_command: str):
     command = []
     logging.debug("Performing pre-install dependencies…")
     os_name, _ = get_os()
     if os_name == "Steam":
-        command = preinstall_dependencies_steamos()
+        command = preinstall_dependencies_steamos(superuser_command)
     else:
         logging.debug("No pre-install dependencies required.")
     return command
 
 
-def postinstall_dependencies():
+def postinstall_dependencies(superuser_command: str):
     command = []
     logging.debug("Performing post-install dependencies…")
     os_name, _ = get_os()
     if os_name == "Steam":
-        command = postinstall_dependencies_steamos()
+        command = postinstall_dependencies_steamos(superuser_command)
     else:
         logging.debug("No post-install dependencies required.")
     return command
@@ -623,9 +623,8 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     install_deps_failed = False
     manual_install_required = False
     reboot_required = False
-    message = None
-    no_message = None
-    secondary = None
+    message: Optional[str] = None
+    secondary: Optional[str] = None
     command = []
     preinstall_command = []
     install_command = []
@@ -666,23 +665,19 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     )
 
     if os_name in ['fedora', 'arch']:
-        message = False
-        no_message = False
-        secondary = False
+        # XXX: move the handling up here, possibly simplify?
+        m = "Your distro requires manual dependency installation."
+        logging.error(m)
+        return
     elif missing_packages and conflicting_packages:
         message = f"Your {os_name} computer requires installing and removing some software.\nProceed?"  # noqa: E501
-        no_message = "User refused to install and remove software via the application"  # noqa: E501
         secondary = f"To continue, the program will attempt to install the following package(s) by using '{package_manager.install}':\n{missing_packages}\nand will remove the following package(s) by using '{package_manager.remove}':\n{conflicting_packages}"  # noqa: E501
     elif missing_packages:
         message = f"Your {os_name} computer requires installing some software.\nProceed?"  # noqa: E501
-        no_message = "User refused to install software via the application."  # noqa: E501
         secondary = f"To continue, the program will attempt to install the following package(s) by using '{package_manager.install}':\n{missing_packages}"  # noqa: E501
     elif conflicting_packages:
         message = f"Your {os_name} computer requires removing some software.\nProceed?"  # noqa: E501
-        no_message = "User refused to remove software via the application."  # noqa: E501
         secondary = f"To continue, the program will attempt to remove the following package(s) by using '{package_manager.remove}':\n{conflicting_packages}"  # noqa: E501
-    else:
-        message = None
 
     if message is None:
         logging.debug("No missing or conflicting dependencies found.")
@@ -690,16 +685,11 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         m = "Your distro requires manual dependency installation."
         logging.error(m)
     else:
-        msg.logos_continue_question(message, no_message, secondary, app)
-        if config.DIALOG == "curses":
-            app.confirm_e.wait()
+        if not app.approve_or_exit(message, secondary):
+            logging.debug("User refused to install packages. Exiting...")
+            return
 
-    # TODO: Need to send continue question to user based on DIALOG.
-    # All we do above is create a message that we never send.
-    # Do we need a TK continue question? I see we have a CLI and curses one
-    # in msg.py
-
-    preinstall_command = preinstall_dependencies()
+    preinstall_command = preinstall_dependencies(app.superuser_command)
 
     if missing_packages:
         install_command = package_manager.install + missing_packages  # noqa: E501
@@ -715,7 +705,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     else:
         logging.debug("No conflicting packages detected.")
 
-    postinstall_command = postinstall_dependencies()
+    postinstall_command = postinstall_dependencies(app.superuser_command)
 
     if preinstall_command:
         command.extend(preinstall_command)
@@ -734,15 +724,11 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     if not command:  # nothing to run; avoid running empty pkexec command
         if app:
             msg.status("All dependencies are met.", app)
-            if config.DIALOG == "curses":
-                app.installdeps_e.set()
         return
 
-    if app and config.DIALOG == 'tk':
-        app.root.event_generate('<<StartIndeterminateProgress>>')
-    msg.status("Installing dependencies…", app)
+    app.update_progress("Installing dependencies…")
     final_command = [
-        f"{config.SUPERUSER_COMMAND}", 'sh', '-c', "'", *command, "'"
+        f"{app.superuser_command}", 'sh', '-c', "'", *command, "'"
     ]
     command_str = ' '.join(final_command)
     # TODO: Fix fedora/arch handling.
@@ -754,35 +740,16 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
             "Please run the following command in a terminal, then restart "
             f"{constants.APP_NAME}:\n{sudo_command}\n"
         )
-        if config.DIALOG == "tk":
-            if hasattr(app, 'root'):
-                detail += "\nThe command has been copied to the clipboard."  # noqa: E501
-                app.root.clipboard_clear()
-                app.root.clipboard_append(sudo_command)
-                app.root.update()
-            msg.logos_error(
-                message,
-                detail=detail,
-                app=app,
-                parent='installer_win'
-            )
-        elif config.DIALOG == 'cli':
-            msg.logos_error(message + "\n" + detail)
-        install_deps_failed = True
-
-    if manual_install_required and app and config.DIALOG == "curses":
-        app.screen_q.put(
-            app.stack_confirm(
-                17,
-                app.manualinstall_q,
-                app.manualinstall_e,
-                f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\n{constants.APP_NAME}:\n{sudo_command}\n",  # noqa: E501
-                "User cancelled dependency installation.",  # noqa: E501
-                message,
-                options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))  # noqa: E501
-        app.manualinstall_e.wait()
+        from ou_dedetai import gui_app
+        if isinstance(app, gui_app.GuiApp):
+            detail += "\nThe command has been copied to the clipboard."  # noqa: E501
+            app.root.clipboard_clear()
+            app.root.clipboard_append(sudo_command)
+            app.root.update()
+        app.approve_or_exit(message + " \n" + detail)
 
     if not install_deps_failed and not manual_install_required:
+        # FIXME: why only for this dialog?
         if config.DIALOG == 'cli':
             command_str = command_str.replace("pkexec", "sudo")
         try:
@@ -798,23 +765,12 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
 
 
     if reboot_required:
-        question = "Should the program reboot the host now?"  # noqa: E501
-        no_text = "The user has chosen not to reboot."
-        secondary = "The system has installed or removed a package that requires a reboot."  # noqa: E501
-        if msg.logos_continue_question(question, no_text, secondary):
-            reboot()
+        question = "The system has installed or removed a package that requires a reboot. Do you want to restart now?"  # noqa: E501
+        if app.approve_or_exit(question):
+            reboot(app.superuser_command())
         else:
-            logging.error("Cannot proceed until reboot. Exiting.")
+            logging.error("Please reboot then launch the installer again.")
             sys.exit(1)
-
-    if install_deps_failed:
-        if app:
-            if config.DIALOG == "curses":
-                app.choice_q.put("Return to Main Menu")
-    else:
-        if app:
-            if config.DIALOG == "curses":
-                app.installdeps_e.set()
 
 
 def install_winetricks(

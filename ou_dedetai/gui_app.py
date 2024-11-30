@@ -7,8 +7,9 @@ import logging
 from pathlib import Path
 from queue import Queue
 
+import shutil
 from threading import Event
-from tkinter import PhotoImage
+from tkinter import PhotoImage, messagebox
 from tkinter import Tk
 from tkinter import Toplevel
 from tkinter import filedialog as fd
@@ -17,7 +18,7 @@ from typing import Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
-from ou_dedetai.new_config import EphemeralConfiguration
+from ou_dedetai.config import EphemeralConfiguration
 
 from . import config
 from . import constants
@@ -37,7 +38,7 @@ class GuiApp(App):
 
     def __init__(self, root: "Root", ephemeral_config: EphemeralConfiguration, **kwargs):
         super().__init__(ephemeral_config)
-        self.root_to_destory_on_none = root
+        self.root = root
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
         answer_q = Queue()
@@ -54,24 +55,44 @@ class GuiApp(App):
             answer_event.wait()
             answer = answer_q.get()
             if answer is None:
-                self.root_to_destory_on_none.destroy()
+                self.root.destroy()
                 return None
         elif isinstance(options, str):
             answer = options
 
         if answer == PROMPT_OPTION_DIRECTORY:
             answer = fd.askdirectory(
-                parent=self.root_to_destory_on_none,
+                parent=self.root,
                 title=question,
                 initialdir=Path().home(),
             )
         elif answer == PROMPT_OPTION_FILE:
             answer = fd.askopenfilename(
-                parent=self.root_to_destory_on_none,
+                parent=self.root,
                 title=question,
                 initialdir=Path().home(),
             )
         return answer
+
+    def _confirm(self, question: str, context: str | None = None) -> bool:
+        return messagebox.askquestion(question, context) == 'yes'
+
+    def exit(self, reason: str):
+        self.root.destroy()
+        return super().exit(reason)
+    
+
+    def superuser_command(self) -> str:
+        """Command when root privileges are needed.
+        
+        Raises:
+            SuperuserCommandNotFound - if no command is found
+
+        pkexec if found"""
+        if shutil.which('pkexec'):
+            return "pkexec"
+        else:
+            raise system.SuperuserCommandNotFound("No superuser command found. Please install pkexec.")  # noqa: E501
 
 class Root(Tk):
     def __init__(self, *args, **kwargs):
@@ -461,6 +482,13 @@ class InstallerWindow(GuiApp):
     def start_install_thread(self, evt=None):
         self.gui.progress.config(mode='determinate')
         utils.start_thread(installer.ensure_launcher_shortcuts, app=self)
+
+    def update_progress(self, message: str, percent: Optional[int] = None):
+        self.gui.progress.state(['!disabled'])
+        self.gui.progressvar.set(percent or 0)
+        self.gui.progress.config(mode='indeterminate')
+        self.gui.progress.start()
+        self.gui.statusvar.set(message)
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])

@@ -331,6 +331,7 @@ def progress(percent, app=None):
         logos_msg(get_progress_str(percent))  # provisional
 
 
+# XXX: move this to app.update_progress
 def status(text, app=None, end='\n'):
     def strip_timestamp(msg, timestamp_length=20):
         return msg[timestamp_length:]
