@@ -1,8 +1,10 @@
 import queue
+import shutil
 import threading
 
 from ou_dedetai.app import App
 from ou_dedetai.config import EphemeralConfiguration
+from ou_dedetai.system import SuperuserCommandNotFound
 
 from . import control
 from . import installer
@@ -118,6 +120,13 @@ class CLI(App):
         # Signal CLI itself to stop.
         self.stop()
         return super().exit(reason)
+    
+    @property
+    def superuser_command(self) -> str:
+        if shutil.which('sudo'):
+            return "sudo"
+        else:
+            raise SuperuserCommandNotFound("sudo command not found. Please install.")
 
     def user_input_processor(self, evt=None):
         while self.running:

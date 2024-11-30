@@ -123,39 +123,6 @@ class UrlProps(Props):
         return self.md5
 
 
-def cli_download(uri, destination, app=None):
-    message = f"Downloading '{uri}' to '{destination}'"
-    msg.status(message)
-
-    # Set target.
-    if destination != destination.rstrip('/'):
-        target = os.path.join(destination, os.path.basename(uri))
-        if not os.path.isdir(destination):
-            os.makedirs(destination)
-    elif os.path.isdir(destination):
-        target = os.path.join(destination, os.path.basename(uri))
-    else:
-        target = destination
-        dirname = os.path.dirname(destination)
-        if not os.path.isdir(dirname):
-            os.makedirs(dirname)
-
-    # Download from uri in thread while showing progress bar.
-    cli_queue = queue.Queue()
-    kwargs = {'q': cli_queue, 'target': target}
-    t = utils.start_thread(net_get, uri, **kwargs)
-    try:
-        while t.is_alive():
-            sleep(0.1)
-            if cli_queue.empty():
-                continue
-            utils.write_progress_bar(cli_queue.get())
-        print()
-    except KeyboardInterrupt:
-        print()
-        msg.logos_error('Interrupted with Ctrl+C')
-
-
 def logos_reuse_download(
     sourceurl,
     file,
@@ -191,17 +158,12 @@ def logos_reuse_download(
                     logging.info(f"Incomplete file: {file_path}.")
     if found == 1:
         file_path = os.path.join(app.conf.download_dir, file)
-        if config.DIALOG == 'tk' and app:
-            # Ensure progress bar.
-            app.stop_indeterminate_progress()
-            # Start download.
-            net_get(
-                sourceurl,
-                target=file_path,
-                app=app,
-            )
-        else:
-            cli_download(sourceurl, file_path, app=app)
+        # Start download.
+        net_get(
+            sourceurl,
+            target=file_path,
+            app=app,
+        )
         if verify_downloaded_file(
             sourceurl,
             file_path,
@@ -216,16 +178,15 @@ def logos_reuse_download(
             msg.logos_error(f"Bad file size or checksum: {file_path}")
 
 
-def net_get(url, target=None, app=None, evt=None, q=None):
-
+# FIXME: refactor to raise rather than return None
+def net_get(url, target=None, app: Optional[App] = None, evt=None, q=None):
     # TODO:
     # - Check available disk space before starting download
     logging.debug(f"Download source: {url}")
     logging.debug(f"Download destination: {target}")
     target = FileProps(target)  # sets path and size attribs
     if app and target.path:
-        app.status_q.put(f"Downloading {target.path.name}…")  # noqa: E501
-        app.root.event_generate('<<UpdateStatus>>')
+        app.status(f"Downloading {target.path.name}…")
     parsed_url = urlparse(url)
     domain = parsed_url.netloc  # Gets the requested domain
     url = UrlProps(url)  # uses requests to set headers, size, md5 attribs
@@ -305,11 +266,8 @@ def net_get(url, target=None, app=None, evt=None, q=None):
                             percent = round(local_size / total_size * 100)
                             # if None not in [app, evt]:
                             if app:
-                                # Send progress value to tk window.
-                                app.get_q.put(percent)
-                                if not evt:
-                                    evt = app.get_evt
-                                app.root.event_generate(evt)
+                                # Send progress value to App
+                                app.status("Downloading...", percent=percent)
                             elif q is not None:
                                 # Send progress value to queue param.
                                 q.put(percent)
@@ -453,13 +411,8 @@ def get_logos_releases(app: App) -> list[str]:
         url = f"https://clientservices.logos.com/update/v1/feed/logos{app.conf.faithlife_product_version}/stable.xml"  # noqa: E501
     
     response_xml_bytes = net_get(url)
-    # if response_xml is None and None not in [q, app]:
     if response_xml_bytes is None:
-        if app:
-            app.releases_q.put(None)
-            if config.DIALOG == 'tk':
-                app.root.event_generate(app.release_evt)
-        return None
+        raise Exception("Failed to get logos releases")
 
     # Parse XML
     root = ET.fromstring(response_xml_bytes.decode('utf-8-sig'))
@@ -486,10 +439,6 @@ def get_logos_releases(app: App) -> list[str]:
     # logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
     filtered_releases = releases
 
-    if app:
-        if config.DIALOG == 'tk':
-            app.releases_q.put(filtered_releases)
-            app.root.event_generate(app.release_evt)
     return filtered_releases
 
 

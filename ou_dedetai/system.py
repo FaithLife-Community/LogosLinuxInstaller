@@ -749,9 +749,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         app.approve_or_exit(message + " \n" + detail)
 
     if not install_deps_failed and not manual_install_required:
-        # FIXME: why only for this dialog?
-        if config.DIALOG == 'cli':
-            command_str = command_str.replace("pkexec", "sudo")
         try:
             logging.debug(f"Attempting to run this command: {command_str}")
             run_command(command_str, shell=True)

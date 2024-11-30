@@ -83,7 +83,7 @@ def update_config_file(config_file_path, key, value):
             msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
 
 
-def die_if_running():
+def die_if_running(app: App):
 
     def remove_pid_file():
         if os.path.exists(constants.PID_FILE):
@@ -93,21 +93,7 @@ def die_if_running():
         with open(constants.PID_FILE, 'r') as f:
             pid = f.read().strip()
             message = f"The script is already running on PID {pid}. Should it be killed to allow this instance to run?"  # noqa: E501
-            if config.DIALOG == "tk":
-                # TODO: With the GUI this runs in a thread. It's not clear if
-                # the messagebox will work correctly. It may need to be
-                # triggered from here with an event and then opened from the
-                # main thread.
-                tk_root = tk.Tk()
-                tk_root.withdraw()
-                confirm = tk.messagebox.askquestion("Confirmation", message)
-                tk_root.destroy()
-            elif config.DIALOG == "curses":
-                confirm = tui.confirm("Confirmation", message)
-            else:
-                confirm = msg.cli_question(message, "")
-
-            if confirm:
+            if app.approve(message):
                 os.kill(int(pid), signal.SIGKILL)
 
     atexit.register(remove_pid_file)
@@ -304,17 +290,8 @@ def get_wine_options(app: App, appimages, binaries) -> List[str]:  # noqa: E501
     wine_binary_options = []
 
     # Add AppImages to list
-    # if config.DIALOG == 'tk':
     wine_binary_options.append(f"{app.conf.installer_binary_dir}/{app.conf.wine_appimage_recommended_file_name}")  # noqa: E501
     wine_binary_options.extend(appimages)
-    # else:
-    #     appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
-    #     wine_binary_options.append([
-    #         "Recommended",  # Code
-    #         f'{app.conf.installer_binary_directory}/{app.conf.wine_appimage_recommended_file_name}',  # noqa: E501
-    #         f"AppImage of Wine64 {app.conf.wine_appimage_recommended_version}"  # noqa: E501
-    #         ])
-    #     wine_binary_options.extend(appimage_entries)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
@@ -323,16 +300,7 @@ def get_wine_options(app: App, appimages, binaries) -> List[str]:  # noqa: E501
         code, description = get_winebin_code_and_desc(app, wine_binary_path)  # noqa: E501
 
         # Create wine binary option array
-        # if config.DIALOG == 'tk':
         wine_binary_options.append(wine_binary_path)
-        # else:
-        #     wine_binary_options.append(
-        #         [code, wine_binary_path, description]
-        #     )
-        #
-    # if config.DIALOG != 'tk':
-    #     wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
-
     logging.debug(f"{wine_binary_options=}")
     return wine_binary_options
 
@@ -404,10 +372,7 @@ def write_progress_bar(percent, screen_width=80):
     l_f = int(screen_width * 0.75)  # progress bar length
     l_y = int(l_f * percent / 100)  # num. of chars. complete
     l_n = l_f - l_y  # num. of chars. incomplete
-    if config.DIALOG == 'curses':
-        msg.status(f" [{y * l_y}{n * l_n}] {percent:>3}%")
-    else:
-        print(f" [{y * l_y}{n * l_n}] {percent:>3}%", end='\r')
+    msg.status(f" [{y * l_y}{n * l_n}] {percent:>3}%",end="\r\n")
 
 
 def find_installed_product(faithlife_product: str, wine_prefix: str) -> Optional[str]:
@@ -420,6 +385,7 @@ def find_installed_product(faithlife_product: str, wine_prefix: str) -> Optional
                 exe = str(root / f"{name}.exe")
                 break
         return exe
+    return None
 
 
 def enough_disk_space(dest_dir, bytes_required):
@@ -702,27 +668,12 @@ def set_appimage_symlink(app: App):
             msg.logos_error(f"Cannot use {selected_appimage_file_path}.")
 
         # Determine if user wants their AppImage in the app bin dir.
-        copy_message = (
+        copy_question = (
             f"Should the program copy {selected_appimage_file_path} to the"
             f" {app.conf.installer_binary_dir} directory?"
         )
-        # XXX: move this to .ask
-        # FIXME: What if user cancels the confirmation dialog?
-        if config.DIALOG == "tk":
-            # TODO: With the GUI this runs in a thread. It's not clear if the
-            # messagebox will work correctly. It may need to be triggered from
-            # here with an event and then opened from the main thread.
-            tk_root = tk.Tk()
-            tk_root.withdraw()
-            confirm = tk.messagebox.askquestion("Confirmation", copy_message)
-            tk_root.destroy()
-        elif config.DIALOG in ['curses', 'dialog']:
-            confirm = tui.confirm("Confirmation", copy_message)
-        elif config.DIALOG == 'cli':
-            confirm = msg.logos_acknowledge_question(copy_message, '', '')
-
         # Copy AppImage if confirmed.
-        if confirm is True or confirm == 'yes':
+        if app.approve(copy_question):
             logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_dir}.")  # noqa: E501
             dest = appdir_bindir / selected_appimage_file_path.name
             if not dest.exists():
@@ -734,8 +685,6 @@ def set_appimage_symlink(app: App):
     app.conf.wine_appimage_path = f"{selected_appimage_file_path.name}"  # noqa: E501
 
     write_config(config.CONFIG_FILE)
-    if config.DIALOG == 'tk':
-        app.root.event_generate("<<UpdateLatestAppImageButton>>")
 
 
 def update_to_latest_lli_release(app: App):

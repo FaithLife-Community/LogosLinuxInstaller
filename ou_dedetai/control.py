@@ -178,9 +178,7 @@ def backup_and_restore(mode: str, app: App):
         print()
         msg.logos_error("Cancelled with Ctrl+C.")
     t.join()
-    if config.DIALOG == 'tk':
-        app.root.event_generate('<<ClearStatus>>')
-    logging.info(f"Finished. {src_size} bytes copied to {str(dst_dir)}")
+    app.status(f"Finished {mode}. {src_size} bytes copied to {str(dst_dir)}")
 
 
 def copy_data(src_dirs, dst_dir):

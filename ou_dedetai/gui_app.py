@@ -74,7 +74,7 @@ class GuiApp(App):
             )
         return answer
 
-    def _confirm(self, question: str, context: str | None = None) -> bool:
+    def approve(self, question: str, context: str | None = None) -> bool:
         return messagebox.askquestion(question, context) == 'yes'
 
     def exit(self, reason: str):
@@ -341,6 +341,11 @@ class InstallerWindow(GuiApp):
 
             self.start_ensure_config()
 
+    def get_logos_releases(self):
+        filtered_releases = network.get_logos_releases(self)
+        self.releases_q.put(filtered_releases)
+        self.root.event_generate(self.release_evt)
+
     def start_releases_check(self):
         # Disable button; clear list.
         self.gui.release_check_button.state(['disabled'])
@@ -357,7 +362,7 @@ class InstallerWindow(GuiApp):
         self.gui.progress.start()
         self.gui.statusvar.set("Downloading Release list…")
         # Start thread.
-        utils.start_thread(network.get_logos_releases, app=self)
+        utils.start_thread(self.get_logos_releases)
 
     def set_release(self, evt=None):
         if self.gui.releasevar.get()[0] == 'C':  # ignore default text
@@ -739,11 +744,15 @@ class ControlWindow(GuiApp):
         self.gui.statusvar.set(f"Updating to latest {constants.APP_NAME} version…")  # noqa: E501
         utils.start_thread(utils.update_to_latest_lli_release, app=self)
 
+    def set_appimage_symlink(self):
+        utils.set_appimage_symlink(self)
+        self.update_latest_appimage_button()
+
     def update_to_latest_appimage(self, evt=None):
         self.conf.wine_appimage_path = self.conf.wine_appimage_recommended_file_name  # noqa: E501
         self.start_indeterminate_progress()
         self.gui.statusvar.set("Updating to latest AppImage…")
-        utils.start_thread(utils.set_appimage_symlink, app=self)
+        utils.start_thread(self.set_appimage_symlink)
 
     def set_appimage(self, evt=None):
         # TODO: Separate as advanced feature.
@@ -751,7 +760,7 @@ class ControlWindow(GuiApp):
         if not appimage_filename:
             return
         self.conf.wine_appimage_path = appimage_filename
-        utils.start_thread(utils.set_appimage_symlink, app=self)
+        utils.start_thread(self.set_appimage_symlink)
 
     def get_winetricks(self, evt=None):
         # TODO: Separate as advanced feature.

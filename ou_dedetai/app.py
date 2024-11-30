@@ -47,10 +47,10 @@ class App(abc.ABC):
 
     def approve_or_exit(self, question: str, context: Optional[str] = None):
         """Asks the user a question, if they refuse, shutdown"""
-        if not self._confirm(question, context):
+        if not self.approve(question, context):
             self.exit(f"User refused the prompt: {question}")
 
-    def _confirm(self, question: str, context: Optional[str] = None) -> bool:
+    def approve(self, question: str, context: Optional[str] = None) -> bool:
         """Asks the user a y/n question"""
         question = f"{context}\n" if context is not None else "" + question
         options = ["Yes", "No"]
@@ -88,8 +88,11 @@ class App(abc.ABC):
 
     def status(self, message: str, percent: Optional[int] = None):
         """A status update"""
-        # XXX: reformat to the cli's normal format (probably in msg.py)
-        print(f"{percent}% - {message}")
+        if percent:
+            # XXX: consider using utils.write_progress_bar
+            # Print out 20 periods or spaces proportional to progress
+            print("[" + "." * int(percent / 5) + " " * int((100 - percent) / 5) + "] ", end='') #noqa: E501
+        print(f"{message}")
 
     @property
     def superuser_command(self) -> str:
