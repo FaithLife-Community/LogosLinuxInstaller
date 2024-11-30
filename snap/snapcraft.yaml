@@ -216,10 +216,10 @@ parts:
       # - CXXFLAGS: "${CFLAGS_X64}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X64}"  # not used?
-      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
-      - CROSSCXX: "${CROSSCXX_X64}"  # not used?
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
+      # - CROSSCC: "${CROSSCC_X64}"  # not used?
+      # - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
+      # - CROSSCXX: "${CROSSCXX_X64}"  # not used?
+      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
     after:
@@ -274,12 +274,12 @@ parts:
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       # - i386_LDFLAGS: "$CROSSLDFLAGS"
-      - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
+      # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
       # - i386_CC: "$CROSSCC"
-      - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       # - i386_CFLAGS: "$CROSSCFLAGS"
-      - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
+      # - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
+      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
   wine32:
     after:
@@ -336,10 +336,10 @@ parts:
       # - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X32}"  # not used?
-      - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
-      - CROSSCXX: "${CROSSCXX_X32}"  # not used?
-      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
+      # - CROSSCC: "${CROSSCC_X32}"  # not used?
+      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      # - CROSSCXX: "${CROSSCXX_X32}"  # not used?
+      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
   wine-cleanup:
     after:
