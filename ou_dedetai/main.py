@@ -2,7 +2,7 @@
 import argparse
 import curses
 
-from ou_dedetai.new_config import EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
+from ou_dedetai.config import EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
 
 try:
     import dialog  # noqa: F401
