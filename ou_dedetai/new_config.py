@@ -419,6 +419,7 @@ class Config:
     _logos_exe: Optional[str] = None
     _download_dir: Optional[str] = None
     _wine_output_encoding: Optional[str] = None
+    _installed_faithlife_product_release: Optional[str] = None
 
     # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
@@ -719,7 +720,6 @@ class Config:
             return wine.get_winecmd_encoding(self.app)
         return None
 
-
     @property
     def app_wine_log_path(self) -> str:
         if self._overrides.app_wine_log_path is not None:
@@ -851,6 +851,6 @@ class Config:
     
     @property
     def installed_faithlife_product_release(self) -> Optional[str]:
-        if self._faithlife_product_logging is None:
-            self._faithlife_product_logging = utils.get_current_logos_version(self.install_dir) # noqa: E501
-        return self._faithlife_product_logging
+        if self._installed_faithlife_product_release is None:
+            self._installed_faithlife_product_release = utils.get_current_logos_version(self.install_dir) # noqa: E501
+        return self._installed_faithlife_product_release
