@@ -3,7 +3,9 @@ import distro
 import logging
 import os
 import psutil
+import platform
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -14,6 +16,7 @@ from pathlib import Path
 from . import config
 from . import msg
 from . import network
+from . import utils
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.
@@ -232,6 +235,67 @@ def get_dialog():
         config.DIALOG = 'tk'
 
 
+def get_architecture():
+    machine = platform.machine().lower()
+    bits = struct.calcsize("P") * 8
+
+    if "x86_64" in machine or "amd64" in machine:
+        architecture = "x86_64"
+    elif "i386" in machine or "i686" in machine:
+        architecture = "x86_32"
+    elif "arm" in machine or "aarch64" in machine:
+        if bits == 64:
+            architecture = "ARM64"
+        else:
+            architecture = "ARM32"
+    elif "riscv" in machine or "riscv64" in machine:
+        if bits == 64:
+            architecture = "RISC-V 64"
+        else:
+            architecture = "RISC-V 32"
+    else:
+        architecture = "Unknown"
+
+    return architecture, bits
+
+
+def install_elf_interpreter():
+    # TODO: This probably needs to be changed to another install step that requests the user to choose a specific
+    # ELF interpreter between box64, FEX-EMU, and hangover. That or else we have to pursue a particular interpreter
+    # for the install routine, depending on what's needed
+    logging.critical("ELF interpretation is not yet coded in the installer.")
+    # if "x86_64" not in config.architecture:
+    #     if config.ELFPACKAGES is not None:
+    #         utils.install_packages(config.ELFPACKAGES)
+    #     else:
+    #         logging.critical(f"ELFPACKAGES is not set.")
+    #         sys.exit(1)
+    # else:
+    #     logging.critical(f"ELF interpreter is not needed.")
+
+
+def check_architecture():
+    if "x86_64" in config.architecture:
+        pass
+    elif "ARM64" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "RISC-V 64" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "x86_32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "ARM32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "RISC-V 32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    else:
+        logging.critical("System archictecture unknown.")
+
+
 def get_os():
     # FIXME: Not working? Returns "Linux" on some systems? On Ubuntu 24.04 it
     # correctly returns "ubuntu".
@@ -298,6 +362,7 @@ def get_package_manager():
                 "7zip "  # winetricks
             )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.ELFPACKAGES = ""
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('dnf') is not None:  # rhel, fedora
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["dnf", "install", "-y"]
@@ -319,6 +384,7 @@ def get_package_manager():
             "p7zip-plugins "  # winetricks
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.ELFPACKAGES = ""
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('zypper') is not None:  # opensuse
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["zypper", "--non-interactive", "install"]  # noqa: E501
@@ -363,6 +429,7 @@ def get_package_manager():
             "curl gawk grep "  # other
         )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.ELFPACKAGES = ""
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
         config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pacman", "-Syu", "--overwrite", "\\*", "--noconfirm", "--needed"]  # noqa: E501
@@ -385,6 +452,7 @@ def get_package_manager():
                 "libxslt sqlite "  # misc
             )
         config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
+        config.ELFPACKAGES = ""
         config.BADPACKAGES = ""  # appimagelauncher handled separately
     else:
         # Add more conditions for other package managers as needed.
