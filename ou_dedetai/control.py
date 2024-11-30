@@ -37,6 +37,7 @@ def restore(app: App):
 
 # FIXME: consider moving this into it's own file/module.
 def backup_and_restore(mode: str, app: App):
+    app.status(f"Starting {mode}...")
     data_dirs = ['Data', 'Documents', 'Users']
     backup_dir = Path(app.conf.backup_dir).expanduser().resolve()
 
@@ -116,9 +117,6 @@ def backup_and_restore(mode: str, app: App):
         print()
         msg.logos_error("Cancelled with Ctrl+C.", app=app)
     t.join()
-    if config.DIALOG == 'tk':
-        app.root.event_generate('<<StopIndeterminateProgress>>')
-        app.root.event_generate('<<ClearStatus>>')
     src_size = q.get()
     if src_size == 0:
         msg.logos_warning(f"Nothing to {mode}!", app=app)
@@ -221,9 +219,7 @@ def remove_all_index_files(app: App):
             except OSError as e:
                 logging.error(f"Error removing {file_to_remove}: {e}")
 
-    msg.status("======= Removing all LogosBible index files done! =======")
-    if hasattr(app, 'status_evt'):
-        app.root.event_generate(app.status_evt)
+    msg.status("Removed all LogosBible index files!")
     sys.exit(0)
 
 

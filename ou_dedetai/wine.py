@@ -416,6 +416,7 @@ def set_win_version(app: App, exe: str, windows_version: str):
 
 # FIXME: consider when to run this (in the update case)
 def enforce_icu_data_files(app: App):
+    app.status("Downloading ICU files...")
     # XXX: consider moving the version and url information into config (and cached)
     repo = "FaithLife-Community/icu"
     json_data = network.get_latest_release_data(repo)
@@ -434,6 +435,9 @@ def enforce_icu_data_files(app: App):
         app.conf.download_dir,
         app=app
     )
+
+    app.status("Copying ICU files...")
+
     drive_c = f"{app.conf.wine_prefix}/drive_c"
     utils.untar_file(f"{app.conf.download_dir}/{icu_filename}", drive_c)
 
@@ -443,13 +447,8 @@ def enforce_icu_data_files(app: App):
         os.makedirs(icu_win_dir)
 
     shutil.copytree(icu_win_dir, f"{drive_c}/windows", dirs_exist_ok=True)
-    if hasattr(app, 'status_evt'):
-        app.status_q.put("ICU files copied.")
-        app.root.event_generate(app.status_evt)
+    app.status("ICU files copied.", 100)
 
-    if app:
-        if config.DIALOG == "curses":
-            app.install_icu_e.set()
 
 
 def get_registry_value(reg_path, name, app: App):

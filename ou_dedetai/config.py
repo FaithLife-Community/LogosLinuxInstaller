@@ -494,7 +494,7 @@ class Config:
     def _write(self) -> None:
         """Writes configuration to file and lets the app know something changed"""
         self._raw.write_config()
-        self.app._config_updated()
+        self.app._config_updated_hook()
 
     @property
     def config_file_path(self) -> str:

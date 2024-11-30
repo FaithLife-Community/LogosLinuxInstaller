@@ -323,13 +323,9 @@ def net_get(url, target=None, app=None, evt=None, q=None):
         msg.logos_error("Killed with Ctrl+C")
 
 
-def verify_downloaded_file(url, file_path, app=None, evt=None):
+def verify_downloaded_file(url, file_path, app: Optional[App]=None):
     if app:
-        if config.DIALOG == "tk":
-            app.root.event_generate('<<StartIndeterminateProgress>>')
-        msg.status(f"Verifying {file_path}…", app)
-        # if config.DIALOG == "tk":
-        #     app.root.event_generate('<<UpdateStatus>>')
+        app.status(f"Verifying {file_path}…", 0)
     res = False
     txt = f"{file_path} is the wrong size."
     right_size = same_size(url, file_path)
@@ -340,11 +336,6 @@ def verify_downloaded_file(url, file_path, app=None, evt=None):
             txt = f"{file_path} is verified."
             res = True
     logging.info(txt)
-    if app:
-        if config.DIALOG == "tk":
-            if not evt:
-                evt = app.check_evt
-            app.root.event_generate(evt)
     return res
 
 

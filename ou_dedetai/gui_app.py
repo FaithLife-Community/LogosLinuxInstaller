@@ -253,20 +253,13 @@ class InstallerWindow(GuiApp):
         self.get_q = Queue()
         self.get_evt = "<<GetFile>>"
         self.root.bind(self.get_evt, self.update_download_progress)
-        self.check_evt = "<<CheckFile>>"
-        self.root.bind(self.check_evt, self.update_file_check_progress)
         self.status_q = Queue()
         self.status_evt = "<<UpdateStatus>>"
         self.root.bind(self.status_evt, self.update_status_text)
         self.progress_q = Queue()
         self.root.bind(
             "<<UpdateProgress>>",
-            self.update_progress
-        )
-        self.todo_q = Queue()
-        self.root.bind(
-            "<<ToDo>>",
-            self.todo
+            self.step_start
         )
         self.releases_q = Queue()
         self.wine_q = Queue()
@@ -274,7 +267,7 @@ class InstallerWindow(GuiApp):
         # Run commands.
         self.get_winetricks_options()
 
-    def _config_updated(self):
+    def _config_updated_hook(self):
         """Update the GUI to reflect changes in the configuration if they were prompted separately"""
         # The configuration enforces dependencies, if product is unset, so will it's dependents (version and release)
         # XXX: test this hook. Interesting thing is, this may never be called in production, as it's only called (presently) when the separate prompt returns
@@ -319,22 +312,10 @@ class InstallerWindow(GuiApp):
         for w in widgets:
             w.state(state)
 
-    def todo(self, evt=None, task=None):
-        logging.debug(f"GUI todo: {task=}")
-        widgets = []
-        if not task:
-            if not self.todo_q.empty():
-                task = self.todo_q.get()
-            else:
-                return
-        self.set_input_widgets_state('enabled')
-        if task == 'INSTALL':
-            self.gui.statusvar.set('Ready to install!')
-            self.gui.progressvar.set(0)
-        elif task == 'INSTALLING':
-            self.set_input_widgets_state('disabled')
-        elif task == 'DONE':
-            self.update_install_progress()
+    def _install_started_hook(self):
+        self.gui.statusvar.set('Ready to install!')
+        self.gui.progressvar.set(0)
+        self.set_input_widgets_state('disabled')
 
     def set_product(self, evt=None):
         if self.gui.productvar.get().startswith('C'):  # ignore default text
@@ -425,9 +406,14 @@ class InstallerWindow(GuiApp):
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
         self.gui.statusvar.set("Finding available wine binaries…")
+
+        def get_wine_options(app: InstallerWindow, app_images, binaries):
+            app.wines_q.put(utils.get_wine_options(app, app_images, binaries))
+            app.root.event_generate(app.wine_evt)
+
         # Start thread.
         utils.start_thread(
-            utils.get_wine_options,
+            get_wine_options,
             self,
             self.appimages,
             utils.find_wine_binary_files(self, release_version),
@@ -481,14 +467,21 @@ class InstallerWindow(GuiApp):
 
     def start_install_thread(self, evt=None):
         self.gui.progress.config(mode='determinate')
-        utils.start_thread(installer.ensure_launcher_shortcuts, app=self)
+        utils.start_thread(installer.install, app=self)
 
-    def update_progress(self, message: str, percent: Optional[int] = None):
-        self.gui.progress.state(['!disabled'])
-        self.gui.progressvar.set(percent or 0)
-        self.gui.progress.config(mode='indeterminate')
-        self.gui.progress.start()
+    def status(self, message: str, percent: int | None = None):
+        if percent:
+            self.gui.progress.stop()
+            self.gui.progress.state(['disabled'])
+            self.gui.progress.config(mode='determinate')
+            self.gui.progressvar.set(percent)
+        else:
+            self.gui.progress.state(['!disabled'])
+            self.gui.progressvar.set(0)
+            self.gui.progress.config(mode='indeterminate')
+            self.gui.progress.start()
         self.gui.statusvar.set(message)
+        super().status(message, percent)
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])
@@ -530,17 +523,11 @@ class InstallerWindow(GuiApp):
         self.stop_indeterminate_progress()
         self.gui.wine_check_button.state(['!disabled'])
 
-    def update_file_check_progress(self, evt=None):
-        self.gui.progress.stop()
-        self.gui.statusvar.set('')
-        self.gui.progress.config(mode='determinate')
-        self.gui.progressvar.set(0)
-
     def update_download_progress(self, evt=None):
         d = self.get_q.get()
         self.gui.progressvar.set(int(d))
 
-    def update_progress(self, evt=None):
+    def step_start(self, evt=None):
         progress = self.progress_q.get()
         if not type(progress) is int:
             return
@@ -558,7 +545,7 @@ class InstallerWindow(GuiApp):
             text = status
         self.gui.statusvar.set(text)
 
-    def update_install_progress(self, evt=None):
+    def _install_complete_hook(self):
         self.gui.progress.stop()
         self.gui.progress.config(mode='determinate')
         self.gui.progressvar.set(0)
@@ -651,12 +638,8 @@ class ControlWindow(GuiApp):
             self.start_indeterminate_progress
         )
         self.root.bind(
-            '<<StopIndeterminateProgress>>',
-            self.stop_indeterminate_progress
-        )
-        self.root.bind(
             '<<UpdateProgress>>',
-            self.update_progress
+            self.step_start
         )
         self.root.bind(
             "<<UpdateLatestAppImageButton>>",
@@ -666,8 +649,6 @@ class ControlWindow(GuiApp):
         self.get_q = Queue()
         self.get_evt = "<<GetFile>>"
         self.root.bind(self.get_evt, self.update_download_progress)
-        self.check_evt = "<<CheckFile>>"
-        self.root.bind(self.check_evt, self.update_file_check_progress)
 
         # Start function to determine app logging state.
         if self.is_installed():
@@ -884,17 +865,11 @@ class ControlWindow(GuiApp):
     def clear_status_text(self, evt=None):
         self.gui.statusvar.set('')
 
-    def update_file_check_progress(self, evt=None):
-        self.gui.progress.stop()
-        self.gui.statusvar.set('')
-        self.gui.progress.config(mode='determinate')
-        self.gui.progressvar.set(0)
-
     def update_download_progress(self, evt=None):
         d = self.get_q.get()
         self.gui.progressvar.set(int(d))
 
-    def update_progress(self, evt=None):
+    def step_start(self, evt=None):
         progress = self.progress_q.get()
         if not type(progress) is int:
             return
@@ -918,11 +893,6 @@ class ControlWindow(GuiApp):
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
 
-    def stop_indeterminate_progress(self, evt=None):
-        self.gui.progress.stop()
-        self.gui.progress.state(['disabled'])
-        self.gui.progress.config(mode='determinate')
-        self.gui.progressvar.set(0)
 
 
 def control_panel_app(ephemeral_config: EphemeralConfiguration):

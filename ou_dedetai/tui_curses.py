@@ -293,8 +293,6 @@ class MenuDialog(CursesDialog):
         try:
             if key == -1:  # If key not found, keep processing.
                 pass
-            elif key == curses.KEY_RESIZE:
-                utils.send_task(self.app, 'RESIZE')
             elif key == curses.KEY_UP or key == 259:  # Up arrow
                 self.do_menu_up()
             elif key == curses.KEY_DOWN or key == 258:  # Down arrow

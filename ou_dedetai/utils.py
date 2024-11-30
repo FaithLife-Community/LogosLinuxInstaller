@@ -175,7 +175,7 @@ def install_dependencies(app: App):
         targetversion = int(app.conf.faithlife_product_version)
     else:
         targetversion = 10
-    msg.status(f"Checking Logos {str(targetversion)} dependencies…", app)
+    app.status(f"Checking Logos {str(targetversion)} dependencies…")
 
     if targetversion == 10:
         system.install_dependencies(app, target_version=10)  # noqa: E501
@@ -187,9 +187,7 @@ def install_dependencies(app: App):
     else:
         logging.error(f"Unknown Target version, expecting 9 or 10 but got: {app.conf.faithlife_product_version}.")
 
-    if config.DIALOG == "tk":
-        # FIXME: This should get moved to gui_app.
-        app.root.event_generate('<<StopIndeterminateProgress>>')
+    app.status("Installed dependencies.", 100)
 
 
 def file_exists(file_path: Optional[str | bytes | Path]) -> bool:
@@ -336,11 +334,6 @@ def get_wine_options(app: App, appimages, binaries) -> List[str]:  # noqa: E501
     #     wine_binary_options.append(["Exit", "Exit", "Cancel installation."])
 
     logging.debug(f"{wine_binary_options=}")
-    if app:
-        if config.DIALOG != "cli":
-            app.wines_q.put(wine_binary_options)
-            if config.DIALOG == 'tk':
-                app.root.event_generate(app.wine_evt)
     return wine_binary_options
 
 
@@ -785,15 +778,6 @@ def get_downloaded_file_path(download_dir: str, filename: str):
             logging.info(f"'{filename}' exists in {str(d)}.")
             return str(file_path)
     logging.debug(f"File not found: {filename}")
-
-
-def send_task(app, task):
-    # logging.debug(f"{task=}")
-    app.todo_q.put(task)
-    if config.DIALOG == 'tk':
-        app.root.event_generate('<<ToDo>>')
-    elif config.DIALOG == 'curses':
-        app.task_processor(app, task=task)
 
 
 def grep(regexp, filepath):

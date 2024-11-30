@@ -190,6 +190,9 @@ class InputScreen(CursesScreen):
 class PasswordScreen(InputScreen):
     def __init__(self, app, screen_id, queue, event, question, default):
         super().__init__(app, screen_id, queue, event, question, default)
+        # Update type for type linting
+        from ou_dedetai.tui_app import TUI
+        self.app: TUI = app
         self.dialog = tui_curses.PasswordDialog(
             self.app,
             self.question,
@@ -204,7 +207,7 @@ class PasswordScreen(InputScreen):
         self.choice = self.dialog.run()
         if not self.choice == "Processing":
             self.submit_choice_to_queue()
-            utils.send_task(self.app, "INSTALLING_PW")
+            self.app.installing_pw_waiting()
         self.stdscr.noutrefresh()
         curses.doupdate()
 
@@ -289,6 +292,8 @@ class InputDialog(DialogScreen):
 class PasswordDialog(InputDialog):
     def __init__(self, app, screen_id, queue, event, question, default):
         super().__init__(app, screen_id, queue, event, question, default)
+        from ou_dedetai.tui_app import TUI
+        self.app: TUI = app
 
     def __str__(self):
         return "PyDialog Password Screen"
@@ -298,7 +303,7 @@ class PasswordDialog(InputDialog):
             self.running = 1
             _, self.choice = tui_dialog.password(self.app, self.question, init=self.default) #noqa: E501
             self.submit_choice_to_queue()
-            utils.send_task(self.app, "INSTALLING_PW")
+            self.app.installing_pw_waiting()
 
 
 class ConfirmDialog(DialogScreen):

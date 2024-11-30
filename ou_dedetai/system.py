@@ -726,7 +726,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
             msg.status("All dependencies are met.", app)
         return
 
-    app.update_progress("Installing dependencies…")
+    app.status("Installing dependencies…")
     final_command = [
         f"{app.superuser_command}", 'sh', '-c', "'", *command, "'"
     ]

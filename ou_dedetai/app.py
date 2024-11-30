@@ -2,7 +2,6 @@
 import abc
 import logging
 import os
-import shutil
 import sys
 from typing import Optional
 
@@ -80,11 +79,6 @@ class App(abc.ABC):
         """
         raise NotImplementedError()
 
-    def _config_updated(self) -> None:
-        """A hook for any changes the individual apps want to do when the config changes
-        """
-        pass
-
     def is_installed(self) -> bool:
         """Returns whether the install was successful by
         checking if the installed exe exists and is executable"""
@@ -92,8 +86,8 @@ class App(abc.ABC):
             return os.access(self.conf.logos_exe, os.X_OK)
         return False
 
-    def update_progress(self, message: str, percent: Optional[int] = None):
-        """Updates the progress of the current operation"""
+    def status(self, message: str, percent: Optional[int] = None):
+        """A status update"""
         # XXX: reformat to the cli's normal format (probably in msg.py)
         print(f"{percent}% - {message}")
 
@@ -107,3 +101,13 @@ class App(abc.ABC):
         May be sudo or pkexec for example"""
         from ou_dedetai.system import get_superuser_command
         return get_superuser_command()
+    
+    # Start hooks
+    def _config_updated_hook(self) -> None:
+        """Function run when the config changes"""
+
+    def _install_complete_hook(self):
+        """Function run when installation is complete."""
+
+    def _install_started_hook(self):
+        """Function run when installation first begins."""

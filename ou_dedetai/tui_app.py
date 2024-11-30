@@ -51,8 +51,6 @@ class TUI(App):
         self.main_thread = threading.Thread()
         self.get_q = Queue()
         self.get_e = threading.Event()
-        self.input_q = Queue()
-        self.input_e = threading.Event()
         self.status_q = Queue()
         self.status_e = threading.Event()
         self.progress_q = Queue()
@@ -79,7 +77,6 @@ class TUI(App):
         self.appimage_q = Queue()
         self.appimage_e = threading.Event()
         self.install_icu_q = Queue()
-        self.install_icu_e = threading.Event()
         self.install_logos_q = Queue()
         self.install_logos_e = threading.Event()
 
@@ -191,7 +188,7 @@ class TUI(App):
             logging.error(f"An error occurred in init_curses(): {e}")
             raise
 
-    def _config_updated(self):
+    def _config_updated_hook(self):
         self.set_curses_colors()
 
     def end_curses(self):
@@ -210,6 +207,10 @@ class TUI(App):
         logging.debug("Exiting…")
         self.llirunning = False
         curses.endwin()
+
+    def _install_complete_hook(self):
+        # Update the contents going back to the start
+        self.update_main_window_contents()
 
     def update_main_window_contents(self):
         self.clear()
@@ -307,7 +308,7 @@ class TUI(App):
                         run_monitor, last_time = utils.stopwatch(last_time, 2.5)
                         if run_monitor:
                             self.logos.monitor()
-                            self.task_processor(self, task="PID")
+                            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
 
                     if isinstance(self.active_screen, tui_screen.CursesScreen):
                         self.refresh()
@@ -329,15 +330,8 @@ class TUI(App):
             self.end_curses()
             signal.signal(signal.SIGINT, self.end)
 
-    def task_processor(self, evt=None, task=None):
-        if task == 'INSTALL' or task == 'INSTALLING':
-            utils.start_thread(self.get_waiting, config.use_python_dialog)
-        elif task == 'INSTALLING_PW':
-            utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
-        elif task == 'DONE':
-            self.update_main_window_contents()
-        elif task == 'PID':
-            self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
+    def installing_pw_waiting(self):
+        utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
 
     def choice_processor(self, stdscr, screen_id, choice):
         screen_actions = {
@@ -395,7 +389,7 @@ class TUI(App):
             self.installer_step = 0
             self.installer_step_count = 0
             utils.start_thread(
-                installer.ensure_launcher_shortcuts,
+                installer.install,
                 daemon_bool=True,
                 app=self,
             )
@@ -652,9 +646,12 @@ class TUI(App):
         if choice is not None and Path(choice).exists() and Path(choice).is_dir():
             self.handle_ask_response(choice)
 
-    def update_progress(self, message: str, percent: int | None = None):
+    def status(self, message: str, percent: int | None = None):
         # XXX: update some screen? Something like get_waiting?
         pass
+
+    def _install_started_hook(self):
+        self.get_waiting(self, config.use_python_dialog)
 
     def get_waiting(self, dialog, screen_id=8):
         text = ["Install is running…\n"]

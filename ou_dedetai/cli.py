@@ -35,7 +35,7 @@ class CLI(App):
 
     def install_app(self):
         self.thread = utils.start_thread(
-            installer.ensure_launcher_shortcuts,
+            installer.install,
             app=self
         )
         self.user_input_processor()
@@ -97,8 +97,9 @@ class CLI(App):
     def _ask(self, question: str, options: list[str] | str) -> str:
         """Passes the user input to the user_input_processor thread
         
-        The user_input_processor is running on the thread that the user's stdin/stdout is attached to
-        This function is being called from another thread so we need to pass the information between threads using a queue/event
+        The user_input_processor is running on the thread that the user's stdin/stdout
+        is attached to. This function is being called from another thread so we need to
+        pass the information between threads using a queue/event
         """
         if isinstance(options, str):
             options = [options]
@@ -107,7 +108,16 @@ class CLI(App):
         self.choice_event.wait()
         self.choice_event.clear()
         # XXX: This is always a freeform input, perhaps we should have some sort of validation?
-        return self.choice_q.get()
+        output: str = self.choice_q.get()
+        return output
+
+    def exit(self, reason: str):
+        # Signal CLI.user_input_processor to stop.
+        self.input_q.put(None)
+        self.input_event.set()
+        # Signal CLI itself to stop.
+        self.stop()
+        return super().exit(reason)
 
     def user_input_processor(self, evt=None):
         while self.running:

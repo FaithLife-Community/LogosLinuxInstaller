@@ -131,11 +131,8 @@ def ensure_installation_config(app: App):
     logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
     logging.debug(f"> config.LOGOS64_URL={app.conf.faithlife_installer_download_url}")
 
-    # XXX: What does the install task do? Shouldn't that logic be here?
-    if config.DIALOG in ['curses', 'dialog', 'tk']:
-        utils.send_task(app, 'INSTALL')
-    else:
-        msg.logos_msg("Install is running…")
+    app._install_started_hook()
+    app.status("Install is running…")
 
 
 def ensure_install_dirs(app: App):
@@ -161,10 +158,6 @@ def ensure_install_dirs(app: App):
 
     logging.debug(f"> {wine_dir} exists: {wine_dir.is_dir()}")
     logging.debug(f"> config.WINEPREFIX={app.conf.wine_prefix}")
-
-    # XXX: what does this task do? Shouldn't that logic be here?
-    if config.DIALOG in ['curses', 'dialog', 'tk']:
-        utils.send_task(app, 'INSTALLING')
 
 
 def ensure_sys_deps(app: App):
@@ -396,9 +389,6 @@ def ensure_icu_data_files(app: App):
 
     wine.enforce_icu_data_files(app=app)
 
-    if config.DIALOG == "curses":
-        app.install_icu_e.wait()
-
     logging.debug('> ICU data files installed')
 
 
@@ -427,12 +417,9 @@ def ensure_config_file(app: App):
     app.installer_step += 1
     update_install_feedback("Ensuring config file is up-to-date…", app=app)
 
-    # XXX: Why the platform specific logic?
+    app.status("Install has finished.", 100)
 
-    if config.DIALOG == 'cli':
-        msg.logos_msg("Install has finished.")
-    else:
-        utils.send_task(app, 'DONE')
+    app._install_complete_hook()
 
     logging.debug(f"> File exists?: {config.CONFIG_FILE}: {Path(config.CONFIG_FILE).is_file()}")  # noqa: E501
 
@@ -478,14 +465,9 @@ def ensure_launcher_shortcuts(app: App):
             app=app
         )
 
-    # XXX: why only for this dialog?
-    if config.DIALOG == 'cli':
-        # Signal CLI.user_input_processor to stop.
-        app.input_q.put(None)
-        app.input_event.set()
-        # Signal CLI itself to stop.
-        app.stop()
-
+def install(app: App):
+    """Entrypoint for installing"""
+    ensure_launcher_shortcuts(app)
 
 def update_install_feedback(text, app: App):
     percent = get_progress_pct(app.installer_step, app.installer_step_count)
