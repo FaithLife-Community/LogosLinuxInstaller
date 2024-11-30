@@ -293,6 +293,7 @@ class PersistentConfiguration:
     faithlife_product: Optional[str] = None
     faithlife_product_version: Optional[str] = None
     faithlife_product_release: Optional[str] = None
+    faithlife_product_logging: Optional[bool] = None
     install_dir: Optional[Path] = None
     winetricks_binary: Optional[str] = None
     wine_binary: Optional[str] = None
@@ -349,7 +350,8 @@ class PersistentConfiguration:
             installer_release_channel=legacy.lli_release_channel or 'stable',
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
-            winetricks_binary=legacy.WINETRICKSBIN
+            winetricks_binary=legacy.WINETRICKSBIN,
+            faithlife_product_logging=legacy.LOGS
         )
     
     def write_config(self) -> None:
@@ -377,9 +379,6 @@ class PersistentConfiguration:
 
 
 # XXX: Move these into the cache & store
-# Whether or not the installed faithlife product is configured for additional logging.
-# Used to be called "LOGS"
-installed_faithlife_logging: Optional[bool] = None
 last_updated: Optional[datetime] = None
 recommended_wine_url: Optional[str] = None
 latest_installer_version: Optional[str] = None
@@ -420,7 +419,6 @@ class Config:
     _logos_exe: Optional[str] = None
     _download_dir: Optional[str] = None
     _wine_output_encoding: Optional[str] = None
-    _installed_faithlife_product_release: Optional[str] = None
 
     # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
@@ -518,6 +516,19 @@ class Config:
     @property
     def faithlife_product_icon_path(self) -> str:
         return str(constants.APP_IMAGE_DIR / f"{self.faithlife_product}-128-icon.png")
+
+    @property
+    def faithlife_product_logging(self) -> bool:
+        """Whether or not the installed faithlife product is configured to log"""
+        if self._raw.faithlife_product_logging is not None:
+            return self._raw.faithlife_product_logging
+        return False
+    
+    @faithlife_product_logging.setter
+    def faithlife_product_logging(self, value: bool):
+        if self._raw.faithlife_product_logging != value:
+            self._raw.faithlife_product_logging = value
+            self._write()
 
     @property
     def faithlife_installer_name(self) -> str:
@@ -840,6 +851,6 @@ class Config:
     
     @property
     def installed_faithlife_product_release(self) -> Optional[str]:
-        if self._installed_faithlife_product_release is None:
-            self._installed_faithlife_product_release = utils.get_current_logos_version(self.install_dir) # noqa: E501
-        return self._installed_faithlife_product_release
+        if self._faithlife_product_logging is None:
+            self._faithlife_product_logging = utils.get_current_logos_version(self.install_dir) # noqa: E501
+        return self._faithlife_product_logging

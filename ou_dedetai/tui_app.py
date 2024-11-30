@@ -831,7 +831,7 @@ class TUI(App):
             ]
             labels.extend(labels_utils_installed)
 
-        label = "Enable Logging" if config.LOGS == "DISABLED" else "Disable Logging"
+        label = "Enable Logging" if self.conf.faithlife_product_logging else "Disable Logging" #noqa: E501
         labels.append(label)
 
         labels.append("Return to Main Menu")

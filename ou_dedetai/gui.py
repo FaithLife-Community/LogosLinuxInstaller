@@ -188,7 +188,6 @@ class ControlGui(Frame):
 
         # XXX: remove these
         # Initialize vars from ENV.
-        self.logs = config.LOGS
         self.config_file = config.CONFIG_FILE
 
         # Run/install app button

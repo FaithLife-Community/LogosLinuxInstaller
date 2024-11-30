@@ -8,7 +8,6 @@ from . import constants
 
 # Define and set variables that are required in the config file.
 # XXX: slowly kill these
-LOGS = None
 LAST_UPDATED = None
 LLI_LATEST_VERSION = None
 lli_release_channel = None

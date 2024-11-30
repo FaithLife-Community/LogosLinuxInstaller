@@ -269,7 +269,7 @@ class LogosManager:
         )
         wine.wait_pid(process)
         wine.wineserver_wait(app=self.app)
-        config.LOGS = state
+        self.app.conf.faithlife_product_logging = state
         if config.DIALOG in ['curses', 'dialog', 'tk']:
             self.app.logging_q.put(state)
             self.app.root.event_generate(self.app.logging_event)
