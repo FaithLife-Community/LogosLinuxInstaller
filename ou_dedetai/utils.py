@@ -180,13 +180,11 @@ def install_dependencies(app: App):
     msg.status(f"Checking Logos {str(targetversion)} dependencies…", app)
 
     if targetversion == 10:
-        system.install_dependencies(app, config.PACKAGES, config.BADPACKAGES)  # noqa: E501
+        system.install_dependencies(app, target_version=10)  # noqa: E501
     elif targetversion == 9:
         system.install_dependencies(
             app,
-            config.PACKAGES,
-            config.BADPACKAGES,
-            config.L9PACKAGES
+            target_version=9
         )
     else:
         logging.error(f"Unknown Target version, expecting 9 or 10 but got: {app.conf.faithlife_product_version}.")

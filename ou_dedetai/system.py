@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Optional, Tuple
 import distro
 import logging
@@ -270,21 +271,49 @@ def get_superuser_command():
     logging.debug(f"{config.SUPERUSER_COMMAND=}")
 
 
-def get_package_manager():
+@dataclass
+class PackageManager:
+    """Dataclass to pass around relevant OS context regarding system packages"""
+    # Commands
+    install: list[str]
+    download: list[str]
+    remove: list[str]
+    query: list[str]
+
+    query_prefix: str
+
+    packages: str
+    logos_9_packages: str
+    
+    incompatible_packages: str
+
+
+def get_package_manager() -> PackageManager | None:
     major_ver = distro.major_version()
     os_name = distro.id()
     logging.debug(f"{os_name=}; {major_ver=}")
     # Check for package manager and associated packages.
     # NOTE: cabextract and sed are included in the appimage, so they are not
     # included as system dependencies.
+
+    install_command: list[str]
+    download_command: list[str]
+    remove_command: list[str]
+    query_command: list[str]
+    query_prefix: str
+    packages: str
+    # FIXME: Missing Logos 9 Packages
+    logos_9_packages: str = ""
+    incompatible_packages: str
+
     if shutil.which('apt') is not None:  # debian, ubuntu, & derivatives
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["apt", "install", "-y"]
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["apt", "install", "--download-only", "-y"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["apt", "remove", "-y"]
-        config.PACKAGE_MANAGER_COMMAND_QUERY = ["dpkg", "-l"]
-        config.QUERY_PREFIX = '.i  '
+        install_command = ["apt", "install", "-y"]
+        download_command = ["apt", "install", "--download-only", "-y"]  # noqa: E501
+        remove_command = ["apt", "remove", "-y"]
+        query_command =  ["dpkg", "-l"]
+        query_prefix = '.i  '
         # Set default package list.
-        config.PACKAGES = (
+        packages = (
             "libfuse2 "  # appimages
             "binutils wget winbind "  # wine
             "p7zip-full "  # winetricks
@@ -303,73 +332,70 @@ def get_package_manager():
             or (os_name == 'linuxmint' and major_ver >= '22')
             or (os_name == 'elementary' and major_ver >= '8')
         ):
-            config.PACKAGES = (
+            packages = (
                 "libfuse3-3 "  # appimages
                 "binutils wget winbind "  # wine
                 "7zip "  # winetricks
             )
-        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = ""  # appimagelauncher handled separately
+        logos_9_packages = ""  
+        incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('dnf') is not None:  # rhel, fedora
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["dnf", "install", "-y"]
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["dnf", "install", "--downloadonly", "-y"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["dnf", "remove", "-y"]
+        install_command = ["dnf", "install", "-y"]
+        download_command = ["dnf", "install", "--downloadonly", "-y"]  # noqa: E501
+        remove_command = ["dnf", "remove", "-y"]
         # Fedora < 41 uses dnf4, while Fedora  41 uses dnf5. The dnf list
         # command is sligtly different between the two.
         # https://discussion.fedoraproject.org/t/after-f41-upgrade-dnf-says-no-packages-are-installed/135391  # noqa: E501
         # Fedora < 41
-        # config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "installed"]
+        # query_command =  ["dnf", "list", "installed"]
         # Fedora 41
-        # config.PACKAGE_MANAGER_COMMAND_QUERY = ["dnf", "list", "--installed"]
-        config.PACKAGE_MANAGER_COMMAND_QUERY = ["rpm", "-qa"]  # workaround
-        config.QUERY_PREFIX = ''
-        # config.PACKAGES = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
-        config.PACKAGES = (
+        # query_command =  ["dnf", "list", "--installed"]
+        query_command =  ["rpm", "-qa"]  # workaround
+        query_prefix = ''
+        # logos_10_packages = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
+        packages = (
             "fuse fuse-libs "  # appimages
             "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients "  # wine  # noqa: E501
             "p7zip-plugins "  # winetricks
         )
-        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = ""  # appimagelauncher handled separately
+        incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('zypper') is not None:  # manjaro
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["zypper", "--non-interactive", "install"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["zypper", "download"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["zypper", "--non-interactive", "remove"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_QUERY = ["zypper", "se", "-si"]
-        config.QUERY_PREFIX = 'i  | '
-        config.PACKAGES = (
+        install_command = ["zypper", "--non-interactive", "install"]  # noqa: E501
+        download_command = ["zypper", "download"]  # noqa: E501
+        remove_command = ["zypper", "--non-interactive", "remove"]  # noqa: E501
+        query_command =  ["zypper", "se", "-si"]
+        query_prefix = 'i  | '
+        packages = (
             "fuse2 "  # appimages
             "samba wget "  # wine
             "7zip "  # winetricks
             "curl gawk grep "  # other
         )
-        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = ""  # appimagelauncher handled separately
+        incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pamac", "install", "--no-upgrade", "--no-confirm"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pamac", "install", "--no-upgrade", "--download-only", "--no-confirm"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pamac", "remove", "--no-confirm"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_QUERY = ["pamac", "list", "-i"]
-        config.QUERY_PREFIX = ''
-        config.PACKAGES = (
+        install_command = ["pamac", "install", "--no-upgrade", "--no-confirm"]  # noqa: E501
+        download_command = ["pamac", "install", "--no-upgrade", "--download-only", "--no-confirm"]  # noqa: E501
+        remove_command = ["pamac", "remove", "--no-confirm"]  # noqa: E501
+        query_command =  ["pamac", "list", "-i"]
+        query_prefix = ''
+        packages = (
             "fuse2 "  # appimages
             "samba wget "  # wine
             "p7zip "  # winetricks
             "curl gawk grep "  # other
         )
-        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = ""  # appimagelauncher handled separately
+        incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
-        config.PACKAGE_MANAGER_COMMAND_INSTALL = ["pacman", "-Syu", "--overwrite", "\\*", "--noconfirm", "--needed"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_DOWNLOAD = ["pacman", "-Sw", "-y"]
-        config.PACKAGE_MANAGER_COMMAND_REMOVE = ["pacman", "-R", "--no-confirm"]  # noqa: E501
-        config.PACKAGE_MANAGER_COMMAND_QUERY = ["pacman", "-Q"]
-        config.QUERY_PREFIX = ''
+        install_command = ["pacman", "-Syu", "--overwrite", "\\*", "--noconfirm", "--needed"]  # noqa: E501
+        download_command = ["pacman", "-Sw", "-y"]
+        remove_command = ["pacman", "-R", "--no-confirm"]  # noqa: E501
+        query_command =  ["pacman", "-Q"]
+        query_prefix = ''
         if os_name == "steamos":  # steamOS
-            config.PACKAGES = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: #E501
+            packages = "patch wget sed grep gawk cabextract samba bc libxml2 curl print-manager system-config-printer cups-filters nss-mdns foomatic-db-engine foomatic-db-ppds foomatic-db-nonfree-ppds ghostscript glibc samba extra-rel/apparmor core-rel/libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo qt5-virtualkeyboard wine-staging giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
         else:  # arch
-            # config.PACKAGES = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
-            config.PACKAGES = (
+            # logos_10_packages = "patch wget sed grep cabextract samba glibc samba apparmor libcurl-gnutls winetricks appmenu-gtk-module lib32-libjpeg-turbo wine giflib lib32-giflib libpng lib32-libpng libldap lib32-libldap gnutls lib32-gnutls mpg123 lib32-mpg123 openal lib32-openal v4l-utils lib32-v4l-utils libpulse lib32-libpulse libgpg-error lib32-libgpg-error alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib libjpeg-turbo lib32-libjpeg-turbo sqlite lib32-sqlite libxcomposite lib32-libxcomposite libxinerama lib32-libgcrypt libgcrypt lib32-libxinerama ncurses lib32-ncurses ocl-icd lib32-ocl-icd libxslt lib32-libxslt libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader"  # noqa: E501
+            packages = (
                 "fuse2 "  # appimages
                 "binutils libwbclient samba wget "  # wine
                 "p7zip "  # winetricks
@@ -379,17 +405,25 @@ def get_package_manager():
                 "libva mpg123 v4l-utils "  # video
                 "libxslt sqlite "  # misc
             )
-        config.L9PACKAGES = ""  # FIXME: Missing Logos 9 Packages
-        config.BADPACKAGES = ""  # appimagelauncher handled separately
+        incompatible_packages = ""  # appimagelauncher handled separately
     else:
         # Add more conditions for other package managers as needed.
-        msg.logos_error("Your package manager is not yet supported. Please contact the developers.")  # noqa: E501
+        error = "Your package manager is not yet supported. Please contact the developers."
+        msg.logos_error(error)  # noqa: E501
+        return None
 
-    # Add logging output.
-    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_INSTALL=}")
-    logging.debug(f"{config.PACKAGE_MANAGER_COMMAND_QUERY=}")
-    logging.debug(f"{config.PACKAGES=}")
-    logging.debug(f"{config.L9PACKAGES=}")
+    output = PackageManager(
+        install=install_command,
+        download=download_command,
+        query=query_command,
+        remove=remove_command,
+        incompatible_packages=incompatible_packages,
+        packages=packages,
+        logos_9_packages=logos_9_packages,
+        query_prefix=query_prefix
+    )
+    logging.debug("Package Manager: {output}")
+    return output
 
 
 def get_runmode():
@@ -399,11 +433,12 @@ def get_runmode():
         return 'script'
 
 
-def query_packages(packages, mode="install"):
+def query_packages(package_manager: PackageManager, packages, mode="install") -> list[str]: #noqa: E501
     result = ""
     missing_packages = []
     conflicting_packages = []
-    command = config.PACKAGE_MANAGER_COMMAND_QUERY
+
+    command = package_manager.query
 
     try:
         result = run_command(command)
@@ -421,7 +456,7 @@ def query_packages(packages, mode="install"):
         for line in package_list.split('\n'):
             # logging.debug(f"{line=}")
             l_num += 1
-            if config.PACKAGE_MANAGER_COMMAND_QUERY[0] == 'dpkg':
+            if package_manager.query[0] == 'dpkg':
                 parts = line.strip().split()
                 if l_num < 6 or len(parts) < 2:  # skip header, etc.
                     continue
@@ -435,7 +470,7 @@ def query_packages(packages, mode="install"):
                         status[p] = 'Conflicting'
                     break
             else:
-                if line.strip().startswith(f"{config.QUERY_PREFIX}{p}") and mode == "install":  # noqa: E501
+                if line.strip().startswith(f"{package_manager.query_prefix}{p}") and mode == "install":  # noqa: E501
                     logging.debug(f"'{p}' installed: {line}")
                     status[p] = "Installed"
                     break
@@ -464,6 +499,8 @@ def query_packages(packages, mode="install"):
             txt = f"Conflicting packages: {' '.join(conflicting_packages)}"
             logging.info(f"Conflicting packages: {txt}")
         return conflicting_packages
+    else:
+        raise ValueError(f"Invalid query mode: {mode}")
 
 
 def have_dep(cmd):
@@ -514,7 +551,7 @@ def test_dialog_version():
 
 def remove_appimagelauncher(app=None):
     pkg = "appimagelauncher"
-    cmd = [config.SUPERUSER_COMMAND, *config.PACKAGE_MANAGER_COMMAND_REMOVE, pkg]  # noqa: E501
+    cmd = [config.SUPERUSER_COMMAND, *package_manager.remove, pkg]  # noqa: E501
     # FIXME: should this status be higher? (the caller of this function)
     msg.status("Removing AppImageLauncher…", app)
     try:
@@ -579,12 +616,13 @@ def postinstall_dependencies():
 
 
 # XXX: move this to control, prompts additional values from app
-def install_dependencies(app: App, packages, bad_packages, logos9_packages=None):  # noqa: E501
+def install_dependencies(app: App, target_version=10):  # noqa: E501
     if app.conf.skip_install_system_dependencies:
         return
 
     install_deps_failed = False
     manual_install_required = False
+    reboot_required = False
     message = None
     no_message = None
     secondary = None
@@ -593,170 +631,173 @@ def install_dependencies(app: App, packages, bad_packages, logos9_packages=None)
     install_command = []
     remove_command = []
     postinstall_command = []
-    missing_packages = {}
-    conflicting_packages = {}
+    missing_packages = []
+    conflicting_packages = []
     package_list = []
     bad_package_list = []
 
-    if packages:
-        package_list = packages.split()
-
-    if bad_packages:
-        bad_package_list = bad_packages.split()
-
-    if logos9_packages:
-        package_list.extend(logos9_packages.split())
-
-    if config.PACKAGE_MANAGER_COMMAND_QUERY:
-        logging.debug("Querying packages…")
-        missing_packages = query_packages(
-            package_list,
-        )
-        conflicting_packages = query_packages(
-            bad_package_list,
-            mode="remove",
-        )
+    package_manager = get_package_manager()
 
     os_name, _ = get_os()
-    if config.PACKAGE_MANAGER_COMMAND_INSTALL:
-        if os_name in ['fedora', 'arch']:
-            message = False
-            no_message = False
-            secondary = False
-        elif missing_packages and conflicting_packages:
-            message = f"Your {os_name} computer requires installing and removing some software.\nProceed?"  # noqa: E501
-            no_message = "User refused to install and remove software via the application"  # noqa: E501
-            secondary = f"To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}\nand will remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}"  # noqa: E501
-        elif missing_packages:
-            message = f"Your {os_name} computer requires installing some software.\nProceed?"  # noqa: E501
-            no_message = "User refused to install software via the application."  # noqa: E501
-            secondary = f"To continue, the program will attempt to install the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_INSTALL}':\n{missing_packages}"  # noqa: E501
-        elif conflicting_packages:
-            message = f"Your {os_name} computer requires removing some software.\nProceed?"  # noqa: E501
-            no_message = "User refused to remove software via the application."  # noqa: E501
-            secondary = f"To continue, the program will attempt to remove the following package(s) by using '{config.PACKAGE_MANAGER_COMMAND_REMOVE}':\n{conflicting_packages}"  # noqa: E501
-        else:
-            message = None
 
-        if message is None:
-            logging.debug("No missing or conflicting dependencies found.")
-        elif not message:
-            m = "Your distro requires manual dependency installation."
-            logging.error(m)
-        else:
-            msg.logos_continue_question(message, no_message, secondary, app)
+    if not package_manager:
+        msg.logos_error(
+            f"The script could not determine your {os_name} install's package manager or it is unsupported."  # noqa: E501
+        )
+        # XXX: raise error or exit?
+        return
+
+    package_list = package_manager.packages.split()
+
+    bad_package_list = package_manager.incompatible_packages.split()
+
+    if target_version == 9:
+        package_list.extend(package_manager.logos_9_packages.split())
+
+    logging.debug("Querying packages…")
+    missing_packages = query_packages(
+        package_manager,
+        package_list,
+    )
+    conflicting_packages = query_packages(
+        package_manager,
+        bad_package_list,
+        mode="remove",
+    )
+
+    if os_name in ['fedora', 'arch']:
+        message = False
+        no_message = False
+        secondary = False
+    elif missing_packages and conflicting_packages:
+        message = f"Your {os_name} computer requires installing and removing some software.\nProceed?"  # noqa: E501
+        no_message = "User refused to install and remove software via the application"  # noqa: E501
+        secondary = f"To continue, the program will attempt to install the following package(s) by using '{package_manager.install}':\n{missing_packages}\nand will remove the following package(s) by using '{package_manager.remove}':\n{conflicting_packages}"  # noqa: E501
+    elif missing_packages:
+        message = f"Your {os_name} computer requires installing some software.\nProceed?"  # noqa: E501
+        no_message = "User refused to install software via the application."  # noqa: E501
+        secondary = f"To continue, the program will attempt to install the following package(s) by using '{package_manager.install}':\n{missing_packages}"  # noqa: E501
+    elif conflicting_packages:
+        message = f"Your {os_name} computer requires removing some software.\nProceed?"  # noqa: E501
+        no_message = "User refused to remove software via the application."  # noqa: E501
+        secondary = f"To continue, the program will attempt to remove the following package(s) by using '{package_manager.remove}':\n{conflicting_packages}"  # noqa: E501
+    else:
+        message = None
+
+    if message is None:
+        logging.debug("No missing or conflicting dependencies found.")
+    elif not message:
+        m = "Your distro requires manual dependency installation."
+        logging.error(m)
+    else:
+        msg.logos_continue_question(message, no_message, secondary, app)
+        if config.DIALOG == "curses":
+            app.confirm_e.wait()
+
+    # TODO: Need to send continue question to user based on DIALOG.
+    # All we do above is create a message that we never send.
+    # Do we need a TK continue question? I see we have a CLI and curses one
+    # in msg.py
+
+    preinstall_command = preinstall_dependencies()
+
+    if missing_packages:
+        install_command = package_manager.install + missing_packages  # noqa: E501
+    else:
+        logging.debug("No missing packages detected.")
+
+    if conflicting_packages:
+        # TODO: Verify with user before executing
+        # AppImage Launcher is the only known conflicting package.
+        remove_command = package_manager.remove + conflicting_packages  # noqa: E501
+        reboot_required = True
+        logging.info("System reboot required.")
+    else:
+        logging.debug("No conflicting packages detected.")
+
+    postinstall_command = postinstall_dependencies()
+
+    if preinstall_command:
+        command.extend(preinstall_command)
+    if install_command:
+        if command:
+            command.append('&&')
+        command.extend(install_command)
+    if remove_command:
+        if command:
+            command.append('&&')
+        command.extend(remove_command)
+    if postinstall_command:
+        if command:
+            command.append('&&')
+        command.extend(postinstall_command)
+    if not command:  # nothing to run; avoid running empty pkexec command
+        if app:
+            msg.status("All dependencies are met.", app)
             if config.DIALOG == "curses":
-                app.confirm_e.wait()
+                app.installdeps_e.set()
+        return
 
-        # TODO: Need to send continue question to user based on DIALOG.
-        # All we do above is create a message that we never send.
-        # Do we need a TK continue question? I see we have a CLI and curses one
-        # in msg.py
-
-        preinstall_command = preinstall_dependencies()
-
-        if missing_packages:
-            install_command = config.PACKAGE_MANAGER_COMMAND_INSTALL + missing_packages  # noqa: E501
-        else:
-            logging.debug("No missing packages detected.")
-
-        if conflicting_packages:
-            # TODO: Verify with user before executing
-            # AppImage Launcher is the only known conflicting package.
-            remove_command = config.PACKAGE_MANAGER_COMMAND_REMOVE + conflicting_packages  # noqa: E501
-            config.REBOOT_REQUIRED = True
-            logging.info("System reboot required.")
-        else:
-            logging.debug("No conflicting packages detected.")
-
-        postinstall_command = postinstall_dependencies()
-
-        if preinstall_command:
-            command.extend(preinstall_command)
-        if install_command:
-            if command:
-                command.append('&&')
-            command.extend(install_command)
-        if remove_command:
-            if command:
-                command.append('&&')
-            command.extend(remove_command)
-        if postinstall_command:
-            if command:
-                command.append('&&')
-            command.extend(postinstall_command)
-        if not command:  # nothing to run; avoid running empty pkexec command
-            if app:
-                msg.status("All dependencies are met.", app)
-                if config.DIALOG == "curses":
-                    app.installdeps_e.set()
-            return
-
-        if app and config.DIALOG == 'tk':
-            app.root.event_generate('<<StartIndeterminateProgress>>')
-        msg.status("Installing dependencies…", app)
-        final_command = [
-            f"{config.SUPERUSER_COMMAND}", 'sh', '-c', "'", *command, "'"
-        ]
-        command_str = ' '.join(final_command)
-        # TODO: Fix fedora/arch handling.
-        if os_name in ['fedora', 'arch']:
-            manual_install_required = True
-            sudo_command = command_str.replace("pkexec", "sudo")
-            message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
-            detail = (
-                "Please run the following command in a terminal, then restart "
-                f"{constants.APP_NAME}:\n{sudo_command}\n"
+    if app and config.DIALOG == 'tk':
+        app.root.event_generate('<<StartIndeterminateProgress>>')
+    msg.status("Installing dependencies…", app)
+    final_command = [
+        f"{config.SUPERUSER_COMMAND}", 'sh', '-c', "'", *command, "'"
+    ]
+    command_str = ' '.join(final_command)
+    # TODO: Fix fedora/arch handling.
+    if os_name in ['fedora', 'arch']:
+        manual_install_required = True
+        sudo_command = command_str.replace("pkexec", "sudo")
+        message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
+        detail = (
+            "Please run the following command in a terminal, then restart "
+            f"{constants.APP_NAME}:\n{sudo_command}\n"
+        )
+        if config.DIALOG == "tk":
+            if hasattr(app, 'root'):
+                detail += "\nThe command has been copied to the clipboard."  # noqa: E501
+                app.root.clipboard_clear()
+                app.root.clipboard_append(sudo_command)
+                app.root.update()
+            msg.logos_error(
+                message,
+                detail=detail,
+                app=app,
+                parent='installer_win'
             )
-            if config.DIALOG == "tk":
-                if hasattr(app, 'root'):
-                    detail += "\nThe command has been copied to the clipboard."  # noqa: E501
-                    app.root.clipboard_clear()
-                    app.root.clipboard_append(sudo_command)
-                    app.root.update()
-                msg.logos_error(
-                    message,
-                    detail=detail,
-                    app=app,
-                    parent='installer_win'
-                )
-            elif config.DIALOG == 'cli':
-                msg.logos_error(message + "\n" + detail)
+        elif config.DIALOG == 'cli':
+            msg.logos_error(message + "\n" + detail)
+        install_deps_failed = True
+
+    if manual_install_required and app and config.DIALOG == "curses":
+        app.screen_q.put(
+            app.stack_confirm(
+                17,
+                app.manualinstall_q,
+                app.manualinstall_e,
+                f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\n{constants.APP_NAME}:\n{sudo_command}\n",  # noqa: E501
+                "User cancelled dependency installation.",  # noqa: E501
+                message,
+                options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))  # noqa: E501
+        app.manualinstall_e.wait()
+
+    if not install_deps_failed and not manual_install_required:
+        if config.DIALOG == 'cli':
+            command_str = command_str.replace("pkexec", "sudo")
+        try:
+            logging.debug(f"Attempting to run this command: {command_str}")
+            run_command(command_str, shell=True)
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 127:
+                logging.error("User cancelled dependency installation.")
+            else:
+                logging.error(f"An error occurred in install_dependencies(): {e}")  # noqa: E501
+                logging.error(f"Command output: {e.output}")
             install_deps_failed = True
 
-        if manual_install_required and app and config.DIALOG == "curses":
-            app.screen_q.put(
-                app.stack_confirm(
-                    17,
-                    app.manualinstall_q,
-                    app.manualinstall_e,
-                    f"Please run the following command in a terminal, then select \"Continue\" when finished.\n\n{constants.APP_NAME}:\n{sudo_command}\n",  # noqa: E501
-                    "User cancelled dependency installation.",  # noqa: E501
-                    message,
-                    options=["Continue", "Return to Main Menu"], dialog=config.use_python_dialog))  # noqa: E501
-            app.manualinstall_e.wait()
 
-        if not install_deps_failed and not manual_install_required:
-            if config.DIALOG == 'cli':
-                command_str = command_str.replace("pkexec", "sudo")
-            try:
-                logging.debug(f"Attempting to run this command: {command_str}")
-                run_command(command_str, shell=True)
-            except subprocess.CalledProcessError as e:
-                if e.returncode == 127:
-                    logging.error("User cancelled dependency installation.")
-                else:
-                    logging.error(f"An error occurred in install_dependencies(): {e}")  # noqa: E501
-                    logging.error(f"Command output: {e.output}")
-                install_deps_failed = True
-    else:
-        msg.logos_error(
-            f"The script could not determine your {os_name} install's package manager or it is unsupported. "  # noqa: E501
-            f"Your computer is missing the command(s) {missing_packages}. "
-            f"Please install your distro's package(s) associated with {missing_packages} for {os_name}."  # noqa: E501
-        )
-
-    if config.REBOOT_REQUIRED:
+    if reboot_required:
         question = "Should the program reboot the host now?"  # noqa: E501
         no_text = "The user has chosen not to reboot."
         secondary = "The system has installed or removed a package that requires a reboot."  # noqa: E501

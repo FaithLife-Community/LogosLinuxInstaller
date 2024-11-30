@@ -26,17 +26,8 @@ for key, default in extended_config.items():
 
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
-BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
-L9PACKAGES = None
 LOGOS_LATEST_VERSION_FILENAME = constants.APP_NAME
 LOGOS_LATEST_VERSION_URL: Optional[str] = None
-PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None
-PACKAGE_MANAGER_COMMAND_DOWNLOAD: Optional[list[str]] = None
-PACKAGE_MANAGER_COMMAND_REMOVE: Optional[list[str]] = None
-PACKAGE_MANAGER_COMMAND_QUERY: Optional[list[str]] = None
-PACKAGES: Optional[str] = None
-QUERY_PREFIX: Optional[str] = None
-REBOOT_REQUIRED: Optional[str] = None
 SUPERUSER_COMMAND: Optional[str] = None
 wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
