@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import curses
+import logging.handlers
 
 from ou_dedetai.config import EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
 
@@ -210,6 +211,12 @@ def parse_args(args, parser) -> EphemeralConfiguration:
 
     if args.debug:
         msg.update_log_level(logging.DEBUG)
+        # Also add stdout for debugging purposes
+        stdout_h = logging.StreamHandler(sys.stdout)
+        stdout_h.name = "terminal"
+        stdout_h.setLevel(logging.DEBUG)
+        stdout_h.addFilter(msg.DeduplicateFilter())
+        logging.root.addHandler(stdout_h)
 
     if args.delete_log:
         ephemeral_config.delete_log = True

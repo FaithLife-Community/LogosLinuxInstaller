@@ -313,8 +313,8 @@ def ensure_wineprefix_init(app: App):
             )
         else:
             logging.debug("Initializing wineprefix.")
-            process = wine.initializeWineBottle(app.conf.wine64_binary)
-            wine.wait_pid(process)
+            process = wine.initializeWineBottle(app.conf.wine64_binary, app)
+            system.wait_pid(process)
             # wine.light_wineserver_wait()
             wine.wineserver_wait(app)
             logging.debug("Wine init complete.")
@@ -397,7 +397,7 @@ def ensure_product_installed(app: App):
 
     if not app.is_installed():
         process = wine.install_msi(app)
-        wine.wait_pid(process)
+        system.wait_pid(process)
 
     # Clean up temp files, etc.
     utils.clean_all()

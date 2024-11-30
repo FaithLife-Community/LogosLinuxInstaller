@@ -17,7 +17,7 @@ from . import network
 from . import system
 from . import utils
 
-
+# XXX: fix lingering lack of refs to app
 def check_wineserver(wineserver_binary: str):
     try:
         # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of WINESERVER_EXE
@@ -37,7 +37,7 @@ def wineserver_kill(wineserver_binary: str):
 
 def wineserver_wait(wineserver_binary: str):
     if check_wineserver(wineserver_binary):
-        process = run_wine_proc(wineserver_binary, exe_args=["-w"])
+        process = run_wine_proc(wineserver_binary, app, exe_args=["-w"])
         system.wait_pid(process)
 
 
@@ -193,7 +193,7 @@ def check_wine_version_and_branch(release_version, test_binary, faithlife_produc
     return True, "None"
 
 
-def initializeWineBottle(wine64_binary: str):
+def initializeWineBottle(wine64_binary: str, app: App):
     msg.status("Initializing wine bottle…")
     logging.debug(f"{wine64_binary=}")
     # Avoid wine-mono window
@@ -201,6 +201,7 @@ def initializeWineBottle(wine64_binary: str):
     logging.debug(f"Running: {wine64_binary} wineboot --init")
     process = run_wine_proc(
         wine64_binary,
+        app=app,
         exe='wineboot',
         exe_args=['--init'],
         init=True,
@@ -214,6 +215,7 @@ def wine_reg_install(app: App, reg_file, wine64_binary):
     msg.status(f"Installing registry file: {reg_file}")
     process = run_wine_proc(
         wine64_binary,
+        app=app,
         exe="regedit.exe",
         exe_args=[reg_file]
     )
@@ -327,7 +329,7 @@ def run_wine_proc(
 
 
 def run_winetricks(app: App, cmd=None):
-    process = run_wine_proc(app.conf.winetricks_binary, exe=cmd)
+    process = run_wine_proc(app.conf.winetricks_binary, app=app, exe=cmd)
     system.wait_pid(process)
     wineserver_wait(app)
 
@@ -446,7 +448,7 @@ def get_registry_value(reg_path, name, app: App):
         'reg', 'query', reg_path, '/v', name,
     ]
     err_msg = f"Failed to get registry value: {reg_path}\\{name}"
-    encoding = app.conf.wine_output_encoding
+    encoding = app.conf._wine_output_encoding
     if encoding is None:
         encoding = 'UTF-8'
     try:

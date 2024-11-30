@@ -94,7 +94,8 @@ def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.Co
             )
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}")  # noqa: E501
+            logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}.")  # noqa: E501
+            logging.debug(f"Command failed with output:\n{e.stdout}\nand stderr:\n{e.stderr}") #noqa: E501
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)

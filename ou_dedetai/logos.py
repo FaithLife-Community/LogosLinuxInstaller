@@ -112,7 +112,7 @@ class LogosManager:
             if isinstance(self.app, GuiApp):
                 # Don't send "Running" message to GUI b/c it never clears.
                 app = None
-            msg.status(f"Running {app.conf.faithlife_product}…", app=app)
+            msg.status(f"Running {self.app.conf.faithlife_product}…", app=app)
             utils.start_thread(run_logos, daemon_bool=False)
             # NOTE: The following code would keep the CLI open while running
             # Logos, but since wine logging is sent directly to wine.log,
@@ -174,6 +174,7 @@ class LogosManager:
         def run_indexing():
             process = wine.run_wine_proc(
                 self.app.conf.wine_binary,
+                app=self.app,
                 exe=self.app.conf.logos_indexer_exe
             )
             if isinstance(process, subprocess.Popen):
@@ -239,11 +240,15 @@ class LogosManager:
 
     def get_app_logging_state(self, init=False):
         state = 'DISABLED'
-        current_value = wine.get_registry_value(
-            'HKCU\\Software\\Logos4\\Logging',
-            'Enabled',
-            self.app
-        )
+        try:
+            current_value = wine.get_registry_value(
+                'HKCU\\Software\\Logos4\\Logging',
+                'Enabled',
+                self.app
+            )
+        except Exception as e:
+            logging.warning(f"Failed to determine if logging was enabled, assuming no: {e}") #noqa: E501
+            current_value = None
         if current_value == '0x1':
             state = 'ENABLED'
         return state
@@ -276,9 +281,10 @@ class LogosManager:
         ]
         process = wine.run_wine_proc(
             self.app.conf.wine_binary,
+            app=self.app,
             exe='reg',
             exe_args=exe_args
         )
-        wine.wait_pid(process)
-        wine.wineserver_wait(app=self.app)
+        system.wait_pid(process)
+        wine.wineserver_wait(self.app.conf.wineserver_binary)
         self.app.conf.faithlife_product_logging = state

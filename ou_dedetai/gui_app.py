@@ -474,6 +474,7 @@ class InstallerWindow(GuiApp):
         self.gui.progress.config(mode='determinate')
         utils.start_thread(installer.install, app=self)
 
+    # XXX: where should this live? here or ControlWindow?
     def status(self, message: str, percent: int | None = None):
         if percent:
             self.gui.progress.stop()
@@ -652,11 +653,9 @@ class ControlWindow(GuiApp):
         self.get_evt = "<<GetFile>>"
         self.root.bind(self.get_evt, self.update_download_progress)
 
-        # Start function to determine app logging state.
-        if self.is_installed():
-            self.gui.statusvar.set('Getting current app logging status…')
-            self.start_indeterminate_progress()
-            utils.start_thread(self.logos.get_app_logging_state)
+        self.installer_window = None
+
+        self.update_logging_button()
 
     def edit_config(self):
         control.edit_file(self.conf.config_file_path)
@@ -724,7 +723,7 @@ class ControlWindow(GuiApp):
 
     def install_deps(self, evt=None):
         self.start_indeterminate_progress()
-        utils.start_thread(utils.install_dependencies)
+        utils.start_thread(utils.install_dependencies, self)
 
     def open_file_dialog(self, filetype_name, filetype_extension):
         file_path = fd.askopenfilename(
@@ -798,6 +797,21 @@ class ControlWindow(GuiApp):
             self.installer_window._config_updated_hook()
         return super()._config_updated_hook()
 
+    # XXX: should this live here or in installerWindow?
+    def status(self, message: str, percent: int | None = None):
+        if percent:
+            self.gui.progress.stop()
+            self.gui.progress.state(['disabled'])
+            self.gui.progress.config(mode='determinate')
+            self.gui.progressvar.set(percent)
+        else:
+            self.gui.progress.state(['!disabled'])
+            self.gui.progressvar.set(0)
+            self.gui.progress.config(mode='indeterminate')
+            self.gui.progress.start()
+        self.gui.statusvar.set(message)
+        super().status(message, percent)
+
     def update_logging_button(self, evt=None):
         self.gui.statusvar.set('')
         self.gui.progress.stop()
@@ -850,6 +864,12 @@ class ControlWindow(GuiApp):
         self.clear_status_text()
         self.stop_indeterminate_progress()
         self.gui.latest_appimage_button.state([state])
+
+    def stop_indeterminate_progress(self, evt=None):
+        self.gui.progress.stop()
+        self.gui.progress.state(['disabled'])
+        self.gui.progress.config(mode='determinate')
+        self.gui.progressvar.set(0)
 
     def update_run_winetricks_button(self, evt=None):
         if utils.file_exists(self.conf.winetricks_binary):
