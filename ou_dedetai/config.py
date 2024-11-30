@@ -31,15 +31,7 @@ LOGOS_LATEST_VERSION_URL: Optional[str] = None
 SUPERUSER_COMMAND: Optional[str] = None
 wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
-install_finished = False
 console_log = []
-margin = 2
-console_log_lines = 1
-current_option = 0
-current_page = 0
-total_pages = 0
-options_per_page = 8
-resizing = False
 processes = {}
 threads = []
 logos_linux_installer_status = None

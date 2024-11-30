@@ -30,7 +30,7 @@ console_message = ""
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
 class TUI(App):
-    def __init__(self, stdscr, ephemeral_config: EphemeralConfiguration):
+    def __init__(self, stdscr: curses.window, ephemeral_config: EphemeralConfiguration):
         super().__init__(ephemeral_config)
         self.stdscr = stdscr
         # if config.current_logos_version is not None:
@@ -86,6 +86,12 @@ class TUI(App):
         self.install_logos_q = Queue()
         self.install_logos_e = threading.Event()
 
+        self.terminal_margin = 0
+        self.resizing = False
+        # These two are updated in set_window_dimensions
+        self.console_log_lines = 0
+        self.options_per_page = 0
+
         # Window and Screen Management
         self.tui_screens = []
         self.menu_options = []
@@ -109,8 +115,8 @@ class TUI(App):
         self.menu_window_min = 3
         self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
         self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
-        config.console_log_lines = max(self.main_window_height - self.main_window_min, 1)
-        config.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
+        self.console_log_lines = max(self.main_window_height - self.main_window_min, 1)
+        self.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
         resize_lines = tui_curses.wrap_text(self, "Screen too small.")
@@ -226,7 +232,7 @@ class TUI(App):
     # even though the resize signal is sent. See tui_curses, line #251 and
     # tui_screen, line #98.
     def resize_curses(self):
-        config.resizing = True
+        self.resizing = True
         curses.endwin()
         self.update_tty_dimensions()
         self.set_window_dimensions()
@@ -234,7 +240,7 @@ class TUI(App):
         self.init_curses()
         self.refresh()
         msg.status("Window resized.", self)
-        config.resizing = False
+        self.resizing = False
 
     def signal_resize(self, signum, frame):
         self.resize_curses()
@@ -254,14 +260,14 @@ class TUI(App):
     def draw_resize_screen(self):
         self.clear()
         if self.window_width > 10:
-            margin = config.margin
+            margin = self.terminal_margin
         else:
             margin = 0
         resize_lines = tui_curses.wrap_text(self, "Screen too small.")
         self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
         for i, line in enumerate(resize_lines):
             if i < self.window_height:
-                tui_curses.write_line(self, self.resize_window, i, margin, line, self.window_width - config.margin, curses.A_BOLD)
+                tui_curses.write_line(self, self.resize_window, i, margin, line, self.window_width - self.terminal_margin, curses.A_BOLD)
         self.refresh()
 
     def display(self):
@@ -275,8 +281,8 @@ class TUI(App):
 
         while self.llirunning:
             if self.window_height >= 10 and self.window_width >= 35:
-                config.margin = 2
-                if not config.resizing:
+                self.terminal_margin = 2
+                if not self.resizing:
                     self.update_windows()
 
                     self.active_screen.display()
@@ -310,10 +316,10 @@ class TUI(App):
                         self.refresh()
             elif self.window_width >= 10:
                 if self.window_width < 10:
-                    config.margin = 1  # Avoid drawing errors on very small screens
+                    self.terminal_margin = 1  # Avoid drawing errors on very small screens
                 self.draw_resize_screen()
             elif self.window_width < 10:
-                config.margin = 0  # Avoid drawing errors on very small screens
+                self.terminal_margin = 0  # Avoid drawing errors on very small screens
 
     def run(self):
         try:
@@ -918,6 +924,6 @@ class TUI(App):
         return self.menu_window
 
 
-def control_panel_app(stdscr, ephemeral_config: EphemeralConfiguration):
+def control_panel_app(stdscr: curses.window, ephemeral_config: EphemeralConfiguration):
     os.environ.setdefault('ESCDELAY', '100')
     TUI(stdscr, ephemeral_config).run()

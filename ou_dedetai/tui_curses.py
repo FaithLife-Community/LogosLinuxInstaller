@@ -11,10 +11,10 @@ def wrap_text(app, text):
     # Turn text into wrapped text, line by line, centered
     if "\n" in text:
         lines = text.splitlines()
-        wrapped_lines = [textwrap.fill(line, app.window_width - (config.margin * 2)) for line in lines]
+        wrapped_lines = [textwrap.fill(line, app.window_width - (app.terminal_margin * 2)) for line in lines]
         lines = '\n'.join(wrapped_lines)
     else:
-        wrapped_text = textwrap.fill(text, app.window_width - (config.margin * 2))
+        wrapped_text = textwrap.fill(text, app.window_width - (app.terminal_margin * 2))
         lines = wrapped_text.split('\n')
     return lines
 
@@ -85,8 +85,9 @@ def confirm(app, question_text, height=None, width=None):
 
 class CursesDialog:
     def __init__(self, app):
-        self.app = app
-        self.stdscr = self.app.get_menu_window()
+        from ou_dedetai.tui_app import TUI
+        self.app: TUI = app
+        self.stdscr: curses.window = self.app.get_menu_window()
 
     def __str__(self):
         return f"Curses Dialog"
@@ -197,19 +198,23 @@ class MenuDialog(CursesDialog):
         self.question_start_y = None
         self.question_lines = None
 
+        self.current_option: int = 0
+        self.current_page: int = 0
+        self.total_pages: int = 0
+
     def __str__(self):
         return f"Menu Curses Dialog"
 
     def draw(self):
         self.stdscr.erase()
         self.app.active_screen.set_options(self.options)
-        config.total_pages = (len(self.options) - 1) // config.options_per_page + 1
+        self.total_pages = (len(self.options) - 1) // self.app.options_per_page + 1
 
         self.question_start_y, self.question_lines = text_centered(self.app, self.question_text)
         # Display the options, centered
         options_start_y = self.question_start_y + len(self.question_lines) + 2
-        for i in range(config.options_per_page):
-            index = config.current_page * config.options_per_page + i
+        for i in range(self.app.options_per_page):
+            index = self.current_page * self.app.options_per_page + i
             if index < len(self.options):
                 option = self.options[index]
                 if type(option) is list:
@@ -240,7 +245,7 @@ class MenuDialog(CursesDialog):
                     y = options_start_y + i + j
                     x = max(0, self.app.window_width // 2 - len(line) // 2)
                     if y < self.app.menu_window_height:
-                        if index == config.current_option:
+                        if index == self.current_option:
                             write_line(self.app, self.stdscr, y, x, line, self.app.window_width, curses.A_REVERSE)
                         else:
                             write_line(self.app, self.stdscr, y, x, line, self.app.window_width)
@@ -250,33 +255,33 @@ class MenuDialog(CursesDialog):
                     options_start_y += (len(option_lines))
 
         # Display pagination information
-        page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
+        page_info = f"Page {self.current_page + 1}/{self.total_pages} | Selected Option: {self.current_option + 1}/{len(self.options)}"
         write_line(self.app, self.stdscr, max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
 
     def do_menu_up(self):
-        if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:
+        if self.current_option == self.current_page * self.app.options_per_page and self.current_page > 0:
             # Move to the previous page
-            config.current_page -= 1
-            config.current_option = min(len(self.app.menu_options) - 1, (config.current_page + 1) * config.options_per_page - 1)
-        elif config.current_option == 0:
-            if config.total_pages == 1:
-                config.current_option = len(self.app.menu_options) - 1
+            self.current_page -= 1
+            self.current_option = min(len(self.app.menu_options) - 1, (self.current_page + 1) * self.app.options_per_page - 1)
+        elif self.current_option == 0:
+            if self.total_pages == 1:
+                self.current_option = len(self.app.menu_options) - 1
             else:
-                config.current_page = config.total_pages - 1
-                config.current_option = len(self.app.menu_options) - 1
+                self.current_page = self.total_pages - 1
+                self.current_option = len(self.app.menu_options) - 1
         else:
-            config.current_option = max(0, config.current_option - 1)
+            self.current_option = max(0, self.current_option - 1)
 
     def do_menu_down(self):
-        if config.current_option == (config.current_page + 1) * config.options_per_page - 1 and config.current_page < config.total_pages - 1:
+        if self.current_option == (self.current_page + 1) * self.app.options_per_page - 1 and self.current_page < self.total_pages - 1:
             # Move to the next page
-            config.current_page += 1
-            config.current_option = min(len(self.app.menu_options) - 1, config.current_page * config.options_per_page)
-        elif config.current_option == len(self.app.menu_options) - 1:
-            config.current_page = 0
-            config.current_option = 0
+            self.current_page += 1
+            self.current_option = min(len(self.app.menu_options) - 1, self.current_page * self.app.options_per_page)
+        elif self.current_option == len(self.app.menu_options) - 1:
+            self.current_page = 0
+            self.current_option = 0
         else:
-            config.current_option = min(len(self.app.menu_options) - 1, config.current_option + 1)
+            self.current_option = min(len(self.app.menu_options) - 1, self.current_option + 1)
 
     def input(self):
         if len(self.app.tui_screens) > 0:
@@ -303,7 +308,7 @@ class MenuDialog(CursesDialog):
                     elif final_key == 66:
                         self.do_menu_down()
             elif key == ord('\n') or key == 10:  # Enter key
-                self.user_input = self.options[config.current_option]
+                self.user_input = self.options[self.current_option]
             elif key == ord('\x1b'):
                 signal.signal(signal.SIGINT, self.app.end)
             else:
