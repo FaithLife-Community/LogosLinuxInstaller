@@ -189,15 +189,15 @@ parts:
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       # needed for build
       # - CC: "gcc-9"
-      # - CFLAGS: "${CFLAGS_X64}"
+      - CFLAGS: "${CFLAGS_X64}"
       # - CXX: "g++-9"
-      # - CXXFLAGS: "${CFLAGS_X64}"
-      # - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
-      # - CROSSLDFLAGS: "${LDFLAGS}"
+      - CXXFLAGS: "${CFLAGS_X64}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
       # - CROSSCC: "${CROSSCC_X64}"  # not used?
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
+      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       # - CROSSCXX: "${CROSSCXX_X64}"  # not used?
-      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
     after:
@@ -249,18 +249,18 @@ parts:
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "$CROSSCC_X32"  #"gcc-9"
-      # - CFLAGS: "${CFLAGS_X32}"
+      - CFLAGS: "${CFLAGS_X32}"
       # - CXX: "$CROSSCXX_X32"  #"g++-9"
-      # - CXXFLAGS: "${CFLAGS_X32}"
-      # - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
-      # - CROSSLDFLAGS: "${LDFLAGS}"
-      # - i386_LDFLAGS: "$CROSSLDFLAGS"
+      - CXXFLAGS: "${CFLAGS_X32}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
+      - i386_LDFLAGS: "$CROSSLDFLAGS"
       # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
       # - i386_CC: "$CROSSCC"
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
-      # - i386_CFLAGS: "$CROSSCFLAGS"
+      - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      - i386_CFLAGS: "$CROSSCFLAGS"
       # - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
-      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
   wine32:
     after:
@@ -315,15 +315,15 @@ parts:
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"
-      # - CFLAGS: "${CFLAGS_X64}"
+      - CFLAGS: "${CFLAGS_X64}"
       # - CXX: "g++-9"
-      # - CXXFLAGS: "${CFLAGS_X64}"
-      # - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
-      # - CROSSLDFLAGS: "${LDFLAGS}"
+      - CXXFLAGS: "${CFLAGS_X64}"
+      - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
+      - CROSSLDFLAGS: "${LDFLAGS}"
       # - CROSSCC: "${CROSSCC_X64}"  # not used?
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
+      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       # - CROSSCXX: "${CROSSCXX_X64}"  # not used?
-      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine-cleanup:
     after:
