@@ -319,7 +319,7 @@ parts:
       # - i386_LDFLAGS: "$CROSSLDFLAGS"
       # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
       # - i386_CC: "$CROSSCC"
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      - CROSSCFLAGS: "-O2 -ftree-vectorize"  #"${CROSSCFLAGS_X32}"
       # - i386_CFLAGS: "$CROSSCFLAGS"
       - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
