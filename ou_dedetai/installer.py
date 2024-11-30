@@ -354,8 +354,6 @@ def ensure_winetricks_applied(app: App):
     if not app.conf.skip_winetricks:
         usr_reg = None
         sys_reg = None
-        workdir = Path(f"{config.WORKDIR}")
-        workdir.mkdir(parents=True, exist_ok=True)
         usr_reg = Path(f"{app.conf.wine_prefix}/user.reg")
         sys_reg = Path(f"{app.conf.wine_prefix}/system.reg")
 

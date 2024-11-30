@@ -5,6 +5,7 @@ import shutil
 import signal
 import subprocess
 from pathlib import Path
+import tempfile
 from typing import Optional
 
 from ou_dedetai.app import App
@@ -242,13 +243,15 @@ def wine_reg_install(app: App, reg_file, wine64_binary):
 
 
 def disable_winemenubuilder(app: App, wine64_binary: str):
-    reg_file = Path(config.WORKDIR) / 'disable-winemenubuilder.reg'
+    workdir = tempfile.mkdtemp()
+    reg_file = Path(workdir) / 'disable-winemenubuilder.reg'
     reg_file.write_text(r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
 ''')
     wine_reg_install(app, reg_file, wine64_binary)
+    os.remove(workdir)
 
 
 def install_msi(app: App):

@@ -19,8 +19,6 @@ for key, default in extended_config.items():
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
 SUPERUSER_COMMAND: Optional[str] = None
-wine_user = None
-WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
 console_log = []
 processes = {}
 threads = []

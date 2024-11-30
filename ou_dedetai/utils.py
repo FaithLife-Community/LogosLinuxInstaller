@@ -132,8 +132,6 @@ def restart_lli():
 
 def clean_all():
     logging.info("Cleaning all temp files…")
-    os.system("rm -fr /tmp/LBS.*")
-    os.system(f"rm -fr {config.WORKDIR}")
     os.system(f"rm -f {os.getcwd()}/wget-log*")
     logging.info("done")
 
