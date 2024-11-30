@@ -249,12 +249,12 @@ parts:
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       # needed for build
       # - CC: "gcc-9"
-      - CFLAGS: "${CFLAGS_X64}"
+      - CFLAGS: "-O2 -ftree-vectorize"  #"${CFLAGS_X64}"
       # - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X64}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X64}"  # not used?
+      # - CROSSCC: "${CROSSCC_X64}"  # not used?
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXX: "${CROSSCXX_X64}"  # not used?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
@@ -312,7 +312,7 @@ parts:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"  cc1: error: CPU you selected does not support x86-64 instruction set
       - CFLAGS: "-O2 -ftree-vectorize"  #"${CFLAGS_X32}"
-      - CXX: "g++"  #"g++-9"
+      # - CXX: "g++"  #"g++-9"
       - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
@@ -373,12 +373,12 @@ parts:
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"
-      - CFLAGS: "${CFLAGS_X32}"
+      - CFLAGS: "-O2 -ftree-vectorize"  #"${CFLAGS_X32}"
       # - CXX: "g++-9"
       - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      - CROSSCC: "${CROSSCC_X32}"  # not used?
+      # - CROSSCC: "${CROSSCC_X32}"  # not used?
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       - CROSSCXX: "${CROSSCXX_X32}"  # not used?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
