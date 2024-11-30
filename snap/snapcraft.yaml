@@ -57,13 +57,35 @@ parts:
     organize:
       '*.tar.gz': etc/
 
-  add-i386:
-    # build-packages are installed prior to *any* part pulls, so any i386 build
-    # packages have to be installed in an override scriptlet.
+  i386-build-deps:
+    # build-packages from all parts are installed prior to the completion of
+    # any single part, so any i386 build packages have to be installed in an
+    # override scriptlet.
     plugin: nil
-    override-pull: |
+    override-build: |
       dpkg --add-architecture i386
       apt-get update
+      apt-get --yes install \
+        libvulkan1:i386 \
+        libxpresent-dev:i386 \
+        libjxr-dev:i386 \
+        libusb-1.0-0-dev:i386 \
+        libgcrypt20-dev:i386 \
+        libpulse-dev:i386 \
+        libudev-dev:i386 \
+        libudev-dev:i386 \
+        libsane-dev:i386 \
+        libsane-dev:i386 \
+        libv4l-dev:i386 \
+        libgphoto2-dev:i386 \
+        liblcms2-dev:i386 \
+        libcapi20-dev:i386 \
+        samba-dev:i386 \
+        libpcsclite-dev:i386 \
+        libcups2-dev:i386 \
+        libxcb-xkb-dev:i386 \
+        libwayland-bin:i386 \
+        libwayland-dev:i386
 
   # wine:
   #   plugin: nil
@@ -145,15 +167,15 @@ parts:
       # added by me
       - flex 
       - bison
-      - gcc-9-multilib
+      # - gcc-9-multilib
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
-      # - libsdl2  # not found
+      # - libsdl2  # joysticks
       - libvulkan1
-      - ccache
-      - gcc-9
-      - g++-9
+      # - ccache
+      # - gcc-9
+      # - g++-9
       # - wget  # already?
       - gcc-mingw-w64
       - g++-mingw-w64
@@ -190,19 +212,18 @@ parts:
       # needed for build
       # - CC: "gcc-9"
       # - CFLAGS: "${CFLAGS_X64}"
-      - CXX: "g++-9"
-      - CXXFLAGS: "${CFLAGS_X64}"
+      # - CXX: "g++-9"
+      # - CXXFLAGS: "${CFLAGS_X64}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      # - CROSSCC: "${CROSSCC_X64}"  # not used?
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
+      - CROSSCC: "${CROSSCC_X64}"  # not used?
+      - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXX: "${CROSSCXX_X64}"  # not used?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
     after:
-      - add-i386
-      - wine64
+      - i386-build-deps
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
@@ -221,19 +242,16 @@ parts:
       # added by me
       - flex 
       - bison
-      - gcc-9-multilib
+      # - gcc-9-multilib
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
-      - ccache
-      - gcc-9
-      - g++-9
-      # - wget  # already?
+      # - ccache
+      # - gcc-9
+      # - g++-9
+      # - wget
       - gcc-mingw-w64
       - g++-mingw-w64
-    override-build: |
-      apt-get --yes install libvulkan1:i386 libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
-      craftctl default
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -251,14 +269,14 @@ parts:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"  # configure: compiler test fails
       # - CFLAGS: "${CFLAGS_X32}"  # configure: error: C compiler cannot create executables
-      - CXX: "g++-9"
-      - CXXFLAGS: "${CFLAGS_X32}"
+      # - CXX: "g++-9"
+      # - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       # - i386_LDFLAGS: "$CROSSLDFLAGS"
-      # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
+      - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
       # - i386_CC: "$CROSSCC"
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       # - i386_CFLAGS: "$CROSSCFLAGS"
       - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
@@ -287,19 +305,16 @@ parts:
       # added by me
       - flex 
       - bison
-      - gcc-9-multilib
+      # - gcc-9-multilib
       # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
-      - ccache
-      - gcc-9
-      - g++-9
+      # - ccache
+      # - gcc-9
+      # - g++-9
       # - wget  # already?
       - gcc-mingw-w64
       - g++-mingw-w64
-    override-build: |
-      # apt-get --yes install libvulkan1:i386 libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
-      craftctl default
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -315,10 +330,10 @@ parts:
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
-      - CC: "gcc-9"
-      - CFLAGS: "${CFLAGS_X32}"
-      - CXX: "g++-9"
-      - CXXFLAGS: "${CFLAGS_X32}"
+      # - CC: "gcc-9"
+      # - CFLAGS: "${CFLAGS_X32}"
+      # - CXX: "g++-9"
+      # - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - CROSSCC: "${CROSSCC_X32}"  # not used?
@@ -340,9 +355,9 @@ parts:
       - -opt/wine-devel/bin/wine
       - -opt/wine-devel/bin/wine-preloader
     override-stage: |
-      craftctl default
       ln opt/wine-devel/bin/wine opt/wine-devel/bin/wine64
       find . - type d -empty -delete
+      craftctl default
     stage-packages:
       - libcapi20-3t64
       - libexif12
@@ -353,8 +368,6 @@ parts:
       # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
   oudedetai:
-    after:
-      - add-i386
     ## just for testing
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
     source-branch: snap-pkg
