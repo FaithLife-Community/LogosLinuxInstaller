@@ -631,8 +631,6 @@ class ControlWindow(GuiApp):
         self.update_run_winetricks_button()
 
         self.logging_q = Queue()
-        self.logging_event = '<<UpdateLoggingButton>>'
-        self.root.bind(self.logging_event, self.update_logging_button)
         self.status_q = Queue()
         self.status_evt = '<<UpdateControlStatus>>'
         self.root.bind(self.status_evt, self.update_status_text)
@@ -675,8 +673,8 @@ class ControlWindow(GuiApp):
 
     def run_installer(self, evt=None):
         classname = constants.BINARY_NAME
-        self.installer_win = Toplevel()
-        InstallerWindow(self.installer_win, self.root, app=self, class_=classname)
+        installer_window_top = Toplevel()
+        self.installer_window = InstallerWindow(installer_window_top, self.root, app=self, class_=classname)
         self.root.icon = self.conf.faithlife_product_icon_path
 
     def run_logos(self, evt=None):
@@ -794,23 +792,19 @@ class ControlWindow(GuiApp):
             self.logos.switch_logging,
             action=desired_state.lower()
         )
-
-    def initialize_logging_button(self, evt=None):
-        self.gui.statusvar.set('')
-        self.gui.progress.stop()
-        self.gui.progress.state(['disabled'])
-        state = self.reverse_logging_state_value(self.logging_q.get())
-        self.gui.loggingstatevar.set(state[:-1].title())
-        self.gui.logging_button.state(['!disabled'])
+    
+    def _config_updated_hook(self) -> None:
+        self.update_logging_button()
+        if self.installer_window is not None:
+            self.installer_window._config_updated_hook()
+        return super()._config_updated_hook()
 
     def update_logging_button(self, evt=None):
         self.gui.statusvar.set('')
         self.gui.progress.stop()
         self.gui.progress.state(['disabled'])
-        new_state = self.reverse_logging_state_value(self.logging_q.get())
-        new_text = new_state[:-1].title()
-        logging.debug(f"Updating app logging button text to: {new_text}")
-        self.gui.loggingstatevar.set(new_text)
+        state = self.reverse_logging_state_value(self.current_logging_state_value())
+        self.gui.loggingstatevar.set(state[:-1].title())
         self.gui.logging_button.state(['!disabled'])
 
     def update_app_button(self, evt=None):
@@ -865,7 +859,13 @@ class ControlWindow(GuiApp):
             state = 'disabled'
         self.gui.run_winetricks_button.state([state])
 
-    def reverse_logging_state_value(self, state):
+    def current_logging_state_value(self) -> str:
+        if self.conf.faithlife_product_logging:
+            return 'ENABLED'
+        else:
+            return 'DISABLED'
+
+    def reverse_logging_state_value(self, state) ->str:
         if state == 'DISABLED':
             return 'ENABLED'
         else:

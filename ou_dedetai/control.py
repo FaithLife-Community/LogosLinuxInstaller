@@ -97,12 +97,10 @@ def backup_and_restore(mode: str, app: App):
         msg.logos_warning(f"No files to {mode}", app=app)
         return
 
-    # FIXME: UI specific code
-    if config.DIALOG == 'curses':
-        if mode == 'backup':
-            app.screen_q.put(app.stack_text(8, app.todo_q, app.todo_e, "Backing up data…", wait=True))
-        else:
-            app.screen_q.put(app.stack_text(8, app.todo_q, app.todo_e, "Restoring data…", wait=True))
+    if mode == 'backup':
+        app.status("Backing up data…")
+    else:
+        app.status("Restoring data…")
 
     # Get source transfer size.
     q = queue.Queue()

@@ -94,7 +94,8 @@ class LogosManager:
         else:
             wine.wineserver_kill(self.app.conf.wineserver_binary)
             app = self.app
-            if config.DIALOG == 'tk':
+            from ou_dedetai.gui_app import GuiApp
+            if isinstance(self.app, GuiApp):
                 # Don't send "Running" message to GUI b/c it never clears.
                 app = None
             msg.status(f"Running {app.conf.faithlife_product}…", app=app)
@@ -103,7 +104,8 @@ class LogosManager:
             # Logos, but since wine logging is sent directly to wine.log,
             # there's no terminal output to see. A user can see that output by:
             # tail -f ~/.local/state/FaithLife-Community/wine.log
-            # if config.DIALOG == 'cli':
+            # from ou_dedetai.cli import CLI
+            # if isinstance(self.app, CLI):
             #     run_logos()
             #     self.monitor()
             #     while config.processes.get(app.conf.logos_exe) is None:
@@ -111,8 +113,6 @@ class LogosManager:
             #     while self.logos_state != State.STOPPED:
             #         time.sleep(0.1)
             #         self.monitor()
-            # else:
-            #     utils.start_thread(run_logos, daemon_bool=False)
 
     def stop(self):
         logging.debug("Stopping LogosManager.")
@@ -228,12 +228,6 @@ class LogosManager:
         )
         if current_value == '0x1':
             state = 'ENABLED'
-        if config.DIALOG in ['curses', 'dialog', 'tk']:
-            self.app.logging_q.put(state)
-            if init:
-                self.app.root.event_generate('<<InitLoggingButton>>')
-            else:
-                self.app.root.event_generate('<<UpdateLoggingButton>>')
         return state
 
     def switch_logging(self, action=None):
@@ -270,6 +264,3 @@ class LogosManager:
         wine.wait_pid(process)
         wine.wineserver_wait(app=self.app)
         self.app.conf.faithlife_product_logging = state
-        if config.DIALOG in ['curses', 'dialog', 'tk']:
-            self.app.logging_q.put(state)
-            self.app.root.event_generate(self.app.logging_event)
