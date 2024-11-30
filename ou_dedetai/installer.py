@@ -42,8 +42,6 @@ def ensure_release_choice(app: App):
     app.installer_step += 1
     update_install_feedback("Choose product release…", app=app)
     logging.debug('- config.TARGET_RELEASE_VERSION')
-    # accessing this sets the config
-    app.conf.faithlife_product_release
     logging.debug(f"> config.TARGET_RELEASE_VERSION={app.conf.faithlife_product_release}")
 
 

@@ -228,8 +228,8 @@ def parse_args(args, parser) -> EphemeralConfiguration:
 
     # FIXME: Should this have been args.check_for_updates?
     # Should this even be an option?
-    if network.check_for_updates:
-        ephemeral_config.check_updates_now = True
+    # if network.check_for_updates:
+    #     ephemeral_config.check_updates_now = True
 
     if args.skip_dependencies:
         ephemeral_config.install_dependencies_skip = True
@@ -339,16 +339,16 @@ def setup_config() -> EphemeralConfiguration:
     # XXX: do this in the new scheme (read then write the config).
     # We also want to remove the old file, (stored in CONFIG_FILE?)
 
-    # Update config from CONFIG_FILE.
-    if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
-        for legacy_config in constants.LEGACY_CONFIG_FILES:
-            if utils.file_exists(legacy_config):
-                config.set_config_env(legacy_config)
-                utils.write_config(config.CONFIG_FILE)
-                os.remove(legacy_config)
-                break
-    else:
-        config.set_config_env(config.CONFIG_FILE)
+    # # Update config from CONFIG_FILE.
+    # if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
+    #     for legacy_config in constants.LEGACY_CONFIG_FILES:
+    #         if utils.file_exists(legacy_config):
+    #             config.set_config_env(legacy_config)
+    #             utils.write_config(config.CONFIG_FILE)
+    #             os.remove(legacy_config)
+    #             break
+    # else:
+    #     config.set_config_env(config.CONFIG_FILE)
 
     # Parse CLI args and update affected config vars.
     return parse_args(cli_args, parser)
@@ -468,10 +468,6 @@ def main():
     logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501
 
     check_incompatibilities()
-
-    # XXX: Consider how to get the install dir from here, we'd have to read the config...which isn't done yet.
-    # I suppose we could read the persistent config at this point
-    network.check_for_updates(None, bool(ephemeral_config.check_updates_now))
 
     run(ephemeral_config)
 

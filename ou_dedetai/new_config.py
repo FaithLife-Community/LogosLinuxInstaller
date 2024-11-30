@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 import json
 import logging
 import os
 from pathlib import Path
+import time
 from typing import Optional
 
 from ou_dedetai import msg, network, utils, constants, wine
@@ -88,6 +88,10 @@ class LegacyConfiguration:
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "LegacyConfiguration":
         config_dict = {}
+        
+        if not Path(config_file_path).exists():
+            return LegacyConfiguration(CONFIG_FILE=config_file_path)
+
         if config_file_path.endswith('.json'):
             try:
                 with open(config_file_path, 'r') as config_file:
@@ -123,15 +127,19 @@ class LegacyConfiguration:
                             value = vparts[0].strip().strip('"').strip("'")
                         config_dict[parts[0]] = value
 
+        # Now restrict the key values pairs to just those found in LegacyConfiguration
+        output = {}
         # Now update from ENV
         for var in LegacyConfiguration().__dict__.keys():
             if os.getenv(var) is not None:
                 config_dict[var] = os.getenv(var)
+            if var in config_dict:
+                output[var] = config_dict[var]
 
         # Populate the path this config was loaded from
-        config_dict["CONFIG_FILE"] = config_file_path
+        output["CONFIG_FILE"] = config_file_path
 
-        return LegacyConfiguration(**config_dict)
+        return LegacyConfiguration(**output)
 
 
 @dataclass
@@ -300,7 +308,7 @@ class PersistentConfiguration:
     app_latest_version_url: Optional[str] = None
     app_latest_version: Optional[str] = None
 
-    last_updated: Optional[datetime] = None
+    last_updated: Optional[float] = None
     # End Cache
 
     @classmethod
@@ -314,7 +322,7 @@ class PersistentConfiguration:
 
         config_dict = new_config.__dict__
 
-        if config_file_path.endswith('.json'):
+        if config_file_path.endswith('.json') and Path(config_file_path).exists():
             with open(config_file_path, 'r') as config_file:
                 cfg = json.load(config_file)
 
@@ -363,6 +371,8 @@ class PersistentConfiguration:
         if self.install_dir is not None:
             # Ensure all paths stored are relative to install_dir
             for k, v in output.items():
+                if k == "install_dir":
+                    continue
                 # XXX: test this
                 if isinstance(v, Path) or (isinstance(v, str) and v.startswith(str(self.install_dir))): #noqa: E501
                     output[k] = utils.get_relative_path(v, str(self.install_dir))
@@ -429,14 +439,14 @@ class Config:
         if (
             ephemeral_config.check_updates_now 
             or self._raw.last_updated is None 
-            or self._raw.last_updated + timedelta(hours=constants.CACHE_LIFETIME_HOURS) <= datetime.now() #noqa: E501
+            or self._raw.last_updated + constants.CACHE_LIFETIME_HOURS * 60 * 60 <= time.time() #noqa: E501
         ):
             logging.debug("Cleaning out old cache.")
             self._raw.faithlife_product_releases = None
             self._raw.app_latest_version = None
             self._raw.app_latest_version_url = None
             self._raw.wine_appimage_url = None
-            self._raw.last_updated = datetime.now()
+            self._raw.last_updated = time.time()
             self._write()
         else:
             logging.debug("Cache is valid.")
@@ -491,11 +501,13 @@ class Config:
             return self._overrides.faithlife_product_version
         question = f"Which version of {self.faithlife_product} should the script install?: "  # noqa: E501
         options = ["10", "9"]
-        return self._ask_if_not_found("faithlife_product_version", question, options, ["faithlife_product_version"]) # noqa: E501
+        return self._ask_if_not_found("faithlife_product_version", question, options, []) # noqa: E501
 
     @faithlife_product_version.setter
     def faithlife_product_version(self, value: Optional[str]):
         if self._raw.faithlife_product_version != value:
+            self._raw.faithlife_product_version = value
+            # Set dependents
             self._raw.faithlife_product_release = None
             # Install Dir has the name of the product and it's version. Reset it too
             self._raw.install_dir = None
@@ -542,7 +554,7 @@ class Config:
     def faithlife_installer_name(self) -> str:
         if self._overrides.faithlife_installer_name is not None:
             return self._overrides.faithlife_installer_name
-        return f"{self.faithlife_product}_v{self.faithlife_product_version}-x64.msi"
+        return f"{self.faithlife_product}_v{self.faithlife_product_release}-x64.msi"
 
     @property
     def faithlife_installer_download_url(self) -> str:

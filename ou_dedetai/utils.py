@@ -632,9 +632,10 @@ def find_appimage_files(app: App):
                 else:
                     logging.info(f"AppImage file {p} not added: {output2}")
 
-    if app:
-        app.appimage_q.put(appimages)
-        app.root.event_generate(app.appimage_evt)
+    # FIXME: consider if this messaging is needed
+    # if app:
+    #     app.appimage_q.put(appimages)
+    #     app.root.event_generate(app.appimage_evt)
 
     return appimages
 
