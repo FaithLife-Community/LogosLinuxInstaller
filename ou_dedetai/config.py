@@ -9,30 +9,24 @@ from . import constants
 # Define and set variables that are required in the config file.
 # XXX: slowly kill these
 current_logos_version = None
-WINEBIN_CODE = None
 WINECMD_ENCODING = None
 LOGS = None
 LAST_UPDATED = None
-RECOMMENDED_WINE64_APPIMAGE_URL = None
 LLI_LATEST_VERSION = None
 lli_release_channel = None
 
 # Define and set additional variables that can be set in the env.
 extended_config = {
-    'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
     'CONFIG_FILE': None,
     'DIALOG': None,
-    'SELECTED_APPIMAGE_FILENAME': None,
     # Dependent on DIALOG with env override
     'use_python_dialog': None,
-    'WINEBIN_CODE': None,
 }
 for key, default in extended_config.items():
     globals()[key] = os.getenv(key, default)
 
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
-APPIMAGE_FILE_PATH: Optional[str] = None
 BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
 L9PACKAGES = None
 LOGOS_LATEST_VERSION_FILENAME = constants.APP_NAME
@@ -44,11 +38,6 @@ PACKAGE_MANAGER_COMMAND_QUERY: Optional[list[str]] = None
 PACKAGES: Optional[str] = None
 QUERY_PREFIX: Optional[str] = None
 REBOOT_REQUIRED: Optional[str] = None
-RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME: Optional[str] = None
-RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION: Optional[str] = None
-RECOMMENDED_WINE64_APPIMAGE_FILENAME: Optional[str] = None
-RECOMMENDED_WINE64_APPIMAGE_VERSION: Optional[str] = None
-RECOMMENDED_WINE64_APPIMAGE_BRANCH: Optional[str] = None
 SUPERUSER_COMMAND: Optional[str] = None
 wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")

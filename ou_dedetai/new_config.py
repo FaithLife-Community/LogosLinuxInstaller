@@ -142,6 +142,9 @@ class EphemeralConfiguration:
 
     Changes to this are not saved to disk, but remain while the program runs
     """
+    
+    # See naming conventions in Config
+    
     # Start user overridable via env or cli arg
     installer_binary_dir: Optional[str]
     wineserver_binary: Optional[str]
@@ -169,6 +172,13 @@ class EphemeralConfiguration:
     """Corresponds to wine's WINEDEBUG"""
     wine_prefix: Optional[str]
     """Corresponds to wine's WINEPREFIX"""
+
+    # FIXME: seems like the wine appimage logic can be simplified
+    wine_appimage_link_file_name: Optional[str]
+    """Syslink file name to the active wine appimage."""
+
+    wine_appimage_path: Optional[str]
+    """Path to the selected appimage"""
 
     # FIXME: consider using PATH instead? (and storing this legacy env in PATH for this process) # noqa: E501
     custom_binary_path: Optional[str]
@@ -227,7 +237,9 @@ class EphemeralConfiguration:
             check_updates_now=legacy.CHECK_UPDATES,
             delete_log=delete_log,
             install_dependencies_skip=legacy.SKIP_DEPENDENCIES,
-            install_fonts_skip=legacy.SKIP_FONTS
+            install_fonts_skip=legacy.SKIP_FONTS,
+            wine_appimage_link_file_name=legacy.APPIMAGE_LINK_SELECTION_NAME,
+            wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME
         )
 
     @classmethod
@@ -250,7 +262,9 @@ class NetworkCache:
 
     # Start cache
     _faithlife_product_releases: Optional[list[str]] = None
-    _downloads_dir: Optional[str] = None
+    # FIXME: pull from legacy RECOMMENDED_WINE64_APPIMAGE_URL?
+    # in legacy refresh wasn't handled properly
+    wine_appimage_url: Optional[str] = None
 
     # XXX: add @property defs to automatically retrieve if not found
 
@@ -267,6 +281,8 @@ class PersistentConfiguration:
     
     MUST be saved explicitly
     """
+
+    # See naming conventions in Config
 
     # XXX: store a version in this config?
     #  Just in case we need to do conditional logic reading old version's configurations
@@ -335,6 +351,7 @@ class PersistentConfiguration:
     
     def write_config(self) -> None:
         config_file_path = LegacyConfiguration.config_file_path()
+        # XXX: we may need to merge this dict with the legacy configuration's extended config (as we don't store that persistently anymore) #noqa: E501
         output = self.__dict__
 
         logging.info(f"Writing config to {config_file_path}")
@@ -388,6 +405,7 @@ class Config:
     # suffix with _binary if it's a linux binary
     # suffix with _exe if it's a windows binary
     # suffix with _path if it's a file path
+    # suffix with _file_name if it's a file's name (with extension)
 
     # Storage for the keys
     _raw: PersistentConfiguration
@@ -568,7 +586,6 @@ class Config:
         output = self._raw.wine_binary
         if output is None:
             question = f"Which Wine AppImage or binary should the script use to install {self.faithlife_product} v{self.faithlife_product_version} in {self.install_dir}?: "  # noqa: E501
-            network.set_recommended_appimage_config()
             options = utils.get_wine_options(
                 self.app,
                 utils.find_appimage_files(self.app),
@@ -599,7 +616,15 @@ class Config:
             self._raw.wine_binary = value
             # Reset dependents
             self._raw.wine_binary_code = None
+            self._overrides.wine_appimage_path = None
             self._write()
+
+    @property
+    def wine_binary_code(self) -> str:
+        """"""
+        if self._raw.wine_binary_code is None:
+            self._raw.wine_binary_code = utils.get_winebin_code_and_desc(self.app, self.wine_binary)[0]  # noqa: E501
+        return self._raw.wine_binary_code
 
     @property
     def wine64_binary(self) -> str:
@@ -609,6 +634,54 @@ class Config:
     # This used to be called WINESERVER_EXE
     def wineserver_binary(self) -> str:
         return str(Path(self.wine_binary).parent / 'wineserver')
+
+    # FIXME: seems like the logic around wine appimages can be simplified
+    # Should this be folded into wine_binary?
+    @property
+    def wine_appimage_path(self) -> Optional[str]:
+        """Path to the wine appimage
+        
+        Returns:
+            Path if wine is set to use an appimage, otherwise returns None"""
+        if self._overrides.wine_appimage_path is not None:
+            return self._overrides.wine_appimage_path
+        if self.wine_binary.lower().endswith("appimage"):
+            return self.wine_binary
+        return None
+    
+    @wine_appimage_path.setter
+    def wine_appimage_path(self, value: Optional[str]):
+        if self._overrides.wine_appimage_path != value:
+            self._overrides.wine_appimage_path = value
+            # Reset dependents
+            self._raw.wine_binary_code = None
+            # XXX: Should we save? There should be something here we should store
+
+    @property
+    def wine_appimage_link_file_name(self) -> str:
+        if self._overrides.wine_appimage_link_file_name is not None:
+            return self._overrides.wine_appimage_link_file_name
+        return 'selected_wine.AppImage'
+
+    @property
+    def wine_appimage_recommended_url(self) -> str:
+        """URL to recommended appimage.
+        
+        Talks to the network if required"""
+        if self._cache.wine_appimage_url is None:
+            self._cache.wine_appimage_url = network.get_recommended_appimage_url()
+        return self._cache.wine_appimage_url
+    
+    @property
+    def wine_appimage_recommended_file_name(self) -> str:
+        """Returns the file name of the recommended appimage with extension"""
+        return os.path.basename(self.wine_appimage_recommended_url)
+
+    @property
+    def wine_appimage_recommended_version(self) -> str:
+        # Getting version and branch rely on the filename having this format:
+        #   wine-[branch]_[version]-[arch]
+        return self.wine_appimage_recommended_file_name.split('-')[1].split('_')[1]
 
     @property
     def wine_dll_overrides(self) -> str:

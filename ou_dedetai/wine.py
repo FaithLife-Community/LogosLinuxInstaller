@@ -53,6 +53,7 @@ def end_wine_processes():
                 wait_pid(process)
 
 
+# FIXME: consider raising exceptions on error
 def get_wine_release(binary):
     cmd = [binary, "--version"]
     try:

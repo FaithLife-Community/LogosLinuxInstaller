@@ -218,7 +218,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
         ephemeral_config.delete_log = True
 
     if args.set_appimage:
-        config.APPIMAGE_FILE_PATH = args.set_appimage[0]
+        ephemeral_config.wine_appimage_path = args.set_appimage[0]
 
     if args.skip_fonts:
         ephemeral_config.install_fonts_skip = True
@@ -276,19 +276,13 @@ def parse_args(args, parser) -> EphemeralConfiguration:
     config.ACTION = None
     for arg, action in actions.items():
         if getattr(args, arg):
-            if arg == "update_latest_appimage" or arg == "set_appimage":
-                logging.debug("Running an AppImage command.")
-                if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
-                    config.ACTION = "disabled"
-                    logging.debug("AppImage commands not added since WINEBIN_CODE != (AppImage|Recommended)")  # noqa: E501
-                    break
             if arg == "set_appimage":
-                config.APPIMAGE_FILE_PATH = getattr(args, arg)[0]
-                if not utils.file_exists(config.APPIMAGE_FILE_PATH):
-                    e = f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist."  # noqa: E501
+                ephemeral_config.wine_appimage_path = getattr(args, arg)[0]
+                if not utils.file_exists(ephemeral_config.wine_appimage_path):
+                    e = f"Invalid file path: '{ephemeral_config.wine_appimage_path}'. File does not exist."  # noqa: E501
                     raise argparse.ArgumentTypeError(e)
-                if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
-                    e = f"{config.APPIMAGE_FILE_PATH} is not an AppImage."
+                if not utils.check_appimage(ephemeral_config.wine_appimage_path):
+                    e = f"{ephemeral_config.wine_appimage_path} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
             if arg == 'winetricks':
                 config.winetricks_args = getattr(args, 'winetricks')
@@ -455,7 +449,7 @@ def main():
     # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
     # can be run in conjunction with other actions, so it gets special
     # treatment here once config is set.
-    app_log_path = ephemeral_config.app_log_path | constants.DEFAULT_APP_LOG_PATH
+    app_log_path = ephemeral_config.app_log_path or constants.DEFAULT_APP_LOG_PATH
     if ephemeral_config.delete_log and os.path.isfile(app_log_path):
         # Write empty file.
         with open(app_log_path, 'w') as f:

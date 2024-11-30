@@ -417,8 +417,6 @@ class InstallerWindow(GuiApp):
         self.gui.wine_dropdown.selection_clear()
         if evt:  # manual override
             logging.debug(f"User changed wine binary to '{self.conf.wine_binary}'")
-            config.SELECTED_APPIMAGE_FILENAME = None
-            config.WINEBIN_CODE = None
 
             self.start_ensure_config()
         else:
@@ -595,7 +593,7 @@ class ControlWindow(GuiApp):
         self.gui.latest_appimage_button.config(
             command=self.update_to_latest_appimage
         )
-        if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
+        if self.conf.wine_binary_code != "AppImage" and self.conf.wine_binary_code != "Recommended":  # noqa: E501
             self.gui.latest_appimage_button.state(['disabled'])
             gui.ToolTip(
                 self.gui.latest_appimage_button,
@@ -734,7 +732,7 @@ class ControlWindow(GuiApp):
         utils.start_thread(utils.update_to_latest_lli_release, app=self)
 
     def update_to_latest_appimage(self, evt=None):
-        config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+        self.conf.wine_appimage_path = self.conf.wine_appimage_recommended_file_name  # noqa: E501
         self.start_indeterminate_progress()
         self.gui.statusvar.set("Updating to latest AppImage…")
         utils.start_thread(utils.set_appimage_symlink, app=self)
@@ -744,8 +742,7 @@ class ControlWindow(GuiApp):
         appimage_filename = self.open_file_dialog("AppImage", "AppImage")
         if not appimage_filename:
             return
-        # config.SELECTED_APPIMAGE_FILENAME = appimage_filename
-        config.APPIMAGE_FILE_PATH = appimage_filename
+        self.conf.wine_appimage_path = appimage_filename
         utils.start_thread(utils.set_appimage_symlink, app=self)
 
     def get_winetricks(self, evt=None):

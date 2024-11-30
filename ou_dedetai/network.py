@@ -423,25 +423,14 @@ def set_logoslinuxinstaller_latest_release_config():
     logging.info(f"{config.LLI_LATEST_VERSION=}")
 
 
-def set_recommended_appimage_config() -> None:
+def get_recommended_appimage_url() -> str:
     repo = "FaithLife-Community/wine-appimages"
-    if not config.RECOMMENDED_WINE64_APPIMAGE_URL:
-        json_data = get_latest_release_data(repo)
-        appimage_url = get_first_asset_url(json_data)
-        if appimage_url is None:
-            logging.critical("Unable to set recommended appimage config without URL.")  # noqa: E501
-            return
-        config.RECOMMENDED_WINE64_APPIMAGE_URL = appimage_url
-    config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = os.path.basename(config.RECOMMENDED_WINE64_APPIMAGE_URL)  # noqa: E501
-    config.RECOMMENDED_WINE64_APPIMAGE_FILENAME = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME.split(".AppImage")[0]  # noqa: E501
-    # Getting version and branch rely on the filename having this format:
-    #   wine-[branch]_[version]-[arch]
-    parts = config.RECOMMENDED_WINE64_APPIMAGE_FILENAME.split('-')
-    branch_version = parts[1]
-    branch, version = branch_version.split('_')
-    config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = f"v{version}-{branch}"
-    config.RECOMMENDED_WINE64_APPIMAGE_VERSION = f"{version}"
-    config.RECOMMENDED_WINE64_APPIMAGE_BRANCH = f"{branch}"
+    json_data = get_latest_release_data(repo)
+    appimage_url = get_first_asset_url(json_data)
+    if appimage_url is None:
+        # FIXME: changed this to raise an exception as we can't continue.
+        raise ValueError("Unable to set recommended appimage config without URL.")  # noqa: E501
+    return appimage_url
 
 
 def check_for_updates(install_dir: Optional[str], force: bool = False):
@@ -468,11 +457,11 @@ def check_for_updates(install_dir: Optional[str], force: bool = False):
         check_again = now
 
     if now >= check_again:
+        # FIXME: refresh network config cache?
         logging.debug("Running self-update.")
 
         set_logoslinuxinstaller_latest_release_config()
         utils.compare_logos_linux_installer_version()
-        set_recommended_appimage_config()
         # wine.enforce_icu_data_files()
 
         config.LAST_UPDATED = now.isoformat()
@@ -482,14 +471,14 @@ def check_for_updates(install_dir: Optional[str], force: bool = False):
 
 
 def get_recommended_appimage(app: App):
-    wine64_appimage_full_filename = Path(config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME)  # noqa: E501
+    wine64_appimage_full_filename = Path(app.conf.wine_appimage_recommended_file_name)  # noqa: E501
     dest_path = Path(app.conf.installer_binary_dir) / wine64_appimage_full_filename
     if dest_path.is_file():
         return
     else:
         logos_reuse_download(
-            config.RECOMMENDED_WINE64_APPIMAGE_URL,
-            config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME,
+            app.conf.wine_appimage_recommended_url,
+            app.conf.wine_appimage_recommended_file_name,
             app.conf.installer_binary_dir,
             app=app
         )

@@ -67,23 +67,16 @@ def ensure_wine_choice(app: App):
     logging.debug('- config.SELECTED_APPIMAGE_FILENAME')
     logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_URL')
     logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME')
-    logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_FILENAME')
     logging.debug('- config.WINE_EXE')
     logging.debug('- config.WINEBIN_CODE')
 
-    # Set WINEBIN_CODE and SELECTED_APPIMAGE_FILENAME.
     m = f"Preparing to process WINE_EXE. Currently set to: {app.conf.wine_binary}."  # noqa: E501
     logging.debug(m)
-    if str(app.conf.wine_binary).lower().endswith('.appimage'):
-        config.SELECTED_APPIMAGE_FILENAME = str(app.conf.wine_binary)
-    if not config.WINEBIN_CODE:
-        config.WINEBIN_CODE = utils.get_winebin_code_and_desc(app, app.conf.wine_binary)[0]  # noqa: E501
 
-    logging.debug(f"> {config.SELECTED_APPIMAGE_FILENAME=}")
-    logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_URL=}")
-    logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME=}")
-    logging.debug(f"> {config.RECOMMENDED_WINE64_APPIMAGE_FILENAME=}")
-    logging.debug(f"> {config.WINEBIN_CODE=}")
+    logging.debug(f"> config.SELECTED_APPIMAGE_FILENAME={app.conf.wine_appimage_path}")
+    logging.debug(f"> config.RECOMMENDED_WINE64_APPIMAGE_URL={app.conf.wine_appimage_recommended_url}") #noqa: E501
+    logging.debug(f"> config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME={app.conf.wine_appimage_recommended_file_name}") # noqa: E501
+    logging.debug(f"> config.WINEBIN_CODE={app.conf.wine_binary_code}")
     logging.debug(f"> {app.conf.wine_binary=}")
 
 
@@ -203,12 +196,13 @@ def ensure_appimage_download(app: App):
     )
 
     downloaded_file = None
-    filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
+    appimage_path = app.conf.wine_appimage_path or app.conf.wine_appimage_recommended_file_name
+    filename = Path(appimage_path).name
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, filename)
     if not downloaded_file:
         downloaded_file = Path(f"{app.conf.download_dir}/{filename}")
     network.logos_reuse_download(
-        config.RECOMMENDED_WINE64_APPIMAGE_URL,
+        app.conf.wine_appimage_recommended_url,
         filename,
         app.conf.download_dir,
         app=app,
@@ -511,16 +505,18 @@ def get_progress_pct(current, total):
     return round(current * 100 / total)
 
 
+# FIXME: Consider moving the condition for whether to run this inside the function
+# Right now the condition is outside
 def create_wine_appimage_symlinks(app: App):
     appdir_bindir = Path(app.conf.installer_binary_dir)
     os.environ['PATH'] = f"{app.conf.installer_binary_dir}:{os.getenv('PATH')}"
     # Ensure AppImage symlink.
-    appimage_link = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
-    appimage_file = Path(config.SELECTED_APPIMAGE_FILENAME)
-    appimage_filename = Path(config.SELECTED_APPIMAGE_FILENAME).name
-    if config.WINEBIN_CODE in ['AppImage', 'Recommended']:
+    appimage_link = appdir_bindir / app.conf.wine_appimage_link_file_name
+    if app.conf.wine_binary_code in ['AppImage', 'Recommended'] and app.conf.wine_appimage_path is not None: #noqa: E501
+        appimage_file = Path(app.conf.wine_appimage_path)
+        appimage_filename = Path(app.conf.wine_appimage_path).name
         # Ensure appimage is copied to appdir_bindir.
-        downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename)
+        downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename) #noqa: E501
         if not appimage_file.is_file():
             msg.status(
                 f"Copying: {downloaded_file} into: {appdir_bindir}",
@@ -529,11 +525,11 @@ def create_wine_appimage_symlinks(app: App):
             shutil.copy(downloaded_file, str(appdir_bindir))
         os.chmod(appimage_file, 0o755)
         appimage_filename = appimage_file.name
-    elif config.WINEBIN_CODE in ["System", "Proton", "PlayOnLinux", "Custom"]:
+    elif app.conf.wine_binary_code in ["System", "Proton", "PlayOnLinux", "Custom"]:
         appimage_filename = "none.AppImage"
     else:
         msg.logos_error(
-            f"WINEBIN_CODE error. WINEBIN_CODE is {config.WINEBIN_CODE}. Installation canceled!",  # noqa: E501
+            f"WINEBIN_CODE error. WINEBIN_CODE is {app.conf.wine_binary_code}. Installation canceled!",  # noqa: E501
             app=app
         )
 
@@ -544,7 +540,7 @@ def create_wine_appimage_symlinks(app: App):
     for name in ["wine", "wine64", "wineserver", "winetricks"]:
         p = appdir_bindir / name
         p.unlink(missing_ok=True)
-        p.symlink_to(f"./{config.APPIMAGE_LINK_SELECTION_NAME}")
+        p.symlink_to(f"./{app.conf.wine_appimage_link_file_name}")
 
 
 def create_config_file():

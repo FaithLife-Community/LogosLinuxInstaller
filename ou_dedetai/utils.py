@@ -19,7 +19,7 @@ import tkinter as tk
 from ou_dedetai.app import App
 from packaging import version
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from . import config
 from . import constants
@@ -258,8 +258,14 @@ def filter_versions(versions, threshold, check_version_part):
     return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]  # noqa: E501
 
 
-# XXX: figure this out and fold into config
-def get_winebin_code_and_desc(app: App, binary):
+# FIXME: consider where we want this
+def get_winebin_code_and_desc(app: App, binary) -> Tuple[str, str | None]:
+    """Gets the type of wine in use and it's description
+    
+    Returns:
+        code: One of: Recommended, AppImage, System, Proton, PlayOnLinux, Custom
+        description: Description of the above
+    """
     # Set binary code, description, and path based on path
     codes = {
         "Recommended": "Use the recommended AppImage",
@@ -280,7 +286,7 @@ def get_winebin_code_and_desc(app: App, binary):
     # Does it work?
     if isinstance(binary, Path):
         binary = str(binary)
-    if binary == f"{app.conf.installer_binary_dir}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}":  # noqa: E501
+    if binary == f"{app.conf.installer_binary_dir}/{app.conf.wine_appimage_recommended_file_name}":  # noqa: E501
         code = "Recommended"
     elif binary.lower().endswith('.appimage'):
         code = "AppImage"
@@ -304,29 +310,29 @@ def get_wine_options(app: App, appimages, binaries) -> List[str]:  # noqa: E501
 
     # Add AppImages to list
     # if config.DIALOG == 'tk':
-    wine_binary_options.append(f"{app.conf.installer_binary_dir}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}")  # noqa: E501
+    wine_binary_options.append(f"{app.conf.installer_binary_dir}/{app.conf.wine_appimage_recommended_file_name}")  # noqa: E501
     wine_binary_options.extend(appimages)
     # else:
     #     appimage_entries = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
     #     wine_binary_options.append([
     #         "Recommended",  # Code
-    #         f'{app.conf.installer_binary_directory}/{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME}',  # noqa: E501
-    #         f"AppImage of Wine64 {config.RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION}"  # noqa: E501
+    #         f'{app.conf.installer_binary_directory}/{app.conf.wine_appimage_recommended_file_name}',  # noqa: E501
+    #         f"AppImage of Wine64 {app.conf.wine_appimage_recommended_version}"  # noqa: E501
     #         ])
     #     wine_binary_options.extend(appimage_entries)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
 
-    for WINEBIN_PATH in sorted_binaries:
-        WINEBIN_CODE, WINEBIN_DESCRIPTION = get_winebin_code_and_desc(app, WINEBIN_PATH)  # noqa: E501
+    for wine_binary_path in sorted_binaries:
+        code, description = get_winebin_code_and_desc(app, wine_binary_path)  # noqa: E501
 
         # Create wine binary option array
         # if config.DIALOG == 'tk':
-        wine_binary_options.append(WINEBIN_PATH)
+        wine_binary_options.append(wine_binary_path)
         # else:
         #     wine_binary_options.append(
-        #         [WINEBIN_CODE, WINEBIN_PATH, WINEBIN_DESCRIPTION]
+        #         [code, wine_binary_path, description]
         #     )
         #
     # if config.DIALOG != 'tk':
@@ -523,25 +529,23 @@ def compare_recommended_appimage_version(app: App):
         current_version = '.'.join([str(n) for n in wine_release[:2]])
         logging.debug(f"Current wine release: {current_version}")
 
-        if config.RECOMMENDED_WINE64_APPIMAGE_VERSION:
-            logging.debug(f"Recommended wine release: {config.RECOMMENDED_WINE64_APPIMAGE_VERSION}")  # noqa: E501
-            if current_version < config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
-                # Current release is older than recommended.
-                status = 0
-                message = "yes"
-            elif current_version == config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
-                # Current release is latest.
-                status = 1
-                message = "uptodate"
-            elif current_version > config.RECOMMENDED_WINE64_APPIMAGE_VERSION:  # noqa: E501
-                # Installed version is custom
-                status = 2
-                message = "no"
-        else:
-            status = False
-            message = f"Error: {error_message}"
+        recommended_version = app.conf.wine_appimage_recommended_version
+        logging.debug(f"Recommended wine release: {recommended_version}")
+        if current_version < recommended_version:
+            # Current release is older than recommended.
+            status = 0
+            message = "yes"
+        elif current_version == recommended_version:
+            # Current release is latest.
+            status = 1
+            message = "uptodate"
+        elif current_version > recommended_version:
+            # Installed version is custom
+            status = 2
+            message = "no"
     else:
-        status = False
+        # FIXME: should this raise an exception?
+        status = -1
         message = f"Error: {error_message}"
 
     logging.debug(f"{status=}; {message=}")
@@ -691,15 +695,19 @@ def find_wine_binary_files(app: App, release_version):
 
 def set_appimage_symlink(app: App):
     # This function assumes make_skel() has been run once.
-    # if config.APPIMAGE_FILE_PATH is None:
-    #     config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+    if app.conf.wine_binary_code not in ["AppImage", "Recommended"]:
+        logging.debug("AppImage commands disabled since we're not using an appimage")  # noqa: E501
+        return
+    if app.conf.wine_appimage_path is None:
+        logging.debug("No need to set appimage syslink, as it wasn't set")
+        return
 
-    logging.debug(f"{config.APPIMAGE_FILE_PATH=}")
-    logging.debug(f"{config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME=}")
-    appimage_file_path = Path(config.APPIMAGE_FILE_PATH)
+    logging.debug(f"config.APPIMAGE_FILE_PATH={app.conf.wine_appimage_path}")
+    logging.debug(f"config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME={app.conf.wine_appimage_recommended_file_name}")
+    appimage_file_path = Path(app.conf.wine_appimage_path)
     appdir_bindir = Path(app.conf.installer_binary_dir)
-    appimage_symlink_path = appdir_bindir / config.APPIMAGE_LINK_SELECTION_NAME
-    if appimage_file_path.name == config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME:  # noqa: E501
+    appimage_symlink_path = appdir_bindir / app.conf.wine_appimage_link_file_name
+    if appimage_file_path.name == app.conf.wine_appimage_recommended_file_name:  # noqa: E501
         # Default case.
         network.get_recommended_appimage(app)
         selected_appimage_file_path = appdir_bindir / appimage_file_path.name  # noqa: E501
@@ -743,7 +751,7 @@ def set_appimage_symlink(app: App):
 
     delete_symlink(appimage_symlink_path)
     os.symlink(selected_appimage_file_path, appimage_symlink_path)
-    config.SELECTED_APPIMAGE_FILENAME = f"{selected_appimage_file_path.name}"  # noqa: E501
+    app.conf.wine_appimage_path = f"{selected_appimage_file_path.name}"  # noqa: E501
 
     write_config(config.CONFIG_FILE)
     if config.DIALOG == 'tk':
@@ -765,7 +773,10 @@ def update_to_latest_lli_release(app=None):
 
 # XXX: seems like this should be in control
 def update_to_latest_recommended_appimage(app: App):
-    config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
+    if app.conf.wine_binary_code not in ["AppImage", "Recommended"]:
+        logging.debug("AppImage commands disabled since we're not using an appimage")  # noqa: E501
+        return
+    app.conf.wine_appimage_path = app.conf.wine_appimage_recommended_file_name  # noqa: E501
     status, _ = compare_recommended_appimage_version(app)
     if status == 0:
         set_appimage_symlink(app)

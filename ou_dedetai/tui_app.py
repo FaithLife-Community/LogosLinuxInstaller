@@ -534,10 +534,10 @@ class TUI(App):
             appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
         else:
             appimage_filename = choice
-        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        self.conf.wine_appimage_path = appimage_filename
         utils.set_appimage_symlink(self)
         self.menu_screen.choice = "Processing"
-        self.appimage_q.put(config.SELECTED_APPIMAGE_FILENAME)
+        self.appimage_q.put(self.conf.wine_appimage_path)
         self.appimage_e.set()
 
     def waiting(self, choice):
