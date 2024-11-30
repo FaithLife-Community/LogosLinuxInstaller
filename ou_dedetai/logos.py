@@ -9,7 +9,6 @@ import threading
 
 from ou_dedetai.app import App
 
-from . import config
 from . import main
 from . import msg
 from . import system
@@ -71,7 +70,7 @@ class LogosManager:
 
     def get_logos_pids(self):
         app = self.app
-        self.existing_processes[app.conf.logos_exe] = system.get_pids(app.conf.logos_exe)
+        self.existing_processes[app.conf.logos_exe] = system.get_pids(app.conf.logos_exe) # noqa: E501
         self.existing_processes[app.conf.logos_indexer_exe] = system.get_pids(app.conf.logos_indexer_exe)  # noqa: E501
         self.existing_processes[app.conf.logos_cef_exe] = system.get_pids(app.conf.logos_cef_exe) # noqa: E501
 

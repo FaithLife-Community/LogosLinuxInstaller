@@ -15,17 +15,14 @@ import sys
 
 from . import cli
 from . import config
-from . import control
 from . import constants
 from . import gui_app
 from . import msg
-from . import network
 from . import system
 from . import tui_app
 from . import utils
-from . import wine
 
-from .config import processes, threads
+from .config import threads
 
 
 def get_parser():

@@ -20,12 +20,10 @@ from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
 from ou_dedetai.config import EphemeralConfiguration
 
-from . import config
 from . import constants
 from . import control
 from . import gui
 from . import installer
-from . import logos
 from . import network
 from . import system
 from . import utils
@@ -53,7 +51,7 @@ class GuiApp(App):
             utils.start_thread(spawn_dialog)
 
             answer_event.wait()
-            answer = answer_q.get()
+            answer: Optional[str] = answer_q.get()
             if answer is None:
                 self.root.destroy()
                 return None
@@ -81,7 +79,7 @@ class GuiApp(App):
         self.root.destroy()
         return super().exit(reason, intended)
     
-
+    @property
     def superuser_command(self) -> str:
         """Command when root privileges are needed.
         
@@ -189,7 +187,7 @@ class ChoicePopUp(Tk):
 
 class InstallerWindow(GuiApp):
     def __init__(self, new_win, root: Root, app: App, **kwargs):
-        super().__init__(root)
+        super().__init__(root, app.conf._overrides)
         # Set root parameters.
         self.win = new_win
         self.root = root
@@ -268,15 +266,17 @@ class InstallerWindow(GuiApp):
         self.get_winetricks_options()
 
     def _config_updated_hook(self):
-        """Update the GUI to reflect changes in the configuration if they were prompted separately"""
-        # The configuration enforces dependencies, if product is unset, so will it's dependents (version and release)
-        # XXX: test this hook. Interesting thing is, this may never be called in production, as it's only called (presently) when the separate prompt returns
+        """Update the GUI to reflect changes in the configuration if they were prompted separately""" #noqa: E501
+        # The configuration enforces dependencies, if product is unset, so will it's 
+        # dependents (version and release)
+        # XXX: test this hook. Interesting thing is, this may never be called in 
+        # production, as it's only called (presently) when the separate prompt returns
         # Returns either from config or the dropdown
-        self.gui.productvar.set(self.conf._raw.faithlife_product or self.gui.product_dropdown['values'][0])
-        self.gui.versionvar.set(self.conf._raw.faithlife_product_version or self.gui.version_dropdown['values'][-1])
-        self.gui.releasevar.set(self.conf._raw.faithlife_product_release or self.gui.release_dropdown['values'][0])
-        # Returns either wine_binary if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise ''
-        self.gui.winevar.set(self.conf._raw.wine_binary or next(iter(self.gui.wine_dropdown['values']), ''))
+        self.gui.productvar.set(self.conf._raw.faithlife_product or self.gui.product_dropdown['values'][0]) #noqa: E501
+        self.gui.versionvar.set(self.conf._raw.faithlife_product_version or self.gui.version_dropdown['values'][-1]) #noqa: E501
+        self.gui.releasevar.set(self.conf._raw.faithlife_product_release or self.gui.release_dropdown['values'][0]) #noqa: E501
+        # Returns either wine_binary if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise '' #noqa: E501
+        self.gui.winevar.set(self.conf._raw.wine_binary or next(iter(self.gui.wine_dropdown['values']), '')) #noqa: E501
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
@@ -459,7 +459,7 @@ class InstallerWindow(GuiApp):
 
     def set_skip_dependencies(self, evt=None):
         self.conf.skip_install_system_dependencies = 1 - self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
-        logging.debug(f"> config.SKIP_DEPENDENCIES={self.conf.skip_install_system_dependencies}")
+        logging.debug(f"> config.SKIP_DEPENDENCIES={self.conf.skip_install_system_dependencies}") #noqa: E501
 
     def on_okay_released(self, evt=None):
         # Update desktop panel icon.
@@ -534,7 +534,7 @@ class InstallerWindow(GuiApp):
 
     def step_start(self, evt=None):
         progress = self.progress_q.get()
-        if not type(progress) is int:
+        if type(progress) is not int:
             return
         if progress >= 100:
             self.gui.progressvar.set(0)
@@ -808,7 +808,7 @@ class ControlWindow(GuiApp):
 
     def update_app_button(self, evt=None):
         self.gui.app_button.state(['!disabled'])
-        # XXX: we may need another hook here to update the product version should it change
+        # XXX: we may need another hook here to update the product version should it change #noqa: E501
         self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
         self.configure_app_button()
         self.update_run_winetricks_button()
@@ -879,7 +879,7 @@ class ControlWindow(GuiApp):
 
     def step_start(self, evt=None):
         progress = self.progress_q.get()
-        if not type(progress) is int:
+        if type(progress) is not int:
             return
         if progress >= 100:
             self.gui.progressvar.set(0)
@@ -904,7 +904,6 @@ class ControlWindow(GuiApp):
 
 
 def control_panel_app(ephemeral_config: EphemeralConfiguration):
-    utils.set_debug()
     classname = constants.BINARY_NAME
     root = Root(className=classname)
     ControlWindow(root, ephemeral_config, class_=classname)

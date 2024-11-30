@@ -3,10 +3,8 @@ from typing import Optional
 from dataclasses import dataclass
 import json
 import logging
-import os
 from pathlib import Path
 import time
-from typing import Optional
 
 from ou_dedetai import msg, network, utils, constants, wine
 
