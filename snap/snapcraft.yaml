@@ -57,9 +57,10 @@ parts:
     organize:
       '*.tar.gz': etc/
 
-  i386-build-deps:
-    # build-packages from all parts are installed prior to the completion of
-    # any single part, so any i386 build packages have to be installed in an
+  add-build-deps:
+    # This saves having to repeat [64-bit] build-packages for each wine* part.
+    # Also, build-packages from all parts are installed prior to the completion
+    # of any single part, so any i386 build packages have to be installed in an
     # override scriptlet.
     plugin: nil
     override-build: |
@@ -86,6 +87,40 @@ parts:
         libxcb-xkb-dev:i386 \
         libwayland-bin:i386 \
         libwayland-dev:i386
+    build-packages:
+      # added by me
+      - flex 
+      - bison
+      - gcc-multilib
+      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      # - build-dep  # not found
+      # - wine-development  # probably requires winehq repo
+      # - libsdl2  # joysticks
+      - libvulkan1
+      # - ccache  # requires up to 5GB extra space
+      # - gcc-9  # use built-in (most-recent) gcc
+      # - g++-9  # use built-in (most-recent) g++
+      # - wget  # already?
+      - gcc-mingw-w64
+      - g++-mingw-w64
+      - libxpresent-dev
+      - libjxr-dev
+      - libusb-1.0-0-dev
+      - libgcrypt20-dev
+      - libpulse-dev
+      - libudev-dev
+      - libsane-dev
+      - libv4l-dev
+      # - libkrb5-dev  # for kerberos
+      - libgphoto2-dev
+      - liblcms2-dev
+      - libcapi20-dev
+      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
+      - samba-dev
+      - libpcsclite-dev
+      - libcups2-dev
+      - libxcb-xkb-dev
+
 
   # wine:
   #   plugin: nil
@@ -148,6 +183,7 @@ parts:
   # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
   # https://gitlab.winehq.org/wine/wine/-/blob/wine-9.19/configure?ref_type=tags
   wine64:
+    after: [add-build-deps]
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
@@ -163,39 +199,39 @@ parts:
       ##
       - --enable-win64
       - --prefix=/opt/wine-devel-amd64
-    build-packages:
-      # added by me
-      - flex 
-      - bison
-      - gcc-multilib
-      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-      # - build-dep  # not found
-      # - wine-development  # probably requires winehq repo
-      # - libsdl2  # joysticks
-      - libvulkan1
-      # - ccache
-      # - gcc-9
-      # - g++-9
-      # - wget  # already?
-      - gcc-mingw-w64
-      - g++-mingw-w64
-      - libxpresent-dev
-      - libjxr-dev
-      - libusb-1.0-0-dev
-      - libgcrypt20-dev
-      - libpulse-dev
-      - libudev-dev
-      - libsane-dev
-      - libv4l-dev
-      # - libkrb5-dev  # for kerberos
-      - libgphoto2-dev
-      - liblcms2-dev
-      - libcapi20-dev
-      # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
-      - samba-dev
-      - libpcsclite-dev
-      - libcups2-dev
-      - libxcb-xkb-dev
+    # build-packages:
+    #   # added by me
+    #   - flex 
+    #   - bison
+    #   - gcc-multilib
+    #   # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+    #   # - build-dep  # not found
+    #   # - wine-development  # probably requires winehq repo
+    #   # - libsdl2  # joysticks
+    #   - libvulkan1
+    #   # - ccache  # requires up to 5GB extra space
+    #   # - gcc-9  # use built-in (most-recent) gcc
+    #   # - g++-9  # use built-in (most-recent) g++
+    #   # - wget  # already?
+    #   - gcc-mingw-w64
+    #   - g++-mingw-w64
+    #   - libxpresent-dev
+    #   - libjxr-dev
+    #   - libusb-1.0-0-dev
+    #   - libgcrypt20-dev
+    #   - libpulse-dev
+    #   - libudev-dev
+    #   - libsane-dev
+    #   - libv4l-dev
+    #   # - libkrb5-dev  # for kerberos
+    #   - libgphoto2-dev
+    #   - liblcms2-dev
+    #   - libcapi20-dev
+    #   # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
+    #   - samba-dev
+    #   - libpcsclite-dev
+    #   - libcups2-dev
+    #   - libxcb-xkb-dev
     build-environment:  # see L2551 of wine/configure
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -222,8 +258,7 @@ parts:
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"  # not used?
 
   wine32-tools:
-    after:
-      - i386-build-deps
+    after: [add-build-deps]
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
@@ -238,20 +273,20 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-x86
-    build-packages:
-      # added by me
-      - flex 
-      - bison
-      # - gcc-9-multilib
-      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-      # - build-dep  # not found
-      # - wine-development  # probably requires winehq repo
-      # - ccache
-      # - gcc-9
-      # - g++-9
-      # - wget
-      - gcc-mingw-w64
-      - g++-mingw-w64
+    # build-packages:
+    #   # added by me
+    #   - flex 
+    #   - bison
+    #   - gcc-multilib
+    #   # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+    #   # - build-dep  # not found
+    #   # - wine-development  # probably requires winehq repo
+    #   - ccache
+    #   # - gcc-9
+    #   # - g++-9
+    #   # - wget
+    #   - gcc-mingw-w64
+    #   - g++-mingw-w64
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -267,19 +302,19 @@ parts:
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
-      # - CC: "gcc-9"  # configure: compiler test fails
-      # - CFLAGS: "${CFLAGS_X32}"  # configure: error: C compiler cannot create executables
+      # - CC: "gcc-9"
+      - CFLAGS: "${CFLAGS_X32}"
       # - CXX: "g++-9"
-      # - CXXFLAGS: "${CFLAGS_X32}"
+      - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       # - i386_LDFLAGS: "$CROSSLDFLAGS"
-      # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
+      - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
       # - i386_CC: "$CROSSCC"
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       # - i386_CFLAGS: "$CROSSCFLAGS"
-      # - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
-      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
+      - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
   wine32:
     after:
@@ -301,20 +336,20 @@ parts:
       - --enable-archs=i386,x86_64
       ##
       - --prefix=/opt/wine-devel-amd64
-    build-packages:
-      # added by me
-      - flex 
-      - bison
-      # - gcc-9-multilib
-      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-      # - build-dep  # not found
-      # - wine-development  # probably requires winehq repo
-      # - ccache
-      # - gcc-9
-      # - g++-9
-      # - wget  # already?
-      - gcc-mingw-w64
-      - g++-mingw-w64
+    # build-packages:
+    #   # added by me
+    #   - flex 
+    #   - bison
+    #   - gcc-multilib
+    #   # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+    #   # - build-dep  # not found
+    #   # - wine-development  # probably requires winehq repo
+    #   - ccache
+    #   # - gcc-9
+    #   # - g++-9
+    #   # - wget  # already?
+    #   - gcc-mingw-w64
+    #   - g++-mingw-w64
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -331,19 +366,18 @@ parts:
       # needed for build
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"
-      # - CFLAGS: "${CFLAGS_X32}"
+      - CFLAGS: "${CFLAGS_X32}"
       # - CXX: "g++-9"
-      # - CXXFLAGS: "${CFLAGS_X32}"
+      - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      # - CROSSCC: "${CROSSCC_X32}"  # not used?
-      # - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
-      # - CROSSCXX: "${CROSSCXX_X32}"  # not used?
-      # - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
+      - CROSSCC: "${CROSSCC_X32}"  # not used?
+      - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
+      - CROSSCXX: "${CROSSCXX_X32}"  # not used?
+      - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
   wine-cleanup:
-    after:
-      - wine32
+    after: [wine32]
     plugin: nil
     stage:
       - -include
