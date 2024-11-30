@@ -256,7 +256,7 @@ parts:
     override-pull: |
       dpkg --add-architecture i386
       apt-get update
-      apt-get install libvulkan1:i386 libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
+      apt-get --yes install libvulkan1:i386 libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
       craftctl default
     build-environment:
       ## added by me
@@ -347,7 +347,7 @@ parts:
     override-pull: |
       dpkg --add-architecture i386
       apt-get update
-      apt-get install libvulkan1:i386 libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
+      apt-get --yes install libvulkan1:i386 libxpresent-dev:i386 libjxr-dev:i386 libusb-1.0-0-dev:i386 libgcrypt20-dev:i386 libpulse-dev:i386 libudev-dev:i386 libudev-dev:i386 libsane-dev:i386 libsane-dev:i386 libv4l-dev:i386 libgphoto2-dev:i386 liblcms2-dev:i386 libcapi20-dev:i386 samba-dev:i386 libpcsclite-dev:i386 libcups2-dev:i386 libxcb-xkb-dev:i386 libwayland-bin:i386 libwayland-dev:i386
       craftctl default
     build-environment:
       ## added by me
