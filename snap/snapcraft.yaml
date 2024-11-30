@@ -250,8 +250,8 @@ parts:
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
       # - CC: "gcc-9"
       # - CFLAGS: "${CFLAGS_X32}"
-      - CXX: "g++-9"
-      - CXXFLAGS: "${CFLAGS_X32}"
+      # - CXX: "g++-9"
+      # - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       # - i386_LDFLAGS: "$CROSSLDFLAGS"
