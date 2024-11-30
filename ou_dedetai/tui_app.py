@@ -33,9 +33,8 @@ class TUI(App):
     def __init__(self, stdscr: curses.window, ephemeral_config: EphemeralConfiguration):
         super().__init__(ephemeral_config)
         self.stdscr = stdscr
-        # if config.current_logos_version is not None:
         self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
-        self.subtitle = f"Logos Version: {config.current_logos_version} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
+        self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         # else:
         #    self.title = f"Welcome to {constants.APP_NAME} ({constants.LLI_CURRENT_VERSION})"  # noqa: E501
         self.console_message = "Starting TUI…"
@@ -217,7 +216,7 @@ class TUI(App):
     def update_main_window_contents(self):
         self.clear()
         self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.installer_release_channel})"  # noqa: E501
-        self.subtitle = f"Logos Version: {config.current_logos_version} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
+        self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)  # noqa: E501
         self.menu_screen.set_options(self.set_tui_menu_options(dialog=False))
         # self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))

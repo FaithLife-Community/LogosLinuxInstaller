@@ -420,7 +420,6 @@ def ensure_product_installed(app: App):
     if not app.is_installed():
         process = wine.install_msi(app)
         wine.wait_pid(process)
-        config.current_logos_version = app.conf.faithlife_product_release
 
     # Clean up temp files, etc.
     utils.clean_all()

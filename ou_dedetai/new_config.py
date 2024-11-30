@@ -377,8 +377,6 @@ class PersistentConfiguration:
 
 
 # XXX: Move these into the cache & store
-# Used to be called current_logos_version, but actually could be used in Verbium too.
-installed_faithlife_product_release: Optional[str] = None
 # Whether or not the installed faithlife product is configured for additional logging.
 # Used to be called "LOGS"
 installed_faithlife_logging: Optional[bool] = None
@@ -422,6 +420,7 @@ class Config:
     _logos_exe: Optional[str] = None
     _download_dir: Optional[str] = None
     _wine_output_encoding: Optional[str] = None
+    _installed_faithlife_product_release: Optional[str] = None
 
     # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
@@ -838,3 +837,9 @@ class Config:
         if self._download_dir is None:
             self._download_dir = utils.get_user_downloads_dir()
         return self._download_dir
+    
+    @property
+    def installed_faithlife_product_release(self) -> Optional[str]:
+        if self._installed_faithlife_product_release is None:
+            self._installed_faithlife_product_release = utils.get_current_logos_version(self.install_dir) # noqa: E501
+        return self._installed_faithlife_product_release

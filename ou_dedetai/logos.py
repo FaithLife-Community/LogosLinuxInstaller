@@ -86,7 +86,7 @@ class LogosManager:
         # Ensure wine version is compatible with Logos release version.
         good_wine, reason = wine.check_wine_rules(
             wine_release,
-            config.current_logos_version,
+            self.app.conf.installed_faithlife_product_release,
             self.app.conf.faithlife_product_version
         )
         if not good_wine:

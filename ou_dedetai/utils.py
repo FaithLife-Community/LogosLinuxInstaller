@@ -202,10 +202,10 @@ def file_exists(file_path: Optional[str | bytes | Path]) -> bool:
         return False
 
 
-def get_current_logos_version(install_dir: str):
+def get_current_logos_version(install_dir: str) -> Optional[str]:
     path_regex = f"{install_dir}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"  # noqa: E501
     file_paths = glob.glob(path_regex)
-    logos_version_number = None
+    logos_version_number: Optional[str] = None
     if file_paths:
         logos_version_file = file_paths[0]
         with open(logos_version_file, 'r') as json_file:
@@ -222,6 +222,7 @@ def get_current_logos_version(install_dir: str):
             return None
     else:
         logging.debug("Logos.deps.json not found.")
+    return None
 
 
 def convert_logos_release(logos_release):
@@ -615,7 +616,7 @@ def check_appimage(filestr):
 
 
 def find_appimage_files(app: App):
-    release_version = config.current_logos_version or app.conf.faithlife_product_version
+    release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",

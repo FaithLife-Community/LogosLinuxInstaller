@@ -438,8 +438,6 @@ def check_for_updates(install_dir: Optional[str], force: bool = False):
     # order to avoid GitHub API limits. This sets the check to once every 12
     # hours.
 
-    if install_dir is not None:
-        config.current_logos_version = utils.get_current_logos_version(install_dir)
     utils.write_config(config.CONFIG_FILE)
 
     # TODO: Check for New Logos Versions. See #116.
