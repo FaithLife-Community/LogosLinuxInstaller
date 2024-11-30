@@ -18,6 +18,8 @@ class App(abc.ABC):
         # This lazy load is required otherwise it would be a circular import
         from ou_dedetai.config import Config
         self.conf = Config(config, self)
+        from ou_dedetai.logos import LogosManager
+        self.logos = LogosManager(app=self)
         pass
 
     def ask(self, question: str, options: list[str]) -> str:
@@ -58,6 +60,7 @@ class App(abc.ABC):
 
     def exit(self, reason: str, intended:bool=False):
         """Exits the application cleanly with a reason"""
+        self.logos.end_processes()
         if intended:
             sys.exit(0)
         else:

@@ -574,7 +574,6 @@ class ControlWindow(GuiApp):
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root, app=self)
         self.actioncmd = None
-        self.logos = logos.LogosManager(app=self)
 
         text = self.gui.update_lli_label.cget('text')
         ver = constants.LLI_CURRENT_VERSION

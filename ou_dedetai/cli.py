@@ -21,7 +21,6 @@ class CLI(App):
         self.input_q = queue.Queue()
         self.input_event = threading.Event()
         self.choice_event = threading.Event()
-        self.logos = logos.LogosManager(app=self)
 
     def backup(self):
         control.backup(app=self)

@@ -25,7 +25,6 @@ for key, default in extended_config.items():
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
 console_log = []
-processes = {}
 threads = []
 
 

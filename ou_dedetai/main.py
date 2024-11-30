@@ -478,12 +478,6 @@ def close():
         # Only wait on non-daemon threads.
         if not thread.daemon:
             thread.join()
-    # Only kill wine processes if closing the Control Panel. Otherwise, some
-    # CLI commands get killed as soon as they're started.
-    if config.ACTION.__name__ == 'run_control_panel' and len(processes) > 0:
-        wine.end_wine_processes()
-    else:
-        logging.debug("No extra processes found.")
     logging.debug(f"Closing {constants.APP_NAME} finished.")
 
 

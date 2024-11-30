@@ -40,7 +40,6 @@ class TUI(App):
         self.console_message = "Starting TUI…"
         self.llirunning = True
         self.active_progress = False
-        self.logos = logos.LogosManager(app=self)
         self.tmp = ""
 
         # Generic ask/response events/threads

@@ -23,7 +23,7 @@ def check_wineserver(wineserver_binary: str):
         # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of WINESERVER_EXE
         # changed it to use wineserver_binary, this change may alter the behavior, to match what the code intended
         process = run_wine_proc(wineserver_binary, exe_args=["-p"])
-        wait_pid(process)
+        system.wait_pid(process)
         return process.returncode == 0
     except Exception:
         return False
@@ -32,25 +32,13 @@ def check_wineserver(wineserver_binary: str):
 def wineserver_kill(wineserver_binary: str):
     if check_wineserver(wineserver_binary):
         process = run_wine_proc(wineserver_binary, exe_args=["-k"])
-        wait_pid(process)
+        system.wait_pid(process)
 
 
 def wineserver_wait(wineserver_binary: str):
     if check_wineserver(wineserver_binary):
         process = run_wine_proc(wineserver_binary, exe_args=["-w"])
-        wait_pid(process)
-
-
-def end_wine_processes():
-    for process_name, process in config.processes.items():
-        if isinstance(process, subprocess.Popen):
-            logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")  # noqa: E501
-            try:
-                process.terminate()
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGTERM)
-                wait_pid(process)
+        system.wait_pid(process)
 
 
 # FIXME: consider raising exceptions on error
@@ -229,8 +217,8 @@ def wine_reg_install(app: App, reg_file, wine64_binary):
         exe="regedit.exe",
         exe_args=[reg_file]
     )
-    # NOTE: For some reason wait_pid results in the reg install failing.
-    # wait_pid(process)
+    # NOTE: For some reason system.wait_pid results in the reg install failing.
+    # system.wait_pid(process)
     process.wait()
     if process is None or process.returncode != 0:
         failed = "Failed to install reg file"
@@ -263,10 +251,6 @@ def install_msi(app: App):
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
     process = run_wine_proc(wine_exe, app, exe="msiexec", exe_args=exe_args)
     return process
-
-
-def wait_pid(process):
-    os.waitpid(-process.pid, 0)
 
 
 def get_winecmd_encoding(app: App) -> Optional[str]:
@@ -319,8 +303,6 @@ def run_wine_proc(
                 start_new_session=True
             )
             if process is not None:
-                if exe is not None and isinstance(process, subprocess.Popen):
-                    config.processes[exe] = process
                 if process.poll() is None and process.stdout is not None:
                     with process.stdout:
                         for line in iter(process.stdout.readline, b''):
@@ -346,7 +328,7 @@ def run_wine_proc(
 
 def run_winetricks(app: App, cmd=None):
     process = run_wine_proc(app.conf.winetricks_binary, exe=cmd)
-    wait_pid(process)
+    system.wait_pid(process)
     wineserver_wait(app)
 
 # XXX: this function looks similar to the one above. duplicate?
@@ -358,7 +340,7 @@ def run_winetricks_cmd(app: App, *args):
     msg.status(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
-    wait_pid(process)
+    system.wait_pid(process)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     wineserver_wait(app)
     logging.debug(f"procs using {app.conf.wine_prefix}:")
@@ -411,7 +393,7 @@ def set_win_version(app: App, exe: str, windows_version: str):
             exe='reg',
             exe_args=exe_args
         )
-        wait_pid(process)
+        system.wait_pid(process)
 
 
 # FIXME: consider when to run this (in the update case)

@@ -188,7 +188,7 @@ def popen_command(command, retries=1, delay=0, **kwargs):
     return None
 
 
-def get_pids(query):
+def get_pids(query) -> list[psutil.Process]:
     results = []
     for process in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
@@ -197,14 +197,6 @@ def get_pids(query):
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):  # noqa: E501
             pass
     return results
-
-
-# XXX: should this be in config?
-def get_logos_pids(app: App):
-    config.processes[app.conf.logos_exe] = get_pids(app.conf.logos_exe)
-    config.processes[app.conf.logos_indexer_exe] = get_pids(app.conf.logos_indexer_exe)
-    config.processes[app.conf.logos_cef_exe] = get_pids(app.conf.logos_cef_exe)
-    config.processes[app.conf.logos_indexer_exe] = get_pids(app.conf.logos_indexer_exe)  # noqa: E501
 
 
 def reboot(superuser_command: str):
@@ -795,3 +787,6 @@ def install_winetricks(
     os.chmod(f"{installdir}/winetricks", 0o755)
     app.conf.winetricks_binary = f"{installdir}/winetricks"
     logging.debug("Winetricks installed.")
+
+def wait_pid(process):
+    os.waitpid(-process.pid, 0)

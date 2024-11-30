@@ -1,3 +1,6 @@
+import os
+import signal
+import subprocess
 import time
 from enum import Enum
 import logging
@@ -26,19 +29,23 @@ class LogosManager:
         self.logos_state = State.STOPPED
         self.indexing_state = State.STOPPED
         self.app = app
+        self.processes: dict[str, subprocess.Popen] = {}
+        """These are sub-processes we started"""
+        self.existing_processes: dict[str, list[psutil.Process]] = {}
+        """These are processes we discovered already running"""
 
     def monitor_indexing(self):
-        if self.app.conf.logos_indexer_exe in config.processes:
-            indexer = config.processes.get(self.app.conf.logos_indexer_exe)
+        if self.app.conf.logos_indexer_exe in self.existing_processes:
+            indexer = self.processes.get(self.app.conf.logos_indexer_exe)
             if indexer and isinstance(indexer[0], psutil.Process) and indexer[0].is_running():  # noqa: E501
                 self.indexing_state = State.RUNNING
             else:
                 self.indexing_state = State.STOPPED
 
     def monitor_logos(self):
-        splash = config.processes.get(self.app.conf.logos_exe, [])
-        login = config.processes.get(self.app.conf.logos_login_exe, [])
-        cef = config.processes.get(self.app.conf.logos_cef_exe, [])
+        splash = self.existing_processes.get(self.app.conf.logos_exe, [])
+        login = self.existing_processes.get(self.app.conf.logos_login_exe, [])
+        cef = self.existing_processes.get(self.app.conf.logos_cef_exe, [])
 
         splash_running = splash[0].is_running() if splash else False
         login_running = login[0].is_running() if login else False
@@ -62,9 +69,15 @@ class LogosManager:
             if cef_running:
                 self.logos_state = State.RUNNING
 
+    def get_logos_pids(self):
+        app = self.app
+        self.existing_processes[app.conf.logos_exe] = system.get_pids(app.conf.logos_exe)
+        self.existing_processes[app.conf.logos_indexer_exe] = system.get_pids(app.conf.logos_indexer_exe)  # noqa: E501
+        self.existing_processes[app.conf.logos_cef_exe] = system.get_pids(app.conf.logos_cef_exe) # noqa: E501
+
     def monitor(self):
         if self.app.is_installed():
-            system.get_logos_pids(self.app)
+            self.get_logos_pids()
             try:
                 self.monitor_indexing()
                 self.monitor_logos()
@@ -77,11 +90,13 @@ class LogosManager:
         wine_release, _ = wine.get_wine_release(self.app.conf.wine_binary)
 
         def run_logos():
-            wine.run_wine_proc(
+            process = wine.run_wine_proc(
                 self.app.conf.wine_binary,
                 self.app,
                 exe=self.app.conf.logos_exe
             )
+            if isinstance(process, subprocess.Popen):
+                self.processes[self.app.conf.logos_exe] = process
 
         # Ensure wine version is compatible with Logos release version.
         good_wine, reason = wine.check_wine_rules(
@@ -108,7 +123,7 @@ class LogosManager:
             # if isinstance(self.app, CLI):
             #     run_logos()
             #     self.monitor()
-            #     while config.processes.get(app.conf.logos_exe) is None:
+            #     while self.processes.get(app.conf.logos_exe) is None:
             #         time.sleep(0.1)
             #     while self.logos_state != State.STOPPED:
             #         time.sleep(0.1)
@@ -124,7 +139,7 @@ class LogosManager:
                 self.app.conf.logos_login_exe,
                 self.app.conf.logos_cef_exe
             ]:
-                process_list = config.processes.get(process_name)
+                process_list = self.processes.get(process_name)
                 if process_list:
                     pids.extend([str(process.pid) for process in process_list])
                 else:
@@ -142,15 +157,28 @@ class LogosManager:
                 self.logos_state = State.STOPPED
         wine.wineserver_wait(self.app)
 
+    def end_processes(self):
+        for process_name, process in self.processes.items():
+            if isinstance(process, subprocess.Popen):
+                logging.debug(f"Found {process_name} in Processes. Attempting to close {process}.")  # noqa: E501
+                try:
+                    process.terminate()
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGTERM)
+                    system.wait_pid(process)
+
     def index(self):
         self.indexing_state = State.STARTING
         index_finished = threading.Event()
 
         def run_indexing():
-            wine.run_wine_proc(
+            process = wine.run_wine_proc(
                 self.app.conf.wine_binary,
                 exe=self.app.conf.logos_indexer_exe
             )
+            if isinstance(process, subprocess.Popen):
+                self.processes[self.app.conf.logos_indexer_exe] = process
 
         def check_if_indexing(process):
             start_time = time.time()
@@ -179,29 +207,20 @@ class LogosManager:
         msg.status("Indexing has begun…", self.app)
         index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
-        # If we don't wait the process won't yet be launched when we try to
-        # pull it from config.processes.
-        while config.processes.get(self.app.conf.logos_indexer_exe) is None:
-            time.sleep(0.1)
-        logging.debug(f"{config.processes=}")
-        process = config.processes[self.app.conf.logos_indexer_exe]
         check_thread = utils.start_thread(
             check_if_indexing,
-            process,
+            index_thread,
             daemon_bool=False
         )
         wait_thread = utils.start_thread(wait_on_indexing, daemon_bool=False)
         main.threads.extend([index_thread, check_thread, wait_thread])
-        config.processes[self.app.conf.logos_indexer_exe] = index_thread
-        config.processes["check_if_indexing"] = check_thread
-        config.processes["wait_on_indexing"] = wait_thread
 
     def stop_indexing(self):
         self.indexing_state = State.STOPPING
         if self.app:
             pids = []
             for process_name in [self.app.conf.logos_indexer_exe]:
-                process_list = config.processes.get(process_name)
+                process_list = self.processes.get(process_name)
                 if process_list:
                     pids.extend([str(process.pid) for process in process_list])
                 else:
