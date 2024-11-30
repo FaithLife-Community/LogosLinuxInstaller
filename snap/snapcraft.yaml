@@ -124,6 +124,8 @@ parts:
   # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
   # https://gitlab.winehq.org/wine/wine/-/blob/wine-9.19/configure?ref_type=tags
   wine64:
+    after:
+      - add-i386
     source: https://gitlab.winehq.org/wine/wine.git
     source-tag: wine-9.19
     source-depth: 1
@@ -280,7 +282,6 @@ parts:
 
   wine32:
     after:
-      - add-i386
       - wine64
       - wine32-tools
     source: https://gitlab.winehq.org/wine/wine.git
@@ -362,8 +363,6 @@ parts:
 
   wine-cleanup:
     after:
-      - wine64
-      - wine32-tools
       - wine32
     plugin: nil
     stage:
@@ -389,6 +388,8 @@ parts:
       # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
   oudedetai:
+    after:
+      - add-i386
     ## just for testing
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
     source-branch: snap-pkg
