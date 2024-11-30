@@ -188,6 +188,7 @@ parts:
   wine64:
     after: [wine-prep]
     source: ../parts/wine-prep/src
+    source-type: local
     plugin: autotools
     autotools-configure-parameters:
       ## WINE_BUILD_OPTIONS:
@@ -261,6 +262,7 @@ parts:
   wine32-tools:
     after: [wine-prep]
     source: ../parts/wine-prep/src
+    source-type: local
     plugin: autotools
     autotools-configure-parameters:
       ## WINE_BUILD_OPTIONS:
@@ -327,6 +329,7 @@ parts:
       - wine64
       - wine32-tools
     source: ../parts/wine-prep/src
+    source-type: local
     plugin: autotools
     autotools-configure-parameters:
       - --with-wine64=../wine64/build  # ref $PWD of wine64 build
