@@ -233,10 +233,17 @@ def get_dialog():
         config.DIALOG = 'tk'
 
 
-def get_architecture():
+def get_architecture() -> Tuple[str, int]:
+    """Queries the device and returns which cpu architure and bits is supported
+    
+    Returns:
+        architecture: x86_64 x86_32 or """
     machine = platform.machine().lower()
     bits = struct.calcsize("P") * 8
 
+    # FIXME: consider conforming to a standard for the architecture name
+    # normally see arm64 in lowercase for example and risc as riscv64 on
+    # debian's support architectures for example https://wiki.debian.org/SupportedArchitectures
     if "x86_64" in machine or "amd64" in machine:
         architecture = "x86_64"
     elif "i386" in machine or "i686" in machine:
