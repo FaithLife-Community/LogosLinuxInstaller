@@ -92,11 +92,7 @@ parts:
         libwayland-dev:i386
       craftctl default
     build-packages:
-      # added by me
-      - flex 
-      - bison
-      - gcc-multilib
-      # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      ## https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
       # - build-dep  # not found
       # - wine-development  # probably requires winehq repo
       # - libsdl2  # joysticks
@@ -104,7 +100,7 @@ parts:
       # - ccache  # requires up to 5GB extra space
       # - gcc-9  # use built-in (most-recent) gcc
       # - g++-9  # use built-in (most-recent) g++
-      # - wget  # already?
+      # - wget  # not needed (already installed? unused?)
       - gcc-mingw-w64
       - g++-mingw-w64
       - libxpresent-dev
@@ -113,7 +109,7 @@ parts:
       - libgcrypt20-dev
       - libpulse-dev
       - libudev-dev
-      - libsane-dev
+      # - libsane-dev
       - libv4l-dev
       # - libkrb5-dev  # for kerberos
       - libgphoto2-dev
@@ -124,8 +120,12 @@ parts:
       - libpcsclite-dev
       - libcups2-dev
       - libxcb-xkb-dev
+      ## oudedetai additions
+      - flex 
+      - bison
+      - gcc-multilib
 
-  # wine:
+  # wine-apt:  # installs most recent devel version
   #   plugin: nil
   #   build-packages: [wget]
   #   override-stage: |
@@ -137,9 +137,9 @@ parts:
   #     apt-get -y install --install-recommends winehq-devel
   #     craftctl default
 
-  # # This is tricky b/c the included libs are different from those in other
-  # # parts, so binaries from different parts seem to have trouble working.
   # wine-appimage:
+  #   # This is tricky b/c the included libs are different from those in other
+  #   # parts, so binaries from different parts seem to have trouble working.
   #   source: .  # "Failed to pull source" when URL is given here
   #   plugin: dump
   #   source-type: local
@@ -181,11 +181,10 @@ parts:
   #   #   - libsane-dev  # libsane.so.1
   #   #   - libusb-1.0-0-dev  # libusb-1.0.so.0
 
-  # REF:
-  # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
-  # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
-  # https://gitlab.winehq.org/wine/wine/-/blob/wine-9.19/configure?ref_type=tags
   wine64:
+    # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
+    # https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine
+    # https://gitlab.winehq.org/wine/wine/-/blob/wine-9.19/configure?ref_type=tags
     after: [wine-prep]
     source: ../parts/wine-prep/src
     source-type: local
@@ -198,42 +197,16 @@ parts:
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
+      ## oudedetai additions; see 'configure --help'
+      - --without-gphoto
+      - --without-gssapi
+      - --without-inotify
+      - --without-krb5
+      - --without-pcap
+      - --without-sane
       ##
       - --enable-win64
       - --prefix=/opt/wine-devel-amd64
-    # build-packages:
-    #   # added by me
-    #   - flex 
-    #   - bison
-    #   - gcc-multilib
-    #   # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-    #   # - build-dep  # not found
-    #   # - wine-development  # probably requires winehq repo
-    #   # - libsdl2  # joysticks
-    #   - libvulkan1
-    #   # - ccache  # requires up to 5GB extra space
-    #   # - gcc-9  # use built-in (most-recent) gcc
-    #   # - g++-9  # use built-in (most-recent) g++
-    #   # - wget  # already?
-    #   - gcc-mingw-w64
-    #   - g++-mingw-w64
-    #   - libxpresent-dev
-    #   - libjxr-dev
-    #   - libusb-1.0-0-dev
-    #   - libgcrypt20-dev
-    #   - libpulse-dev
-    #   - libudev-dev
-    #   - libsane-dev
-    #   - libv4l-dev
-    #   # - libkrb5-dev  # for kerberos
-    #   - libgphoto2-dev
-    #   - liblcms2-dev
-    #   - libcapi20-dev
-    #   # - libjpeg62-dev  # conflicts with libjpeg-turbo8-dev, is a dep for something
-    #   - samba-dev
-    #   - libpcsclite-dev
-    #   - libcups2-dev
-    #   - libxcb-xkb-dev
     build-environment:  # see L2551 of wine/configure
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -272,7 +245,7 @@ parts:
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
-      ##
+      ## oudedetai additions; see 'configure --help'
       - --without-gphoto
       - --without-gssapi
       - --without-inotify
@@ -281,20 +254,6 @@ parts:
       - --without-sane
       ##
       - --prefix=/opt/wine-devel-x86
-    # build-packages:
-    #   # added by me
-    #   - flex 
-    #   - bison
-    #   - gcc-multilib
-    #   # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-    #   # - build-dep  # not found
-    #   # - wine-development  # probably requires winehq repo
-    #   - ccache
-    #   # - gcc-9
-    #   # - g++-9
-    #   # - wget
-    #   - gcc-mingw-w64
-    #   - g++-mingw-w64
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -316,11 +275,8 @@ parts:
       - CXXFLAGS: "${CFLAGS_X32}"
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      # - i386_LDFLAGS: "$CROSSLDFLAGS"
       # - CROSSCC: "${CROSSCC_X32}"  # not used, CC used instead?
-      # - i386_CC: "$CROSSCC"
       - CROSSCFLAGS: "-O2 -ftree-vectorize"  #"${CROSSCFLAGS_X32}"
-      # - i386_CFLAGS: "$CROSSCFLAGS"
       - CROSSCXX: "${CROSSCXX_X32}"  # not used, CCX used instead?
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"  # not used?
 
@@ -341,22 +297,15 @@ parts:
       - --disable-win16
       - --disable-tests
       - --enable-archs=i386,x86_64
+      ## oudedetai additions; see 'configure --help'
+      - --without-gphoto
+      - --without-gssapi
+      - --without-inotify
+      - --without-krb5
+      - --without-pcap
+      - --without-sane
       ##
       - --prefix=/opt/wine-devel-amd64
-    # build-packages:
-    #   # added by me
-    #   - flex 
-    #   - bison
-    #   - gcc-multilib
-    #   # https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-    #   # - build-dep  # not found
-    #   # - wine-development  # probably requires winehq repo
-    #   - ccache
-    #   # - gcc-9
-    #   # - g++-9
-    #   # - wget  # already?
-    #   - gcc-mingw-w64
-    #   - g++-mingw-w64
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
@@ -404,7 +353,7 @@ parts:
       - libexif12
       - libgphoto2-6t64
       - libgphoto2-port12t64
-      - libsane1
+      # - libsane1
       - libusb-1.0-0
       # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
@@ -424,31 +373,3 @@ parts:
       - libncurses6
       - libncursesw6
       - python3-tk
-
-# Reported unused libs:
-# usr/lib/libBLTlite.2.5.so.8.6
-# usr/lib/x86_64-linux-gnu/libform.so.6.4
-# usr/lib/x86_64-linux-gnu/libformw.so.6.4
-# usr/lib/x86_64-linux-gnu/libmenu.so.6.4
-# usr/lib/x86_64-linux-gnu/libmenuw.so.6.4
-# usr/lib/x86_64-linux-gnu/libpanel.so.6.4
-# usr/lib/x86_64-linux-gnu/libpanelw.so.6.4
-
-## Runtime errors:
-# libpxbackend-1.0.so: cannot open shared object file: No such file or directory
-# > But file exists:
-# > $ find $SNAP -name libpxbackend-1.0.so
-# > /snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy/libpxbackend-1.0.so
-# > $ echo $LD_LIBRARY_PATH | grep -Eo ':[0-9a-z/_-]*/libproxy'
-# > :/snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy
-
-# Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
-# > But file exists:
-# > $ ls -al $SNAP_USER_COMMON/.cache/gio-modules/libgiolibproxy.so
-# > lrwxrwxrwx 1 nate nate 88 Nov 29 05:52 /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so -> /snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so
-# > $ ls -al $SNAP/gnome-platform/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so
-# > -rw-r--r-- 1 root root 18584 Jul 16 05:16 /snap/oudedetai/x6/gnome-platform/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so
-
-# "oudedetai --help" output is duplicated (in user mode, but not in snap shell)
-
-# cp: cannot stat '/snap/oudedetai/x6/etc/icu-win.tar.gz': No such file or directory
