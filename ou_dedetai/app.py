@@ -101,10 +101,8 @@ class App(abc.ABC):
         options = ["Yes", "No"]
         return self.ask(question, options) == "Yes"
 
-    def exit(self, reason: str, intended:bool=False) -> NoReturn:
+    def exit(self, reason: str, intended: bool = False) -> NoReturn:
         """Exits the application cleanly with a reason."""
-        # XXX: print out support information
-
         # Shutdown logos/indexer if we spawned it
         self.logos.end_processes()
         # Remove pid file if exists
@@ -116,7 +114,7 @@ class App(abc.ABC):
         if intended:
             sys.exit(0)
         else:
-            logging.critical(f"Cannot continue because {reason}")
+            logging.critical(f"Cannot continue because {reason}\n{constants.SUPPORT_MESSAGE}") #noqa: E501
             sys.exit(1)
 
     _exit_option: Optional[str] = "Exit"
@@ -141,6 +139,10 @@ class App(abc.ABC):
         if self.conf.logos_exe is not None:
             return os.access(self.conf.logos_exe, os.X_OK)
         return False
+
+    # def message(self, message: str):
+    #     """Show the user a message in their native UI"""
+    #     print(message)  
 
     def status(self, message: str, percent: Optional[int] = None):
         """A status update"""

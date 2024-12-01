@@ -59,8 +59,7 @@ def backup_and_restore(mode: str, app: App):
         verb = 'access'
         if mode == 'backup':
             verb = 'create'
-        msg.logos_warning(f"Can't {verb} folder: {backup_dir}")
-        return
+        app.exit(f"Can't {verb} folder: {backup_dir}")
 
     if mode == 'restore':
         restore_dir = utils.get_latest_folder(app.conf.backup_dir)
@@ -79,7 +78,7 @@ def backup_and_restore(mode: str, app: App):
     src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]  # noqa: E501
     logging.debug(f"{src_dirs=}")
     if not src_dirs:
-        msg.logos_warning(f"No files to {mode}", app=app)
+        app.exit(f"No files to {mode}")
         return
 
     if mode == 'backup':
@@ -102,7 +101,7 @@ def backup_and_restore(mode: str, app: App):
     t.join()
     src_size = q.get()
     if src_size == 0:
-        msg.logos_warning(f"Nothing to {mode}!", app=app)
+        app.exit(f"Nothing to {mode}!")
         return
 
     # Set destination folder.
@@ -129,8 +128,7 @@ def backup_and_restore(mode: str, app: App):
     # Verify disk space.
     if not utils.enough_disk_space(dst_dir, src_size):
         dst_dir.rmdir()
-        msg.logos_warning(f"Not enough free disk space for {mode}.", app=app)
-        return
+        app.exit(f"Not enough free disk space for {mode}.")
 
     # Run file transfer.
     if mode == 'restore':

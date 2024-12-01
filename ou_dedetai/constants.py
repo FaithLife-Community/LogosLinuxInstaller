@@ -2,14 +2,18 @@ import logging
 import os
 from pathlib import Path
 
+# This is relative to this file itself
+APP_IMAGE_DIR = Path(__file__).parent / "img"
+
 # Define app name variables.
 APP_NAME = 'Ou Dedetai'
 BINARY_NAME = 'oudedetai'
 PACKAGE_NAME = 'ou_dedetai'
-REPOSITORY_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
 
-# This is relative to this file itself
-APP_IMAGE_DIR = Path(__file__).parent / "img"
+REPOSITORY_LINK = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
+WIKI_LINK = f"{REPOSITORY_LINK}/wiki"
+TELEGRAM_LINK = "https://t.me/linux_logos"
+MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
 
 CACHE_LIFETIME_HOURS = 12
 """How long to wait before considering our version cache invalid"""
@@ -33,6 +37,8 @@ LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
 LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"  # noqa: E501
 PID_FILE = f'/tmp/{BINARY_NAME}.pid'
 WINETRICKS_VERSION = '20220411'
+
+SUPPORT_MESSAGE = f"If you need help, please consult:\n{WIKI_LINK}\nIf that doesn't answer your question, please send the following files {DEFAULT_CONFIG_PATH}, {DEFAULT_APP_WINE_LOG_PATH} and {DEFAULT_APP_LOG_PATH} to one of the following group chats:\nTelegram: {TELEGRAM_LINK}\nMatrix: {MATRIX_LINK}"  # noqa: E501
 
 # Strings for choosing a follow up file or directory
 PROMPT_OPTION_DIRECTORY = "Choose Directory"

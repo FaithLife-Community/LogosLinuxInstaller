@@ -542,22 +542,11 @@ def create_launcher_shortcuts(app: App):
     # Set variables for use in launcher files.
     flproduct = app.conf.faithlife_product
     installdir = Path(app.conf.install_dir)
-    m = "Can't create launchers"
-    if flproduct is None:
-        reason = "because the FaithLife product is not defined."
-        msg.logos_warning(f"{m} {reason}")  # noqa: E501
-        return
     logos_icon_src = constants.APP_IMAGE_DIR / f"{flproduct}-128-icon.png"
     app_icon_src = constants.APP_IMAGE_DIR / 'icon.png'
 
-    if installdir is None:
-        reason = "because the installation folder is not defined."
-        msg.logos_warning(f"{m} {reason}")
-        return
     if not installdir.is_dir():
-        reason = "because the installation folder does not exist."
-        msg.logos_warning(f"{m} {reason}")
-        return
+        app.exit("Can't create launchers because the installation folder does not exist.")
     app_dir = Path(installdir) / 'data'
     logos_icon_path = app_dir / logos_icon_src.name
     app_icon_path = app_dir / app_icon_src.name
@@ -575,8 +564,7 @@ def create_launcher_shortcuts(app: App):
         # Find python in virtual environment.
         py_bin = next(repo_dir.glob('*/bin/python'))
         if not py_bin.is_file():
-            msg.logos_warning("Could not locate python binary in virtual environment.")  # noqa: E501
-            return
+            app.exit("Could not locate python binary in virtual environment.")  # noqa: E501
         lli_executable = f"env DIALOG=tk {py_bin} {script}"
 
     for (src, path) in [(app_icon_src, app_icon_path), (logos_icon_src, logos_icon_path)]:  # noqa: E501

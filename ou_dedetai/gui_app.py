@@ -75,8 +75,7 @@ class GuiApp(App):
     def exit(self, reason: str, intended: bool = False):
         # Create a little dialog before we die so the user can see why this happened
         if not intended:
-            # XXX: add support information
-            gui.show_error(reason, fatal=True)
+            gui.show_error(reason, detail=constants.SUPPORT_MESSAGE, fatal=True)
         self.root.destroy()
         return super().exit(reason, intended)
     

@@ -175,11 +175,7 @@ def logos_warn(message):
 def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
     if detail is None:
         detail = ''
-    # XXX: move these to constants and output them on error
-    WIKI_LINK = f"{constants.REPOSITORY_LINK}/wiki"
-    TELEGRAM_LINK = "https://t.me/linux_logos"
-    MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
-    help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
+    help_message = constants.SUPPORT_MESSAGE
     if config.DIALOG == 'tk':
         show_error(
             message,
@@ -196,11 +192,6 @@ def ui_message(message, secondary=None, detail=None, app=None, parent=None, fata
             logos_msg(message)
     else:
         logos_msg(message)
-
-
-def logos_warning(message, secondary=None, detail=None, app=None, parent=None):
-    ui_message(message, secondary=secondary, detail=detail, app=app, parent=parent)  # noqa: E501
-    logging.error(message)
 
 
 def get_progress_str(percent):
