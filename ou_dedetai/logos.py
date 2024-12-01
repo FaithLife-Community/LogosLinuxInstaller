@@ -106,6 +106,8 @@ class LogosManager:
         if not good_wine:
             msg.logos_error(reason, app=self)
         else:
+            if reason is not None:
+                logging.debug(f"Warning: Wine Check: {reason}")
             wine.wineserver_kill(self.app.conf.wineserver_binary)
             app = self.app
             from ou_dedetai.gui_app import GuiApp

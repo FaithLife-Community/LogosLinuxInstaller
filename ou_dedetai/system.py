@@ -4,7 +4,9 @@ import distro
 import logging
 import os
 import psutil
+import platform
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -18,6 +20,7 @@ from . import config
 from . import constants
 from . import msg
 from . import network
+from . import utils
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.
@@ -230,6 +233,67 @@ def get_dialog():
         config.DIALOG = 'tk'
 
 
+def get_architecture():
+    machine = platform.machine().lower()
+    bits = struct.calcsize("P") * 8
+
+    if "x86_64" in machine or "amd64" in machine:
+        architecture = "x86_64"
+    elif "i386" in machine or "i686" in machine:
+        architecture = "x86_32"
+    elif "arm" in machine or "aarch64" in machine:
+        if bits == 64:
+            architecture = "ARM64"
+        else:
+            architecture = "ARM32"
+    elif "riscv" in machine or "riscv64" in machine:
+        if bits == 64:
+            architecture = "RISC-V 64"
+        else:
+            architecture = "RISC-V 32"
+    else:
+        architecture = "Unknown"
+
+    return architecture, bits
+
+
+def install_elf_interpreter():
+    # TODO: This probably needs to be changed to another install step that requests the user to choose a specific
+    # ELF interpreter between box64, FEX-EMU, and hangover. That or else we have to pursue a particular interpreter
+    # for the install routine, depending on what's needed
+    logging.critical("ELF interpretation is not yet coded in the installer.")
+    # if "x86_64" not in config.architecture:
+    #     if config.ELFPACKAGES is not None:
+    #         utils.install_packages(config.ELFPACKAGES)
+    #     else:
+    #         logging.critical(f"ELFPACKAGES is not set.")
+    #         sys.exit(1)
+    # else:
+    #     logging.critical(f"ELF interpreter is not needed.")
+
+
+def check_architecture():
+    if "x86_64" in config.architecture:
+        pass
+    elif "ARM64" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "RISC-V 64" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "x86_32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "ARM32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    elif "RISC-V 32" in config.architecture:
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        install_elf_interpreter()
+    else:
+        logging.critical("System archictecture unknown.")
+
+
 def get_os() -> Tuple[str, str]:
     """Gets OS information
     
@@ -360,6 +424,21 @@ def get_package_manager() -> PackageManager | None:
             "samba wget "  # wine
             "7zip "  # winetricks
             "curl gawk grep "  # other
+        )
+        incompatible_packages = ""  # appimagelauncher handled separately
+    elif shutil.which('apk') is not None:  # alpine
+        install_command = ["apk", "--no-interactive", "add"]  # noqa: E501
+        download_command = ["apk", "--no-interactive", "fetch"]  # noqa: E501
+        remove_command = ["apk", "--no-interactive", "del"]  # noqa: E501
+        query_command = ["apk", "list", "-i"]
+        query_prefix = ''
+        packages = (
+            "bash bash-completion"  # bash support
+            "gcompat"  # musl to glibc
+            "fuse-common fuse"  # appimages
+            "wget curl"  # network
+            "7zip"  # winetricks
+            "samba sed grep gawk bash bash-completion"  # other
         )
         incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
@@ -586,6 +665,19 @@ def postinstall_dependencies_steamos(superuser_command: str):
     return command
 
 
+def postinstall_dependencies_alpine(superuser_command: str):
+    user = os.getlogin()
+    command = [
+        superuser_command, "modprobe", "fuse", "&&",
+        superuser_command, "rc-update", "add", "fuse", "boot", "&&",
+        superuser_command, "sed", "-i", "'s/#user_allow_other/user_allow_other/g'", "/etc/fuse.conf", "&&", #noqa: E501
+        superuser_command, "addgroup", "fuse", "&&",
+        superuser_command, "adduser", f"{user}", "fuse", "&&",
+        superuser_command, "rc-service", "fuse", "restart",
+    ]
+    return command
+
+
 def preinstall_dependencies(superuser_command: str):
     command = []
     logging.debug("Performing pre-install dependencies…")
@@ -603,6 +695,8 @@ def postinstall_dependencies(superuser_command: str):
     os_name, _ = get_os()
     if os_name == "Steam":
         command = postinstall_dependencies_steamos(superuser_command)
+    elif os_name == "alpine":
+        command = postinstall_dependencies_alpine(superuser_command)
     else:
         logging.debug("No post-install dependencies required.")
     return command
@@ -627,6 +721,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     conflicting_packages = []
     package_list = []
     bad_package_list = []
+    bad_os = ['fedora', 'arch', 'alpine']
 
     package_manager = get_package_manager()
 
@@ -657,7 +752,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         mode="remove",
     )
 
-    if os_name in ['fedora', 'arch']:
+    if os_name in ['fedora', 'arch', 'alpine']:
         # XXX: move the handling up here, possibly simplify?
         m = "Your distro requires manual dependency installation."
         logging.error(m)
@@ -719,7 +814,9 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
 
     app.status("Installing dependencies…")
     final_command = [
-        f"{app.superuser_command}", 'sh', '-c', "'", *command, "'"
+        # FIXME: Consider switching this back to single quotes
+        # (the sed line in alpine post will need to change to double if so)
+        f"{app.superuser_command}", 'sh', '-c', '"', *command, '"'
     ]
     command_str = ' '.join(final_command)
     # TODO: Fix fedora/arch handling.

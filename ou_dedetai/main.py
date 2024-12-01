@@ -378,6 +378,11 @@ def set_dialog():
             logging.error("Dialog version is outdated. The program will fall back to Curses.")  # noqa: E501
             config.use_python_dialog = False
     logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
+    # Set Architecture
+
+    config.architecture, config.bits = system.get_architecture()
+    logging.debug(f"Current Architecture: {config.architecture}, {config.bits}bit.")
+    system.check_architecture()
 
 
 def check_incompatibilities():

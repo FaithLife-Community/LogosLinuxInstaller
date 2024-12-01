@@ -22,6 +22,9 @@ for key, default in extended_config.items():
 
 # Set other run-time variables not set in the env.
 ACTION: str = 'app'
+architecture = None
+bits = None
+ELFPACKAGES = None
 console_log = []
 threads = []
 

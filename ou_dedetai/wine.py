@@ -119,54 +119,57 @@ def check_wine_rules(wine_release, release_version, faithlife_product_version: s
     ]
 
     major_min, minor_min = required_wine_minimum
-    major, minor, release_type = wine_release
-    result = True, "None"  # Whether the release is allowed; error message
-    for rule in rules:
-        if major == rule["major"]:
-            # Verify release is allowed
-            if release_type not in rule["allowed_releases"]:
-                if minor >= rule.get("devel_allowed", float('inf')):
-                    if release_type not in ["staging", "devel"]:
+    if wine_release:
+        major, minor, release_type = wine_release
+        result = True, "None"  # Whether the release is allowed; error message
+        for rule in rules:
+            if major == rule["major"]:
+                # Verify release is allowed
+                if release_type not in rule["allowed_releases"]:
+                    if minor >= rule.get("devel_allowed", float('inf')):
+                        if release_type not in ["staging", "devel"]:
+                            result = (
+                                False,
+                                (
+                                    f"Wine release needs to be devel or staging. "
+                                    f"Current release: {release_type}."
+                                )
+                            )
+                            break
+                    else:
                         result = (
                             False,
                             (
-                                f"Wine release needs to be devel or staging. "
+                                f"Wine release needs to be {rule['allowed_releases']}. "  # noqa: E501
                                 f"Current release: {release_type}."
                             )
                         )
                         break
-                else:
-                    result = (
-                        False,
-                        (
-                            f"Wine release needs to be {rule['allowed_releases']}. "  # noqa: E501
-                            f"Current release: {release_type}."
-                        )
-                    )
+                # Verify version is allowed
+                if minor in rule.get("minor_bad", []):
+                    result = False, f"Wine version {major}.{minor} will not work."
                     break
-            # Verify version is allowed
-            if minor in rule.get("minor_bad", []):
-                result = False, f"Wine version {major}.{minor} will not work."
-                break
-            if major < major_min:
-                result = (
-                    False,
-                    (
-                        f"Wine version {major}.{minor} is "
-                        f"below minimum required ({major_min}.{minor_min}).")
-                )
-                break
-            elif major == major_min and minor < minor_min:
-                if not rule["proton"]:
+                if major < major_min:
                     result = (
                         False,
                         (
                             f"Wine version {major}.{minor} is "
-                            f"below minimum required ({major_min}.{minor_min}).")  # noqa: E501
+                            f"below minimum required ({major_min}.{minor_min}).")
                     )
                     break
-    logging.debug(f"Result: {result}")
-    return result
+                elif major == major_min and minor < minor_min:
+                    if not rule["proton"]:
+                        result = (
+                            False,
+                            (
+                                f"Wine version {major}.{minor} is "
+                                f"below minimum required ({major_min}.{minor_min}).")  # noqa: E501
+                        )
+                        break
+        logging.debug(f"Result: {result}")
+        return result
+    else:
+        return True, "Default to trusting user override"
 
 
 def check_wine_version_and_branch(release_version, test_binary, faithlife_product_version):
@@ -517,6 +520,8 @@ def get_wine_branch(binary):
         logging.debug("Binary object is not an AppImage.")
     logging.info(f"'{binary}' resolved to '{binary_obj}'")
     mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'  # noqa: E501
+    if not mscoree64.exists():  #alpine
+        mscoree64 = binary_obj.parents[1] / 'lib' / 'wine' / 'x86_64-windows' / 'mscoree.dll'  # noqa: E501
     return get_mscoree_winebranch(mscoree64)
 
 
