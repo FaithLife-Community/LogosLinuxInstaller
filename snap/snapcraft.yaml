@@ -215,23 +215,19 @@ parts:
       - --enable-win64
       - --prefix=/opt/wine-devel-amd64
     build-environment:  # see L2551 of wine/configure
-      ## added by me
-      - MAKEFLAGS: "-j$(nproc)"
-      ## from mmtrt
-      # stored values to be referenced later
-      - CROSSCC_X32: "i686-w64-mingw32-gcc"
-      - CROSSCXX_X32: "i686-w64-mingw32-g++"
+      ## mmtrt's stored values, to be referenced later
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
-      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      #-- oudedetai overrides
-      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      #-- oudedetai additions & overrides
+      #-- https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      #-- mmtrt uses a 32-bit chroot for building, while we build straight on
+      #-- 64-bit, so we remove the '-march=i686' flag.
       - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      - MAKEFLAGS: "-j$(nproc)"
       #--
-      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      ## needed for build
+      ## values used for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       # - CC: "gcc-9"
@@ -267,23 +263,19 @@ parts:
       ##
       - --prefix=/opt/wine-devel-x86
     build-environment:
-      ## added by me
-      - MAKEFLAGS: "-j$(nproc)"
-      #- mmtrt
-      # stored values to be referenced later
+      ## mmtrt's stored values, to be referenced later
       - CROSSCC_X32: "i686-w64-mingw32-gcc"
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
-      - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
-      - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      #-- oudedetai overrides
+      #-- oudedetai additions & overrides
+      #-- https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      #-- mmtrt uses a 32-bit chroot for building, while we build straight on
+      #-- 64-bit, so we remove the '-march=i686' flag.
       - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      - MAKEFLAGS: "-j$(nproc)"
       #--
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
-      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      #> needed for build
+      ## values used for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
@@ -324,23 +316,19 @@ parts:
       ##
       - --prefix=/opt/wine-devel-amd64
     build-environment:
-      ## added by me
-      - MAKEFLAGS: "-j$(nproc)"
-      ## mmtrt
-      # stored values to be referenced later
+      ## mmtrt's stored values, to be referenced later
       - CROSSCC_X32: "i686-w64-mingw32-gcc"
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
-      - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
-      - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
-      - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      #-- oudedetai overrides
-      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      #-- oudedetai additions & overrides
+      #-- https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
+      #-- mmtrt uses a 32-bit chroot for building, while we build straight on
+      #-- 64-bit, so we remove the '-march=x86_64' flag.
       - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      - MAKEFLAGS: "-j$(nproc)"
       #--
-      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      ## needed for build
+      ## values used for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
