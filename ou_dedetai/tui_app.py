@@ -651,7 +651,7 @@ class TUI(App):
         if choice is not None and Path(choice).exists() and Path(choice).is_dir():
             self.handle_ask_response(choice)
 
-    def status(self, message: str, percent: int | None = None):
+    def _status(self, message: str, percent: int | None = None):
         # XXX: update some screen? Something like get_waiting?
         pass
 

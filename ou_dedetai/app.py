@@ -11,6 +11,7 @@ from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
 
 
 class App(abc.ABC):
+    # FIXME: consider weighting install steps. Different steps take different lengths
     installer_step_count: int = 0
     """Total steps in the installer, only set the installation process has started."""
     installer_step: int = 1
@@ -142,6 +143,19 @@ class App(abc.ABC):
 
     def status(self, message: str, percent: Optional[int] = None):
         """A status update"""
+        # If we're installing
+        if self.installer_step_count != 0:
+            current_step_percent = percent or 0
+            # We're further than the start of our current step, percent more
+            installer_percent = round((self.installer_step * 100 + current_step_percent) / self.installer_step_count) # noqa: E501
+            logging.debug(f"Install step {self.installer_step} of {self.installer_step_count}")  # noqa: E501
+            self._status(message, percent=installer_percent)
+        else:
+            # Otherwise just print status using the progress given
+            self._status(message, percent)
+
+    def _status(self, message: str, percent: Optional[int] = None):
+        """Implementation for updating status pre-front end"""
         print(f"{message}")
 
     @property

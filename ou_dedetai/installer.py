@@ -18,7 +18,7 @@ from . import wine
 # XXX: ideally this function wouldn't be needed, would happen automatically by nature of config accesses
 def ensure_product_choice(app: App):
     app.installer_step_count += 1
-    update_install_feedback("Choose product…", app=app)
+    app.status("Choose product…")
     logging.debug('- config.FLPRODUCT')
 
     logging.debug(f"> config.FLPRODUCT={app.conf.faithlife_product}")
@@ -29,7 +29,7 @@ def ensure_version_choice(app: App):
     app.installer_step_count += 1
     ensure_product_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Choose version…", app=app)
+    app.status("Choose version…")
     logging.debug('- config.TARGETVERSION')
     # Accessing this ensures it's set
     logging.debug(f"> config.TARGETVERSION={app.conf.faithlife_product_version=}")
@@ -40,7 +40,7 @@ def ensure_release_choice(app: App):
     app.installer_step_count += 1
     ensure_version_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Choose product release…", app=app)
+    app.status("Choose product release…")
     logging.debug('- config.TARGET_RELEASE_VERSION')
     logging.debug(f"> config.TARGET_RELEASE_VERSION={app.conf.faithlife_product_release}")
 
@@ -49,7 +49,7 @@ def ensure_install_dir_choice(app: App):
     app.installer_step_count += 1
     ensure_release_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Choose installation folder…", app=app)
+    app.status("Choose installation folder…")
     logging.debug('- config.INSTALLDIR')
     # Accessing this sets install_dir and bin_dir
     app.conf.install_dir
@@ -61,7 +61,7 @@ def ensure_wine_choice(app: App):
     app.installer_step_count += 1
     ensure_install_dir_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Choose wine binary…", app=app)
+    app.status("Choose wine binary…")
     logging.debug('- config.SELECTED_APPIMAGE_FILENAME')
     logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_URL')
     logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME')
@@ -83,7 +83,7 @@ def ensure_winetricks_choice(app: App):
     app.installer_step_count += 1
     ensure_wine_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Choose winetricks binary…", app=app)
+    app.status("Choose winetricks binary…")
     logging.debug('- config.WINETRICKSBIN')
     # Accessing the winetricks_binary variable will do this.
     logging.debug(f"> config.WINETRICKSBIN={app.conf.winetricks_binary}")
@@ -94,7 +94,7 @@ def ensure_install_fonts_choice(app: App):
     app.installer_step_count += 1
     ensure_winetricks_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Ensuring install fonts choice…", app=app)
+    app.status("Ensuring install fonts choice…")
     logging.debug('- config.SKIP_FONTS')
 
     logging.debug(f"> config.SKIP_FONTS={app.conf.skip_install_fonts}")
@@ -105,9 +105,8 @@ def ensure_check_sys_deps_choice(app: App):
     app.installer_step_count += 1
     ensure_install_fonts_choice(app=app)
     app.installer_step += 1
-    update_install_feedback(
-        "Ensuring check system dependencies choice…",
-        app=app
+    app.status(
+        "Ensuring check system dependencies choice…"
     )
     logging.debug('- config.SKIP_DEPENDENCIES')
 
@@ -118,7 +117,7 @@ def ensure_installation_config(app: App):
     app.installer_step_count += 1
     ensure_check_sys_deps_choice(app=app)
     app.installer_step += 1
-    update_install_feedback("Ensuring installation config is set…", app=app)
+    app.status("Ensuring installation config is set…")
     logging.debug('- config.LOGOS_ICON_URL')
     logging.debug('- config.LOGOS_VERSION')
     logging.debug('- config.LOGOS64_URL')
@@ -138,7 +137,7 @@ def ensure_install_dirs(app: App):
     app.installer_step_count += 1
     ensure_installation_config(app=app)
     app.installer_step += 1
-    update_install_feedback("Ensuring installation directories…", app=app)
+    app.status("Ensuring installation directories…")
     logging.debug('- config.INSTALLDIR')
     logging.debug('- config.WINEPREFIX')
     logging.debug('- data/bin')
@@ -163,7 +162,7 @@ def ensure_sys_deps(app: App):
     app.installer_step_count += 1
     ensure_install_dirs(app=app)
     app.installer_step += 1
-    update_install_feedback("Ensuring system dependencies are met…", app=app)
+    app.status("Ensuring system dependencies are met…")
 
     if not app.conf.skip_install_system_dependencies:
         utils.install_dependencies(app)
@@ -178,10 +177,7 @@ def ensure_appimage_download(app: App):
     app.installer_step += 1
     if app.conf.faithlife_product_version != '9' and not str(app.conf.wine_binary).lower().endswith('appimage'):  # noqa: E501
         return
-    update_install_feedback(
-        "Ensuring wine AppImage is downloaded…",
-        app=app
-    )
+    app.status("Ensuring wine AppImage is downloaded…")
 
     downloaded_file = None
     appimage_path = app.conf.wine_appimage_path or app.conf.wine_appimage_recommended_file_name
@@ -203,10 +199,7 @@ def ensure_wine_executables(app: App):
     app.installer_step_count += 1
     ensure_appimage_download(app=app)
     app.installer_step += 1
-    update_install_feedback(
-        "Ensuring wine executables are available…",
-        app=app
-    )
+    app.status("Ensuring wine executables are available…")
     logging.debug('- config.WINESERVER_EXE')
     logging.debug('- wine')
     logging.debug('- wine64')
@@ -227,10 +220,7 @@ def ensure_winetricks_executable(app: App):
     app.installer_step_count += 1
     ensure_wine_executables(app=app)
     app.installer_step += 1
-    update_install_feedback(
-        "Ensuring winetricks executable is available…",
-        app=app
-    )
+    app.status("Ensuring winetricks executable is available…")
 
     msg.status("Downloading winetricks from the Internet…", app=app)
     system.install_winetricks(app.conf.installer_binary_dir, app=app)
@@ -245,10 +235,7 @@ def ensure_premade_winebottle_download(app: App):
     app.installer_step += 1
     if app.conf.faithlife_product_version != '9':
         return
-    update_install_feedback(
-        f"Ensuring {constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME} bottle is downloaded…",  # noqa: E501
-        app=app
-    )
+    app.status(f"Ensuring {constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME} bottle is downloaded…")  # noqa: E501
 
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
     if not downloaded_file:
@@ -274,10 +261,7 @@ def ensure_product_installer_download(app: App):
     app.installer_step_count += 1
     ensure_premade_winebottle_download(app=app)
     app.installer_step += 1
-    update_install_feedback(
-        f"Ensuring {app.conf.faithlife_product} installer is downloaded…",
-        app=app
-    )
+    app.status(f"Ensuring {app.conf.faithlife_product} installer is downloaded…")
 
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, app.conf.faithlife_installer_name)
     if not downloaded_file:
@@ -300,7 +284,7 @@ def ensure_wineprefix_init(app: App):
     app.installer_step_count += 1
     ensure_product_installer_download(app=app)
     app.installer_step += 1
-    update_install_feedback("Ensuring wineprefix is initialized…", app=app)
+    app.status("Ensuring wineprefix is initialized…")
 
     init_file = Path(f"{app.conf.wine_prefix}/system.reg")
     logging.debug(f"{init_file=}")
@@ -325,8 +309,7 @@ def ensure_winetricks_applied(app: App):
     app.installer_step_count += 1
     ensure_wineprefix_init(app=app)
     app.installer_step += 1
-    status = "Ensuring winetricks & other settings are applied…"
-    update_install_feedback(status, app=app)
+    app.status("Ensuring winetricks & other settings are applied…")
     logging.debug('- disable winemenubuilder')
     logging.debug('- settings renderer=gdi')
     logging.debug('- corefonts')
@@ -377,8 +360,7 @@ def ensure_icu_data_files(app: App):
     app.installer_step_count += 1
     ensure_winetricks_applied(app=app)
     app.installer_step += 1
-    status = "Ensuring ICU data files are installed…"
-    update_install_feedback(status, app=app)
+    app.status("Ensuring ICU data files are installed…")
     logging.debug('- ICU data files')
 
     wine.enforce_icu_data_files(app=app)
@@ -390,10 +372,7 @@ def ensure_product_installed(app: App):
     app.installer_step_count += 1
     ensure_icu_data_files(app=app)
     app.installer_step += 1
-    update_install_feedback(
-        f"Ensuring {app.conf.faithlife_product} is installed…",
-        app=app
-    )
+    app.status(f"Ensuring {app.conf.faithlife_product} is installed…")
 
     if not app.is_installed():
         process = wine.install_msi(app)
@@ -409,7 +388,7 @@ def ensure_config_file(app: App):
     app.installer_step_count += 1
     ensure_product_installed(app=app)
     app.installer_step += 1
-    update_install_feedback("Ensuring config file is up-to-date…", app=app)
+    app.status("Ensuring config file is up-to-date…")
 
     app.status("Install has finished.", 100)
 
@@ -424,10 +403,7 @@ def ensure_launcher_executable(app: App):
     app.installer_step += 1
     runmode = system.get_runmode()
     if runmode == 'binary':
-        update_install_feedback(
-            f"Copying launcher to {app.conf.install_dir}…",
-            app=app
-        )
+        app.status(f"Copying launcher to {app.conf.install_dir}…")
 
         # Copy executable into install dir.
         launcher_exe = Path(f"{app.conf.install_dir}/{constants.BINARY_NAME}")
@@ -438,9 +414,8 @@ def ensure_launcher_executable(app: App):
         shutil.copy(sys.executable, launcher_exe)
         logging.debug(f"> File exists?: {launcher_exe}: {launcher_exe.is_file()}")  # noqa: E501
     else:
-        update_install_feedback(
-            "Running from source. Skipping launcher creation.",
-            app=app
+        app.status(
+            "Running from source. Skipping launcher creation."
         )
 
 
@@ -448,25 +423,20 @@ def ensure_launcher_shortcuts(app: App):
     app.installer_step_count += 1
     ensure_launcher_executable(app=app)
     app.installer_step += 1
-    update_install_feedback("Creating launcher shortcuts…", app=app)
+    app.status("Creating launcher shortcuts…")
     runmode = system.get_runmode()
     if runmode == 'binary':
-        update_install_feedback("Creating launcher shortcuts…", app=app)
+        app.status("Creating launcher shortcuts…")
         create_launcher_shortcuts(app)
     else:
-        update_install_feedback(
+        # FIXME: Is this because it's hard to find the python binary?
+        app.status(
             "Running from source. Skipping launcher creation.",
-            app=app
         )
 
 def install(app: App):
     """Entrypoint for installing"""
     ensure_launcher_shortcuts(app)
-
-def update_install_feedback(text, app: App):
-    percent = get_progress_pct(app.installer_step, app.installer_step_count)
-    logging.debug(f"Install step {app.installer_step} of {app.installer_step_count}")  # noqa: E501
-    app.status(text, percent)
 
 
 def get_progress_pct(current, total):

@@ -470,7 +470,7 @@ class InstallerWindow(GuiApp):
         utils.start_thread(installer.install, app=self)
 
     # XXX: where should this live? here or ControlWindow?
-    def status(self, message: str, percent: int | None = None):
+    def _status(self, message: str, percent: int | None = None):
         if percent:
             self.gui.progress.stop()
             self.gui.progress.state(['disabled'])
@@ -482,7 +482,7 @@ class InstallerWindow(GuiApp):
             self.gui.progress.config(mode='indeterminate')
             self.gui.progress.start()
         self.gui.statusvar.set(message)
-        super().status(message, percent)
+        super()._status(message, percent)
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])
@@ -778,7 +778,7 @@ class ControlWindow(GuiApp):
         return super()._config_updated_hook()
 
     # XXX: should this live here or in installerWindow?
-    def status(self, message: str, percent: int | None = None):
+    def _status(self, message: str, percent: int | None = None):
         if percent:
             self.gui.progress.stop()
             self.gui.progress.state(['disabled'])
@@ -790,7 +790,7 @@ class ControlWindow(GuiApp):
             self.gui.progress.config(mode='indeterminate')
             self.gui.progress.start()
         self.gui.statusvar.set(message)
-        super().status(message, percent)
+        super()._status(message, percent)
 
     def update_logging_button(self, evt=None):
         self.gui.statusvar.set('')
