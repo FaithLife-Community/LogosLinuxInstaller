@@ -180,6 +180,13 @@ parts:
       - flex 
       - bison
       - gcc-multilib
+    stage-packages:
+      - libcapi20-3t64
+      - libexif12
+      - libgphoto2-6t64
+      - libgphoto2-port12t64
+      - libusb-1.0-0
+      # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
   wine64:
     # https://github.com/mmtrt/Wine-Builds/blob/master/build_wine.sh
@@ -217,12 +224,13 @@ parts:
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"  # oudedetai
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"  # oudedetai
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      # needed for build
+      ## oudedetai overrides
+      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      ## needed for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       # - CC: "gcc-9"
@@ -233,6 +241,7 @@ parts:
       - CXXFLAGS: "${CFLAGS_X64}"
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
+    override-stage: echo "skip staging for $CRAFT_PART_NAME"
 
   wine32-tools:
     after: [wine-prep]
@@ -266,12 +275,13 @@ parts:
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"  # oudedetai
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"  # oudedetai
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      # needed for build
+      ## oudedetai overrides
+      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      ## needed for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
@@ -283,6 +293,7 @@ parts:
       - CXXFLAGS: "${CFLAGS_X32}"
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"
+    override-stage: echo "skip staging for $CRAFT_PART_NAME"
 
   wine32:
     after:
@@ -320,12 +331,13 @@ parts:
       - CROSSCC_X64: "x86_64-w64-mingw32-gcc"
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X32: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"  # oudedetai
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"  # oudedetai
       - CROSSCFLAGS_X32: "${CFLAGS_X32}"
       - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      # needed for build
+      ## oudedetai overrides
+      - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
+      - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      ## needed for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
@@ -354,14 +366,6 @@ parts:
       ln opt/wine-devel/bin/wine opt/wine-devel/bin/wine64
       find . - type d -empty -delete
       craftctl default
-    stage-packages:
-      - libcapi20-3t64
-      - libexif12
-      - libgphoto2-6t64
-      - libgphoto2-port12t64
-      # - libsane1
-      - libusb-1.0-0
-      # - glib-networking  # doesn't fix Failed to load module: /home/nate/snap/oudedetai/common/.cache/gio-modules/libgiolibproxy.so
 
   oudedetai:
     ## just for testing
