@@ -141,8 +141,10 @@ class App(abc.ABC):
             return os.access(self.conf.logos_exe, os.X_OK)
         return False
 
-    def status(self, message: str, percent: Optional[int] = None):
+    def status(self, message: str, percent: Optional[int | float] = None):
         """A status update"""
+        if isinstance(percent, float):
+            percent = round(percent * 100)
         # If we're installing
         if self.installer_step_count != 0:
             current_step_percent = percent or 0

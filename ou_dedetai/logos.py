@@ -114,7 +114,7 @@ class LogosManager:
             if isinstance(self.app, GuiApp):
                 # Don't send "Running" message to GUI b/c it never clears.
                 app = None
-            msg.status(f"Running {self.app.conf.faithlife_product}…", app=app)
+            app.status(f"Running {self.app.conf.faithlife_product}…")
             utils.start_thread(run_logos, daemon_bool=False)
             # NOTE: The following code would keep the CLI open while running
             # Logos, but since wine logging is sent directly to wine.log,
@@ -150,7 +150,7 @@ class LogosManager:
                 try:
                     system.run_command(['kill', '-9'] + pids)
                     self.logos_state = State.STOPPED
-                    msg.status(f"Stopped Logos processes at PIDs {', '.join(pids)}.", self.app)  # noqa: E501
+                    self.app.status(f"Stopped Logos processes at PIDs {', '.join(pids)}.")  # noqa: E501
                 except Exception as e:
                     logging.debug(f"Error while stopping Logos processes: {e}.")  # noqa: E501
             else:
@@ -195,18 +195,18 @@ class LogosManager:
                     elapsed_min = int(total_elapsed_time // 60)
                     elapsed_sec = int(total_elapsed_time % 60)
                     formatted_time = f"{elapsed_min}m {elapsed_sec}s"
-                    msg.status(f"Indexing is running… (Elapsed Time: {formatted_time})", self.app)  # noqa: E501
+                    self.app.status(f"Indexing is running… (Elapsed Time: {formatted_time})")  # noqa: E501
                     update_send = 0
             index_finished.set()
 
         def wait_on_indexing():
             index_finished.wait()
             self.indexing_state = State.STOPPED
-            msg.status("Indexing has finished.", self.app)
+            self.app.status("Indexing has finished.", percent=100)
             wine.wineserver_wait(app=self.app)
 
         wine.wineserver_kill(self.app.conf.wineserver_binary)
-        msg.status("Indexing has begun…", self.app)
+        self.app.status("Indexing has begun…")
         index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
         check_thread = utils.start_thread(
@@ -232,7 +232,7 @@ class LogosManager:
                 try:
                     system.run_command(['kill', '-9'] + pids)
                     self.indexing_state = State.STOPPED
-                    msg.status(f"Stopped LogosIndexer processes at PIDs {', '.join(pids)}.", self.app)  # noqa: E501
+                    self.app.status(f"Stopped LogosIndexer processes at PIDs {', '.join(pids)}.")  # noqa: E501
                 except Exception as e:
                     logging.debug(f"Error while stopping LogosIndexer processes: {e}.")  # noqa: E501
             else:

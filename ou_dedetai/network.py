@@ -145,7 +145,7 @@ def logos_reuse_download(
                     app=app,
                 ):
                     logging.info(f"{file} properties match. Using it…")
-                    msg.status(f"Copying {file} into {targetdir}")
+                    logging.debug(f"Copying {file} into {targetdir}")
                     try:
                         shutil.copy(os.path.join(i, file), targetdir)
                     except shutil.SameFileError:
@@ -167,7 +167,7 @@ def logos_reuse_download(
             file_path,
             app=app,
         ):
-            msg.status(f"Copying: {file} into: {targetdir}")
+            logging.debug(f"Copying: {file} into: {targetdir}")
             try:
                 shutil.copy(os.path.join(app.conf.download_dir, file), targetdir)
             except shutil.SameFileError:
@@ -396,7 +396,7 @@ def get_recommended_appimage(app: App):
 
 def get_logos_releases(app: App) -> list[str]:
     # TODO: Use already-downloaded list if requested again.
-    msg.status(f"Downloading release list for {app.conf.faithlife_product} {app.conf.faithlife_product_version}…")  # noqa: E501
+    logging.debug(f"Downloading release list for {app.conf.faithlife_product} {app.conf.faithlife_product_version}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
     if app.conf.faithlife_product_release_channel == "beta":
         url = "https://clientservices.logos.com/update/v1/feed/logos10/beta.xml"  # noqa: E501

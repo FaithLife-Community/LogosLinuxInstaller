@@ -177,32 +177,3 @@ def get_progress_str(percent):
     part_left = length - part_done
     return f"[{'*' * part_done}{'-' * part_left}]"
 
-
-# XXX: move this to app.status
-def status(text, app=None, end='\n'):
-    def strip_timestamp(msg, timestamp_length=20):
-        return msg[timestamp_length:]
-
-    timestamp = utils.get_timestamp()
-    """Handles status messages for both TUI and GUI."""
-    if app is not None:
-        if config.DIALOG == 'tk':
-            app.status_q.put(text)
-            app.root.event_generate(app.status_evt)
-            logging.info(f"{text}")
-        elif config.DIALOG == 'curses':
-            if len(config.console_log) > 0:
-                last_msg = strip_timestamp(config.console_log[-1])
-                if last_msg != text:
-                    app.status_q.put(f"{timestamp} {text}")
-                    app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
-                    logging.info(f"{text}")
-            else:
-                app.status_q.put(f"{timestamp} {text}")
-                app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
-                logging.info(f"{text}")
-        else:
-            logging.info(f"{text}")
-    else:
-        # Prints message to stdout regardless of log level.
-        logos_msg(text, end=end)

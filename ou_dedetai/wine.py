@@ -197,7 +197,7 @@ def check_wine_version_and_branch(release_version, test_binary, faithlife_produc
 
 
 def initializeWineBottle(wine64_binary: str, app: App):
-    msg.status("Initializing wine bottle…")
+    app.status("Initializing wine bottle…")
     logging.debug(f"{wine64_binary=}")
     # Avoid wine-mono window
     wine_dll_override="mscoree="
@@ -215,7 +215,7 @@ def initializeWineBottle(wine64_binary: str, app: App):
 
 def wine_reg_install(app: App, reg_file, wine64_binary):
     reg_file = str(reg_file)
-    msg.status(f"Installing registry file: {reg_file}")
+    app.status(f"Installing registry file: {reg_file}")
     process = run_wine_proc(
         wine64_binary,
         app=app,
@@ -247,7 +247,7 @@ def disable_winemenubuilder(app: App, wine64_binary: str):
 
 
 def install_msi(app: App):
-    msg.status(f"Running MSI installer: {app.conf.faithlife_installer_name}.", app)
+    app.status(f"Running MSI installer: {app.conf.faithlife_installer_name}.")
     # Execute the .MSI
     wine_exe = app.conf.wine64_binary
     exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"]
@@ -342,7 +342,6 @@ def run_winetricks_cmd(app: App, *args):
     # FIXME: test this to ensure it behaves as expected
     if "-q" not in args and app.conf.winetricks_binary:
         cmd.insert(0, "-q")
-    msg.status(f"Running winetricks \"{args[-1]}\"")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
     system.wait_pid(process)
@@ -361,16 +360,16 @@ def install_d3d_compiler(app: App):
 
 
 def install_fonts(app: App):
-    msg.status("Configuring fonts…")
     fonts = ['corefonts', 'tahoma']
     if not app.conf.skip_fonts:
-        for f in fonts:
+        for i, f in enumerate(fonts):
+            app.status("Configuring fonts, this step may take several minutes…", i / len(fonts)) # noqa: E501
             args = [f]
             run_winetricks_cmd(app, *args)
 
 
 def install_font_smoothing(app: App):
-    msg.status("Setting font smoothing…")
+    logging.info("Setting font smoothing…")
     args = ['settings', 'fontsmooth=rgb']
     run_winetricks_cmd(app, *args)
 

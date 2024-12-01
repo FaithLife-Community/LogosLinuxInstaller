@@ -1,4 +1,5 @@
 import curses
+import logging
 import signal
 import textwrap
 
@@ -305,9 +306,10 @@ class MenuDialog(CursesDialog):
                 self.user_input = self.options[self.app.current_option]
             elif key == ord('\x1b'):
                 signal.signal(signal.SIGINT, self.app.end)
-            else:
-                msg.status("Input unknown.", self.app)
-                pass
+            # FIXME: do we need to log this?
+            # else:
+            #     logging.debug(f"Input unknown: {key}")
+            #     pass
         except KeyboardInterrupt:
             signal.signal(signal.SIGINT, self.app.end)
 

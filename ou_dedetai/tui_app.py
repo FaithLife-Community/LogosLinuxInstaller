@@ -244,7 +244,7 @@ class TUI(App):
         self.clear()
         self.init_curses()
         self.refresh()
-        msg.status("Window resized.", self)
+        logging.debug("Window resized.", self)
         self.resizing = False
 
     def signal_resize(self, signum, frame):
@@ -279,7 +279,12 @@ class TUI(App):
         signal.signal(signal.SIGWINCH, self.signal_resize)
         signal.signal(signal.SIGINT, self.end)
         msg.initialize_tui_logging()
-        msg.status(self.console_message, self)
+
+        # Makes sure status stays shown
+        timestamp = utils.get_timestamp()
+        self.status_q.put(f"{timestamp} {self.console_message}")
+        self.report_waiting(f"{self.console_message}", dialog=config.use_python_dialog)  # noqa: E501
+
         self.active_screen = self.menu_screen
         last_time = time.time()
         self.logos.monitor()
@@ -431,8 +436,8 @@ class TUI(App):
                                               self.set_utilities_menu_options(), dialog=config.use_python_dialog))
             self.choice_q.put("0")
         elif choice == "Change Color Scheme":
+            self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
-            msg.status("Changing color scheme", self)
             self.reset_screen()
             utils.write_config(config.CONFIG_FILE)
 
@@ -500,7 +505,6 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Install Dependencies":
             self.reset_screen()
-            msg.status("Checking dependencies…", self)
             self.update_windows()
             utils.install_dependencies(self)
             self.go_to_main_menu()
@@ -576,22 +580,25 @@ class TUI(App):
     def renderer_select(self, choice):
         if choice in ["gdi", "gl", "vulkan"]:
             self.reset_screen()
+            self.status(f"Changing renderer to {choice}.")
             wine.set_renderer(self, choice)
-            msg.status(f"Changed renderer to {choice}.", self)
+            self.status(f"Changed renderer to {choice}.", 100)
             self.go_to_main_menu()
 
     def win_ver_logos_select(self, choice):
         if choice in ["vista", "win7", "win8", "win10", "win11"]:
             self.reset_screen()
+            self.status(f"Changing Windows version for Logos to {choice}.", 0)
             wine.set_win_version(self, "logos", choice)
-            msg.status(f"Changed Windows version for Logos to {choice}.", self)
+            self.status(f"Changed Windows version for Logos to {choice}.", 100)
             self.go_to_main_menu()
 
     def win_ver_index_select(self, choice):
         if choice in ["vista", "win7", "win8", "win10", "win11"]:
             self.reset_screen()
+            self.status(f"Changing Windows version for Indexer to {choice}.", 0)
             wine.set_win_version(self, "indexer", choice)
-            msg.status(f"Changed Windows version for Indexer to {choice}.", self)
+            self.status(f"Changed Windows version for Indexer to {choice}.", 100)
             self.go_to_main_menu()
 
     def manual_install_confirm(self, choice):

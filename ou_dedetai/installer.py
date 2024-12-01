@@ -222,7 +222,7 @@ def ensure_winetricks_executable(app: App):
     app.installer_step += 1
     app.status("Ensuring winetricks executable is available…")
 
-    msg.status("Downloading winetricks from the Internet…", app=app)
+    app.status("Downloading winetricks from the Internet…")
     system.install_winetricks(app.conf.installer_binary_dir, app=app)
 
     logging.debug(f"> {app.conf.winetricks_binary} is executable?: {os.access(app.conf.winetricks_binary, os.X_OK)}")  # noqa: E501
@@ -249,6 +249,7 @@ def ensure_premade_winebottle_download(app: App):
     # Install bottle.
     bottle = Path(app.conf.wine_prefix)
     if not bottle.is_dir():
+        # FIXME: this code seems to be logos 9 specific, why is it here?
         utils.install_premade_wine_bottle(
             app.conf.download_dir,
             f"{app.conf.install_dir}/data"
@@ -323,28 +324,30 @@ def ensure_winetricks_applied(app: App):
         usr_reg = Path(f"{app.conf.wine_prefix}/user.reg")
         sys_reg = Path(f"{app.conf.wine_prefix}/system.reg")
 
+        # FIXME: consider supplying progresses to these sub-steps
+
         if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            msg.status("Disabling winemenubuilder…", app)
+            app.status("Disabling winemenubuilder…")
             wine.disable_winemenubuilder(app, app.conf.wine64_binary)
 
         if not utils.grep(r'"renderer"="gdi"', usr_reg):
-            msg.status("Setting Renderer to GDI…", app)
+            app.status("Setting Renderer to GDI…")
             wine.set_renderer(app, "gdi")
 
         if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
-            msg.status("Setting Font Smooting to RGB…", app)
+            app.status("Setting Font Smooting to RGB…")
             wine.install_font_smoothing(app)
 
         if not app.conf.skip_install_fonts and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
-            msg.status("Installing fonts…", app)
+            app.status("Installing fonts…")
             wine.install_fonts(app)
 
         if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
-            msg.status("Installing D3D…", app)
+            app.status("Installing D3D…")
             wine.install_d3d_compiler(app)
 
         if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
-            msg.status(f"Setting {app.conf.faithlife_product} to Win10 Mode…", app)
+            app.status(f"Setting {app.conf.faithlife_product} to Win10 Mode…")
             wine.set_win_version(app, "logos", "win10")
 
         # NOTE: Can't use utils.grep check here because the string
@@ -461,10 +464,7 @@ def create_wine_appimage_symlinks(app: App):
         logging.critical("Failed to get a valid wine appimage")
         return
     if Path(downloaded_file).parent != appdir_bindir:
-        msg.status(
-            f"Copying: {downloaded_file} into: {appdir_bindir}",
-            app=app
-        )
+        app.status(f"Copying: {downloaded_file} into: {appdir_bindir}")
         shutil.copy(downloaded_file, appdir_bindir)
     os.chmod(appimage_file, 0o755)
     appimage_filename = appimage_file.name

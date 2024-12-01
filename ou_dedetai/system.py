@@ -631,7 +631,7 @@ def test_dialog_version():
 
 
 def remove_appimagelauncher(app: App):
-    msg.status("Removing AppImageLauncher…", app)
+    app.status("Removing AppImageLauncher…")
     pkg = "appimagelauncher"
     package_manager = get_package_manager()
     if package_manager is None:
@@ -818,7 +818,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         command.extend(postinstall_command)
     if not command:  # nothing to run; avoid running empty pkexec command
         if app:
-            msg.status("All dependencies are met.", app)
+            app.status("All dependencies are met.", 100)
         return
 
     app.status("Installing dependencies…")
@@ -872,7 +872,7 @@ def install_winetricks(
     app: App,
     version=constants.WINETRICKS_VERSION,
 ):
-    msg.status(f"Installing winetricks v{version}…")
+    app.status(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
     zip_name = f"{version}.zip"
     network.logos_reuse_download(

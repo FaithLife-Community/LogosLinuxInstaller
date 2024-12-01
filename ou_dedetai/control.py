@@ -88,7 +88,7 @@ def backup_and_restore(mode: str, app: App):
 
     # Get source transfer size.
     q = queue.Queue()
-    msg.status("Calculating backup size…", app=app)
+    app.status("Calculating backup size…")
     t = utils.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
@@ -135,10 +135,10 @@ def backup_and_restore(mode: str, app: App):
         m = f"Restoring backup from {str(source_dir_base)}…"
     else:
         m = f"Backing up to {str(dst_dir)}…"
-    msg.status(m, app=app)
-    msg.status("Calculating destination directory size", app=app)
+    app.status(m)
+    app.status("Calculating destination directory size")
     dst_dir_size = utils.get_path_size(dst_dir)
-    msg.status("Starting backup…", app=app)
+    app.status("Starting backup…")
     t = utils.start_thread(copy_data, src_dirs, dst_dir)
     try:
         counter = 0
@@ -189,8 +189,7 @@ def remove_all_index_files(app: App):
             except OSError as e:
                 logging.error(f"Error removing {file_to_remove}: {e}")
 
-    msg.status("Removed all LogosBible index files!")
-    sys.exit(0)
+    app.status("Removed all LogosBible index files!", 100)
 
 
 def remove_library_catalog(app: App):
@@ -205,7 +204,7 @@ def remove_library_catalog(app: App):
 
 
 def set_winetricks(app: App):
-    msg.status("Preparing winetricks…")
+    app.status("Preparing winetricks…")
     if app.conf.winetricks_binary != constants.DOWNLOAD:
         valid = True
         # Double check it's a valid winetricks

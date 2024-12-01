@@ -417,7 +417,7 @@ def get_latest_folder(folder_path):
 
 
 def install_premade_wine_bottle(srcdir, appdir):
-    msg.status(f"Extracting: '{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
+    logging.info(f"Extracting: '{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
     shutil.unpack_archive(
         f"{srcdir}/{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
         appdir
