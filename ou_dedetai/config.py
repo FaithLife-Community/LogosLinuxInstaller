@@ -433,6 +433,10 @@ class Config:
     # Overriding programmatically generated values from ENV
     _overrides: EphemeralConfiguration
 
+    # XXX: Move this to it's own class/file.
+    # And check cache for all operations in network
+    # (similar to this struct but in network)
+
     # Start Cache of values unlikely to change during operation.
     # i.e. filesystem traversals
     _logos_exe: Optional[str] = None
@@ -474,7 +478,7 @@ class Config:
         logging.debug("Current persistent config:")
         for k, v in self._raw.__dict__.items():
             logging.debug(f"{k}: {v}")
-    
+
     def _ask_if_not_found(self, parameter: str, question: str, options: list[str], dependent_parameters: Optional[list[str]] = None) -> str:  #noqa: E501
         # XXX: should this also update the feedback?
         if not getattr(self._raw, parameter):
@@ -495,6 +499,8 @@ class Config:
         """Writes configuration to file and lets the app know something changed"""
         self._raw.write_config()
         self.app._config_updated_hook()
+
+    # XXX: Add a reload command to resolve #168 (at least plumb the backend)
 
     @property
     def config_file_path(self) -> str:
