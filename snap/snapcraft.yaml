@@ -225,11 +225,12 @@ parts:
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
-      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      ## oudedetai overrides
+      #-- oudedetai overrides
       - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      #--
+      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
+      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       ## needed for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
@@ -268,7 +269,7 @@ parts:
     build-environment:
       ## added by me
       - MAKEFLAGS: "-j$(nproc)"
-      ## mmtrt
+      #- mmtrt
       # stored values to be referenced later
       - CROSSCC_X32: "i686-w64-mingw32-gcc"
       - CROSSCXX_X32: "i686-w64-mingw32-g++"
@@ -276,12 +277,13 @@ parts:
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
-      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      ## oudedetai overrides
+      #-- oudedetai overrides
       - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      ## needed for build
+      #--
+      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
+      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
+      #> needed for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
@@ -332,11 +334,12 @@ parts:
       - CROSSCXX_X64: "x86_64-w64-mingw32-g++"
       - CFLAGS_X32: "-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
-      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
-      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
-      ## oudedetai overrides
+      #-- oudedetai overrides
       - CFLAGS_X32: "-msse2 -mfpmath=sse -O2 -ftree-vectorize"
       - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
+      #--
+      - CROSSCFLAGS_X32: "${CFLAGS_X32}"
+      - CROSSCFLAGS_X64: "${CFLAGS_X64}"
       ## needed for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
