@@ -71,7 +71,7 @@ class App(abc.ABC):
             passed_options = options + [self._exit_option]
 
         answer = self._ask(question, passed_options)
-        while answer is None or validate_result(answer, options) is not None:
+        while answer is None or validate_result(answer, options) is None:
             invalid_response = "That response is not valid, please try again."
             new_question = f"{invalid_response}\n{question}"
             answer = self._ask(new_question, passed_options)

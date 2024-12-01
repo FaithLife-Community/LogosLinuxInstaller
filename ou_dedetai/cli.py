@@ -1,6 +1,7 @@
 import queue
 import shutil
 import threading
+from typing import Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.config import EphemeralConfiguration
@@ -120,6 +121,16 @@ class CLI(App):
         self.running = False
         return super().exit(reason, intended)
     
+    def _status(self, message: str, percent: Optional[int] = None):
+        """Implementation for updating status pre-front end"""
+        if percent:
+            percent_per_char = 5
+            chars_of_progress = round(percent / percent_per_char)
+            chars_remaining = round((100 - percent) / percent_per_char)
+            progress_str = "[" + "-" * chars_of_progress + " " * chars_remaining + "] "
+            print(progress_str, end="")
+        print(f"{message}")
+
     @property
     def superuser_command(self) -> str:
         if shutil.which('sudo'):
@@ -145,8 +156,7 @@ class CLI(App):
             if question is not None and options is not None:
                 # Convert options list to string.
                 default = options[0]
-                options[0] = f"{options[0]} [default]"
-                optstr = ', '.join(options)
+                optstr = f"{options[0]} [default], " + ', '.join(options[1:])
                 choice = input(f"{question}: {optstr}: ")
                 if len(choice) == 0:
                     choice = default
