@@ -203,6 +203,10 @@ class EphemeralConfiguration:
     config_path: str
     """Path this config was loaded from"""
 
+
+    winetricks_args: Optional[str] = None
+    """Arguments to winetricks if the action is running winetricks"""
+
     terminal_app_prefer_dialog: Optional[bool] = None
 
     # Start of values just set via cli arg

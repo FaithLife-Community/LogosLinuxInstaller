@@ -16,15 +16,12 @@ from pathlib import Path
 from ou_dedetai.app import App
 
 
-from . import config
 from . import constants
-from . import msg
 from . import network
-from . import utils
 
 
 # TODO: Replace functions in control.py and wine.py with Popen command.
-def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.CompletedProcess[any]]:  # noqa: E501
+def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.CompletedProcess]:  # noqa: E501
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
     capture_output = kwargs.get("capture_output", True)
@@ -63,7 +60,7 @@ def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.Co
 
     for attempt in range(retries):
         try:
-            result = subprocess.run(
+            result: subprocess.CompletedProcess = subprocess.run(
                 command,
                 check=check,
                 text=text,
@@ -525,7 +522,7 @@ def get_runmode():
 
 
 def query_packages(package_manager: PackageManager, packages, mode="install") -> list[str]: #noqa: E501
-    result = ""
+    result = None
     missing_packages = []
     conflicting_packages = []
 
@@ -535,7 +532,10 @@ def query_packages(package_manager: PackageManager, packages, mode="install") ->
         result = run_command(command)
     except Exception as e:
         logging.error(f"Error occurred while executing command: {e}")
-        logging.error(e.output)
+    # FIXME: consider raising an exception
+    if result is None:
+        logging.error("Failed to query packages")
+        return []
     package_list = result.stdout
 
     logging.debug(f"packages to check: {packages}")

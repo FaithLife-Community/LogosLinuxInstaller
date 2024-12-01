@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 import os
 import re
@@ -39,12 +40,20 @@ def wineserver_wait(app: App):
         system.wait_pid(process)
 
 
+@dataclass
+class WineRelease:
+    major: int
+    minor: int
+    release: Optional[str]
+
+
 # FIXME: consider raising exceptions on error
-def get_wine_release(binary):
+def get_wine_release(binary: str) -> tuple[Optional[WineRelease], str]:
     cmd = [binary, "--version"]
     try:
         version_string = subprocess.check_output(cmd, encoding='utf-8').strip()
         logging.debug(f"Version string: {str(version_string)}")
+        release: Optional[str]
         try:
             version, release = version_string.split()
         except ValueError:
@@ -55,32 +64,45 @@ def get_wine_release(binary):
         logging.debug(f"Wine branch of {binary}: {release}")
 
         if release is not None:
-            ver_major = version.split('.')[0].lstrip('wine-')  # remove 'wine-'
-            ver_minor = version.split('.')[1]
+            ver_major = int(version.split('.')[0].lstrip('wine-'))  # remove 'wine-'
+            ver_minor = int(version.split('.')[1])
             release = release.lstrip('(').rstrip(')').lower()  # remove parens
         else:
             ver_major = 0
             ver_minor = 0
 
-        wine_release = [int(ver_major), int(ver_minor), release]
+        wine_release = WineRelease(ver_major, ver_minor, release)
         logging.debug(f"Wine release of {binary}: {str(wine_release)}")
 
         if ver_major == 0:
-            return False, "Couldn't determine wine version."
+            return None, "Couldn't determine wine version."
         else:
             return wine_release, "yes"
 
     except subprocess.CalledProcessError as e:
-        return False, f"Error running command: {e}"
+        return None, f"Error running command: {e}"
 
     except ValueError as e:
-        return False, f"Error parsing version: {e}"
+        return None, f"Error parsing version: {e}"
 
     except Exception as e:
-        return False, f"Error: {e}"
+        return None, f"Error: {e}"
 
 
-def check_wine_rules(wine_release, release_version, faithlife_product_version: str):
+@dataclass
+class WineRule:
+    major: int
+    proton: bool
+    minor_bad: list[int]
+    allowed_releases: list[str]
+    devel_allowed: Optional[int] = None
+
+
+def check_wine_rules(
+    wine_release: Optional[WineRelease],
+    release_version,
+    faithlife_product_version: str
+):
     # Does not check for Staging. Will not implement: expecting merging of
     # commits in time.
     logging.debug(f"Checking {wine_release} for {release_version}.")
@@ -94,37 +116,26 @@ def check_wine_rules(wine_release, release_version, faithlife_product_version: s
     else:
         raise ValueError(f"Invalid target version, expecting 9 or 10 but got: {faithlife_product_version} ({type(faithlife_product_version)})")  # noqa: E501
 
-    rules = [
-        {
-            "major": 7,
-            "proton": True,  # Proton release tend to use the x.0 release, but can include changes found in devel/staging  # noqa: E501
-            "minor_bad": [],  # exceptions to minimum
-            "allowed_releases": ["staging"]
-        },
-        {
-            "major": 8,
-            "proton": False,
-            "minor_bad": [0],
-            "allowed_releases": ["staging"],
-            "devel_allowed": 16,  # devel permissible at this point
-        },
-        {
-            "major": 9,
-            "proton": False,
-            "minor_bad": [],
-            "allowed_releases": ["devel", "staging"],
-        },
+    rules: list[WineRule] = [
+        # Proton release tend to use the x.0 release, but can include changes found in devel/staging  # noqa: E501
+        # exceptions to minimum
+        WineRule(major=7, proton=True, minor_bad=[], allowed_releases=["staging"]),
+        # devel permissible at this point
+        WineRule(major=8, proton=False, minor_bad=[0], allowed_releases=["staging"], devel_allowed=16), #noqa: E501
+        WineRule(major=9, proton=False, minor_bad=[], allowed_releases=["devel", "staging"]) #noqa: E501
     ]
 
     major_min, minor_min = required_wine_minimum
     if wine_release:
-        major, minor, release_type = wine_release
+        major = wine_release.major
+        minor = wine_release.minor
+        release_type = wine_release.release
         result = True, "None"  # Whether the release is allowed; error message
         for rule in rules:
-            if major == rule["major"]:
+            if major == rule.major:
                 # Verify release is allowed
-                if release_type not in rule["allowed_releases"]:
-                    if minor >= rule.get("devel_allowed", float('inf')):
+                if release_type not in rule.allowed_releases:
+                    if minor >= (rule.devel_allowed or float('inf')):
                         if release_type not in ["staging", "devel"]:
                             result = (
                                 False,
@@ -138,13 +149,13 @@ def check_wine_rules(wine_release, release_version, faithlife_product_version: s
                         result = (
                             False,
                             (
-                                f"Wine release needs to be {rule['allowed_releases']}. "  # noqa: E501
+                                f"Wine release needs to be {rule.allowed_releases}. "  # noqa: E501
                                 f"Current release: {release_type}."
                             )
                         )
                         break
                 # Verify version is allowed
-                if minor in rule.get("minor_bad", []):
+                if minor in rule.minor_bad:
                     result = False, f"Wine version {major}.{minor} will not work."
                     break
                 if major < major_min:
@@ -156,7 +167,7 @@ def check_wine_rules(wine_release, release_version, faithlife_product_version: s
                     )
                     break
                 elif major == major_min and minor < minor_min:
-                    if not rule["proton"]:
+                    if not rule.proton:
                         result = (
                             False,
                             (
@@ -466,7 +477,7 @@ def get_registry_value(reg_path, name, app: App):
         if 'non-zero exit status' in str(e):
             logging.warning(err_msg)
             return None
-    if result.stdout is not None:
+    if result is not None and result.stdout is not None:
         for line in result.stdout.splitlines():
             if line.strip().startswith(name):
                 value = line.split()[-1].strip()
@@ -477,7 +488,7 @@ def get_registry_value(reg_path, name, app: App):
     return value
 
 
-def get_mscoree_winebranch(mscoree_file):
+def get_mscoree_winebranch(mscoree_file: Path) -> Optional[str]:
     try:
         with mscoree_file.open('rb') as f:
             for line in f:
@@ -486,9 +497,10 @@ def get_mscoree_winebranch(mscoree_file):
                     return m[0].decode().lstrip('wine-')
     except FileNotFoundError as e:
         logging.error(e)
+    return None
 
 
-def get_wine_branch(binary):
+def get_wine_branch(binary: str) -> Optional[str]:
     logging.info(f"Determining wine branch of '{binary}'")
     binary_obj = Path(binary).expanduser().resolve()
     if utils.check_appimage(binary_obj):
@@ -500,7 +512,7 @@ def get_wine_branch(binary):
             encoding='UTF8'
         )
         branch = None
-        while p.returncode is None:
+        while p.returncode is None and p.stdout is not None:
             for line in p.stdout:
                 if line.startswith('/tmp'):
                     tmp_dir = Path(line.rstrip())

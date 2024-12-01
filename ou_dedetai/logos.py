@@ -9,7 +9,6 @@ import threading
 
 from ou_dedetai.app import App
 
-from . import main
 from . import system
 from . import utils
 from . import wine
@@ -85,7 +84,7 @@ class LogosManager:
 
     def start(self):
         self.logos_state = State.STARTING
-        wine_release, _ = wine.get_wine_release(self.app.conf.wine_binary)
+        wine_release, _ = wine.get_wine_release()
 
         def run_logos():
             process = wine.run_wine_proc(

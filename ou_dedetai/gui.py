@@ -16,7 +16,6 @@ from tkinter.ttk import Separator
 
 from ou_dedetai.app import App
 
-from . import config
 from . import constants
 
 

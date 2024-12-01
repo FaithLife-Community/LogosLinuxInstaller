@@ -1,7 +1,7 @@
 import queue
 import shutil
 import threading
-from typing import Optional
+from typing import Optional, Tuple
 
 from ou_dedetai import constants
 from ou_dedetai.app import App
@@ -18,8 +18,8 @@ class CLI(App):
     def __init__(self, ephemeral_config: EphemeralConfiguration):
         super().__init__(ephemeral_config)
         self.running: bool = True
-        self.choice_q = queue.Queue()
-        self.input_q = queue.Queue()
+        self.choice_q: queue.Queue[str] = queue.Queue()
+        self.input_q: queue.Queue[Tuple[str, list[str]] | None] = queue.Queue()
         self.input_event = threading.Event()
         self.choice_event = threading.Event()
 
@@ -94,8 +94,7 @@ class CLI(App):
         utils.update_to_latest_lli_release(self)
 
     def winetricks(self):
-        from ou_dedetai import config
-        wine.run_winetricks_cmd(self, *config.winetricks_args)
+        wine.run_winetricks_cmd(self, *self.conf._overrides.winetricks_args)
 
     _exit_option: str = "Exit"
 
@@ -141,12 +140,12 @@ class CLI(App):
         else:
             raise SuperuserCommandNotFound("sudo command not found. Please install.")
 
-    def user_input_processor(self, evt=None):
+    def user_input_processor(self, evt=None) -> None:
         while self.running:
             prompt = None
-            question = None
+            question: Optional[str] = None
             options = None
-            choice = None
+            choice: Optional[str] = None
             # Wait for next input queue item.
             self.input_event.wait()
             self.input_event.clear()
@@ -174,7 +173,7 @@ class CLI(App):
 # instantiated at the moment the subcommand is run. This lets any CLI-specific
 # code get executed along with the subcommand.
 
-# NOTE: we should be able to achieve the same effect without re-declaring these functions
+# NOTE: we should be able to achieve the same effect without re-declaring these
 def backup(ephemeral_config: EphemeralConfiguration):
     CLI(ephemeral_config).backup()
 

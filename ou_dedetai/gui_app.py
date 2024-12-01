@@ -39,7 +39,7 @@ class GuiApp(App):
         self.root = root
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
-        answer_q = Queue()
+        answer_q: Queue[str] = Queue()
         answer_event = Event()
         def spawn_dialog():
             # Create a new popup (with it's own event loop)
@@ -151,7 +151,7 @@ class Root(Tk):
 
 class ChoicePopUp(Tk):
     """Creates a pop-up with a choice"""
-    def __init__(self, question: str, options: list[str], answer_q: Queue, answer_event: Event, **kwargs): #noqa: E501
+    def __init__(self, question: str, options: list[str], answer_q: Queue[str], answer_event: Event, **kwargs): #noqa: E501
         # Set root parameters.
         super().__init__()
         self.title(f"Quesiton: {question.strip().strip(':')}")
@@ -248,14 +248,8 @@ class InstallerWindow(GuiApp):
             "<<SetWineExe>>",
             self.update_wine_check_progress
         )
-        self.get_q = Queue()
-        self.get_evt = "<<GetFile>>"
-        self.root.bind(self.get_evt, self.update_download_progress)
-        self.status_q = Queue()
-        self.status_evt = "<<UpdateStatus>>"
-        self.root.bind(self.status_evt, self.update_status_text)
-        self.releases_q = Queue()
-        self.wine_q = Queue()
+        self.releases_q: Queue[list[str]] = Queue()
+        self.wine_q: Queue[str] = Queue()
 
         # Run commands.
         self.get_winetricks_options()
@@ -284,7 +278,7 @@ class InstallerWindow(GuiApp):
 
     def get_winetricks_options(self):
         self.conf.winetricks_binary = None  # override config file b/c "Download" accounts for that  # noqa: E501
-        self.gui.tricks_dropdown['values'] = utils.get_winetricks_options() + ['Return to Main Menu']
+        self.gui.tricks_dropdown['values'] = utils.get_winetricks_options() + ['Return to Main Menu'] #noqa: E501
         self.gui.tricksvar.set(self.gui.tricks_dropdown['values'][0])
 
     def set_input_widgets_state(self, state, widgets='all'):
@@ -318,7 +312,7 @@ class InstallerWindow(GuiApp):
         self.conf.faithlife_product = self.gui.productvar.get()
         self.gui.product_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
-            logging.debug(f"User changed faithlife_product to '{self.conf.faithlife_product}'")
+            logging.debug(f"User changed faithlife_product to '{self.conf.faithlife_product}'") #noqa: E501
             self.gui.versionvar.set('')
             self.gui.releasevar.set('')
             self.gui.winevar.set('')
@@ -428,10 +422,10 @@ class InstallerWindow(GuiApp):
             self.start_ensure_config()
         else:
             self.wine_q.put(
-                utils.get_relative_path(
+                str(utils.get_relative_path(
                     utils.get_config_var(self.conf.wine_binary),
                     self.conf.install_dir
-                )
+                ))
             )
 
     def set_winetricks(self, evt=None):
@@ -524,18 +518,6 @@ class InstallerWindow(GuiApp):
         self.stop_indeterminate_progress()
         self.gui.wine_check_button.state(['!disabled'])
 
-    def update_download_progress(self, evt=None):
-        d = self.get_q.get()
-        self.gui.progressvar.set(int(d))
-
-    def update_status_text(self, evt=None, status=None):
-        text = ''
-        if evt:
-            text = self.status_q.get()
-        elif status:
-            text = status
-        self.gui.statusvar.set(text)
-
     def _install_complete_hook(self):
         self.gui.progress.stop()
         self.gui.progress.config(mode='determinate')
@@ -615,10 +597,6 @@ class ControlWindow(GuiApp):
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
         self.update_run_winetricks_button()
 
-        self.logging_q = Queue()
-        self.status_q = Queue()
-        self.status_evt = '<<UpdateControlStatus>>'
-        self.root.bind(self.status_evt, self.update_status_text)
         self.root.bind('<<ClearStatus>>', self.clear_status_text)
         self.root.bind(
             '<<StartIndeterminateProgress>>',
@@ -629,9 +607,6 @@ class ControlWindow(GuiApp):
             self.update_latest_appimage_button
         )
         self.root.bind('<<InstallFinished>>', self.update_app_button)
-        self.get_q = Queue()
-        self.get_evt = "<<GetFile>>"
-        self.root.bind(self.get_evt, self.update_download_progress)
 
         self.installer_window = None
 
@@ -652,7 +627,7 @@ class ControlWindow(GuiApp):
     def run_installer(self, evt=None):
         classname = constants.BINARY_NAME
         installer_window_top = Toplevel()
-        self.installer_window = InstallerWindow(installer_window_top, self.root, app=self, class_=classname)
+        self.installer_window = InstallerWindow(installer_window_top, self.root, app=self, class_=classname) #noqa: E501
         self.root.icon = self.conf.faithlife_product_icon_path
 
     def run_logos(self, evt=None):
@@ -774,7 +749,9 @@ class ControlWindow(GuiApp):
     def _config_updated_hook(self) -> None:
         self.update_logging_button()
         if self.installer_window is not None:
-            self.installer_window._config_updated_hook()
+            # XXX: for some reason mypy thinks this is unreachable.
+            # consider the relationship between these too classes anyway
+            self.installer_window._config_updated_hook() #type: ignore[unreachable]
         return super()._config_updated_hook()
 
     # XXX: should this live here or in installerWindow?
@@ -872,18 +849,6 @@ class ControlWindow(GuiApp):
 
     def clear_status_text(self, evt=None):
         self.gui.statusvar.set('')
-
-    def update_download_progress(self, evt=None):
-        d = self.get_q.get()
-        self.gui.progressvar.set(int(d))
-
-    def update_status_text(self, evt=None):
-        if evt:
-            self.gui.statusvar.set(self.status_q.get())
-            self.root.after(3000, self.update_status_text)
-        else:  # clear status text if called manually and no progress shown
-            if self.gui.progressvar.get() == 0:
-                self.gui.statusvar.set('')
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])

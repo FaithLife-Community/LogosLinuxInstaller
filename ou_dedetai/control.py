@@ -13,7 +13,6 @@ from pathlib import Path
 
 from ou_dedetai.app import App
 
-from . import config
 from . import constants
 from . import system
 from . import utils
@@ -82,7 +81,7 @@ def backup_and_restore(mode: str, app: App):
         app.status("Restoring data…")
 
     # Get source transfer size.
-    q = queue.Queue()
+    q: queue.Queue[int] = queue.Queue()
     app.status("Calculating backup size…")
     t = app.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
@@ -132,8 +131,6 @@ def backup_and_restore(mode: str, app: App):
     else:
         m = f"Backing up to {str(dst_dir)}…"
     app.status(m)
-    app.status("Calculating destination directory size")
-    dst_dir_size = utils.get_path_size(dst_dir)
     app.status("Starting backup…")
     t = app.start_thread(copy_data, src_dirs, dst_dir)
     try:
@@ -212,7 +209,7 @@ def set_winetricks(app: App):
             logging.warning("Winetricks path does not exist, downloading instead...")
             valid = False
         if not os.access(app.conf.winetricks_binary, os.X_OK):
-            logging.warning("Winetricks path given is not executable, downloading instead...")
+            logging.warning("Winetricks path given is not executable, downloading instead...") #noqa: E501
             valid = False
         if not utils.check_winetricks_version(app.conf.winetricks_binary):
             logging.warning("Winetricks version mismatch, downloading instead...")

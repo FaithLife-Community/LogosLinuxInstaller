@@ -8,16 +8,11 @@ from ou_dedetai.config import (
     EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
 )
 
-try:
-    import dialog  # noqa: F401
-except ImportError:
-    pass
 import logging
 import os
 import sys
 
 from . import cli
-from . import config
 from . import constants
 from . import gui_app
 from . import msg
@@ -289,8 +284,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
                     e = f"{ephemeral_config.wine_appimage_path} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
             if arg == 'winetricks':
-                # XXX: lingering config ref
-                config.winetricks_args = getattr(args, 'winetricks')
+                ephemeral_config.winetricks_args = getattr(args, 'winetricks')
             run_action = action
             break
     if run_action is None:
@@ -324,8 +318,8 @@ def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfigura
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
-    # Get config based on env and configuration file temporarily just to load a couple values out
-    # We'll load this fully later.
+    # Get config based on env and configuration file temporarily just to load a couple 
+    # values out. We'll load this fully later.
     temp = EphemeralConfiguration.load()
     log_level = temp.log_level or constants.DEFAULT_LOG_LEVEL
     app_log_path = temp.app_log_path or constants.DEFAULT_APP_LOG_PATH
@@ -354,12 +348,12 @@ def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfigura
 
 
 def is_app_installed(ephemeral_config: EphemeralConfiguration):
-    persistent_config = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
-    if persistent_config.faithlife_product is None or persistent_config.install_dir is None:
+    persistent_config = PersistentConfiguration.load_from_path(ephemeral_config.config_path) #noqa: E501
+    if persistent_config.faithlife_product is None or persistent_config.install_dir is None: #noqa: E501
         # Not enough information stored to find the product
         return False
-    wine_prefix = ephemeral_config.wine_prefix or get_wine_prefix_path(persistent_config.install_dir)
-    return utils.find_installed_product(persistent_config.faithlife_product, wine_prefix)
+    wine_prefix = ephemeral_config.wine_prefix or get_wine_prefix_path(str(persistent_config.install_dir)) #noqa: E501
+    return utils.find_installed_product(persistent_config.faithlife_product, wine_prefix) #noqa: E501
 
 
 def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralConfiguration], None]): #noqa: E501

@@ -1,7 +1,7 @@
 import curses
 import logging
 try:
-    from dialog import Dialog
+    from dialog import Dialog #type: ignore[import-untyped]
 except ImportError:
     pass
 

@@ -7,13 +7,12 @@ import time
 import curses
 from pathlib import Path
 from queue import Queue
-from typing import Optional
+from typing import Any, Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
 from ou_dedetai.config import EphemeralConfiguration
 
-from . import config
 from . import control
 from . import constants
 from . import installer
@@ -44,41 +43,24 @@ class TUI(App):
         self.tmp = ""
 
         # Generic ask/response events/threads
-        self.ask_answer_queue = Queue()
+        self.ask_answer_queue: Queue[str] = Queue()
         self.ask_answer_event = threading.Event()
 
         # Queues
         self.main_thread = threading.Thread()
-        self.get_q = Queue()
-        self.get_e = threading.Event()
-        self.status_q = Queue()
+        self.status_q: Queue[str] = Queue()
         self.status_e = threading.Event()
-        self.progress_q = Queue()
-        self.progress_e = threading.Event()
-        self.todo_q = Queue()
+        self.todo_q: Queue[str] = Queue()
         self.todo_e = threading.Event()
-        self.screen_q = Queue()
-        self.choice_q = Queue()
-        self.switch_q = Queue()
+        self.screen_q: Queue[None] = Queue()
+        self.choice_q: Queue[str] = Queue()
+        self.switch_q: Queue[int] = Queue()
 
         # Install and Options
-        self.manualinstall_q = Queue()
-        self.manualinstall_e = threading.Event()
-        self.deps_q = Queue()
-        self.deps_e = threading.Event()
-        self.finished_q = Queue()
-        self.finished_e = threading.Event()
-        self.config_q = Queue()
-        self.config_e = threading.Event()
-        self.confirm_q = Queue()
-        self.confirm_e = threading.Event()
-        self.password_q = Queue()
+        self.password_q: Queue[str] = Queue()
         self.password_e = threading.Event()
-        self.appimage_q = Queue()
+        self.appimage_q: Queue[str] = Queue()
         self.appimage_e = threading.Event()
-        self.install_icu_q = Queue()
-        self.install_logos_q = Queue()
-        self.install_logos_e = threading.Event()
 
         self.terminal_margin = 0
         self.resizing = False
@@ -87,8 +69,8 @@ class TUI(App):
         self.options_per_page = 0
 
         # Window and Screen Management
-        self.tui_screens = []
-        self.menu_options = []
+        self.tui_screens: list[tui_screen.Screen] = []
+        self.menu_options: list[Any] = []
         self.window_height = self.window_width = self.console = self.menu_screen = (
             self.active_screen
         ) = None
@@ -432,8 +414,6 @@ class TUI(App):
             13: self.waiting_finish,
             14: self.waiting_resize,
             15: self.password_prompt,
-            16: self.install_dependencies_confirm,
-            17: self.manual_install_confirm,
             18: self.utilities_menu_select,
             19: self.renderer_select,
             20: self.win_ver_logos_select,
@@ -675,23 +655,6 @@ class TUI(App):
             self.password_q.put(choice)
             self.password_e.set()
 
-    def install_dependencies_confirm(self, choice):
-        if choice:
-            if choice == "No":
-                self.go_to_main_menu()
-            else:
-                self.menu_screen.choice = "Processing"
-                self.confirm_e.set()
-                self.screen_q.put(
-                    self.stack_text(
-                        13,
-                        self.todo_q,
-                        self.todo_e,
-                        "Installing dependencies…\n",
-                        wait=True,
-                    )
-                )  # noqa: E501
-
     def renderer_select(self, choice):
         if choice in ["gdi", "gl", "vulkan"]:
             self.reset_screen()
@@ -715,21 +678,6 @@ class TUI(App):
             wine.set_win_version(self, "indexer", choice)
             self.status(f"Changed Windows version for Indexer to {choice}.", 100)
             self.go_to_main_menu()
-
-    def manual_install_confirm(self, choice):
-        if choice:
-            if choice == "Continue":
-                self.menu_screen.choice = "Processing"
-                self.manualinstall_e.set()
-                self.screen_q.put(
-                    self.stack_text(
-                        13,
-                        self.todo_q,
-                        self.todo_e,
-                        "Installing dependencies…\n",
-                        wait=True,
-                    )
-                )  # noqa: E501
 
     def switch_screen(self):
         if (
@@ -850,8 +798,10 @@ class TUI(App):
         # self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)) #noqa: E501
         self.console_log.append(text)
 
-    def which_dialog_options(self, labels):
-        options = []
+    def which_dialog_options(self, labels: list[str]) -> list[Any]: #noqa: E501
+        # curses - list[str]
+        # dialog - list[tuple[str, str]] 
+        options: list[Any] = []
         option_number = 1
         for label in labels:
             if self.use_python_dialog:

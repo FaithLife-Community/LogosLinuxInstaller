@@ -6,6 +6,7 @@ import inspect
 import json
 import logging
 import os
+import queue
 import psutil
 import re
 import shutil
@@ -14,22 +15,15 @@ import stat
 import subprocess
 import sys
 import tarfile
-import threading
 import time
 from ou_dedetai.app import App
 from packaging import version
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from . import config
 from . import constants
-from . import msg
 from . import network
 from . import system
-if system.have_dep("dialog"):
-    from . import tui_dialog as tui
-else:
-    from . import tui_curses as tui
 from . import wine
 
 # TODO: Move config commands to config.py
@@ -155,7 +149,7 @@ def install_dependencies(app: App):
             target_version=9
         )
     else:
-        logging.error(f"Unknown Target version, expecting 9 or 10 but got: {app.conf.faithlife_product_version}.")
+        logging.error(f"Unknown Target version, expecting 9 or 10 but got: {app.conf.faithlife_product_version}.") #noqa: E501
 
     app.status("Installed dependencies.", 100)
 
@@ -378,7 +372,7 @@ def get_path_size(file_path):
     return path_size
 
 
-def get_folder_group_size(src_dirs, q):
+def get_folder_group_size(src_dirs: list[Path], q: queue.Queue[int]):
     src_size = 0
     for d in src_dirs:
         if not d.is_dir():
@@ -442,11 +436,10 @@ def compare_logos_linux_installer_version(app: App) -> Optional[VersionCompariso
 def compare_recommended_appimage_version(app: App):
     status = None
     message = None
-    wine_release = []
     wine_exe_path = app.conf.wine_binary
     wine_release, error_message = wine.get_wine_release(wine_exe_path)
     if wine_release is not None and wine_release is not False:
-        current_version = '.'.join([str(n) for n in wine_release[:2]])
+        current_version = f"{wine_release.major}.{wine_release.minor}"
         logging.debug(f"Current wine release: {current_version}")
 
         recommended_version = app.conf.wine_appimage_recommended_version
@@ -537,7 +530,7 @@ def check_appimage(filestr):
 
 
 def find_appimage_files(app: App):
-    release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version
+    release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version #noqa: E501
     appimages = []
     directories = [
         os.path.expanduser("~") + "/bin",
@@ -586,8 +579,6 @@ def find_wine_binary_files(app: App, release_version):
 
     # Temporarily modify PATH for additional WINE64 binaries.
     for p in wine_binary_path_list:
-        if p is None:
-            continue
         if p not in os.environ['PATH'] and os.path.isdir(p):
             os.environ['PATH'] = os.environ['PATH'] + os.pathsep + p
 

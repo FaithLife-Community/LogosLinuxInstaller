@@ -6,16 +6,14 @@ from pathlib import Path
 
 from ou_dedetai.app import App
 
-from . import config
 from . import constants
-from . import msg
 from . import network
 from . import system
 from . import utils
 from . import wine
 
 
-# XXX: ideally this function wouldn't be needed, would happen automatically by nature of config accesses
+# XXX: ideally this function wouldn't be needed, would happen automatically by nature of config accesses #noqa: E501
 def ensure_product_choice(app: App):
     app.installer_step_count += 1
     app.status("Choose product…")
@@ -42,7 +40,7 @@ def ensure_release_choice(app: App):
     app.installer_step += 1
     app.status("Choose product release…")
     logging.debug('- config.TARGET_RELEASE_VERSION')
-    logging.debug(f"> config.TARGET_RELEASE_VERSION={app.conf.faithlife_product_release}")
+    logging.debug(f"> config.TARGET_RELEASE_VERSION={app.conf.faithlife_product_release}") #noqa: E501
 
 
 def ensure_install_dir_choice(app: App):
@@ -501,7 +499,7 @@ def create_launcher_shortcuts(app: App):
     app_icon_src = constants.APP_IMAGE_DIR / 'icon.png'
 
     if not installdir.is_dir():
-        app.exit("Can't create launchers because the installation folder does not exist.")
+        app.exit("Can't create launchers because the installation folder does not exist.") #noqa: E501
     app_dir = Path(installdir) / 'data'
     logos_icon_path = app_dir / logos_icon_src.name
     app_icon_path = app_dir / app_icon_src.name

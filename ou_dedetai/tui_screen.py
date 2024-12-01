@@ -5,11 +5,9 @@ from pathlib import Path
 
 from ou_dedetai.app import App
 
-from . import config
 from . import installer
 from . import system
 from . import tui_curses
-from . import utils
 if system.have_dep("dialog"):
     from . import tui_dialog
 
