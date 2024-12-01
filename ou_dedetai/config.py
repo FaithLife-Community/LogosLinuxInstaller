@@ -17,9 +17,6 @@ extended_config = {
 for key, default in extended_config.items():
     globals()[key] = os.getenv(key, default)
 
-# Set other run-time variables not set in the env.
-ACTION: str = 'app'
-
 
 # Begin new config
 

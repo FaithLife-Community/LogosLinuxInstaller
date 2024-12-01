@@ -2,6 +2,7 @@
 import argparse
 import curses
 import logging.handlers
+from typing import Callable, Tuple
 
 from ou_dedetai.config import (
     EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
@@ -198,7 +199,7 @@ def get_parser():
     return parser
 
 
-def parse_args(args, parser) -> EphemeralConfiguration:
+def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfiguration], None]]: #noqa: E501
     if args.config:
         ephemeral_config = EphemeralConfiguration.load_from_path(args.config)
     else:
@@ -251,7 +252,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
     if args.passive:
         ephemeral_config.faithlife_install_passive = True
 
-    # Set ACTION function.
+    # Set action return function.
     actions = {
         'backup': cli.backup,
         'create_shortcuts': cli.create_shortcuts,
@@ -276,7 +277,7 @@ def parse_args(args, parser) -> EphemeralConfiguration:
         'winetricks': cli.winetricks,
     }
 
-    config.ACTION = None
+    run_action = None
     for arg, action in actions.items():
         if getattr(args, arg):
             if arg == "set_appimage":
@@ -288,13 +289,14 @@ def parse_args(args, parser) -> EphemeralConfiguration:
                     e = f"{ephemeral_config.wine_appimage_path} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
             if arg == 'winetricks':
+                # XXX: lingering config ref
                 config.winetricks_args = getattr(args, 'winetricks')
-            config.ACTION = action
+            run_action = action
             break
-    if config.ACTION is None:
-        config.ACTION = run_control_panel
-    logging.debug(f"{config.ACTION=}")
-    return ephemeral_config
+    if run_action is None:
+        run_action = run_control_panel
+    logging.debug(f"{run_action=}")
+    return ephemeral_config, run_action
 
 
 def run_control_panel(ephemeral_config: EphemeralConfiguration):
@@ -318,7 +320,7 @@ def run_control_panel(ephemeral_config: EphemeralConfiguration):
             raise e
 
 
-def setup_config() -> EphemeralConfiguration:
+def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfiguration], None]]: #noqa: E501
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
@@ -363,15 +365,15 @@ def is_app_installed(ephemeral_config: EphemeralConfiguration):
     return utils.find_installed_product(persistent_config.faithlife_product, wine_prefix)
 
 
-def run(ephemeral_config: EphemeralConfiguration):
+def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralConfiguration], None]): #noqa: E501
     # Run desired action (requested function, defaults to control_panel)
-    if config.ACTION == "disabled":
+    if action == "disabled":
         print("That option is disabled.", file=sys.stderr)
         sys.exit(1)
-    if config.ACTION.__name__ == 'run_control_panel':
+    if action.__name__ == 'run_control_panel':
         # if utils.app_is_installed():
         #     wine.set_logos_paths()
-        config.ACTION(ephemeral_config)  # run control_panel right away
+        action(ephemeral_config)  # run control_panel right away
         return
     
     # Proceeding with the CLI interface
@@ -392,21 +394,21 @@ def run(ephemeral_config: EphemeralConfiguration):
         'toggle_app_logging',
         'winetricks',
     ]
-    if config.ACTION.__name__ not in install_required:
-        logging.info(f"Running function: {config.ACTION.__name__}")
-        config.ACTION(ephemeral_config)
+    if action.__name__ not in install_required:
+        logging.info(f"Running function: {action.__name__}")
+        action(ephemeral_config)
     elif is_app_installed(ephemeral_config):  # install_required; checking for app
         # wine.set_logos_paths()
         # Run the desired Logos action.
-        logging.info(f"Running function: {config.ACTION.__name__}")  # noqa: E501
-        config.ACTION(ephemeral_config)
+        logging.info(f"Running function: {action.__name__}")  # noqa: E501
+        action(ephemeral_config)
     else:  # install_required, but app not installed
         print("App not installed, but required for this operation. Consider installing first.", file=sys.stderr) #noqa: E501
         sys.exit(1)
 
 
 def main():
-    ephemeral_config = setup_config()
+    ephemeral_config, action = setup_config()
     system.check_architecture()
 
     # XXX: consider configuration migration from legacy to new
@@ -433,7 +435,7 @@ def main():
     # Print terminal banner
     logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501
 
-    run(ephemeral_config)
+    run(ephemeral_config, action)
 
 
 if __name__ == '__main__':
