@@ -106,6 +106,9 @@ class TUI(App):
         self.current_page: int = 0
         self.total_pages: int = 0
 
+        # Lines for the on-screen console log
+        self.console_log: list[str] = []
+
         # Note to reviewers:
         # This does expose some possibly untested code paths
         #
@@ -134,12 +137,17 @@ class TUI(App):
         logging.debug(f"Use Python Dialog?: {self.use_python_dialog}")
         self.set_window_dimensions()
 
+    @property
+    def recent_console_log(self) -> list[str]:
+        """Outputs console log trimmed by the maximum length"""
+        return self.console_log[-self.console_log_lines:]
+
     def set_window_dimensions(self):
         self.update_tty_dimensions()
         curses.resizeterm(self.window_height, self.window_width)
         self.main_window_ratio = 0.25
-        if config.console_log:
-            min_console_height = len(tui_curses.wrap_text(self, config.console_log[-1]))
+        if self.console_log:
+            min_console_height = len(tui_curses.wrap_text(self, self.console_log[-1]))
         else:
             min_console_height = 2
         self.main_window_min = (
@@ -841,7 +849,7 @@ class TUI(App):
 
     def report_waiting(self, text):
         # self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)) #noqa: E501
-        config.console_log.append(text)
+        self.console_log.append(text)
 
     def which_dialog_options(self, labels):
         options = []

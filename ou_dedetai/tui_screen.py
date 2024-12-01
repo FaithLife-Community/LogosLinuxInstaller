@@ -16,7 +16,10 @@ if system.have_dep("dialog"):
 
 class Screen:
     def __init__(self, app: App, screen_id, queue, event):
-        self.app = app
+        from ou_dedetai.tui_app import TUI
+        if not isinstance(app, TUI):
+            raise ValueError("Cannot start TUI screen with non-TUI app")
+        self.app: TUI = app
         self.stdscr = ""
         self.screen_id = screen_id
         self.choice = "Processing"
@@ -87,7 +90,7 @@ class ConsoleScreen(CursesScreen):
         console_start_y = len(tui_curses.wrap_text(self.app, self.title)) + len(
             tui_curses.wrap_text(self.app, self.subtitle)) + 1
         tui_curses.write_line(self.app, self.stdscr, console_start_y, self.app.terminal_margin, "---Console---", self.app.window_width - (self.app.terminal_margin * 2)) #noqa: E501
-        recent_messages = config.console_log[-self.app.console_log_lines:]
+        recent_messages = self.app.recent_console_log
         for i, message in enumerate(recent_messages, 1):
             message_lines = tui_curses.wrap_text(self.app, message)
             for j, line in enumerate(message_lines):
