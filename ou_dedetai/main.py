@@ -24,8 +24,6 @@ from . import system
 from . import tui_app
 from . import utils
 
-from .config import threads
-
 
 def get_parser():
     desc = "Installs FaithLife Bible Software with Wine."
@@ -311,10 +309,6 @@ def run_control_panel(ephemeral_config: EphemeralConfiguration):
             raise
         except SystemExit:
             logging.info("Caught SystemExit, exiting gracefully...")
-            try:
-                close()
-            except Exception as e:
-                raise e
             raise
         except curses.error as e:
             logging.error(f"Curses error in run_control_panel(): {e}")
@@ -442,19 +436,8 @@ def main():
     run(ephemeral_config)
 
 
-def close():
-    logging.debug(f"Closing {constants.APP_NAME}.")
-    for thread in threads:
-        # Only wait on non-daemon threads.
-        if not thread.daemon:
-            thread.join()
-    logging.debug(f"Closing {constants.APP_NAME} finished.")
-
-
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        close()
-
-    close()
+        pass

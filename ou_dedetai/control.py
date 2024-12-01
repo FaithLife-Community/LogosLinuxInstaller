@@ -84,7 +84,7 @@ def backup_and_restore(mode: str, app: App):
     # Get source transfer size.
     q = queue.Queue()
     app.status("Calculating backup size…")
-    t = utils.start_thread(utils.get_folder_group_size, src_dirs, q)
+    t = app.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
             # FIXME: consider showing a sign of life to the app
@@ -135,7 +135,7 @@ def backup_and_restore(mode: str, app: App):
     app.status("Calculating destination directory size")
     dst_dir_size = utils.get_path_size(dst_dir)
     app.status("Starting backup…")
-    t = utils.start_thread(copy_data, src_dirs, dst_dir)
+    t = app.start_thread(copy_data, src_dirs, dst_dir)
     try:
         counter = 0
         while t.is_alive():

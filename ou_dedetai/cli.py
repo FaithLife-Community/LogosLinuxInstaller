@@ -3,6 +3,7 @@ import shutil
 import threading
 from typing import Optional
 
+from ou_dedetai import constants
 from ou_dedetai.app import App
 from ou_dedetai.config import EphemeralConfiguration
 from ou_dedetai.system import SuperuserCommandNotFound
@@ -38,10 +39,13 @@ class CLI(App):
         def install(app: CLI):
             installer.install(app)
             app.exit("Install has finished", intended=True)
-        self.thread = utils.start_thread(
-            install,
-            app=self
+        self.thread = threading.Thread(
+            name=f"{constants.APP_NAME} install",
+            target=install,
+            daemon=False,
+            args=[self]
         )
+        self.thread.start()
         self.user_input_processor()
 
     def install_d3d_compiler(self):

@@ -727,18 +727,6 @@ def grep(regexp, filepath):
     return found
 
 
-def start_thread(task, *args, daemon_bool=True, **kwargs):
-    thread = threading.Thread(
-        name=f"{task}",
-        target=task,
-        daemon=daemon_bool,
-        args=args,
-        kwargs=kwargs
-    )
-    config.threads.append(thread)
-    thread.start()
-    return thread
-
 
 def str_array_to_string(text, delimeter="\n"):
     try:

@@ -48,7 +48,7 @@ class GuiApp(App):
             # Run the mainloop in this thread
             pop_up.mainloop()
         if isinstance(options, list):
-            utils.start_thread(spawn_dialog)
+            self.start_thread(spawn_dialog)
 
             answer_event.wait()
             answer: Optional[str] = answer_q.get()
@@ -277,7 +277,7 @@ class InstallerWindow(GuiApp):
         # Ensure progress counter is reset.
         self.installer_step = 0
         self.installer_step_count = 0
-        self.config_thread = utils.start_thread(
+        self.config_thread = self.start_thread(
             installer.ensure_installation_config,
             app=self,
         )
@@ -357,7 +357,7 @@ class InstallerWindow(GuiApp):
         self.gui.progress.start()
         self.gui.statusvar.set("Downloading Release list…")
         # Start thread.
-        utils.start_thread(self.get_logos_releases)
+        self.start_thread(self.get_logos_releases)
 
     def set_release(self, evt=None):
         if self.gui.releasevar.get()[0] == 'C':  # ignore default text
@@ -384,7 +384,7 @@ class InstallerWindow(GuiApp):
         self.gui.progress.start()
         self.gui.statusvar.set("Finding available wine AppImages…")
         # Start thread.
-        utils.start_thread(
+        self.start_thread(
             utils.find_appimage_files,
             release_version=release_version,
             app=self,
@@ -412,7 +412,7 @@ class InstallerWindow(GuiApp):
             app.root.event_generate(app.wine_evt)
 
         # Start thread.
-        utils.start_thread(
+        self.start_thread(
             get_wine_options,
             self,
             self.appimages,
@@ -467,7 +467,7 @@ class InstallerWindow(GuiApp):
 
     def start_install_thread(self, evt=None):
         self.gui.progress.config(mode='determinate')
-        utils.start_thread(installer.install, app=self)
+        self.start_thread(installer.install, app=self)
 
     # XXX: where should this live? here or ControlWindow?
     def _status(self, message: str, percent: int | None = None):
@@ -656,7 +656,7 @@ class ControlWindow(GuiApp):
         self.root.icon = self.conf.faithlife_product_icon_path
 
     def run_logos(self, evt=None):
-        utils.start_thread(self.logos.start)
+        self.start_thread(self.logos.start)
 
     def run_action_cmd(self, evt=None):
         self.actioncmd()
@@ -675,18 +675,18 @@ class ControlWindow(GuiApp):
                 self.actioncmd = self.install_icu
 
     def run_indexing(self, evt=None):
-        utils.start_thread(self.logos.index)
+        self.start_thread(self.logos.index)
 
     def remove_library_catalog(self, evt=None):
         control.remove_library_catalog(self)
 
     def remove_indexes(self, evt=None):
         self.gui.statusvar.set("Removing indexes…")
-        utils.start_thread(control.remove_all_index_files, app=self)
+        self.start_thread(control.remove_all_index_files, app=self)
 
     def install_icu(self, evt=None):
         self.gui.statusvar.set("Installing ICU files…")
-        utils.start_thread(wine.enforce_icu_data_files, app=self)
+        self.start_thread(wine.enforce_icu_data_files, app=self)
 
     def run_backup(self, evt=None):
         # Prepare progress bar.
@@ -694,16 +694,16 @@ class ControlWindow(GuiApp):
         self.gui.progress.config(mode='determinate')
         self.gui.progressvar.set(0)
         # Start backup thread.
-        utils.start_thread(control.backup, app=self)
+        self.start_thread(control.backup, app=self)
 
     def run_restore(self, evt=None):
         # FIXME: Allow user to choose restore source?
         # Start restore thread.
-        utils.start_thread(control.restore, app=self)
+        self.start_thread(control.restore, app=self)
 
     def install_deps(self, evt=None):
         self.start_indeterminate_progress()
-        utils.start_thread(utils.install_dependencies, self)
+        self.start_thread(utils.install_dependencies, self)
 
     def open_file_dialog(self, filetype_name, filetype_extension):
         file_path = fd.askopenfilename(
@@ -718,7 +718,7 @@ class ControlWindow(GuiApp):
     def update_to_latest_lli_release(self, evt=None):
         self.start_indeterminate_progress()
         self.gui.statusvar.set(f"Updating to latest {constants.APP_NAME} version…")  # noqa: E501
-        utils.start_thread(utils.update_to_latest_lli_release, app=self)
+        self.start_thread(utils.update_to_latest_lli_release, app=self)
 
     def set_appimage_symlink(self):
         utils.set_appimage_symlink(self)
@@ -728,7 +728,7 @@ class ControlWindow(GuiApp):
         self.conf.wine_appimage_path = self.conf.wine_appimage_recommended_file_name  # noqa: E501
         self.start_indeterminate_progress()
         self.gui.statusvar.set("Updating to latest AppImage…")
-        utils.start_thread(self.set_appimage_symlink)
+        self.start_thread(self.set_appimage_symlink)
 
     def set_appimage(self, evt=None):
         # TODO: Separate as advanced feature.
@@ -736,12 +736,12 @@ class ControlWindow(GuiApp):
         if not appimage_filename:
             return
         self.conf.wine_appimage_path = appimage_filename
-        utils.start_thread(self.set_appimage_symlink)
+        self.start_thread(self.set_appimage_symlink)
 
     def get_winetricks(self, evt=None):
         # TODO: Separate as advanced feature.
         self.gui.statusvar.set("Installing Winetricks…")
-        utils.start_thread(
+        self.start_thread(
             system.install_winetricks,
             self.conf.installer_binary_dir,
             app=self
@@ -751,10 +751,10 @@ class ControlWindow(GuiApp):
     def launch_winetricks(self, evt=None):
         self.gui.statusvar.set("Launching Winetricks…")
         # Start winetricks in thread.
-        utils.start_thread(self.run_winetricks)
+        self.start_thread(self.run_winetricks)
         # Start thread to clear status after delay.
         args = [12000, self.root.event_generate, '<<ClearStatus>>']
-        utils.start_thread(self.root.after, *args)
+        self.start_thread(self.root.after, *args)
 
     def run_winetricks(self):
         wine.run_winetricks(self)
@@ -766,7 +766,7 @@ class ControlWindow(GuiApp):
         self.gui.progress.state(['!disabled'])
         self.gui.progress.start()
         self.gui.logging_button.state(['disabled'])
-        utils.start_thread(
+        self.start_thread(
             self.logos.switch_logging,
             action=desired_state.lower()
         )

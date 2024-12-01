@@ -4,6 +4,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+import threading
 from typing import NoReturn, Optional
 
 from ou_dedetai import constants
@@ -17,6 +18,12 @@ class App(abc.ABC):
     installer_step: int = 1
     """Step the installer is on. Starts at 0"""
 
+    _threads: list[threading.Thread]
+    """List of threads
+    
+    Non-daemon threads will be joined before shutdown
+    """
+
     def __init__(self, config, **kwargs) -> None:
         # This lazy load is required otherwise these would be circular imports
         from ou_dedetai.config import Config
@@ -25,6 +32,7 @@ class App(abc.ABC):
 
         self.conf = Config(config, self)
         self.logos = LogosManager(app=self)
+        self._threads = []
         # Ensure everything is good to start
         check_incompatibilities(self)
 
@@ -104,8 +112,14 @@ class App(abc.ABC):
 
     def exit(self, reason: str, intended: bool = False) -> NoReturn:
         """Exits the application cleanly with a reason."""
+        logging.debug(f"Closing {constants.APP_NAME}.")
         # Shutdown logos/indexer if we spawned it
         self.logos.end_processes()
+        # Join threads
+        for thread in self._threads:
+            # Only wait on non-daemon threads.
+            if not thread.daemon:
+                thread.join()
         # Remove pid file if exists
         try:
             os.remove(constants.PID_FILE)
@@ -180,3 +194,18 @@ class App(abc.ABC):
 
     def _install_started_hook(self):
         """Function run when installation first begins."""
+
+    def start_thread(self, task, *args, daemon_bool: bool = True, **kwargs):
+        """Starts a new thread
+        
+        Non-daemon threads be joined before shutdown"""
+        thread = threading.Thread(
+            name=f"{constants.APP_NAME} {task}",
+            target=task,
+            daemon=daemon_bool,
+            args=args,
+            kwargs=kwargs
+        )
+        self._threads.append(thread)
+        thread.start()
+        return thread

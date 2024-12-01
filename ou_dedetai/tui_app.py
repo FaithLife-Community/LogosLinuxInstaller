@@ -408,7 +408,7 @@ class TUI(App):
             signal.signal(signal.SIGINT, self.end)
 
     def installing_pw_waiting(self):
-        utils.start_thread(self.get_waiting, screen_id=15)
+        self.start_thread(self.get_waiting, screen_id=15)
 
     def choice_processor(self, stdscr, screen_id, choice):
         screen_actions = {
@@ -466,7 +466,7 @@ class TUI(App):
             self.reset_screen()
             self.installer_step = 0
             self.installer_step_count = 0
-            utils.start_thread(
+            self.start_thread(
                 installer.install,
                 daemon_bool=True,
                 app=self,
@@ -605,10 +605,10 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Back Up Data":
             self.reset_screen()
-            utils.start_thread(self.do_backup)
+            self.start_thread(self.do_backup)
         elif choice == "Restore Data":
             self.reset_screen()
-            utils.start_thread(self.do_backup)
+            self.start_thread(self.do_backup)
         elif choice == "Update to Latest AppImage":
             self.reset_screen()
             utils.update_to_latest_recommended_appimage(self)

@@ -110,11 +110,10 @@ class LogosManager:
             wine.wineserver_kill(self.app)
             app = self.app
             from ou_dedetai.gui_app import GuiApp
-            if isinstance(self.app, GuiApp):
+            if not isinstance(self.app, GuiApp):
                 # Don't send "Running" message to GUI b/c it never clears.
-                app = None
-            app.status(f"Running {self.app.conf.faithlife_product}…")
-            utils.start_thread(run_logos, daemon_bool=False)
+                app.status(f"Running {self.app.conf.faithlife_product}…")
+            self.app.start_thread(run_logos, daemon_bool=False)
             # NOTE: The following code would keep the CLI open while running
             # Logos, but since wine logging is sent directly to wine.log,
             # there's no terminal output to see. A user can see that output by:
@@ -206,15 +205,14 @@ class LogosManager:
 
         wine.wineserver_kill(self.app)
         self.app.status("Indexing has begun…")
-        index_thread = utils.start_thread(run_indexing, daemon_bool=False)
+        index_thread = self.app.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
-        check_thread = utils.start_thread(
+        self.app.start_thread(
             check_if_indexing,
             index_thread,
             daemon_bool=False
         )
-        wait_thread = utils.start_thread(wait_on_indexing, daemon_bool=False)
-        main.threads.extend([index_thread, check_thread, wait_thread])
+        self.app.start_thread(wait_on_indexing, daemon_bool=False)
 
     def stop_indexing(self):
         self.indexing_state = State.STOPPING
