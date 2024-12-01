@@ -2,17 +2,10 @@ import gzip
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-import signal
 import shutil
 import sys
 
 from pathlib import Path
-
-from . import config
-from . import constants
-from . import utils
-from .gui import ask_question
-from .gui import show_error
 
 
 class GzippedRotatingFileHandler(RotatingFileHandler):
@@ -134,16 +127,4 @@ def update_log_level(new_level):
         if type(h) is logging.StreamHandler:
             h.setLevel(new_level)
     logging.info(f"Terminal log level set to {get_log_level_name(new_level)}")
-
-
-def cli_msg(message, end='\n'):
-    '''Prints message to stdout regardless of log level.'''
-    print(message, end=end)
-
-
-def get_progress_str(percent):
-    length = 40
-    part_done = round(percent * length / 100)
-    part_left = length - part_done
-    return f"[{'*' * part_done}{'-' * part_left}]"
 
