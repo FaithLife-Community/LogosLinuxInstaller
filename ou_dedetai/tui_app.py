@@ -733,12 +733,10 @@ class TUI(App):
             self.switch_screen()
 
     def handle_ask_file_response(self, choice: Optional[str]):
-        # XXX: can there be some sort of feedback if this file path isn't valid?
         if choice is not None and Path(choice).exists() and Path(choice).is_file():
             self.handle_ask_response(choice)
 
     def handle_ask_directory_response(self, choice: Optional[str]):
-        # XXX: can there be some sort of feedback if this directory path isn't valid?
         if choice is not None and Path(choice).exists() and Path(choice).is_dir():
             self.handle_ask_response(choice)
 

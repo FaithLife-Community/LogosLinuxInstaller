@@ -200,7 +200,6 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
     else:
         ephemeral_config = EphemeralConfiguration.load()
 
-    # XXX: move the following options into the ephemeral_config
     if args.verbose:
         msg.update_log_level(logging.INFO)
 

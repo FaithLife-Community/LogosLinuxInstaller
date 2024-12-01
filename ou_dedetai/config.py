@@ -382,7 +382,6 @@ class PersistentConfiguration:
             for k, v in output.items():
                 if k == "install_dir":
                     continue
-                # XXX: test this
                 if isinstance(v, Path) or (isinstance(v, str) and v.startswith(str(self.install_dir))): #noqa: E501
                     output[k] = utils.get_relative_path(v, str(self.install_dir))
 

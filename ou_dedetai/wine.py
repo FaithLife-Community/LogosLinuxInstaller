@@ -414,7 +414,7 @@ def set_win_version(app: App, exe: str, windows_version: str):
         system.wait_pid(process)
 
 
-# FIXME: consider when to run this (in the update case)
+# XXX: consider when to run this (in the update case)
 def enforce_icu_data_files(app: App):
     app.status("Downloading ICU files...")
     # XXX: consider moving the version and url information into config (and cached)

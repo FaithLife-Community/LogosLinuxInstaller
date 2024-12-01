@@ -49,8 +49,7 @@ no_implicit_reexport = true
 extra_checks = true
 
 [[tool.mypy.overrides]]
-# XXX: change this to config after refactor is complete
-module = "ou_dedetai.new_config"
+module = "ou_dedetai.config"
 disallow_untyped_calls = true
 check_untyped_defs = true
 

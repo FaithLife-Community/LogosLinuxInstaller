@@ -722,7 +722,6 @@ def postinstall_dependencies(superuser_command: str):
     return command
 
 
-# XXX: move this to control, prompts additional values from app
 def install_dependencies(app: App, target_version=10):  # noqa: E501
     if app.conf.skip_install_system_dependencies:
         return

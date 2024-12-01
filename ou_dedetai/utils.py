@@ -26,8 +26,6 @@ from . import network
 from . import system
 from . import wine
 
-# TODO: Move config commands to config.py
-
 
 def get_calling_function_name():
     if 'inspect' in sys.modules:
@@ -44,28 +42,6 @@ def append_unique(list, item):
         list.append(item)
     else:
         logging.debug(f"{item} already in {list}.")
-
-
-# XXX: remove, no need.
-def write_config(config_file_path):
-    pass
-
-
-# XXX: refactor
-def update_config_file(config_file_path, key, value):
-    config_file_path = Path(config_file_path)
-    with config_file_path.open(mode='r') as f:
-        config_data = json.load(f)
-
-    if config_data.get(key) != value:
-        logging.info(f"Updating {str(config_file_path)} with: {key} = {value}")
-        config_data[key] = value
-        try:
-            with config_file_path.open(mode='w') as f:
-                json.dump(config_data, f, indent=4, sort_keys=True)
-                f.write('\n')
-        except IOError as e:
-            raise (f"Error writing to config file {config_file_path}: {e}") from e # noqa: E501
 
 
 def die_if_running(app: App):
