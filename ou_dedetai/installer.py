@@ -352,7 +352,7 @@ def ensure_winetricks_applied(app: App):
 
         # NOTE: Can't use utils.grep check here because the string
         # "Version"="win10" might appear elsewhere in the registry.
-        msg.logos_msg(f"Setting {app.conf.faithlife_product} Bible Indexing to Win10 Mode…")  # noqa: E501
+        app.status(f"Setting {app.conf.faithlife_product} Bible Indexing to Win10 Mode…")  # noqa: E501
         wine.set_win_version(app, "indexer", "win10")
         # wine.light_wineserver_wait()
         wine.wineserver_wait(app)

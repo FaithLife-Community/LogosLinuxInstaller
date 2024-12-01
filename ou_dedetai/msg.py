@@ -141,13 +141,6 @@ def cli_msg(message, end='\n'):
     print(message, end=end)
 
 
-def logos_msg(message, end='\n'):
-    if config.DIALOG == 'curses':
-        pass
-    else:
-        cli_msg(message, end)
-
-
 def get_progress_str(percent):
     length = 40
     part_done = round(percent * length / 100)
