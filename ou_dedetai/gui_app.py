@@ -52,9 +52,6 @@ class GuiApp(App):
 
             answer_event.wait()
             answer: Optional[str] = answer_q.get()
-            if answer is None:
-                self.root.destroy()
-                return None
         elif isinstance(options, str):
             answer = options
 

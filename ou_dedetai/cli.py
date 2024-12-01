@@ -108,8 +108,8 @@ class CLI(App):
         self.input_event.set()
         self.choice_event.wait()
         self.choice_event.clear()
-        # XXX: This is always a freeform input, perhaps we should have some sort of validation?
         output: str = self.choice_q.get()
+        # NOTE: this response is validated in App's .ask
         return output
 
     def exit(self, reason: str, intended: bool = False):

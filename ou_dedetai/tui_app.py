@@ -617,11 +617,9 @@ class TUI(App):
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
         if isinstance(options, str):
             answer = options
-
-        if isinstance(options, list):
-            options = self.which_dialog_options(options, config.use_python_dialog)
-            self.menu_options = options
-            self.screen_q.put(self.stack_menu(2, Queue(), threading.Event(), question, options, dialog=config.use_python_dialog))
+        elif isinstance(options, list):
+            self.menu_options = self.which_dialog_options(options, config.use_python_dialog)
+            self.screen_q.put(self.stack_menu(2, Queue(), threading.Event(), question, self.menu_options, dialog=config.use_python_dialog)) #noqa: E501
 
             # Now wait for it to complete
             self.ask_answer_event.wait()

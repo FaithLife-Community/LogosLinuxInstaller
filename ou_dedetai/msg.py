@@ -148,6 +148,7 @@ def logos_msg(message, end='\n'):
         cli_msg(message, end)
 
 
+# XXX: remove in favor of app.status("message", percent)
 def logos_progress():
     if config.DIALOG == 'curses':
         pass
@@ -163,12 +164,14 @@ def logos_progress():
 
 
 def logos_warn(message):
+    # XXX: shouldn't this always use logging.warning?
     if config.DIALOG == 'curses':
         logging.warning(message)
     else:
         logos_msg(message)
 
 
+# XXX: move this to app as... message?
 def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
     if detail is None:
         detail = ''
@@ -237,6 +240,7 @@ def logos_warning(message, secondary=None, detail=None, app=None, parent=None):
     logging.error(message)
 
 
+# XXX: remove in favor of app.ask
 def cli_question(question_text, secondary=""):
     while True:
         try:
@@ -281,6 +285,7 @@ def cli_ask_filepath(question_text):
         logos_error("Cancelled with Ctrl+C")
 
 
+# XXX: remove in favor of confirm_or_die
 def logos_continue_question(question_text, no_text, secondary, app=None):
     if config.DIALOG == 'tk':
         gui_continue_question(question_text, no_text, secondary)
@@ -302,6 +307,7 @@ def logos_continue_question(question_text, no_text, secondary, app=None):
         logos_error(f"Unhandled question: {question_text}")
 
 
+# XXX: remove in favor of confirm
 def logos_acknowledge_question(question_text, no_text, secondary):
     if config.DIALOG == 'curses':
         pass
@@ -316,6 +322,7 @@ def get_progress_str(percent):
     return f"[{'*' * part_done}{'-' * part_left}]"
 
 
+# XXX: remove in favor of app.status
 def progress(percent, app=None):
     """Updates progressbar values for TUI and GUI."""
     if config.DIALOG == 'tk' and app:

@@ -46,14 +46,10 @@ def backup_and_restore(mode: str, app: App):
         pass  # user confirms in GUI or TUI
     else:
         verb = 'Use' if mode == 'backup' else 'Restore backup from'
-        if not msg.cli_question(f"{verb} existing backups folder \"{app.conf.backup_dir}\"?", ""):  # noqa: E501
-            answer = None
-            while answer is None or (mode == 'restore' and not answer.is_dir()):  # noqa: E501
-                answer = msg.cli_ask_filepath("Please provide a backups folder path:")
-                answer = Path(answer).expanduser().resolve()
-                if not answer.is_dir():
-                    msg.status(f"Not a valid folder path: {answer}", app=app)
-            config.app.conf.backup_directory = answer
+        if not app.approve(f"{verb} existing backups folder \"{app.conf.backup_dir}\"?"): #noqa: E501
+            # Reset backup dir.
+            # The app will re-prompt next time the backup_dir is accessed
+            app.conf._raw.backup_dir = None
 
     # Set source folders.
     backup_dir = Path(app.conf.backup_dir)
@@ -186,14 +182,13 @@ def copy_data(src_dirs, dst_dir):
 
 def remove_install_dir(app: App):
     folder = Path(app.conf.install_dir)
-    if (
-        folder.is_dir()
-        and msg.cli_question(f"Delete \"{folder}\" and all its contents?")
-    ):
+    question = f"Delete \"{folder}\" and all its contents?"
+    if not folder.is_dir():
+        logging.info(f"Folder doesn't exist: {folder}")
+        return
+    if app.approve(question):
         shutil.rmtree(folder)
         logging.warning(f"Deleted folder and all its contents: {folder}")
-    else:
-        logging.info(f"Folder doesn't exist: {folder}")
 
 
 def remove_all_index_files(app: App):
