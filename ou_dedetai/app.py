@@ -23,6 +23,8 @@ class App(abc.ABC):
     
     Non-daemon threads will be joined before shutdown
     """
+    _last_status: Optional[str] = None
+    """The last status we had"""
 
     def __init__(self, config, **kwargs) -> None:
         # This lazy load is required otherwise these would be circular imports
@@ -169,10 +171,13 @@ class App(abc.ABC):
         else:
             # Otherwise just print status using the progress given
             self._status(message, percent)
+        self._last_status = message
 
     def _status(self, message: str, percent: Optional[int] = None):
         """Implementation for updating status pre-front end"""
-        print(f"{message}")
+        # De-dup
+        if message != self._last_status:
+            print(f"{message}")
 
     @property
     def superuser_command(self) -> str:

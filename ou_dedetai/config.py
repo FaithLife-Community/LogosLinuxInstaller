@@ -488,6 +488,20 @@ class Config:
         self._raw.write_config()
         self.app._config_updated_hook()
 
+    def _absolute_from_install_dir(self, path: Path | str) -> str:
+        """Takes in a possibly relative path under install dir and turns it into an
+        absolute path
+        
+        Args:
+            path - can be absolute or relative to install dir
+        
+        Returns:
+            path - absolute
+        """
+        if not Path(path).is_absolute():
+            return str(Path(self.install_dir) / path)
+        return str(path)
+
     # XXX: Add a reload command to resolve #168 (at least plumb the backend)
 
     @property
@@ -592,10 +606,8 @@ class Config:
         question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {self.faithlife_product} requires on Linux."  # noqa: E501
         options = utils.get_winetricks_options()
         output = self._ask_if_not_found("winetricks_binary", question, options)
-        if (Path(self.install_dir) / output).exists():
-            return str(Path(self.install_dir) / output)
-        return output
-    
+        return self._absolute_from_install_dir(output)
+
     @winetricks_binary.setter
     def winetricks_binary(self, value: Optional[str | Path]):
         if value is not None:
@@ -690,15 +702,15 @@ class Config:
     # FIXME: seems like the logic around wine appimages can be simplified
     # Should this be folded into wine_binary?
     @property
-    def wine_appimage_path(self) -> Optional[str]:
+    def wine_appimage_path(self) -> Optional[Path]:
         """Path to the wine appimage
         
         Returns:
             Path if wine is set to use an appimage, otherwise returns None"""
         if self._overrides.wine_appimage_path is not None:
-            return self._overrides.wine_appimage_path
+            return Path(self._absolute_from_install_dir(self._overrides.wine_appimage_path)) #noqa: E501
         if self.wine_binary.lower().endswith("appimage"):
-            return self.wine_binary
+            return Path(self._absolute_from_install_dir(self.wine_binary))
         return None
     
     @wine_appimage_path.setter

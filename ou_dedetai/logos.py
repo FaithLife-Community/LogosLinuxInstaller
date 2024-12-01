@@ -84,7 +84,7 @@ class LogosManager:
 
     def start(self):
         self.logos_state = State.STARTING
-        wine_release, _ = wine.get_wine_release()
+        wine_release, _ = wine.get_wine_release(self.app.conf.wine_binary)
 
         def run_logos():
             process = wine.run_wine_proc(

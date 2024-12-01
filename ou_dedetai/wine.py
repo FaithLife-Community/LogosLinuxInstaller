@@ -204,7 +204,7 @@ def check_wine_version_and_branch(release_version, test_binary,
     if not result:
         return result, message
 
-    if wine_release[0] > 9:
+    if wine_release.major > 9:
         pass
 
     return True, "None"
@@ -257,7 +257,7 @@ def disable_winemenubuilder(app: App, wine64_binary: str):
 "winemenubuilder.exe"=""
 ''')
     wine_reg_install(app, reg_file, wine64_binary)
-    os.remove(workdir)
+    shutil.rmtree(workdir)
 
 
 def install_msi(app: App):
@@ -377,7 +377,7 @@ def install_fonts(app: App):
     fonts = ['corefonts', 'tahoma']
     if not app.conf.skip_install_fonts:
         for i, f in enumerate(fonts):
-            app.status("Configuring fonts, this step may take several minutes…", i / len(fonts)) # noqa: E501
+            app.status(f"Configuring font: {f}…", i / len(fonts)) # noqa: E501
             args = [f]
             run_winetricks_cmd(app, *args)
 

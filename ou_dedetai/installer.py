@@ -374,6 +374,7 @@ def ensure_product_installed(app: App):
     app.status(f"Ensuring {app.conf.faithlife_product} is installed…")
 
     if not app.is_installed():
+        # XXX: should we try to cleanup on a failed msi?
         process = wine.install_msi(app)
         system.wait_pid(process)
 
@@ -412,7 +413,7 @@ def ensure_launcher_executable(app: App):
         logging.debug(f"> File exists?: {launcher_exe}: {launcher_exe.is_file()}")  # noqa: E501
     else:
         app.status(
-            "Running from source. Skipping launcher creation."
+            "Running from source. Skipping launcher copy."
         )
 
 
@@ -457,7 +458,7 @@ def create_wine_appimage_symlinks(app: App):
     if downloaded_file is None:
         logging.critical("Failed to get a valid wine appimage")
         return
-    if Path(downloaded_file).parent != appdir_bindir:
+    if not appimage_file.exists():
         app.status(f"Copying: {downloaded_file} into: {appdir_bindir}")
         shutil.copy(downloaded_file, appdir_bindir)
     os.chmod(appimage_file, 0o755)

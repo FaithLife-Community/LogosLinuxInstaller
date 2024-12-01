@@ -125,13 +125,22 @@ class CLI(App):
     
     def _status(self, message: str, percent: Optional[int] = None):
         """Implementation for updating status pre-front end"""
+        prefix = ""
+        end = "\n"
+        if message == self._last_status:
+            # Go back to the beginning of the line to re-write the current line
+            # Rather than sending a new one. This allows the current line to update
+            prefix += "\r"
+            end = "\r"
         if percent:
+            # XXX: it's possible for the progress to seem to go backwards if anyone
+            # status is sent during the same install step with percent 0
             percent_per_char = 5
             chars_of_progress = round(percent / percent_per_char)
             chars_remaining = round((100 - percent) / percent_per_char)
             progress_str = "[" + "-" * chars_of_progress + " " * chars_remaining + "] "
-            print(progress_str, end="")
-        print(f"{message}")
+            prefix += progress_str
+        print(f"{prefix}{message}", end=end)
 
     @property
     def superuser_command(self) -> str:
