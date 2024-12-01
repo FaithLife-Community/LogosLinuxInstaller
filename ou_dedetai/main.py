@@ -246,33 +246,44 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
     if args.passive:
         ephemeral_config.faithlife_install_passive = True
 
+
+    def cli_operation(action: str) -> Callable[[EphemeralConfiguration], None]:
+        """Wrapper for a function pointer to a given function under CLI
+        
+        Lazilay instantiates CLI at call-time"""
+        def _run(config: EphemeralConfiguration):
+            getattr(cli.CLI(config), action)()
+        output = _run
+        output.__name__ = action
+        return output
+
     # Set action return function.
-    actions = {
-        'backup': cli.backup,
-        'create_shortcuts': cli.create_shortcuts,
-        'edit_config': cli.edit_config,
-        'get_winetricks': cli.get_winetricks,
-        'install_app': cli.install_app,
-        'install_d3d_compiler': cli.install_d3d_compiler,
-        'install_dependencies': cli.install_dependencies,
-        'install_fonts': cli.install_fonts,
-        'install_icu': cli.install_icu,
-        'remove_index_files': cli.remove_index_files,
-        'remove_install_dir': cli.remove_install_dir,
-        'remove_library_catalog': cli.remove_library_catalog,
-        'restore': cli.restore,
-        'run_indexing': cli.run_indexing,
-        'run_installed_app': cli.run_installed_app,
-        'run_winetricks': cli.run_winetricks,
-        'set_appimage': cli.set_appimage,
-        'toggle_app_logging': cli.toggle_app_logging,
-        'update_self': cli.update_self,
-        'update_latest_appimage': cli.update_latest_appimage,
-        'winetricks': cli.winetricks,
-    }
+    actions = [
+        'backup',
+        'create_shortcuts',
+        'edit_config',
+        'get_winetricks',
+        'install_app',
+        'install_d3d_compiler',
+        'install_dependencies',
+        'install_fonts',
+        'install_icu',
+        'remove_index_files',
+        'remove_install_dir',
+        'remove_library_catalog',
+        'restore',
+        'run_indexing',
+        'run_installed_app',
+        'run_winetricks',
+        'set_appimage',
+        'toggle_app_logging',
+        'update_self',
+        'update_latest_appimage',
+        'winetricks',
+    ]
 
     run_action = None
-    for arg, action in actions.items():
+    for arg in actions:
         if getattr(args, arg):
             if arg == "set_appimage":
                 ephemeral_config.wine_appimage_path = getattr(args, arg)[0]
@@ -284,7 +295,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
                     raise argparse.ArgumentTypeError(e)
             if arg == 'winetricks':
                 ephemeral_config.winetricks_args = getattr(args, 'winetricks')
-            run_action = action
+            run_action = cli_operation(arg)
             break
     if run_action is None:
         run_action = run_control_panel
