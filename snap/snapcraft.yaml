@@ -221,8 +221,9 @@ parts:
       - CFLAGS_X64: "-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
       #-- oudedetai additions & overrides
       #-- https://github.com/mmtrt/Wine-Builds/blob/master/create_ubuntu_bootstraps.sh
-      #-- mmtrt uses a 32-bit chroot for building, while we build straight on
-      #-- 64-bit, so we remove the '-march=i686' flag.
+      #-- mmtrt uses chroots with different arches for building the 32-bit and
+      #-- 64-bit parts, so he specifies the arch in CFLAGS. We build straight
+      #-- on 64-bit, so we don't have to specify the arch.
       - CFLAGS_X64: "-msse3 -mfpmath=sse -O2 -ftree-vectorize"
       - MAKEFLAGS: "-j$(nproc)"
       #--
