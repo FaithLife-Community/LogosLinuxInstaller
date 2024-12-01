@@ -175,6 +175,7 @@ def logos_warn(message):
 def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
     if detail is None:
         detail = ''
+    # XXX: move these to constants and output them on error
     WIKI_LINK = f"{constants.REPOSITORY_LINK}/wiki"
     TELEGRAM_LINK = "https://t.me/linux_logos"
     MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
@@ -195,44 +196,6 @@ def ui_message(message, secondary=None, detail=None, app=None, parent=None, fata
             logos_msg(message)
     else:
         logos_msg(message)
-
-
-# TODO: I think detail is doing the same thing as secondary.
-def logos_error(message: str, secondary=None, detail=None, app=None, parent=None):
-    # if detail is None:
-    #     detail = ''
-    # WIKI_LINK = f"{constants.REPOSITORY_LINK}/wiki"
-    # TELEGRAM_LINK = "https://t.me/linux_logos"
-    # MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
-    # help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
-    # if config.DIALOG == 'tk':
-    #     show_error(
-    #         message,
-    #         detail=f"{detail}\n\n{help_message}",
-    #         app=app,
-    #         parent=parent
-    #     )
-    # elif config.DIALOG == 'curses':
-    #     if secondary != "info":
-    #         status(message)
-    #         status(help_message)
-    #     else:
-    #         logos_msg(message)
-    # else:
-    #     logos_msg(message)
-    ui_message(message, secondary=secondary, detail=detail, app=app, parent=parent, fatal=True)  # noqa: E501
-
-    logging.critical(message)
-    if secondary is None or secondary == "":
-        try:
-            os.remove(constants.PID_FILE)
-        except FileNotFoundError:  # no pid file when testing functions
-            pass
-        os.kill(os.getpgid(os.getpid()), signal.SIGKILL)
-
-    if hasattr(app, 'destroy'):
-        app.destroy()
-    sys.exit(1)
 
 
 def logos_warning(message, secondary=None, detail=None, app=None, parent=None):

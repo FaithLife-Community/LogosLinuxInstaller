@@ -228,7 +228,7 @@ def wine_reg_install(app: App, reg_file, wine64_binary):
     if process is None or process.returncode != 0:
         failed = "Failed to install reg file"
         logging.debug(f"{failed}. {process=}")
-        msg.logos_error(f"{failed}: {reg_file}")
+        app.exit(f"{failed}: {reg_file}")
     elif process.returncode == 0:
         logging.info(f"{reg_file} installed.")
     wineserver_wait(app)

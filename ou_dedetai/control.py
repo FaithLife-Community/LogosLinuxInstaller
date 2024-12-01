@@ -98,7 +98,7 @@ def backup_and_restore(mode: str, app: App):
         print()
     except KeyboardInterrupt:
         print()
-        msg.logos_error("Cancelled with Ctrl+C.", app=app)
+        app.exit("Cancelled with Ctrl+C.")
     t.join()
     src_size = q.get()
     if src_size == 0:
@@ -123,7 +123,8 @@ def backup_and_restore(mode: str, app: App):
         try:
             dst_dir.mkdir()
         except FileExistsError:
-            msg.logos_error(f"Backup already exists: {dst_dir}.")
+            # This shouldn't happen, there is a timestamp in the backup_dir name
+            app.exit(f"Backup already exists: {dst_dir}.")
 
     # Verify disk space.
     if not utils.enough_disk_space(dst_dir, src_size):
@@ -159,7 +160,7 @@ def backup_and_restore(mode: str, app: App):
         print()
     except KeyboardInterrupt:
         print()
-        msg.logos_error("Cancelled with Ctrl+C.")
+        app.exit("Cancelled with Ctrl+C.")
     t.join()
     app.status(f"Finished {mode}. {src_size} bytes copied to {str(dst_dir)}")
 

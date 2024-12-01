@@ -73,6 +73,10 @@ class GuiApp(App):
         return messagebox.askquestion(question, context) == 'yes'
 
     def exit(self, reason: str, intended: bool = False):
+        # Create a little dialog before we die so the user can see why this happened
+        if not intended:
+            # XXX: add support information
+            gui.show_error(reason, fatal=True)
         self.root.destroy()
         return super().exit(reason, intended)
     

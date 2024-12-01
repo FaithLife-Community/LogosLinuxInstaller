@@ -395,7 +395,8 @@ def is_app_installed(ephemeral_config: EphemeralConfiguration):
 def run(ephemeral_config: EphemeralConfiguration):
     # Run desired action (requested function, defaults to control_panel)
     if config.ACTION == "disabled":
-        msg.logos_error("That option is disabled.", "info")
+        print("That option is disabled.", file=sys.stderr)
+        sys.exit(1)
     if config.ACTION.__name__ == 'run_control_panel':
         # if utils.app_is_installed():
         #     wine.set_logos_paths()
@@ -430,7 +431,8 @@ def run(ephemeral_config: EphemeralConfiguration):
         logging.info(f"Running function: {config.ACTION.__name__}")  # noqa: E501
         config.ACTION(ephemeral_config)
     else:  # install_required, but app not installed
-        msg.logos_error("App not installed…")
+        print("App not installed, but required for this operation. Consider installing first.", file=sys.stderr) #noqa: E501
+        sys.exit(1)
 
 
 def main():
@@ -455,7 +457,8 @@ def main():
     # program.
     # utils.die_if_running()
     if os.getuid() == 0 and not ephemeral_config.app_run_as_root_permitted:
-        msg.logos_error("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F")  # noqa: E501
+        print("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F", file=sys.stderr)  # noqa: E501
+        sys.exit(1)
 
     # Print terminal banner
     logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501

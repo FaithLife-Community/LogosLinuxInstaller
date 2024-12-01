@@ -399,7 +399,7 @@ class PersistentConfiguration:
                 json.dump(output, config_file, indent=4, sort_keys=True)
                 config_file.write('\n')
         except IOError as e:
-            msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
+            logging.error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
             # Continue, the installer can still operate even if it fails to write.
 
 

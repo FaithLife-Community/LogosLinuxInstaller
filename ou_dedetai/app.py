@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 from typing import NoReturn, Optional
 
+from ou_dedetai import constants
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
 
 
@@ -101,12 +102,21 @@ class App(abc.ABC):
         return self.ask(question, options) == "Yes"
 
     def exit(self, reason: str, intended:bool=False) -> NoReturn:
-        """Exits the application cleanly with a reason"""
+        """Exits the application cleanly with a reason."""
+        # XXX: print out support information
+
+        # Shutdown logos/indexer if we spawned it
         self.logos.end_processes()
+        # Remove pid file if exists
+        try:
+            os.remove(constants.PID_FILE)
+        except FileNotFoundError:  # no pid file when testing functions
+            pass
+        # exit from the process
         if intended:
             sys.exit(0)
         else:
-            logging.error(f"Cannot continue because {reason}")
+            logging.critical(f"Cannot continue because {reason}")
             sys.exit(1)
 
     _exit_option: Optional[str] = "Exit"

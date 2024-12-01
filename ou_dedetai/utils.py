@@ -79,7 +79,7 @@ def update_config_file(config_file_path, key, value):
                 json.dump(config_data, f, indent=4, sort_keys=True)
                 f.write('\n')
         except IOError as e:
-            msg.logos_error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
+            raise (f"Error writing to config file {config_file_path}: {e}") from e # noqa: E501
 
 
 def die_if_running(app: App):
@@ -118,13 +118,6 @@ def clean_all():
     logging.info("Cleaning all temp files…")
     os.system(f"rm -f {os.getcwd()}/wget-log*")
     logging.info("done")
-
-
-def mkdir_critical(directory):
-    try:
-        os.mkdir(directory)
-    except OSError:
-        msg.logos_error(f"Can't create the {directory} directory")
 
 
 def get_user_downloads_dir() -> str:
@@ -655,7 +648,7 @@ def set_appimage_symlink(app: App):
         selected_appimage_file_path = appimage_file_path
         # Verify user-selected AppImage.
         if not check_appimage(selected_appimage_file_path):
-            msg.logos_error(f"Cannot use {selected_appimage_file_path}.")
+            app.exit(f"Cannot use {selected_appimage_file_path}.")
 
         # Determine if user wants their AppImage in the app bin dir.
         copy_question = (

@@ -218,14 +218,16 @@ def reboot(superuser_command: str):
 
 def get_dialog():
     if not os.environ.get('DISPLAY'):
-        msg.logos_error("The installer does not work unless you are running a display")  # noqa: E501
+        print("The installer does not work unless you are running a display", file=sys.stderr)  # noqa: E501
+        sys.exit(1)
 
     dialog = os.getenv('DIALOG')
     # Set config.DIALOG.
     if dialog is not None:
         dialog = dialog.lower()
         if dialog not in ['cli', 'curses', 'tk']:
-            msg.logos_error("Valid values for DIALOG are 'cli', 'curses' or 'tk'.")  # noqa: E501
+            print("Valid values for DIALOG are 'cli', 'curses' or 'tk'.", file=sys.stderr)  # noqa: E501
+            sys.exit(1)
         config.DIALOG = dialog
     elif sys.__stdin__.isatty():
         config.DIALOG = 'curses'
@@ -489,9 +491,7 @@ def get_package_manager() -> PackageManager | None:
         incompatible_packages = ""  # appimagelauncher handled separately
     else:
         # Add more conditions for other package managers as needed.
-        error = "Your package manager is not yet supported. Please contact the developers."
-        msg.logos_error(error)  # noqa: E501
-        return None
+        logging.critical("Your package manager is not yet supported. Please contact the developers.")
 
     output = PackageManager(
         install=install_command,
@@ -635,8 +635,7 @@ def remove_appimagelauncher(app: App):
     pkg = "appimagelauncher"
     package_manager = get_package_manager()
     if package_manager is None:
-        msg.logos_error("Failed to find the package manager to uninstall AppImageLauncher.")
-        sys.exit(1)
+        app.exit("Failed to find the package manager to uninstall AppImageLauncher.")
     cmd = [app.superuser_command, *package_manager.remove, pkg]  # noqa: E501
     try:
         logging.debug(f"Running command: {cmd}")
@@ -647,8 +646,7 @@ def remove_appimagelauncher(app: App):
         else:
             logging.error(f"An error occurred: {e}")
             logging.error(f"Command output: {e.output}")
-        msg.logos_error("Failed to uninstall AppImageLauncher.")
-        sys.exit(1)
+        app.exit(f"Failed to uninstall AppImageLauncher: {e}")
     logging.info("System reboot is required.")
     sys.exit()
 
@@ -740,10 +738,9 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     os_name, _ = get_os()
 
     if not package_manager:
-        msg.logos_error(
+        app.exit(
             f"The script could not determine your {os_name} install's package manager or it is unsupported."  # noqa: E501
         )
-        # XXX: raise error or exit?
         return
 
     package_list = package_manager.packages.split()

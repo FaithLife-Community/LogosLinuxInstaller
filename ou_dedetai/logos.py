@@ -104,7 +104,7 @@ class LogosManager:
             self.app.conf.faithlife_product_version
         )
         if not good_wine:
-            msg.logos_error(reason, app=self)
+            self.app.exit(reason)
         else:
             if reason is not None:
                 logging.debug(f"Warning: Wine Check: {reason}")

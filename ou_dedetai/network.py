@@ -81,10 +81,8 @@ class UrlProps(Props):
         except Exception as e:
             logging.error(e)
             return None
-        except KeyboardInterrupt:
-            print()
-            msg.logos_error("Interrupted by Ctrl+C")
-            return None
+        # XXX: should we have a more generic catch for KeyboardInterrupt rather than deep in this function? #noqa: E501
+        # except KeyboardInterrupt:
         self.headers = r.headers
         return self.headers
 
@@ -175,7 +173,7 @@ def logos_reuse_download(
             except shutil.SameFileError:
                 pass
         else:
-            msg.logos_error(f"Bad file size or checksum: {file_path}")
+            app.exit(f"Bad file size or checksum: {file_path}")
 
 
 # FIXME: refactor to raise rather than return None
@@ -274,11 +272,6 @@ def net_get(url, target=None, app: Optional[App] = None, evt=None, q=None):
     except requests.exceptions.RequestException as e:
         logging.error(f"Error occurred during HTTP request: {e}")
         return None  # Return None values to indicate an error condition
-    except Exception as e:
-        msg.logos_error(e)
-    except KeyboardInterrupt:
-        print()
-        msg.logos_error("Killed with Ctrl+C")
 
 
 def verify_downloaded_file(url, file_path, app: Optional[App]=None):
