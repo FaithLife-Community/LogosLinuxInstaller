@@ -269,7 +269,8 @@ def install_elf_interpreter():
     # ELF interpreter between box64, FEX-EMU, and hangover. That or else we have to pursue a particular interpreter
     # for the install routine, depending on what's needed
     logging.critical("ELF interpretation is not yet coded in the installer.")
-    # if "x86_64" not in config.architecture:
+    # architecture, bits = get_architecture()
+    # if "x86_64" not in architecture:
     #     if config.ELFPACKAGES is not None:
     #         utils.install_packages(config.ELFPACKAGES)
     #     else:
@@ -280,21 +281,23 @@ def install_elf_interpreter():
 
 
 def check_architecture():
-    if "x86_64" in config.architecture:
+    architecture, bits = get_architecture()
+    logging.debug(f"Current Architecture: {architecture}, {bits}bit.")
+    if "x86_64" in architecture:
         pass
-    elif "ARM64" in config.architecture:
+    elif "ARM64" in architecture:
         logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
         install_elf_interpreter()
-    elif "RISC-V 64" in config.architecture:
+    elif "RISC-V 64" in architecture:
         logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
         install_elf_interpreter()
-    elif "x86_32" in config.architecture:
+    elif "x86_32" in architecture:
         logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
         install_elf_interpreter()
-    elif "ARM32" in config.architecture:
+    elif "ARM32" in architecture:
         logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
         install_elf_interpreter()
-    elif "RISC-V 32" in config.architecture:
+    elif "RISC-V 32" in architecture:
         logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
         install_elf_interpreter()
     else:
@@ -347,6 +350,8 @@ class PackageManager:
     logos_9_packages: str
     
     incompatible_packages: str
+    # For future expansion:
+    # elf_packages: str
 
 
 def get_package_manager() -> PackageManager | None:

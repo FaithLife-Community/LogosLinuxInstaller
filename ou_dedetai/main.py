@@ -380,8 +380,6 @@ def set_dialog():
     logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
     # Set Architecture
 
-    config.architecture, config.bits = system.get_architecture()
-    logging.debug(f"Current Architecture: {config.architecture}, {config.bits}bit.")
     system.check_architecture()
 
 
