@@ -140,10 +140,6 @@ class App(abc.ABC):
             return os.access(self.conf.logos_exe, os.X_OK)
         return False
 
-    # def message(self, message: str):
-    #     """Show the user a message in their native UI"""
-    #     print(message)  
-
     def status(self, message: str, percent: Optional[int] = None):
         """A status update"""
         print(f"{message}")

@@ -171,29 +171,6 @@ def logos_warn(message):
         logos_msg(message)
 
 
-# XXX: move this to app as... message?
-def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
-    if detail is None:
-        detail = ''
-    help_message = constants.SUPPORT_MESSAGE
-    if config.DIALOG == 'tk':
-        show_error(
-            message,
-            detail=f"{detail}\n\n{help_message}",
-            app=app,
-            fatal=fatal,
-            parent=parent
-        )
-    elif config.DIALOG == 'curses':
-        if secondary != "info":
-            status(message)
-            status(help_message)
-        else:
-            logos_msg(message)
-    else:
-        logos_msg(message)
-
-
 def get_progress_str(percent):
     length = 40
     part_done = round(percent * length / 100)
