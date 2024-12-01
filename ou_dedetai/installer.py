@@ -483,16 +483,6 @@ def create_wine_appimage_symlinks(app: App):
         p.symlink_to(f"./{app.conf.wine_appimage_link_file_name}")
 
 
-def create_config_file():
-    config_dir = Path(constants.DEFAULT_CONFIG_PATH).parent
-    config_dir.mkdir(exist_ok=True, parents=True)
-    if config_dir.is_dir():
-        utils.write_config(config.CONFIG_FILE)
-        logging.info(f"A config file was created at {config.CONFIG_FILE}.")
-    else:
-        msg.logos_warn(f"{config_dir} does not exist. Failed to create config file.")  # noqa: E501
-
-
 def create_desktop_file(name, contents):
     launcher_path = Path(f"~/.local/share/applications/{name}").expanduser()
     if launcher_path.is_file():

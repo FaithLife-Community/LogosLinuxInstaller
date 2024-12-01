@@ -163,14 +163,6 @@ def logos_progress():
     # time.sleep(0.1)
 
 
-def logos_warn(message):
-    # XXX: shouldn't this always use logging.warning?
-    if config.DIALOG == 'curses':
-        logging.warning(message)
-    else:
-        logos_msg(message)
-
-
 def get_progress_str(percent):
     length = 40
     part_done = round(percent * length / 100)

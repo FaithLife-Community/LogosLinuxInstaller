@@ -49,7 +49,7 @@ def append_unique(list, item):
     if item not in list:
         list.append(item)
     else:
-        msg.logos_warn(f"{item} already in {list}.")
+        logging.debug(f"{item} already in {list}.")
 
 
 # Set "global" variables.

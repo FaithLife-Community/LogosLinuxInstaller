@@ -393,7 +393,7 @@ class TUI(App):
 
     def main_menu_select(self, choice):
         if choice is None or choice == "Exit":
-            msg.logos_warn("Exiting installation.")
+            logging.info("Exiting installation.")
             self.tui_screens = []
             self.llirunning = False
         elif choice.startswith("Install"):
