@@ -254,11 +254,6 @@ class InstallerWindow(GuiApp):
         self.status_q = Queue()
         self.status_evt = "<<UpdateStatus>>"
         self.root.bind(self.status_evt, self.update_status_text)
-        self.progress_q = Queue()
-        self.root.bind(
-            "<<UpdateProgress>>",
-            self.step_start
-        )
         self.releases_q = Queue()
         self.wine_q = Queue()
 
@@ -533,16 +528,6 @@ class InstallerWindow(GuiApp):
         d = self.get_q.get()
         self.gui.progressvar.set(int(d))
 
-    def step_start(self, evt=None):
-        progress = self.progress_q.get()
-        if type(progress) is not int:
-            return
-        if progress >= 100:
-            self.gui.progressvar.set(0)
-            # self.gui.progress.state(['disabled'])
-        else:
-            self.gui.progressvar.set(progress)
-
     def update_status_text(self, evt=None, status=None):
         text = ''
         if evt:
@@ -635,14 +620,9 @@ class ControlWindow(GuiApp):
         self.status_evt = '<<UpdateControlStatus>>'
         self.root.bind(self.status_evt, self.update_status_text)
         self.root.bind('<<ClearStatus>>', self.clear_status_text)
-        self.progress_q = Queue()
         self.root.bind(
             '<<StartIndeterminateProgress>>',
             self.start_indeterminate_progress
-        )
-        self.root.bind(
-            '<<UpdateProgress>>',
-            self.step_start
         )
         self.root.bind(
             "<<UpdateLatestAppImageButton>>",
@@ -896,16 +876,6 @@ class ControlWindow(GuiApp):
     def update_download_progress(self, evt=None):
         d = self.get_q.get()
         self.gui.progressvar.set(int(d))
-
-    def step_start(self, evt=None):
-        progress = self.progress_q.get()
-        if type(progress) is not int:
-            return
-        if progress >= 100:
-            self.gui.progressvar.set(0)
-            # self.gui.progress.state(['disabled'])
-        else:
-            self.gui.progressvar.set(progress)
 
     def update_status_text(self, evt=None):
         if evt:

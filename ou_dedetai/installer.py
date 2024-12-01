@@ -466,8 +466,7 @@ def install(app: App):
 def update_install_feedback(text, app: App):
     percent = get_progress_pct(app.installer_step, app.installer_step_count)
     logging.debug(f"Install step {app.installer_step} of {app.installer_step_count}")  # noqa: E501
-    msg.progress(percent, app=app)
-    msg.status(text, app=app)
+    app.status(text, percent)
 
 
 def get_progress_pct(current, total):

@@ -178,22 +178,6 @@ def get_progress_str(percent):
     return f"[{'*' * part_done}{'-' * part_left}]"
 
 
-# XXX: remove in favor of app.status
-def progress(percent, app=None):
-    """Updates progressbar values for TUI and GUI."""
-    if config.DIALOG == 'tk' and app:
-        app.progress_q.put(percent)
-        app.root.event_generate('<<UpdateProgress>>')
-        logging.info(f"Progress: {percent}%")
-    elif config.DIALOG == 'curses':
-        if app:
-            status(f"Progress: {percent}%", app)
-        else:
-            status(f"Progress: {get_progress_str(percent)}", app)
-    else:
-        logos_msg(get_progress_str(percent))  # provisional
-
-
 # XXX: move this to app.status
 def status(text, app=None, end='\n'):
     def strip_timestamp(msg, timestamp_length=20):
