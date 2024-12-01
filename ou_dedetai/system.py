@@ -267,8 +267,9 @@ def get_architecture() -> Tuple[str, int]:
 
 
 def install_elf_interpreter():
-    # TODO: This probably needs to be changed to another install step that requests the user to choose a specific
-    # ELF interpreter between box64, FEX-EMU, and hangover. That or else we have to pursue a particular interpreter
+    # TODO: This probably needs to be changed to another install step that requests the 
+    # user to choose a specific ELF interpreter between box64, FEX-EMU, and hangover.
+    # That or else we have to pursue a particular interpreter
     # for the install routine, depending on what's needed
     logging.critical("ELF interpretation is not yet coded in the installer.")
     # architecture, bits = get_architecture()
@@ -288,19 +289,19 @@ def check_architecture():
     if "x86_64" in architecture:
         pass
     elif "ARM64" in architecture:
-        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.") #noqa: E501
         install_elf_interpreter()
     elif "RISC-V 64" in architecture:
-        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.") #noqa: E501
         install_elf_interpreter()
     elif "x86_32" in architecture:
-        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.") #noqa: E501
         install_elf_interpreter()
     elif "ARM32" in architecture:
-        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.") #noqa: E501
         install_elf_interpreter()
     elif "RISC-V 32" in architecture:
-        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.")
+        logging.critical("Unsupported architecture. Requires box64 or FEX-EMU or Wine Hangover to be integrated.") #noqa: E501
         install_elf_interpreter()
     else:
         logging.critical("System archictecture unknown.")
@@ -491,7 +492,8 @@ def get_package_manager() -> PackageManager | None:
         incompatible_packages = ""  # appimagelauncher handled separately
     else:
         # Add more conditions for other package managers as needed.
-        logging.critical("Your package manager is not yet supported. Please contact the developers.")
+        logging.critical("Your package manager is not yet supported. Please contact the developers.") #noqa: E501
+        return None
 
     output = PackageManager(
         install=install_command,
@@ -741,7 +743,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         app.exit(
             f"The script could not determine your {os_name} install's package manager or it is unsupported."  # noqa: E501
         )
-        return
 
     package_list = package_manager.packages.split()
 
@@ -761,7 +762,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         mode="remove",
     )
 
-    if os_name in ['fedora', 'arch', 'alpine']:
+    if os_name in bad_os:
         # XXX: move the handling up here, possibly simplify?
         m = "Your distro requires manual dependency installation."
         logging.error(m)

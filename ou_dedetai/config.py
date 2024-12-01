@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 import time
 
-from ou_dedetai import msg, network, utils, constants, wine
+from ou_dedetai import network, utils, constants, wine
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY
 

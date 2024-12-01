@@ -114,12 +114,12 @@ class TUI(App):
             tui_curses.wrap_text(self, self.subtitle)) + min_console_height
         self.menu_window_ratio = 0.75
         self.menu_window_min = 3
-        self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min)
-        self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min)
+        self.main_window_height = max(int(self.window_height * self.main_window_ratio), self.main_window_min) #noqa: E501#noqa: E501
+        self.menu_window_height = max(self.window_height - self.main_window_height, int(self.window_height * self.menu_window_ratio), self.menu_window_min) #noqa: E501
         self.console_log_lines = max(self.main_window_height - self.main_window_min, 1)
         self.options_per_page = max(self.window_height - self.main_window_height - 6, 1)
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
-        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0)
+        self.menu_window = curses.newwin(self.menu_window_height, curses.COLS, self.main_window_height + 1, 0) #noqa: E501
         resize_lines = tui_curses.wrap_text(self, "Screen too small.")
         self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
 
@@ -182,11 +182,9 @@ class TUI(App):
             curses.cbreak()
             self.stdscr.keypad(True)
 
-            self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0)
-            self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e,
-                                                         "Main Menu", self.set_tui_menu_options(dialog=False))
-            #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu",
-            #                                         self.set_tui_menu_options(dialog=True))
+            self.console = tui_screen.ConsoleScreen(self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0) #noqa: E501
+            self.menu_screen = tui_screen.MenuScreen(self, 0, self.status_q, self.status_e, "Main Menu", self.set_tui_menu_options(dialog=False)) #noqa: E501
+            #self.menu_screen = tui_screen.MenuDialog(self, 0, self.status_q, self.status_e, "Main Menu", self.set_tui_menu_options(dialog=True)) #noqa: E501
             self.refresh()
         except curses.error as e:
             logging.error(f"Curses error in init_curses: {e}")
@@ -252,7 +250,10 @@ class TUI(App):
         self.choice_q.put("resize")
 
         if config.use_python_dialog:
-            if isinstance(self.active_screen, tui_screen.TextDialog) and self.active_screen.text == "Screen Too Small":
+            if (
+                isinstance(self.active_screen, tui_screen.TextDialog)
+                and self.active_screen.text == "Screen Too Small"
+            ):
                 self.choice_q.put("Return to Main Menu")
         else:
             if self.active_screen.get_screen_id == 14:
@@ -326,7 +327,8 @@ class TUI(App):
                         self.refresh()
             elif self.window_width >= 10:
                 if self.window_width < 10:
-                    self.terminal_margin = 1  # Avoid drawing errors on very small screens
+                    # Avoid drawing errors on very small screens
+                    self.terminal_margin = 1
                 self.draw_resize_screen()
             elif self.window_width < 10:
                 self.terminal_margin = 0  # Avoid drawing errors on very small screens
@@ -373,9 +375,10 @@ class TUI(App):
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
             self.reset_screen()
             self.switch_q.put(1)
-            #FIXME: There is some kind of graphical glitch that activates on returning to Main Menu,
-            # but not from all submenus.
-            # Further, there appear to be issues with how the program exits on Ctrl+C as part of this.
+            # FIXME: There is some kind of graphical glitch that activates on returning
+            # to Main Menu, but not from all submenus.
+            # Further, there appear to be issues with how the program exits on Ctrl+C as
+            # part of this.
         else:
             action = screen_actions.get(screen_id)
             if action:
@@ -427,13 +430,11 @@ class TUI(App):
             control.remove_library_catalog(self)
         elif choice.startswith("Winetricks"):
             self.reset_screen()
-            self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu",
-                                              self.set_winetricks_menu_options(), dialog=config.use_python_dialog))
+            self.screen_q.put(self.stack_menu(11, self.todo_q, self.todo_e, "Winetricks Menu", self.set_winetricks_menu_options(), dialog=config.use_python_dialog)) #noqa: E501
             self.choice_q.put("0")
         elif choice.startswith("Utilities"):
             self.reset_screen()
-            self.screen_q.put(self.stack_menu(18, self.todo_q, self.todo_e, "Utilities Menu",
-                                              self.set_utilities_menu_options(), dialog=config.use_python_dialog))
+            self.screen_q.put(self.stack_menu(18, self.todo_q, self.todo_e, "Utilities Menu", self.set_utilities_menu_options(), dialog=config.use_python_dialog)) #noqa: E501
             self.choice_q.put("0")
         elif choice == "Change Color Scheme":
             self.status("Changing color scheme")
@@ -521,12 +522,11 @@ class TUI(App):
         elif choice == "Set AppImage":
             # TODO: Allow specifying the AppImage File
             appimages = utils.find_appimage_files()
-            appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in
-                                appimages]  # noqa: E501
+            appimage_choices = [["AppImage", filename, "AppImage of Wine64"] for filename in appimages]  # noqa: E501
             appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
             self.menu_options = appimage_choices
             question = "Which AppImage should be used?"
-            self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices))
+            self.screen_q.put(self.stack_menu(1, self.appimage_q, self.appimage_e, question, appimage_choices)) #noqa: E501
         elif choice == "Install ICU":
             self.reset_screen()
             wine.enforce_icu_data_files()
@@ -539,7 +539,7 @@ class TUI(App):
     def custom_appimage_select(self, choice):
         #FIXME
         if choice == "Input Custom AppImage":
-            appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "")
+            appimage_filename = tui_curses.get_user_input(self, "Enter AppImage filename: ", "") #noqa: E501
         else:
             appimage_filename = choice
         self.conf.wine_appimage_path = appimage_filename
@@ -573,9 +573,7 @@ class TUI(App):
             else:
                 self.menu_screen.choice = "Processing"
                 self.confirm_e.set()
-                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
-                                                  "Installing dependencies…\n", wait=True,
-                                                  dialog=config.use_python_dialog))
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Installing dependencies…\n", wait=True, dialog=config.use_python_dialog)) #noqa: E501
 
     def renderer_select(self, choice):
         if choice in ["gdi", "gl", "vulkan"]:
@@ -606,12 +604,10 @@ class TUI(App):
             if choice == "Continue":
                 self.menu_screen.choice = "Processing"
                 self.manualinstall_e.set()
-                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e,
-                                                  "Installing dependencies…\n", wait=True,
-                                                  dialog=config.use_python_dialog))
+                self.screen_q.put(self.stack_text(13, self.todo_q, self.todo_e, "Installing dependencies…\n", wait=True, dialog=config.use_python_dialog)) #noqa: E501
 
     def switch_screen(self, dialog):
-        if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0:
+        if self.active_screen is not None and self.active_screen != self.menu_screen and len(self.tui_screens) > 0: #noqa: E501
             self.tui_screens.pop(0)
         if self.active_screen == self.menu_screen:
             self.menu_screen.choice = "Processing"
@@ -625,7 +621,7 @@ class TUI(App):
         if isinstance(options, str):
             answer = options
         elif isinstance(options, list):
-            self.menu_options = self.which_dialog_options(options, config.use_python_dialog)
+            self.menu_options = self.which_dialog_options(options, config.use_python_dialog) #noqa: E501
             self.screen_q.put(self.stack_menu(2, Queue(), threading.Event(), question, self.menu_options, dialog=config.use_python_dialog)) #noqa: E501
 
             # Now wait for it to complete
@@ -634,8 +630,7 @@ class TUI(App):
 
         if answer  == PROMPT_OPTION_DIRECTORY or answer ==  PROMPT_OPTION_FILE:
             stack_index = 3 if answer == PROMPT_OPTION_FILE else 4
-            self.screen_q.put(self.stack_input(stack_index, Queue(), threading.Event(), question,
-                                               os.path.expanduser(f"~/"), dialog=config.use_python_dialog))
+            self.screen_q.put(self.stack_input(stack_index, Queue(), threading.Event(), question, os.path.expanduser(f"~/"), dialog=config.use_python_dialog)) #noqa: E501
             # Now wait for it to complete
             self.ask_answer_event.wait()
             answer = self.ask_answer_queue.get()
@@ -669,14 +664,13 @@ class TUI(App):
         text = ["Install is running…\n"]
         processed_text = utils.str_array_to_string(text)
         
-        percent = installer.get_progress_pct(self.installer_step, self.installer_step_count)
-        self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text,
-                                          wait=True, percent=percent, dialog=dialog))
+        percent = installer.get_progress_pct(self.installer_step, self.installer_step_count) #noqa: E501
+        self.screen_q.put(self.stack_text(screen_id, self.status_q, self.status_e, processed_text, wait=True, percent=percent, dialog=dialog)) #noqa: E501
 
     # def get_password(self, dialog):
     #     question = (f"Logos Linux Installer needs to run a command as root. "
     #                 f"Please provide your password to provide escalation privileges.")
-    #     self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
+    #     self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog)) #noqa: E501
 
     def confirm_restore_dir(self, choice):
         if choice:
@@ -701,7 +695,7 @@ class TUI(App):
         self.go_to_main_menu()
 
     def report_waiting(self, text, dialog):
-        #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog))
+        #self.screen_q.put(self.stack_text(10, self.status_q, self.status_e, text, wait=True, dialog=dialog)) #noqa: E501
         config.console_log.append(text)
 
     def which_dialog_options(self, labels, dialog=False):
@@ -850,65 +844,59 @@ class TUI(App):
 
         return options
 
-    def stack_menu(self, screen_id, queue, event, question, options, height=None, width=None, menu_height=8, dialog=False):
+    def stack_menu(self, screen_id, queue, event, question, options, height=None, width=None, menu_height=8, dialog=False): #noqa: E501
         if dialog:
             utils.append_unique(self.tui_screens,
-                                tui_screen.MenuDialog(self, screen_id, queue, event, question, options,
-                                                      height, width, menu_height))
+                                tui_screen.MenuDialog(self, screen_id, queue, event, question, options, height, width, menu_height)) #noqa: E501
         else:
             utils.append_unique(self.tui_screens,
-                                tui_screen.MenuScreen(self, screen_id, queue, event, question, options,
-                                                      height, width, menu_height))
+                                tui_screen.MenuScreen(self, screen_id, queue, event, question, options, height, width, menu_height)) #noqa: E501
 
     def stack_input(self, screen_id, queue, event, question, default, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                                tui_screen.InputDialog(self, screen_id, queue, event, question, default))
+                                tui_screen.InputDialog(self, screen_id, queue, event, question, default)) #noqa: E501
         else:
             utils.append_unique(self.tui_screens,
-                                tui_screen.InputScreen(self, screen_id, queue, event, question, default))
+                                tui_screen.InputScreen(self, screen_id, queue, event, question, default)) #noqa: E501
 
-    def stack_password(self, screen_id, queue, event, question, default="", dialog=False):
+    def stack_password(self, screen_id, queue, event, question, default="", dialog=False): #noqa: E501
         if dialog:
             utils.append_unique(self.tui_screens,
-                                tui_screen.PasswordDialog(self, screen_id, queue, event, question, default))
+                                tui_screen.PasswordDialog(self, screen_id, queue, event, question, default)) #noqa: E501
         else:
             utils.append_unique(self.tui_screens,
-                                tui_screen.PasswordScreen(self, screen_id, queue, event, question, default))
+                                tui_screen.PasswordScreen(self, screen_id, queue, event, question, default)) #noqa: E501
 
-    def stack_confirm(self, screen_id, queue, event, question, no_text, secondary, options=["Yes", "No"], dialog=False):
+    def stack_confirm(self, screen_id, queue, event, question, no_text, secondary, options=["Yes", "No"], dialog=False): #noqa: E501
         if dialog:
             yes_label = options[0]
             no_label = options[1]
             utils.append_unique(self.tui_screens,
-                                tui_screen.ConfirmDialog(self, screen_id, queue, event, question, no_text, secondary,
-                                                         yes_label=yes_label, no_label=no_label))
+                                tui_screen.ConfirmDialog(self, screen_id, queue, event, question, no_text, secondary, yes_label=yes_label, no_label=no_label)) #noqa: E501
         else:
             utils.append_unique(self.tui_screens,
-                                tui_screen.ConfirmScreen(self, screen_id, queue, event, question, no_text, secondary,
-                                                         options))
+                                tui_screen.ConfirmScreen(self, screen_id, queue, event, question, no_text, secondary, options)) #noqa: E501
 
-    def stack_text(self, screen_id, queue, event, text, wait=False, percent=None, dialog=False):
+    def stack_text(self, screen_id, queue, event, text, wait=False, percent=None, dialog=False): #noqa: E501
         if dialog:
             utils.append_unique(self.tui_screens,
-                                tui_screen.TextDialog(self, screen_id, queue, event, text, wait, percent))
+                                tui_screen.TextDialog(self, screen_id, queue, event, text, wait, percent)) #noqa: E501
         else:
-            utils.append_unique(self.tui_screens, tui_screen.TextScreen(self, screen_id, queue, event, text, wait))
+            utils.append_unique(self.tui_screens, tui_screen.TextScreen(self, screen_id, queue, event, text, wait)) #noqa: E501
 
-    def stack_tasklist(self, screen_id, queue, event, text, elements, percent, dialog=False):
+    def stack_tasklist(self, screen_id, queue, event, text, elements, percent, dialog=False): #noqa: E501
         logging.debug(f"Elements stacked: {elements}")
         if dialog:
-            utils.append_unique(self.tui_screens, tui_screen.TaskListDialog(self, screen_id, queue, event, text,
-                                                                            elements, percent))
+            utils.append_unique(self.tui_screens, tui_screen.TaskListDialog(self, screen_id, queue, event, text, elements, percent)) #noqa: E501
         else:
             #TODO: curses version
             pass
 
-    def stack_buildlist(self, screen_id, queue, event, question, options, height=None, width=None, list_height=None, dialog=False):
+    def stack_buildlist(self, screen_id, queue, event, question, options, height=None, width=None, list_height=None, dialog=False): #noqa: E501
         if dialog:
             utils.append_unique(self.tui_screens,
-                            tui_screen.BuildListDialog(self, screen_id, queue, event, question, options,
-                                                       height, width, list_height))
+                            tui_screen.BuildListDialog(self, screen_id, queue, event, question, options, height, width, list_height)) #noqa: E501
         else:
             # TODO
             pass
@@ -917,8 +905,7 @@ class TUI(App):
                         height=None, width=None, list_height=None, dialog=False):
         if dialog:
             utils.append_unique(self.tui_screens,
-                                tui_screen.CheckListDialog(self, screen_id, queue, event, question, options,
-                                                           height, width, list_height))
+                                tui_screen.CheckListDialog(self, screen_id, queue, event, question, options, height, width, list_height)) #noqa: E501
         else:
             # TODO
             pass

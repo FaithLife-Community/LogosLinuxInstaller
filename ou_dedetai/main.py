@@ -3,7 +3,9 @@ import argparse
 import curses
 import logging.handlers
 
-from ou_dedetai.config import EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
+from ou_dedetai.config import (
+    EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
+)
 
 try:
     import dialog  # noqa: F401
@@ -11,7 +13,6 @@ except ImportError:
     pass
 import logging
 import os
-import shutil
 import sys
 
 from . import cli

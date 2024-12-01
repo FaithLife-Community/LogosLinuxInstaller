@@ -34,7 +34,7 @@ class GuiApp(App):
 
     _exit_option: Optional[str] = None
 
-    def __init__(self, root: "Root", ephemeral_config: EphemeralConfiguration, **kwargs):
+    def __init__(self, root: "Root", ephemeral_config: EphemeralConfiguration, **kwargs): #noqa: E501
         super().__init__(ephemeral_config)
         self.root = root
 
@@ -151,7 +151,7 @@ class Root(Tk):
 
 class ChoicePopUp(Tk):
     """Creates a pop-up with a choice"""
-    def __init__(self, question: str, options: list[str], answer_q: Queue, answer_event: Event, **kwargs):
+    def __init__(self, question: str, options: list[str], answer_q: Queue, answer_event: Event, **kwargs): #noqa: E501
         # Set root parameters.
         super().__init__()
         self.title(f"Quesiton: {question.strip().strip(':')}")

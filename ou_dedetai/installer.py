@@ -113,6 +113,7 @@ def ensure_check_sys_deps_choice(app: App):
     logging.debug(f"> config.SKIP_DEPENDENCIES={app.conf._overrides.winetricks_skip}")
 
 
+# XXX: should this be it's own step? faithlife_product_version is asked
 def ensure_installation_config(app: App):
     app.installer_step_count += 1
     ensure_check_sys_deps_choice(app=app)
@@ -121,9 +122,6 @@ def ensure_installation_config(app: App):
     logging.debug('- config.LOGOS_ICON_URL')
     logging.debug('- config.LOGOS_VERSION')
     logging.debug('- config.LOGOS64_URL')
-
-    # XXX: This doesn't prompt the user for anything, all values are derived from other user-supplied values
-    # these "config" values probably don't need to be stored independently of the values they're derived from
 
     logging.debug(f"> config.LOGOS_ICON_URL={app.conf.faithlife_product_icon_path}")
     logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
@@ -180,7 +178,7 @@ def ensure_appimage_download(app: App):
     app.status("Ensuring wine AppImage is downloaded…")
 
     downloaded_file = None
-    appimage_path = app.conf.wine_appimage_path or app.conf.wine_appimage_recommended_file_name
+    appimage_path = app.conf.wine_appimage_path or app.conf.wine_appimage_recommended_file_name #noqa: E501
     filename = Path(appimage_path).name
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, filename)
     if not downloaded_file:
@@ -239,7 +237,7 @@ def ensure_premade_winebottle_download(app: App):
 
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
     if not downloaded_file:
-        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name
+        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name #noqa: E501
     network.logos_reuse_download(
         constants.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
         constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
@@ -264,9 +262,9 @@ def ensure_product_installer_download(app: App):
     app.installer_step += 1
     app.status(f"Ensuring {app.conf.faithlife_product} installer is downloaded…")
 
-    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, app.conf.faithlife_installer_name)
+    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, app.conf.faithlife_installer_name) #noqa: E501
     if not downloaded_file:
-        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name
+        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name #noqa: E501
     network.logos_reuse_download(
         app.conf.faithlife_installer_download_url,
         app.conf.faithlife_installer_name,
@@ -520,6 +518,8 @@ def create_launcher_shortcuts(app: App):
                 if c.name == '.git':
                     repo_dir = p
                     break
+        if repo_dir is None:
+            app.exit("Could not find .git directory from arg 0")  # noqa: E501
         # Find python in virtual environment.
         py_bin = next(repo_dir.glob('*/bin/python'))
         if not py_bin.is_file():

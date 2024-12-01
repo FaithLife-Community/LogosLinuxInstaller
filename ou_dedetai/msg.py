@@ -98,7 +98,7 @@ def initialize_logging(log_level: str | int, app_log_path: str):
     stderr_h.name = "terminal"
     stderr_h.setLevel(log_level)
     stderr_h.addFilter(DeduplicateFilter())
-    handlers = [
+    handlers: list[logging.Handler] = [
         file_h,
         # stdout_h,
         stderr_h,

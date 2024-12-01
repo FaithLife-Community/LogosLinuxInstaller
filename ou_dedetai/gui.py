@@ -17,7 +17,6 @@ from tkinter.ttk import Separator
 from ou_dedetai.app import App
 
 from . import config
-from . import utils
 from . import constants
 
 
@@ -125,12 +124,12 @@ class InstallerGui(Frame):
 
         # Fonts row.
         self.fonts_label = Label(self, text="Install Fonts: ")
-        self.fontsvar = BooleanVar(value=1-self.app.conf.skip_install_fonts)
+        self.fontsvar = BooleanVar(value=not self.app.conf.skip_install_fonts)
         self.fonts_checkbox = Checkbutton(self, variable=self.fontsvar)
 
         # Skip Dependencies row.
         self.skipdeps_label = Label(self, text="Install Dependencies: ")
-        self.skipdepsvar = BooleanVar(value=1-self.app.conf.skip_install_system_dependencies)
+        self.skipdepsvar = BooleanVar(value=self.app.conf.skip_install_system_dependencies) #noqa: E501
         self.skipdeps_checkbox = Checkbutton(self, variable=self.skipdepsvar)
 
         # Cancel/Okay buttons row.

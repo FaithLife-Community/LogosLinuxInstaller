@@ -10,34 +10,32 @@ from typing import Optional
 
 from ou_dedetai.app import App
 
-from . import config
 from . import constants
-from . import msg
 from . import network
 from . import system
 from . import utils
 
-# XXX: fix lingering lack of refs to app
-def check_wineserver(wineserver_binary: str):
+def check_wineserver(app: App):
     try:
-        # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of WINESERVER_EXE
-        # changed it to use wineserver_binary, this change may alter the behavior, to match what the code intended
-        process = run_wine_proc(wineserver_binary, exe_args=["-p"])
+        # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of 
+        # WINESERVER_EXE changed it to use wineserver_binary, this change may alter the 
+        # behavior, to match what the code intended
+        process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-p"])
         system.wait_pid(process)
         return process.returncode == 0
     except Exception:
         return False
 
 
-def wineserver_kill(wineserver_binary: str):
-    if check_wineserver(wineserver_binary):
-        process = run_wine_proc(wineserver_binary, exe_args=["-k"])
+def wineserver_kill(app: App):
+    if check_wineserver(app):
+        process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-k"])
         system.wait_pid(process)
 
 
-def wineserver_wait(wineserver_binary: str):
-    if check_wineserver(wineserver_binary):
-        process = run_wine_proc(wineserver_binary, app, exe_args=["-w"])
+def wineserver_wait(app: App):
+    if check_wineserver(app):
+        process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-w"])
         system.wait_pid(process)
 
 
@@ -172,7 +170,8 @@ def check_wine_rules(wine_release, release_version, faithlife_product_version: s
         return True, "Default to trusting user override"
 
 
-def check_wine_version_and_branch(release_version, test_binary, faithlife_product_version):
+def check_wine_version_and_branch(release_version, test_binary,
+                                  faithlife_product_version):
     if not os.path.exists(test_binary):
         reason = "Binary does not exist."
         return False, reason
@@ -186,7 +185,11 @@ def check_wine_version_and_branch(release_version, test_binary, faithlife_produc
     if wine_release is False and error_message is not None:
         return False, error_message
 
-    result, message = check_wine_rules(wine_release, release_version, faithlife_product_version)
+    result, message = check_wine_rules(
+        wine_release,
+        release_version,
+        faithlife_product_version
+    )
     if not result:
         return result, message
 
@@ -250,7 +253,7 @@ def install_msi(app: App):
     app.status(f"Running MSI installer: {app.conf.faithlife_installer_name}.")
     # Execute the .MSI
     wine_exe = app.conf.wine64_binary
-    exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"]
+    exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"] #noqa: E501
     if app.conf._overrides.faithlife_install_passive is True:
         exe_args.append('/passive')
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
@@ -361,7 +364,7 @@ def install_d3d_compiler(app: App):
 
 def install_fonts(app: App):
     fonts = ['corefonts', 'tahoma']
-    if not app.conf.skip_fonts:
+    if not app.conf.skip_install_fonts:
         for i, f in enumerate(fonts):
             app.status("Configuring fonts, this step may take several minutes…", i / len(fonts)) # noqa: E501
             args = [f]
@@ -407,7 +410,7 @@ def enforce_icu_data_files(app: App):
     repo = "FaithLife-Community/icu"
     json_data = network.get_latest_release_data(repo)
     icu_url = network.get_first_asset_url(json_data)
-    icu_latest_version = network.get_tag_name(json_data).lstrip('v')
+    icu_latest_version = network.get_tag_name(json_data)
 
     if icu_url is None:
         logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501

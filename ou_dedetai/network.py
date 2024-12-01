@@ -2,24 +2,18 @@ import hashlib
 import json
 import logging
 import os
-import queue
 from typing import Optional
 import requests
 import shutil
 import sys
 from base64 import b64encode
-from datetime import datetime, timedelta
 from pathlib import Path
-from time import sleep
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
-from ou_dedetai import wine
 from ou_dedetai.app import App
 
-from . import config
 from . import constants
-from . import msg
 from . import utils
 
 
@@ -340,10 +334,13 @@ def get_first_asset_url(json_data) -> Optional[str]:
 
 
 def get_tag_name(json_data) -> Optional[str]:
-    tag_name = None
+    """Gets tag name from json data, strips leading v if exists"""
+    tag_name: Optional[str] = None
     if json_data:
         tag_name = json_data.get('tag_name')
         logging.info(f"Release URL Tag Name: {tag_name}")
+    if tag_name is not None:
+        tag_name = tag_name.lstrip("v")
     return tag_name
 
 
@@ -363,9 +360,10 @@ def get_oudedetai_latest_release_config(channel: str = "stable") -> tuple[str, s
     if oudedetai_url is None:
         logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501
         raise ValueError("Failed to find latest installer version")
-    # Getting version relies on the the tag_name field in the JSON data. This
-    # is already parsed down to vX.X.X. Therefore we must strip the v.
-    latest_version = get_tag_name(json_data).lstrip('v')
+    latest_version = get_tag_name(json_data)
+    if latest_version is None:
+        logging.critical(f"Unable to set {constants.APP_NAME} release without the tag.")  # noqa: E501
+        raise ValueError("Failed to find latest installer version")
     logging.info(f"config.LLI_LATEST_VERSION={latest_version}")
 
     return oudedetai_url, latest_version
@@ -420,8 +418,8 @@ def get_logos_releases(app: App) -> list[str]:
     releases = []
     # Obtain all listed releases.
     for entry in root.findall('.//ns1:version', namespaces):
-        release = entry.text
-        releases.append(release)
+        if entry.text:
+            releases.append(entry.text)
         # if len(releases) == 5:
         #    break
 

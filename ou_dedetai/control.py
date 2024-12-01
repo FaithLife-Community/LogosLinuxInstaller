@@ -8,7 +8,6 @@ import queue
 import os
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -16,10 +15,7 @@ from ou_dedetai.app import App
 
 from . import config
 from . import constants
-from . import msg
-from . import network
 from . import system
-from . import tui_curses
 from . import utils
 
 
@@ -76,12 +72,13 @@ def backup_and_restore(mode: str, app: App):
             restore_dir = Path(restore_dir).expanduser().resolve()
         source_dir_base = restore_dir
     else:
+        if not app.conf.logos_exe:
+            app.exit("Cannot backup, Logos is not installed")
         source_dir_base = Path(app.conf.logos_exe).parent
     src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]  # noqa: E501
     logging.debug(f"{src_dirs=}")
     if not src_dirs:
         app.exit(f"No files to {mode}")
-        return
 
     if mode == 'backup':
         app.status("Backing up data…")
@@ -104,10 +101,11 @@ def backup_and_restore(mode: str, app: App):
     src_size = q.get()
     if src_size == 0:
         app.exit(f"Nothing to {mode}!")
-        return
 
     # Set destination folder.
     if mode == 'restore':
+        if not app.conf.logos_exe:
+            app.exit("Cannot restore, Logos is not installed")
         dst_dir = Path(app.conf.logos_exe).parent
         # Remove existing data.
         for d in data_dirs:
@@ -173,6 +171,8 @@ def remove_install_dir(app: App):
 
 
 def remove_all_index_files(app: App):
+    if not app.conf.logos_exe:
+        app.exit("Cannot remove index files, Logos is not installed")
     logos_dir = os.path.dirname(app.conf.logos_exe)
     index_paths = [
         os.path.join(logos_dir, "Data", "*", "BibleIndex"),
@@ -195,6 +195,8 @@ def remove_all_index_files(app: App):
 
 
 def remove_library_catalog(app: App):
+    if not app.conf.logos_exe:
+        app.exit("Cannot remove library catalog, Logos is not installed")
     logos_dir = os.path.dirname(app.conf.logos_exe)
     files_to_remove = glob.glob(f"{logos_dir}/Data/*/LibraryCatalog/*")
     for file_to_remove in files_to_remove:

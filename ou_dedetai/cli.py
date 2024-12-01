@@ -9,7 +9,6 @@ from ou_dedetai.system import SuperuserCommandNotFound
 
 from . import control
 from . import installer
-from . import logos
 from . import wine
 from . import utils
 
@@ -91,7 +90,7 @@ class CLI(App):
         utils.update_to_latest_lli_release(self)
 
     def winetricks(self):
-        import config
+        from ou_dedetai import config
         wine.run_winetricks_cmd(self, *config.winetricks_args)
 
     _exit_option: str = "Exit"

@@ -10,7 +10,6 @@ import threading
 from ou_dedetai.app import App
 
 from . import main
-from . import msg
 from . import system
 from . import utils
 from . import wine
@@ -108,7 +107,7 @@ class LogosManager:
         else:
             if reason is not None:
                 logging.debug(f"Warning: Wine Check: {reason}")
-            wine.wineserver_kill(self.app.conf.wineserver_binary)
+            wine.wineserver_kill(self.app)
             app = self.app
             from ou_dedetai.gui_app import GuiApp
             if isinstance(self.app, GuiApp):
@@ -205,7 +204,7 @@ class LogosManager:
             self.app.status("Indexing has finished.", percent=100)
             wine.wineserver_wait(app=self.app)
 
-        wine.wineserver_kill(self.app.conf.wineserver_binary)
+        wine.wineserver_kill(self.app)
         self.app.status("Indexing has begun…")
         index_thread = utils.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
