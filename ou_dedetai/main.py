@@ -300,8 +300,9 @@ def parse_args(args, parser) -> EphemeralConfiguration:
 
 
 def run_control_panel(ephemeral_config: EphemeralConfiguration):
-    logging.info(f"Using DIALOG: {config.DIALOG}")
-    if config.DIALOG is None or config.DIALOG == 'tk':
+    dialog = system.get_dialog()
+    logging.info(f"Using DIALOG: {dialog}")
+    if dialog == 'tk':
         gui_app.control_panel_app(ephemeral_config)
     else:
         try:
@@ -359,31 +360,6 @@ def setup_config() -> EphemeralConfiguration:
     return parse_args(cli_args, parser)
 
 
-def set_dialog():
-    # Set DIALOG and GUI variables.
-    if config.DIALOG is None:
-        system.get_dialog()
-    else:
-        config.DIALOG = config.DIALOG.lower()
-
-    if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:  # noqa: E501
-        config.use_python_dialog = system.test_dialog_version()
-
-        if config.use_python_dialog is None:
-            logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")  # noqa: E501
-            config.use_python_dialog = False
-        elif config.use_python_dialog:
-            logging.debug("Dialog version is up-to-date.")
-            config.use_python_dialog = True
-        else:
-            logging.error("Dialog version is outdated. The program will fall back to Curses.")  # noqa: E501
-            config.use_python_dialog = False
-    logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
-    # Set Architecture
-
-    system.check_architecture()
-
-
 def is_app_installed(ephemeral_config: EphemeralConfiguration):
     persistent_config = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
     if persistent_config.faithlife_product is None or persistent_config.install_dir is None:
@@ -403,9 +379,8 @@ def run(ephemeral_config: EphemeralConfiguration):
         #     wine.set_logos_paths()
         config.ACTION(ephemeral_config)  # run control_panel right away
         return
-
-    # Only control_panel ACTION uses TUI/GUI interface; all others are CLI.
-    config.DIALOG = 'cli'
+    
+    # Proceeding with the CLI interface
 
     install_required = [
         'backup',
@@ -438,7 +413,7 @@ def run(ephemeral_config: EphemeralConfiguration):
 
 def main():
     ephemeral_config = setup_config()
-    set_dialog()
+    system.check_architecture()
 
     # XXX: consider configuration migration from legacy to new
 

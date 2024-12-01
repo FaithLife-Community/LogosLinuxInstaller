@@ -39,15 +39,11 @@ def backup_and_restore(mode: str, app: App):
     data_dirs = ['Data', 'Documents', 'Users']
     backup_dir = Path(app.conf.backup_dir).expanduser().resolve()
 
-    # FIXME: Why is this different per UI? Should this always accept?
-    if config.DIALOG == 'tk' or config.DIALOG == 'curses':
-        pass  # user confirms in GUI or TUI
-    else:
-        verb = 'Use' if mode == 'backup' else 'Restore backup from'
-        if not app.approve(f"{verb} existing backups folder \"{app.conf.backup_dir}\"?"): #noqa: E501
-            # Reset backup dir.
-            # The app will re-prompt next time the backup_dir is accessed
-            app.conf._raw.backup_dir = None
+    verb = 'Use' if mode == 'backup' else 'Restore backup from'
+    if not app.approve(f"{verb} existing backups folder \"{app.conf.backup_dir}\"?"): #noqa: E501
+        # Reset backup dir.
+        # The app will re-prompt next time the backup_dir is accessed
+        app.conf._raw.backup_dir = None
 
     # Set source folders.
     backup_dir = Path(app.conf.backup_dir)

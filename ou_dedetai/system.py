@@ -216,7 +216,15 @@ def reboot(superuser_command: str):
     sys.exit(0)
 
 
-def get_dialog():
+def get_dialog() -> str:
+    """Returns which frontend the user prefers
+    
+    Uses "DIALOG" from environment if found,
+    otherwise opens curses if the user has a tty
+    
+    Returns:
+        dialog - tk (graphical), curses (terminal ui), or cli (command line)
+    """
     if not os.environ.get('DISPLAY'):
         print("The installer does not work unless you are running a display", file=sys.stderr)  # noqa: E501
         sys.exit(1)
@@ -228,11 +236,11 @@ def get_dialog():
         if dialog not in ['cli', 'curses', 'tk']:
             print("Valid values for DIALOG are 'cli', 'curses' or 'tk'.", file=sys.stderr)  # noqa: E501
             sys.exit(1)
-        config.DIALOG = dialog
-    elif sys.__stdin__.isatty():
-        config.DIALOG = 'curses'
+        return dialog
+    elif sys.__stdin__ is not None and sys.__stdin__.isatty():
+        return 'curses'
     else:
-        config.DIALOG = 'tk'
+        return 'tk'
 
 
 def get_architecture() -> Tuple[str, int]:

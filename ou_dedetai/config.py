@@ -13,9 +13,6 @@ from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY
 # Define and set additional variables that can be set in the env.
 extended_config = {
     'CONFIG_FILE': None,
-    'DIALOG': None,
-    # Dependent on DIALOG with env override
-    'use_python_dialog': None,
 }
 for key, default in extended_config.items():
     globals()[key] = os.getenv(key, default)
@@ -221,6 +218,8 @@ class EphemeralConfiguration:
     config_path: str
     """Path this config was loaded from"""
 
+    terminal_app_prefer_dialog: Optional[bool] = None
+
     # Start of values just set via cli arg
     faithlife_install_passive: bool = False
     app_run_as_root_permitted: bool = False
@@ -245,6 +244,9 @@ class EphemeralConfiguration:
         config_file = constants.DEFAULT_CONFIG_PATH
         if legacy.CONFIG_FILE is not None:
             config_file = legacy.CONFIG_FILE
+        terminal_app_prefer_dialog = None
+        if legacy.use_python_dialog is not None:
+            terminal_app_prefer_dialog = utils.parse_bool(legacy.use_python_dialog)
         return EphemeralConfiguration(
             installer_binary_dir=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
@@ -267,7 +269,8 @@ class EphemeralConfiguration:
             install_fonts_skip=legacy.SKIP_FONTS,
             wine_appimage_link_file_name=legacy.APPIMAGE_LINK_SELECTION_NAME,
             wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME,
-            wine_output_encoding=legacy.WINECMD_ENCODING
+            wine_output_encoding=legacy.WINECMD_ENCODING,
+            terminal_app_prefer_dialog=terminal_app_prefer_dialog
         )
 
     @classmethod
