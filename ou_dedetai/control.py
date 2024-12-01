@@ -65,25 +65,14 @@ def backup_and_restore(mode: str, app: App):
     if mode == 'restore':
         restore_dir = utils.get_latest_folder(app.conf.backup_dir)
         restore_dir = Path(restore_dir).expanduser().resolve()
-        if config.DIALOG == 'tk':
-            pass
-        elif config.DIALOG == 'curses':
-            app.screen_q.put(app.stack_confirm(24, app.todo_q, app.todo_e,
-                                               f"Restore most-recent backup?: {restore_dir}", "", "",
-                                               dialog=config.use_python_dialog))
-            app.todo_e.wait()  # Wait for TUI to confirm restore_dir
-            app.todo_e.clear()
-            if app.tmp == "No":
-                question = "Please choose a different restore folder path:"
-                app.screen_q.put(app.stack_input(25, app.todo_q, app.todo_e, question, f"{restore_dir}",
-                                                 dialog=config.use_python_dialog))
-                app.todo_e.wait()
-                app.todo_e.clear()
-                restore_dir = Path(app.tmp).expanduser().resolve()
-        else:
-            # Offer to restore the most recent backup.
-            if not msg.cli_question(f"Restore most-recent backup?: {restore_dir}", ""):  # noqa: E501
-                restore_dir = msg.cli_ask_filepath("Path to backup set that you want to restore:")  # noqa: E501
+        # FIXME: Shouldn't this prompt this prompt the list of backups?
+        # Rather than forcing the latest
+        # Offer to restore the most recent backup.
+        if not app.approve(f"Restore most-recent backup?: {restore_dir}", ""):  # noqa: E501
+            # Reset and re-prompt
+            app.conf._raw.backup_dir = None
+            restore_dir = utils.get_latest_folder(app.conf.backup_dir)
+            restore_dir = Path(restore_dir).expanduser().resolve()
         source_dir_base = restore_dir
     else:
         source_dir_base = Path(app.conf.logos_exe).parent

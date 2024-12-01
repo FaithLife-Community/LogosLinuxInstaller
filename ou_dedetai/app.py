@@ -16,12 +16,15 @@ class App(abc.ABC):
     """Step the installer is on. Starts at 0"""
 
     def __init__(self, config, **kwargs) -> None:
-        # This lazy load is required otherwise it would be a circular import
+        # This lazy load is required otherwise these would be circular imports
         from ou_dedetai.config import Config
-        self.conf = Config(config, self)
         from ou_dedetai.logos import LogosManager
+        from ou_dedetai.system import check_incompatibilities
+
+        self.conf = Config(config, self)
         self.logos = LogosManager(app=self)
-        pass
+        # Ensure everything is good to start
+        check_incompatibilities(self)
 
     def ask(self, question: str, options: list[str]) -> str:
         """Asks the user a question with a list of supplied options

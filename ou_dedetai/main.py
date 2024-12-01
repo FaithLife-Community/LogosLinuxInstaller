@@ -383,20 +383,6 @@ def set_dialog():
     system.check_architecture()
 
 
-def check_incompatibilities():
-    # Check for AppImageLauncher
-    if shutil.which('AppImageLauncher'):
-        question_text = "Remove AppImageLauncher? A reboot will be required."
-        secondary = (
-            "Your system currently has AppImageLauncher installed.\n"
-            f"{constants.APP_NAME} is not compatible with AppImageLauncher.\n"
-            f"For more information, see: {constants.REPOSITORY_LINK}/issues/114"
-        )
-        no_text = "User declined to remove AppImageLauncher."
-        msg.logos_continue_question(question_text, no_text, secondary)
-        system.remove_appimagelauncher()
-
-
 def is_app_installed(ephemeral_config: EphemeralConfiguration):
     persistent_config = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
     if persistent_config.faithlife_product is None or persistent_config.install_dir is None:
@@ -473,8 +459,6 @@ def main():
 
     # Print terminal banner
     logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501
-
-    check_incompatibilities()
 
     run(ephemeral_config)
 

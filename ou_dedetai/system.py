@@ -900,3 +900,16 @@ def install_winetricks(
 
 def wait_pid(process):
     os.waitpid(-process.pid, 0)
+
+
+def check_incompatibilities(app: App):
+    # Check for AppImageLauncher
+    if shutil.which('AppImageLauncher'):
+        question_text = "Remove AppImageLauncher? A reboot will be required."
+        secondary = (
+            "Your system currently has AppImageLauncher installed.\n"
+            f"{constants.APP_NAME} is not compatible with AppImageLauncher.\n"
+            f"For more information, see: {constants.REPOSITORY_LINK}/issues/114"
+        )
+        app.approve_or_exit(question_text, secondary)
+        remove_appimagelauncher(app)
