@@ -148,21 +148,6 @@ def logos_msg(message, end='\n'):
         cli_msg(message, end)
 
 
-# XXX: remove in favor of app.status("message", percent)
-def logos_progress():
-    if config.DIALOG == 'curses':
-        pass
-    else:
-        sys.stdout.write('.')
-        sys.stdout.flush()
-    # i = 0
-    # spinner = "|/-\\"
-    # sys.stdout.write(f"\r{text} {spinner[i]}")
-    # sys.stdout.flush()
-    # i = (i + 1) % len(spinner)
-    # time.sleep(0.1)
-
-
 def get_progress_str(percent):
     length = 40
     part_done = round(percent * length / 100)

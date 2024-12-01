@@ -35,6 +35,8 @@ def restore(app: App):
     backup_and_restore(mode='restore', app=app)
 
 
+# FIXME: almost seems like this is long enough to reuse the install_step count in app
+# for a more detailed progress bar
 # FIXME: consider moving this into it's own file/module.
 def backup_and_restore(mode: str, app: App):
     app.status(f"Starting {mode}...")
@@ -92,7 +94,7 @@ def backup_and_restore(mode: str, app: App):
     t = utils.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
-            msg.logos_progress()
+            # FIXME: consider showing a sign of life to the app
             time.sleep(0.5)
         print()
     except KeyboardInterrupt:
