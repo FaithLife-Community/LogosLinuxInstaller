@@ -332,8 +332,8 @@ parts:
     source-type: local
     plugin: autotools
     autotools-configure-parameters:
-      - --with-wine64=../wine64/build  # ref $PWD of wine64 build
-      - --with-wine-tools=../wine32-tools/build  # ref $PWD of wine32-tools build
+      - --with-wine64=../parts/wine64/build  # ref $PWD of wine64 build
+      - --with-wine-tools=../parts/wine32-tools/build  # ref $PWD of wine32-tools build
       ## from mmtrt, WINE_BUILD_OPTIONS:
       # - --without-ldap  # doesn't exist
       - --without-oss
