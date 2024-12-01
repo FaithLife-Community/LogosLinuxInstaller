@@ -239,7 +239,8 @@ parts:
       - CXXFLAGS: "${CFLAGS_X64}"
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
-    override-stage: echo "skip staging for $CRAFT_PART_NAME"
+    stage:
+      - -'*'
 
   wine32-tools:
     after: [wine-prep]
@@ -288,7 +289,8 @@ parts:
       - CXXFLAGS: "${CFLAGS_X32}"
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"
-    override-stage: echo "skip staging for $CRAFT_PART_NAME"
+    stage:
+      - -'*'
 
   wine32:
     after:
