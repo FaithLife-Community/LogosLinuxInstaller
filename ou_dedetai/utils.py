@@ -52,14 +52,6 @@ def append_unique(list, item):
         logging.debug(f"{item} already in {list}.")
 
 
-# Set "global" variables.
-# XXX: fold this into config
-def set_default_config():
-    system.get_package_manager()
-    if config.CONFIG_FILE is None:
-        config.CONFIG_FILE = constants.DEFAULT_CONFIG_PATH
-
-
 # XXX: remove, no need.
 def write_config(config_file_path):
     pass
@@ -666,8 +658,6 @@ def set_appimage_symlink(app: App):
     delete_symlink(appimage_symlink_path)
     os.symlink(selected_appimage_file_path, appimage_symlink_path)
     app.conf.wine_appimage_path = f"{selected_appimage_file_path.name}"  # noqa: E501
-
-    write_config(config.CONFIG_FILE)
 
 
 def update_to_latest_lli_release(app: App):

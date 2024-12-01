@@ -527,7 +527,6 @@ class TUI(App):
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
             self.reset_screen()
-            utils.write_config(config.CONFIG_FILE)
 
     def winetricks_menu_select(self, choice):
         if choice == "Download or Update Winetricks":

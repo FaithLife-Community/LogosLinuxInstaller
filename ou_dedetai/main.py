@@ -335,9 +335,6 @@ def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfigura
     # Initialize logging.
     msg.initialize_logging(log_level, app_log_path)
 
-    # Set default config; incl. defining CONFIG_FILE.
-    utils.set_default_config()
-
     # XXX: do this in the new scheme (read then write the config).
     # We also want to remove the old file, (stored in CONFIG_FILE?)
 

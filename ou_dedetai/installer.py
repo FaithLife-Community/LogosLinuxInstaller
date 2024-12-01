@@ -395,8 +395,6 @@ def ensure_config_file(app: App):
 
     app._install_complete_hook()
 
-    logging.debug(f"> File exists?: {config.CONFIG_FILE}: {Path(config.CONFIG_FILE).is_file()}")  # noqa: E501
-
 
 def ensure_launcher_executable(app: App):
     app.installer_step_count += 1

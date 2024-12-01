@@ -185,10 +185,6 @@ class ControlGui(Frame):
 
         self.app = app
 
-        # XXX: remove these
-        # Initialize vars from ENV.
-        self.config_file = config.CONFIG_FILE
-
         # Run/install app button
         self.app_buttonvar = StringVar()
         self.app_buttonvar.set("Install")

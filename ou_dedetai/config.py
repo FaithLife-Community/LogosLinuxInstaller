@@ -10,16 +10,6 @@ from ou_dedetai import network, utils, constants, wine
 
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY
 
-# Define and set additional variables that can be set in the env.
-extended_config = {
-    'CONFIG_FILE': None,
-}
-for key, default in extended_config.items():
-    globals()[key] = os.getenv(key, default)
-
-
-# Begin new config
-
 @dataclass
 class LegacyConfiguration:
     """Configuration and it's keys from before the user configuration class existed.
