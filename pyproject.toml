@@ -47,11 +47,11 @@ warn_unused_ignores = true
 warn_return_any = true
 no_implicit_reexport = true
 extra_checks = true
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = "ou_dedetai.config"
 disallow_untyped_calls = true
-check_untyped_defs = true
 
 disallow_any_generic = false
 strict_equality = true

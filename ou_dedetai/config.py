@@ -204,7 +204,7 @@ class EphemeralConfiguration:
     """Path this config was loaded from"""
 
 
-    winetricks_args: Optional[str] = None
+    winetricks_args: Optional[list[str]] = None
     """Arguments to winetricks if the action is running winetricks"""
 
     terminal_app_prefer_dialog: Optional[bool] = None
@@ -714,7 +714,9 @@ class Config:
         return None
     
     @wine_appimage_path.setter
-    def wine_appimage_path(self, value: Optional[str]):
+    def wine_appimage_path(self, value: Optional[str | Path]) -> None:
+        if isinstance(value, Path):
+            value = str(value)
         if self._overrides.wine_appimage_path != value:
             self._overrides.wine_appimage_path = value
             # Reset dependents
@@ -805,6 +807,9 @@ class Config:
         else:
             new_channel = "stable"
         self._raw.app_release_channel = new_channel
+        # Reset dependents
+        self._raw.app_latest_version = None
+        self._raw.app_latest_version_url = None
         self._write()
     
     @property

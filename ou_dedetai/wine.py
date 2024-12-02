@@ -193,7 +193,7 @@ def check_wine_version_and_branch(release_version, test_binary,
 
     wine_release, error_message = get_wine_release(test_binary)
 
-    if wine_release is False and error_message is not None:
+    if wine_release is None:
         return False, error_message
 
     result, message = check_wine_rules(

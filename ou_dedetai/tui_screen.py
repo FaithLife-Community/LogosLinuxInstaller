@@ -1,7 +1,7 @@
 import curses
 import logging
 import time
-from pathlib import Path
+from typing import Optional
 
 from ou_dedetai.app import App
 
@@ -18,7 +18,7 @@ class Screen:
         if not isinstance(app, TUI):
             raise ValueError("Cannot start TUI screen with non-TUI app")
         self.app: TUI = app
-        self.stdscr = ""
+        self.stdscr: Optional[curses.window] = None
         self.screen_id = screen_id
         self.choice = "Processing"
         self.queue = queue
@@ -39,7 +39,7 @@ class Screen:
     def display(self):
         pass
 
-    def get_stdscr(self):
+    def get_stdscr(self) -> curses.window:
         return self.app.stdscr
 
     def get_screen_id(self):
@@ -72,7 +72,7 @@ class DialogScreen(Screen):
 class ConsoleScreen(CursesScreen):
     def __init__(self, app, screen_id, queue, event, title, subtitle, title_start_y):
         super().__init__(app, screen_id, queue, event)
-        self.stdscr = self.app.get_main_window()
+        self.stdscr: Optional[curses.window] = self.app.main_window
         self.title = title
         self.subtitle = subtitle
         self.title_start_y = title_start_y
@@ -81,6 +81,9 @@ class ConsoleScreen(CursesScreen):
         return "Curses Console Screen"
 
     def display(self):
+        if self.stdscr is None:
+            raise Exception("stdscr should be set at this point in the console screen."
+                            "Please report this incident to the developers")
         self.stdscr.erase()
         subtitle_start = tui_curses.title(self.app, self.title, self.title_start_y)
         tui_curses.title(self.app, self.subtitle, subtitle_start + 1)
@@ -114,6 +117,9 @@ class MenuScreen(CursesScreen):
         return "Curses Menu Screen"
 
     def display(self):
+        if self.stdscr is None:
+            raise Exception("stdscr should be set at this point in the console screen."
+                            "Please report this incident to the developers")
         self.stdscr.erase()
         self.choice = tui_curses.MenuDialog(
             self.app,
@@ -144,6 +150,9 @@ class ConfirmScreen(MenuScreen):
         return "Curses Confirm Screen"
 
     def display(self):
+        if self.stdscr is None:
+            raise Exception("stdscr should be set at this point in the console screen."
+                            "Please report this incident to the developers")
         self.stdscr.erase()
         self.choice = tui_curses.MenuDialog(
             self.app,
@@ -159,7 +168,7 @@ class ConfirmScreen(MenuScreen):
 
 
 class InputScreen(CursesScreen):
-    def __init__(self, app, screen_id, queue, event, question, default):
+    def __init__(self, app, screen_id, queue, event, question: str, default):
         super().__init__(app, screen_id, queue, event)
         self.stdscr = self.app.get_menu_window()
         self.question = question
@@ -174,6 +183,9 @@ class InputScreen(CursesScreen):
         return "Curses Input Screen"
 
     def display(self):
+        if self.stdscr is None:
+            raise Exception("stdscr should be set at this point in the console screen."
+                            "Please report this incident to the developers")
         self.stdscr.erase()
         self.choice = self.dialog.run()
         if not self.choice == "Processing":
@@ -204,6 +216,9 @@ class PasswordScreen(InputScreen):
         return "Curses Password Screen"
 
     def display(self):
+        if self.stdscr is None:
+            raise Exception("stdscr should be set at this point in the console screen."
+                            "Please report this incident to the developers")
         self.stdscr.erase()
         self.choice = self.dialog.run()
         if not self.choice == "Processing":
@@ -225,6 +240,9 @@ class TextScreen(CursesScreen):
         return "Curses Text Screen"
 
     def display(self):
+        if self.stdscr is None:
+            raise Exception("stdscr should be set at this point in the console screen."
+                            "Please report this incident to the developers")
         self.stdscr.erase()
         text_start_y, text_lines = tui_curses.text_centered(self.app, self.text)
         if self.wait:
@@ -278,9 +296,9 @@ class InputDialog(DialogScreen):
     def display(self):
         if self.running == 0:
             self.running = 1
-            self.choice = tui_dialog.directory_picker(self.app, self.default)
-            if self.choice:
-                self.choice = Path(self.choice)
+            choice = tui_dialog.directory_picker(self.app, self.default)
+            if choice:
+                self.choice = choice
             self.submit_choice_to_queue()
 
     def get_question(self):

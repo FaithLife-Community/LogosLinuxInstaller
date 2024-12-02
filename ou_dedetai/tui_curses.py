@@ -2,20 +2,25 @@ import curses
 import signal
 import textwrap
 
+from ou_dedetai import tui_screen
+from ou_dedetai.tui_app import TUI
 
-def wrap_text(app, text):
+
+# NOTE to reviewer: does this convay the original meaning?
+# The usages of the function seemed to have expected a list besides text_centered below
+# Which handled the string case. Is it faithful to remove the string case?
+def wrap_text(app: TUI, text: str) -> list[str]:
     # Turn text into wrapped text, line by line, centered
     if "\n" in text:
         lines = text.splitlines()
         wrapped_lines = [textwrap.fill(line, app.window_width - (app.terminal_margin * 2)) for line in lines] #noqa: E501
-        lines = '\n'.join(wrapped_lines)
+        return wrapped_lines
     else:
         wrapped_text = textwrap.fill(text, app.window_width - (app.terminal_margin * 2))
-        lines = wrapped_text.split('\n')
-    return lines
+        return wrapped_text.splitlines()
 
 
-def write_line(app, stdscr, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL): #noqa: E501
+def write_line(app: TUI, stdscr: curses.window, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL): #noqa: E501
     try:
         stdscr.addnstr(start_y, start_x, text, char_limit, attributes)
     except curses.error:
@@ -35,12 +40,9 @@ def title(app, title_text, title_start_y_adj):
     return last_index
 
 
-def text_centered(app, text, start_y=0):
+def text_centered(app: TUI, text: str, start_y=0) -> tuple[int, list[str]]:
     stdscr = app.get_menu_window()
-    if "\n" in text:
-        text_lines = wrap_text(app, text).splitlines()
-    else:
-        text_lines = wrap_text(app, text)
+    text_lines = wrap_text(app, text)
     text_start_y = start_y
     text_width = max(len(line) for line in text_lines)
     for i, line in enumerate(text_lines):
@@ -99,14 +101,15 @@ class CursesDialog:
 
 
 class UserInputDialog(CursesDialog):
-    def __init__(self, app, question_text, default_text):
+    def __init__(self, app, question_text: str, default_text: str):
         super().__init__(app)
         self.question_text = question_text
         self.default_text = default_text
         self.user_input = ""
         self.submit = False
-        self.question_start_y = None
-        self.question_lines = None
+
+        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text) #noqa: E501
+
 
     def __str__(self):
         return "UserInput Curses Dialog"
@@ -121,9 +124,14 @@ class UserInputDialog(CursesDialog):
         curses.noecho()
         self.stdscr.refresh()
 
+    @property
+    def show_text(self) -> str:
+        """Text to show to the user. Normally their input"""
+        return self.user_input
+
     def input(self):
-        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.user_input, self.app.window_width) #noqa: E501
-        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.user_input)) #noqa: E501
+        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.show_text, self.app.window_width) #noqa: E501
+        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.show_text)) #noqa: E501
 
         try:
             if key == -1:  # If key not found, keep processing.
@@ -149,38 +157,10 @@ class UserInputDialog(CursesDialog):
 
 
 class PasswordDialog(UserInputDialog):
-    def __init__(self, app, question_text, default_text):
-        super().__init__(app, question_text, default_text)
-
-        self.obfuscation = ""
-
-    def run(self):
-        if not self.submit:
-            self.draw()
-            return "Processing"
-        else:
-            if self.user_input is None or self.user_input == "":
-                self.user_input = self.default_text
-            return self.user_input
-
-    def input(self):
-        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation, self.app.window_width) #noqa: E501
-        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.obfuscation)) #noqa: E501
-
-        try:
-            if key == -1:  # If key not found, keep processing.
-                pass
-            elif key == ord('\n'):  # Enter key
-                self.submit = True
-            elif key == curses.KEY_BACKSPACE or key == 127:
-                if len(self.user_input) > 0:
-                    self.user_input = self.user_input[:-1]
-                    self.obfuscation = '*' * len(self.user_input[:-1])
-            else:
-                self.user_input += chr(key)
-                self.obfuscation = '*' * (len(self.obfuscation) + 1)
-        except KeyboardInterrupt:
-            signal.signal(signal.SIGINT, self.app.end)
+    @property
+    def show_text(self) -> str:
+        """Obfuscate the user's input"""
+        return "*" * len(self.user_input)
 
 
 class MenuDialog(CursesDialog):
@@ -198,7 +178,9 @@ class MenuDialog(CursesDialog):
 
     def draw(self):
         self.stdscr.erase()
-        self.app.active_screen.set_options(self.options)
+        # We should be on a menu screen at this point
+        if isinstance(self.app.active_screen, tui_screen.MenuScreen):
+            self.app.active_screen.set_options(self.options)
         self.total_pages = (len(self.options) - 1) // self.app.options_per_page + 1
         # Default menu_bottom to 0, it should get set to something larger
         menu_bottom = 0

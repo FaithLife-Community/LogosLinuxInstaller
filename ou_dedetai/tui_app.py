@@ -18,7 +18,6 @@ from . import constants
 from . import installer
 from . import logos
 from . import msg
-from . import network
 from . import system
 from . import tui_curses
 from . import tui_screen
@@ -71,22 +70,34 @@ class TUI(App):
         # Window and Screen Management
         self.tui_screens: list[tui_screen.Screen] = []
         self.menu_options: list[Any] = []
-        self.window_height = self.window_width = self.console = self.menu_screen = (
-            self.active_screen
-        ) = None
-        self.main_window_ratio = self.main_window_ratio = self.menu_window_ratio = (
-            self.main_window_min
-        ) = None
-        self.menu_window_min = self.main_window_height = self.menu_window_height = (
-            self.main_window
-        ) = None
-        self.menu_window = self.resize_window = None
+
+        # Default height and width to something reasonable so these values are always
+        # ints, on each loop these values will be updated to their real values
+        self.window_height = self.window_width = 80
+        self.main_window_height = self.menu_window_height = 80
+        # Default to a value to allow for int type
+        self.main_window_min: int = 0
+        self.menu_window_min: int = 0
+
+        self.menu_window_ratio: Optional[float] = None
+        self.main_window_ratio: Optional[float] = None
+        self.main_window_ratio = None
+        self.main_window: Optional[curses.window] = None
+        self.menu_window: Optional[curses.window] = None
+        self.resize_window: Optional[curses.window] = None
 
         # For menu dialogs.
         # a new MenuDialog is created every loop, so we can't store it there.
         self.current_option: int = 0
         self.current_page: int = 0
         self.total_pages: int = 0
+
+        # Start internal property variables, shouldn't be accessed directly, see their 
+        # corresponding @property functions
+        self._menu_screen: Optional[tui_screen.MenuScreen] = None
+        self._active_screen: Optional[tui_screen.Screen] = None
+        self._console: Optional[tui_screen.ConsoleScreen] = None
+        # End internal property values
 
         # Lines for the on-screen console log
         self.console_log: list[str] = []
@@ -118,6 +129,39 @@ class TUI(App):
 
         logging.debug(f"Use Python Dialog?: {self.use_python_dialog}")
         self.set_window_dimensions()
+
+    @property
+    def active_screen(self) -> tui_screen.Screen:
+        if self._active_screen is None:
+            self._active_screen = self.menu_screen
+            if self._active_screen is None:
+                raise ValueError("Curses hasn't been initialized yet")
+        return self._active_screen
+
+    @active_screen.setter
+    def active_screen(self, value: tui_screen.Screen):
+        self._active_screen = value
+
+    @property
+    def menu_screen(self) -> tui_screen.MenuScreen:
+        if self._menu_screen is None:
+            self._menu_screen = tui_screen.MenuScreen(
+                self,
+                0,
+                self.status_q,
+                self.status_e,
+                "Main Menu",
+                self.set_tui_menu_options(),
+            )  # noqa: E501
+        return self._menu_screen
+    
+    @property
+    def console(self) -> tui_screen.ConsoleScreen:
+        if self._console is None:
+            self._console = tui_screen.ConsoleScreen(
+                self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0
+            )  # noqa: E501
+        return self._console
 
     @property
     def recent_console_log(self) -> list[str]:
@@ -174,34 +218,48 @@ class TUI(App):
     def set_curses_colors(self):
         if self.conf.curses_colors == "Logos":
             self.stdscr.bkgd(" ", curses.color_pair(3))
-            self.main_window.bkgd(" ", curses.color_pair(3))
-            self.menu_window.bkgd(" ", curses.color_pair(3))
+            if self.main_window:
+                self.main_window.bkgd(" ", curses.color_pair(3))
+            if self.menu_window:
+                self.menu_window.bkgd(" ", curses.color_pair(3))
         elif self.conf.curses_colors == "Light":
             self.stdscr.bkgd(" ", curses.color_pair(6))
-            self.main_window.bkgd(" ", curses.color_pair(6))
-            self.menu_window.bkgd(" ", curses.color_pair(6))
+            if self.main_window:
+                self.main_window.bkgd(" ", curses.color_pair(6))
+            if self.menu_window:
+                self.menu_window.bkgd(" ", curses.color_pair(6))
         elif self.conf.curses_colors == "Dark":
             self.stdscr.bkgd(" ", curses.color_pair(7))
-            self.main_window.bkgd(" ", curses.color_pair(7))
-            self.menu_window.bkgd(" ", curses.color_pair(7))
+            if self.main_window:
+                self.main_window.bkgd(" ", curses.color_pair(7))
+            if self.menu_window:
+                self.menu_window.bkgd(" ", curses.color_pair(7))
 
     def update_windows(self):
         if isinstance(self.active_screen, tui_screen.CursesScreen):
-            self.main_window.erase()
-            self.menu_window.erase()
+            if self.main_window:
+                self.main_window.erase()
+            if self.menu_window:
+                self.menu_window.erase()
             self.stdscr.timeout(100)
             self.console.display()
 
     def clear(self):
         self.stdscr.clear()
-        self.main_window.clear()
-        self.menu_window.clear()
-        self.resize_window.clear()
+        if self.main_window:
+            self.main_window.clear()
+        if self.menu_window:
+            self.menu_window.clear()
+        if self.resize_window:
+            self.resize_window.clear()
 
     def refresh(self):
-        self.main_window.noutrefresh()
-        self.menu_window.noutrefresh()
-        self.resize_window.noutrefresh()
+        if self.main_window:
+            self.main_window.noutrefresh()
+        if self.menu_window:
+            self.menu_window.noutrefresh()
+        if self.resize_window:
+            self.resize_window.noutrefresh()
         curses.doupdate()
 
     def init_curses(self):
@@ -215,10 +273,9 @@ class TUI(App):
             curses.cbreak()
             self.stdscr.keypad(True)
 
-            self.console = tui_screen.ConsoleScreen(
-                self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0
-            )  # noqa: E501
-            self.menu_screen = tui_screen.MenuScreen(
+            # Reset console/menu_screen. They'll be initialized next access
+            self._console = None
+            self._menu_screen = tui_screen.MenuScreen(
                 self,
                 0,
                 self.status_q,
@@ -263,9 +320,8 @@ class TUI(App):
         self.clear()
         self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
         self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
-        self.console = tui_screen.ConsoleScreen(
-            self, 0, self.status_q, self.status_e, self.title, self.subtitle, 0
-        )  # noqa: E501
+        # Reset internal variable, it'll be reset next access
+        self._console = None
         self.menu_screen.set_options(self.set_tui_menu_options())
         # self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
         self.switch_q.put(1)
@@ -433,7 +489,7 @@ class TUI(App):
         else:
             action = screen_actions.get(screen_id)
             if action:
-                action(choice)
+                action(choice) #type: ignore[operator]
             else:
                 pass
 
@@ -585,7 +641,6 @@ class TUI(App):
         elif choice == f"Change {constants.APP_NAME} Release Channel":
             self.reset_screen()
             self.conf.toggle_installer_release_channel()
-            network.set_logoslinuxinstaller_latest_release_config()
             self.update_main_window_contents()
             self.go_to_main_menu()
         elif choice == "Install Dependencies":
@@ -605,10 +660,9 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Set AppImage":
             # TODO: Allow specifying the AppImage File
-            appimages = utils.find_appimage_files()
-            appimage_choices = [
-                ["AppImage", filename, "AppImage of Wine64"] for filename in appimages
-            ]  # noqa: E501
+            appimages = utils.find_appimage_files(self)
+            # NOTE to reviewer: is this logic correct?
+            appimage_choices = appimages
             appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
             self.menu_options = appimage_choices
             question = "Which AppImage should be used?"
@@ -619,25 +673,25 @@ class TUI(App):
             )  # noqa: E501
         elif choice == "Install ICU":
             self.reset_screen()
-            wine.enforce_icu_data_files()
+            wine.enforce_icu_data_files(self)
             self.go_to_main_menu()
         elif choice.endswith("Logging"):
             self.reset_screen()
-            wine.switch_logging()
+            self.logos.switch_logging()
             self.go_to_main_menu()
 
-    def custom_appimage_select(self, choice):
+    def custom_appimage_select(self, choice: str):
         # FIXME
         if choice == "Input Custom AppImage":
-            appimage_filename = tui_curses.get_user_input(
-                self, "Enter AppImage filename: ", ""
-            )  # noqa: E501
+            appimage_filename = self.ask("Enter AppImage filename: ", [PROMPT_OPTION_FILE]) #noqa: E501
         else:
             appimage_filename = choice
-        self.conf.wine_appimage_path = appimage_filename
+        self.conf.wine_appimage_path = Path(appimage_filename)
         utils.set_appimage_symlink(self)
+        if not self.menu_window:
+            raise ValueError("Curses hasn't been initialized")
         self.menu_screen.choice = "Processing"
-        self.appimage_q.put(self.conf.wine_appimage_path)
+        self.appimage_q.put(str(self.conf.wine_appimage_path))
         self.appimage_e.set()
 
     def waiting(self, choice):
@@ -972,7 +1026,7 @@ class TUI(App):
                 ),
             )  # noqa: E501
 
-    def stack_input(self, screen_id, queue, event, question, default):
+    def stack_input(self, screen_id, queue, event, question: str, default):
         if self.use_python_dialog:
             utils.append_unique(
                 self.tui_screens,
@@ -1134,9 +1188,6 @@ class TUI(App):
 
     def update_tty_dimensions(self):
         self.window_height, self.window_width = self.stdscr.getmaxyx()
-
-    def get_main_window(self):
-        return self.main_window
 
     def get_menu_window(self):
         return self.menu_window

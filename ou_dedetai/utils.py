@@ -278,14 +278,11 @@ def check_winetricks_version(winetricks_path: str) -> bool:
     return str(local_winetricks_version) == constants.WINETRICKS_VERSION #noqa: E501
 
 
-def get_procs_using_file(file_path, mode=None):
+def get_procs_using_file(file_path):
     procs = set()
     for proc in psutil.process_iter(['pid', 'open_files', 'name']):
         try:
-            if mode is not None:
-                paths = [f.path for f in proc.open_files() if f.mode == mode]
-            else:
-                paths = [f.path for f in proc.open_files()]
+            paths = [f.path for f in proc.open_files()]
             if len(paths) > 0 and file_path in paths:
                 procs.add(proc.pid)
         except psutil.AccessDenied:
@@ -505,7 +502,7 @@ def check_appimage(filestr):
         return False
 
 
-def find_appimage_files(app: App):
+def find_appimage_files(app: App) -> list[str]:
     release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version #noqa: E501
     appimages = []
     directories = [
@@ -624,7 +621,7 @@ def set_appimage_symlink(app: App):
 
     delete_symlink(appimage_symlink_path)
     os.symlink(selected_appimage_file_path, appimage_symlink_path)
-    app.conf.wine_appimage_path = f"{selected_appimage_file_path.name}"  # noqa: E501
+    app.conf.wine_appimage_path = selected_appimage_file_path  # noqa: E501
 
 
 def update_to_latest_lli_release(app: App):
@@ -645,7 +642,7 @@ def update_to_latest_recommended_appimage(app: App):
     if app.conf.wine_binary_code not in ["AppImage", "Recommended"]:
         logging.debug("AppImage commands disabled since we're not using an appimage")  # noqa: E501
         return
-    app.conf.wine_appimage_path = app.conf.wine_appimage_recommended_file_name  # noqa: E501
+    app.conf.wine_appimage_path = Path(app.conf.wine_appimage_recommended_file_name)  # noqa: E501
     status, _ = compare_recommended_appimage_version(app)
     if status == 0:
         set_appimage_symlink(app)

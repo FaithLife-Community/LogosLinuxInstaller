@@ -58,7 +58,7 @@ class CLI(App):
         wine.install_fonts(self)
 
     def install_icu(self):
-        wine.enforce_icu_data_files()
+        wine.enforce_icu_data_files(self)
 
     def remove_index_files(self):
         control.remove_all_index_files(self)
@@ -94,7 +94,7 @@ class CLI(App):
         utils.update_to_latest_lli_release(self)
 
     def winetricks(self):
-        wine.run_winetricks_cmd(self, *self.conf._overrides.winetricks_args)
+        wine.run_winetricks_cmd(self, *(self.conf._overrides.winetricks_args or []))
 
     _exit_option: str = "Exit"
 

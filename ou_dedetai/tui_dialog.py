@@ -1,5 +1,6 @@
 import curses
 import logging
+from typing import Optional
 try:
     from dialog import Dialog #type: ignore[import-untyped]
 except ImportError:
@@ -122,9 +123,10 @@ def confirm(screen, question_text, yes_label="Yes", no_label="No",
     return check  # Returns "ok" or "cancel"
 
 
-def directory_picker(screen, path_dir, height=None, width=None, title=None, backtitle=None, colors=True): # noqa: E501
+def directory_picker(screen, path_dir, height=None, width=None, title=None, backtitle=None, colors=True) -> Optional[str]: # noqa: E501
     str_dir = str(path_dir)
 
+    path = None
     try:
         dialog = Dialog()
         dialog.autowidgetsize = True
@@ -138,7 +140,8 @@ def directory_picker(screen, path_dir, height=None, width=None, title=None, back
         if backtitle is not None:
             options['backtitle'] = backtitle
         curses.curs_set(1)
-        _, path = dialog.dselect(str_dir, **options)
+        _, raw_path = dialog.dselect(str_dir, **options)
+        path = str(raw_path)
         curses.curs_set(0)
     except Exception as e:
         logging.error("An error occurred:", e)
