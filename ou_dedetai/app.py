@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import sys
 import threading
-from typing import NoReturn, Optional
+from typing import Callable, NoReturn, Optional
 
 from ou_dedetai import constants
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
@@ -25,6 +25,7 @@ class App(abc.ABC):
     """
     _last_status: Optional[str] = None
     """The last status we had"""
+    _config_updated_hooks: list[Callable[[], None]] = []
 
     def __init__(self, config, **kwargs) -> None:
         # This lazy load is required otherwise these would be circular imports
@@ -153,8 +154,8 @@ class App(abc.ABC):
     def is_installed(self) -> bool:
         """Returns whether the install was successful by
         checking if the installed exe exists and is executable"""
-        if self.conf.logos_exe is not None:
-            return os.access(self.conf.logos_exe, os.X_OK)
+        if self.conf._logos_exe is not None:
+            return os.access(self.conf._logos_exe, os.X_OK)
         return False
 
     def status(self, message: str, percent: Optional[int | float] = None):
@@ -189,16 +190,10 @@ class App(abc.ABC):
         May be sudo or pkexec for example"""
         from ou_dedetai.system import get_superuser_command
         return get_superuser_command()
-    
-    # Start hooks
-    def _config_updated_hook(self) -> None:
-        """Function run when the config changes"""
 
-    def _install_complete_hook(self):
-        """Function run when installation is complete."""
-
-    def _install_started_hook(self):
-        """Function run when installation first begins."""
+    def register_config_update_hook(self, func: Callable[[], None]) -> None:
+        """Register a function to be called when config is updated"""
+        self._config_updated_hooks += [func]
 
     def start_thread(self, task, *args, daemon_bool: bool = True, **kwargs):
         """Starts a new thread

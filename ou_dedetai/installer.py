@@ -39,7 +39,6 @@ def ensure_choices(app: App):
     # Debug print the entire config
     logging.debug(f"> Config={app.conf.__dict__}")
 
-    app._install_started_hook()
     app.status("Install is running…")
 
 
@@ -307,8 +306,6 @@ def ensure_config_file(app: App):
     app.status("Ensuring config file is up-to-date…")
 
     app.status("Install has finished.", 100)
-
-    app._install_complete_hook()
 
 
 def ensure_launcher_executable(app: App):

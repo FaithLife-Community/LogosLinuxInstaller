@@ -130,6 +130,8 @@ class TUI(App):
         logging.debug(f"Use Python Dialog?: {self.use_python_dialog}")
         self.set_window_dimensions()
 
+        self.register_config_update_hook(self.set_curses_colors)
+
     @property
     def active_screen(self) -> tui_screen.Screen:
         if self._active_screen is None:
@@ -292,9 +294,6 @@ class TUI(App):
             logging.error(f"An error occurred in init_curses(): {e}")
             raise
 
-    def _config_updated_hook(self):
-        self.set_curses_colors()
-
     def end_curses(self):
         try:
             self.stdscr.keypad(False)
@@ -311,10 +310,6 @@ class TUI(App):
         logging.debug("Exiting…")
         self.llirunning = False
         curses.endwin()
-
-    def _install_complete_hook(self):
-        # Update the contents going back to the start
-        self.update_main_window_contents()
 
     def update_main_window_contents(self):
         self.clear()
@@ -506,6 +501,9 @@ class TUI(App):
         self.choice_q.put("Return to Main Menu")
 
     def main_menu_select(self, choice):
+        def _install():
+            installer.install(app=self)
+            self.update_main_window_contents()
         if choice is None or choice == "Exit":
             logging.info("Exiting installation.")
             self.tui_screens = []
@@ -515,7 +513,7 @@ class TUI(App):
             self.installer_step = 0
             self.installer_step_count = 0
             self.start_thread(
-                installer.install,
+                _install,
                 daemon_bool=True,
                 app=self,
             )
@@ -809,9 +807,6 @@ class TUI(App):
                 percent=percent or 0,
             )
         )
-
-    def _install_started_hook(self):
-        self._status("Install is running…")
 
     # def get_password(self, dialog):
     #     question = (f"Logos Linux Installer needs to run a command as root. "

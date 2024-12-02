@@ -38,18 +38,27 @@ class GuiApp(App):
         self.root = root
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
+        error_q: Queue[Exception] = Queue()
         answer_q: Queue[Optional[str]] = Queue()
         answer_event = Event()
         def spawn_dialog(options: list[str]):
             # Create a new popup (with it's own event loop)
-            pop_up = ChoicePopUp(question, options, answer_q, answer_event)
+            try:
+                pop_up = ChoicePopUp(question, options, answer_q, answer_event)
 
-            # Run the mainloop in this thread
-            pop_up.mainloop()
+                # Run the mainloop in this thread
+                pop_up.mainloop()
+            except RuntimeError as e:
+                # Let the other thread know we failed.
+                error_q.put(e)
+                answer_event.set()
+                # raise e
         if isinstance(options, list):
             self.start_thread(spawn_dialog, options)
 
             answer_event.wait()
+            if not error_q.empty():
+                raise error_q.get()
             answer: Optional[str] = answer_q.get()
         elif isinstance(options, str):
             answer = options
@@ -184,15 +193,17 @@ class ChoicePopUp(Tk):
         self.destroy()
 
 
-class InstallerWindow(GuiApp):
+class InstallerWindow:
     def __init__(self, new_win, root: Root, app: App, **kwargs):
-        super().__init__(root, app.conf._overrides)
         # Set root parameters.
         self.win = new_win
         self.root = root
         self.win.title(f"{constants.APP_NAME} Installer")
         self.win.resizable(False, False)
         self.gui = gui.InstallerGui(self.win, app)
+        self.app = app
+        self.conf = app.conf
+        self.start_thread = app.start_thread
 
         # Initialize variables.
         self.config_thread = None
@@ -253,33 +264,57 @@ class InstallerWindow(GuiApp):
         # Run commands.
         self.get_winetricks_options()
 
+        self.app.register_config_update_hook(self._config_updated_hook)
+
+    # XXX: this got quite complicated
+    # don't like the leakage of cross-variable dependecy out of config
     def _config_updated_hook(self):
         """Update the GUI to reflect changes in the configuration if they were prompted separately""" #noqa: E501
         # The configuration enforces dependencies, if product is unset, so will it's 
         # dependents (version and release)
-        # XXX: test this hook. Interesting thing is, this may never be called in 
-        # production, as it's only called (presently) when the separate prompt returns
-        # Returns either from config or the dropdown
-        self.gui.productvar.set(self.conf._raw.faithlife_product or self.gui.product_dropdown['values'][0]) #noqa: E501
-        self.gui.versionvar.set(self.conf._raw.faithlife_product_version or self.gui.version_dropdown['values'][-1]) #noqa: E501
-        self.gui.releasevar.set(self.conf._raw.faithlife_product_release or self.gui.release_dropdown['values'][0]) #noqa: E501
+        product_canidate = self.conf._raw.faithlife_product
+        if product_canidate is None and len(self.gui.product_dropdown['values']) > 0:
+            product_canidate = self.gui.product_dropdown['values'][0]
+        if product_canidate is not None:
+            self.gui.productvar.set(product_canidate)
+
+        version_canidate = self.conf._raw.faithlife_product_version
+        if version_canidate is None and len(self.gui.version_dropdown['values']) > 0:
+            version_canidate = self.gui.version_dropdown['values'][-1]
+        if version_canidate:
+            self.gui.versionvar.set(version_canidate)
+
+        release_canidate = self.conf._raw.faithlife_product_release
+        if release_canidate is None and len(self.gui.release_dropdown['values']) > 0:
+            release_canidate = self.gui.release_dropdown['values'][0]
+        if release_canidate:
+            self.gui.releasevar.set(release_canidate)
+
+        if self.conf._raw.faithlife_product and self.conf._raw.faithlife_product_version: #noqa: E501
+            # We have all the prompts we need to download the releases.
+            # XXX: Don't love how we're downloading in a hook, but that's what the separate thread is for #noqa: E501
+            self.gui.release_dropdown['values'] = self.conf.faithlife_product_releases
+            self.gui.releasevar.set(self.gui.release_dropdown['values'][0])
+
         # Returns either wine_binary if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise '' #noqa: E501
         wine_binary: Optional[str] = self.conf._raw.wine_binary
         if wine_binary is None:
-            wine_binary = next(iter(self.gui.wine_dropdown['values'])) or ''
+            if len(self.gui.wine_dropdown['values']) > 0:
+                wine_binary = self.gui.wine_dropdown['values'][0]
+            else:
+                wine_binary = ''
+
         self.gui.winevar.set(wine_binary)
         # In case the product changes
         self.root.icon = Path(self.conf.faithlife_product_icon_path)
-        self.update_wine_check_progress()
+        # Make sure the release is set before asking
+        if self.conf._raw.faithlife_product_release:
+            self.update_wine_check_progress()
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
         self.installer_step = 0
         self.installer_step_count = 0
-        self.config_thread = self.start_thread(
-            installer.ensure_choices,
-            app=self,
-        )
 
     def get_winetricks_options(self):
         # override config file b/c "Download" accounts for that
@@ -307,11 +342,6 @@ class InstallerWindow(GuiApp):
             widgets = all_widgets
         for w in widgets:
             w.state(state)
-
-    def _install_started_hook(self):
-        self.gui.statusvar.set('Ready to install!')
-        self.gui.progressvar.set(0)
-        self.set_input_widgets_state('disabled')
 
     def set_product(self, evt=None):
         if self.gui.productvar.get().startswith('C'):  # ignore default text
@@ -433,23 +463,30 @@ class InstallerWindow(GuiApp):
         return 1
 
     def start_install_thread(self, evt=None):
-        self.gui.progress.config(mode='determinate')
-        self.start_thread(installer.install, app=self)
-
-    # XXX: where should this live? here or ControlWindow?
-    def _status(self, message: str, percent: int | None = None):
-        if percent:
+        def _install():
+            """Function to handle the install"""
+            installer.install(self.app)
+            # Install complete, cleaning up...
             self.gui.progress.stop()
-            self.gui.progress.state(['disabled'])
             self.gui.progress.config(mode='determinate')
-            self.gui.progressvar.set(percent)
-        else:
-            self.gui.progress.state(['!disabled'])
             self.gui.progressvar.set(0)
-            self.gui.progress.config(mode='indeterminate')
-            self.gui.progress.start()
-        self.gui.statusvar.set(message)
-        super()._status(message, percent)
+            self.gui.statusvar.set('')
+            self.gui.okay_button.config(
+                text="Exit",
+                command=self.on_cancel_released,
+            )
+            self.gui.okay_button.state(['!disabled'])
+            self.root.event_generate('<<InstallFinished>>')
+            self.win.destroy()
+            return 0
+
+        # Setup for the install
+        self.gui.progress.config(mode='determinate')
+        self.gui.statusvar.set('Ready to install!')
+        self.gui.progressvar.set(0)
+        self.set_input_widgets_state('disabled')
+
+        self.start_thread(_install)
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])
@@ -475,7 +512,7 @@ class InstallerWindow(GuiApp):
             self.gui.statusvar.set("Failed to get release list. Check connection and try again.")  # noqa: E501
 
     def update_wine_check_progress(self):
-        wine_choices = utils.get_wine_options(self)
+        wine_choices = utils.get_wine_options(self.app)
         self.gui.wine_dropdown['values'] = wine_choices
         if not self.gui.winevar.get():
             # If no value selected, default to 1st item in list.
@@ -483,20 +520,6 @@ class InstallerWindow(GuiApp):
         self.set_wine()
         self.stop_indeterminate_progress()
         self.gui.wine_check_button.state(['!disabled'])
-
-    def _install_complete_hook(self):
-        self.gui.progress.stop()
-        self.gui.progress.config(mode='determinate')
-        self.gui.progressvar.set(0)
-        self.gui.statusvar.set('')
-        self.gui.okay_button.config(
-            text="Exit",
-            command=self.on_cancel_released,
-        )
-        self.gui.okay_button.state(['!disabled'])
-        self.root.event_generate('<<InstallFinished>>')
-        self.win.destroy()
-        return 0
 
 
 class ControlWindow(GuiApp):
@@ -506,7 +529,6 @@ class ControlWindow(GuiApp):
         self.root = root
         self.root.title(f"{constants.APP_NAME} Control Panel")
         self.root.resizable(False, False)
-        self.installer_window: Optional[InstallerWindow] = None
         self.gui = gui.ControlGui(self.root, app=self)
         self.actioncmd: Optional[Callable[[], None]] = None
 
@@ -546,7 +568,7 @@ class ControlWindow(GuiApp):
         self.gui.latest_appimage_button.config(
             command=self.update_to_latest_appimage
         )
-        if self.conf.wine_binary_code != "AppImage" and self.conf.wine_binary_code != "Recommended":  # noqa: E501
+        if self.conf._raw.wine_binary_code not in ["Recommended", "AppImage", None]:  # noqa: E501
             self.gui.latest_appimage_button.state(['disabled'])
             gui.ToolTip(
                 self.gui.latest_appimage_button,
@@ -558,11 +580,13 @@ class ControlWindow(GuiApp):
                 "This button is disabled. The configured install was not created using an AppImage."  # noqa: E501
             )
         self.update_latest_lli_release_button()
-        self.update_latest_appimage_button()
         self.gui.set_appimage_button.config(command=self.set_appimage)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
-        self.update_run_winetricks_button()
+
+        # XXX: These can be called before installation started, causing them to fail
+        # self.update_run_winetricks_button()
+        # self.update_latest_appimage_button()
 
         self.root.bind('<<ClearStatus>>', self.clear_status_text)
         self.root.bind(
@@ -575,7 +599,9 @@ class ControlWindow(GuiApp):
         )
         self.root.bind('<<InstallFinished>>', self.update_app_button)
 
+        # These can be expanded to change the UI based on config changes.
         self.update_logging_button()
+        self.register_config_update_hook(self.update_logging_button)
 
     def edit_config(self):
         control.edit_file(self.conf.config_file_path)
@@ -592,7 +618,7 @@ class ControlWindow(GuiApp):
     def run_installer(self, evt=None):
         classname = constants.BINARY_NAME
         installer_window_top = Toplevel()
-        self.installer_window = InstallerWindow(installer_window_top, self.root, app=self, class_=classname) #noqa: E501
+        InstallerWindow(installer_window_top, self.root, app=self, class_=classname) #noqa: E501
 
     def run_logos(self, evt=None):
         self.start_thread(self.logos.start)
@@ -710,14 +736,7 @@ class ControlWindow(GuiApp):
             self.logos.switch_logging,
             action=desired_state.lower()
         )
-    
-    def _config_updated_hook(self) -> None:
-        self.update_logging_button()
-        if self.installer_window is not None:
-            self.installer_window._config_updated_hook()
-        return super()._config_updated_hook()
 
-    # XXX: should this live here or in installerWindow?
     def _status(self, message: str, percent: int | None = None):
         if percent:
             self.gui.progress.stop()
@@ -779,6 +798,9 @@ class ControlWindow(GuiApp):
         elif status == 2:
             state = 'disabled'
             msg = "This button is disabled. The AppImage version is newer than the latest recommended."  # noqa: E501
+        else:
+            # Failed to check
+            state = '!disabled'
         if msg:
             gui.ToolTip(self.gui.latest_appimage_button, msg)
         self.clear_status_text()

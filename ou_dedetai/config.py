@@ -455,7 +455,12 @@ class Config:
     def _write(self) -> None:
         """Writes configuration to file and lets the app know something changed"""
         self._raw.write_config()
-        self.app._config_updated_hook()
+        def update_config_hooks():
+            for hook in self.app._config_updated_hooks:
+                hook()
+        # Spin up a new thread to update the config just in case.
+        # We don't want a deadlock. Spinning up a new thread may be excessive
+        self.app.start_thread(update_config_hooks)
 
     def _relative_from_install_dir(self, path: Path | str) -> str:
         """Takes in a possibly absolute path under install dir and turns it into an
@@ -655,8 +660,8 @@ class Config:
         # Make the path absolute for comparison
         aboslute = self._absolute_from_install_dir(value)
         relative = self._relative_from_install_dir(value)
-        if not Path(aboslute).is_file():
-            raise ValueError("Wine Binary path must be a valid file")
+        # if not Path(aboslute).is_file():
+        #     raise ValueError("Wine Binary path must be a valid file")
 
         if self._raw.wine_binary != relative:
             self._raw.wine_binary = relative
