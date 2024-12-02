@@ -343,10 +343,6 @@ parts:
       - CXXFLAGS: "${CFLAGS_X64}"
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
-
-  wine-cleanup:
-    after: [wine32]
-    plugin: nil
     stage:
       - -include
       - -usr/include
@@ -356,6 +352,10 @@ parts:
       - -opt/wine-devel-amd64/applications
       - -opt/wine-devel-amd64/bin/wine
       - -opt/wine-devel-amd64/bin/wine-preloader
+
+  wine-cleanup:
+    after: [wine32]
+    plugin: nil
     override-stage: |
       ln opt/wine-devel-amd64/bin/wine64 opt/wine-devel-amd64/bin/wine
       find . -type d -empty -delete
