@@ -366,6 +366,7 @@ parts:
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
     source-branch: snap-pkg
     ##
+    after: [wine-cleanup]
     # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     plugin: python
 
