@@ -14,7 +14,7 @@ from tkinter import Tk
 from tkinter import Toplevel
 from tkinter import filedialog as fd
 from tkinter.ttk import Style
-from typing import Optional
+from typing import Callable, Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
@@ -39,16 +39,16 @@ class GuiApp(App):
         self.root = root
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
-        answer_q: Queue[str] = Queue()
+        answer_q: Queue[Optional[str]] = Queue()
         answer_event = Event()
-        def spawn_dialog():
+        def spawn_dialog(options: list[str]):
             # Create a new popup (with it's own event loop)
             pop_up = ChoicePopUp(question, options, answer_q, answer_event)
 
             # Run the mainloop in this thread
             pop_up.mainloop()
         if isinstance(options, list):
-            self.start_thread(spawn_dialog)
+            self.start_thread(spawn_dialog, options)
 
             answer_event.wait()
             answer: Optional[str] = answer_q.get()
@@ -151,7 +151,7 @@ class Root(Tk):
 
 class ChoicePopUp(Tk):
     """Creates a pop-up with a choice"""
-    def __init__(self, question: str, options: list[str], answer_q: Queue[str], answer_event: Event, **kwargs): #noqa: E501
+    def __init__(self, question: str, options: list[str], answer_q: Queue[Optional[str]], answer_event: Event, **kwargs): #noqa: E501
         # Set root parameters.
         super().__init__()
         self.title(f"Quesiton: {question.strip().strip(':')}")
@@ -197,7 +197,6 @@ class InstallerWindow(GuiApp):
 
         # Initialize variables.
         self.config_thread = None
-        self.appimages = None
 
         # Set widget callbacks and event bindings.
         self.gui.product_dropdown.bind(
@@ -244,9 +243,10 @@ class InstallerWindow(GuiApp):
             '<<StartIndeterminateProgress>>',
             self.start_indeterminate_progress
         )
+        self.release_evt = "<<ReleaseCheckProgress>>"
         self.root.bind(
-            "<<SetWineExe>>",
-            self.update_wine_check_progress
+            self.release_evt,
+            self.update_release_check_progress
         )
         self.releases_q: Queue[list[str]] = Queue()
         self.wine_q: Queue[str] = Queue()
@@ -265,7 +265,16 @@ class InstallerWindow(GuiApp):
         self.gui.versionvar.set(self.conf._raw.faithlife_product_version or self.gui.version_dropdown['values'][-1]) #noqa: E501
         self.gui.releasevar.set(self.conf._raw.faithlife_product_release or self.gui.release_dropdown['values'][0]) #noqa: E501
         # Returns either wine_binary if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise '' #noqa: E501
-        self.gui.winevar.set(self.conf._raw.wine_binary or next(iter(self.gui.wine_dropdown['values']), '')) #noqa: E501
+        wine_binary: Optional[str] = self.conf._raw.wine_binary
+        if wine_binary is None:
+            wine_binary = next(iter(self.gui.wine_dropdown['values'])) or ''
+        self.gui.winevar.set(wine_binary)
+        # In case the product changes
+        self.root.icon = Path(self.conf.faithlife_product_icon_path)
+        # XXX: this function has a lot of logic in it, 
+        # not sure if we want to run it every save.
+        # Ideally the path traversals this uses would be cached in Config
+        # self.update_wine_check_progress()
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
@@ -277,7 +286,9 @@ class InstallerWindow(GuiApp):
         )
 
     def get_winetricks_options(self):
-        self.conf.winetricks_binary = None  # override config file b/c "Download" accounts for that  # noqa: E501
+        # override config file b/c "Download" accounts for that
+        # Type hinting ignored due to https://github.com/python/mypy/issues/3004
+        self.conf.winetricks_binary = None # type: ignore[assignment]
         self.gui.tricks_dropdown['values'] = utils.get_winetricks_options() + ['Return to Main Menu'] #noqa: E501
         self.gui.tricksvar.set(self.gui.tricks_dropdown['values'][0])
 
@@ -340,12 +351,6 @@ class InstallerWindow(GuiApp):
         self.gui.release_check_button.state(['disabled'])
         # self.gui.releasevar.set('')
         self.gui.release_dropdown['values'] = []
-        # Setup queue, signal, thread.
-        self.release_evt = "<<ReleaseCheckProgress>>"
-        self.root.bind(
-            self.release_evt,
-            self.update_release_check_progress
-        )
         # Start progress.
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
@@ -366,51 +371,24 @@ class InstallerWindow(GuiApp):
             self.start_ensure_config()
 
     def start_find_appimage_files(self, release_version):
-        # Setup queue, signal, thread.
-        self.appimage_q = Queue()
-        self.appimage_evt = "<<FindAppImageProgress>>"
-        self.root.bind(
-            self.appimage_evt,
-            self.update_find_appimage_progress
-        )
         # Start progress.
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
         self.gui.statusvar.set("Finding available wine AppImages…")
         # Start thread.
         self.start_thread(
-            utils.find_appimage_files,
-            release_version=release_version,
-            app=self,
+            self.start_wine_versions_check,
         )
 
-    def start_wine_versions_check(self, release_version):
-        if self.appimages is None:
-            self.appimages = []
-            # self.start_find_appimage_files(release_version)
-            # return
-        # Setup queue, signal, thread.
-        self.wines_q = Queue()
-        self.wine_evt = "<<WineCheckProgress>>"
-        self.root.bind(
-            self.wine_evt,
-            self.update_wine_check_progress
-        )
+    def start_wine_versions_check(self):
         # Start progress.
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
         self.gui.statusvar.set("Finding available wine binaries…")
 
-        def get_wine_options(app: InstallerWindow, app_images, binaries):
-            app.wines_q.put(utils.get_wine_options(app, app_images, binaries))
-            app.root.event_generate(app.wine_evt)
-
         # Start thread.
         self.start_thread(
-            get_wine_options,
-            self,
-            self.appimages,
-            utils.find_wine_binary_files(self, release_version),
+            self.update_wine_check_progress,
         )
 
     def set_wine(self, evt=None):
@@ -432,7 +410,8 @@ class InstallerWindow(GuiApp):
         self.conf.winetricks_binary = self.gui.tricksvar.get()
         self.gui.tricks_dropdown.selection_clear()
         if evt:  # manual override
-            self.conf.winetricks_binary = None
+            # Type ignored due to https://github.com/python/mypy/issues/3004
+            self.conf.winetricks_binary = None # type: ignore[assignment]
             self.start_ensure_config()
 
     def on_release_check_released(self, evt=None):
@@ -440,19 +419,18 @@ class InstallerWindow(GuiApp):
 
     def on_wine_check_released(self, evt=None):
         self.gui.wine_check_button.state(['disabled'])
-        self.start_wine_versions_check(self.conf.faithlife_product_release)
+        self.start_wine_versions_check()
 
     def set_skip_fonts(self, evt=None):
-        self.conf.skip_install_fonts = 1 - self.gui.fontsvar.get()  # invert True/False
+        self.conf.skip_install_fonts = not self.gui.fontsvar.get()  # invert True/False
         logging.debug(f"> config.SKIP_FONTS={self.conf.skip_install_fonts}")
 
     def set_skip_dependencies(self, evt=None):
-        self.conf.skip_install_system_dependencies = 1 - self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
+        self.conf.skip_install_system_dependencies = self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
         logging.debug(f"> config.SKIP_DEPENDENCIES={self.conf.skip_install_system_dependencies}") #noqa: E501
 
     def on_okay_released(self, evt=None):
         # Update desktop panel icon.
-        self.root.icon = self.conf.faithlife_product_icon_path
         self.start_install_thread()
 
     def on_cancel_released(self, evt=None):
@@ -501,16 +479,12 @@ class InstallerWindow(GuiApp):
         else:
             self.gui.statusvar.set("Failed to get release list. Check connection and try again.")  # noqa: E501
 
-    def update_find_appimage_progress(self, evt=None):
-        self.stop_indeterminate_progress()
-        if not self.appimage_q.empty():
-            self.appimages = self.appimage_q.get()
-            self.start_wine_versions_check(self.conf.faithlife_product_release)
-
-    def update_wine_check_progress(self, evt=None):
-        if evt and self.wines_q.empty():
-            return
-        self.gui.wine_dropdown['values'] = self.wines_q.get()
+    def update_wine_check_progress(self):
+        release_version = self.conf.faithlife_product_release
+        binaries = utils.find_wine_binary_files(self, release_version)
+        app_images = utils.find_appimage_files(self)
+        wine_choices = utils.get_wine_options(self, app_images, binaries)
+        self.gui.wine_dropdown['values'] = wine_choices
         if not self.gui.winevar.get():
             # If no value selected, default to 1st item in list.
             self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
@@ -541,7 +515,7 @@ class ControlWindow(GuiApp):
         self.root.title(f"{constants.APP_NAME} Control Panel")
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root, app=self)
-        self.actioncmd = None
+        self.actioncmd: Optional[Callable[[], None]] = None
 
         text = self.gui.update_lli_label.cget('text')
         ver = constants.LLI_CURRENT_VERSION
@@ -608,7 +582,7 @@ class ControlWindow(GuiApp):
         )
         self.root.bind('<<InstallFinished>>', self.update_app_button)
 
-        self.installer_window = None
+        self.installer_window: Optional[InstallerWindow] = None
 
         self.update_logging_button()
 
@@ -628,13 +602,13 @@ class ControlWindow(GuiApp):
         classname = constants.BINARY_NAME
         installer_window_top = Toplevel()
         self.installer_window = InstallerWindow(installer_window_top, self.root, app=self, class_=classname) #noqa: E501
-        self.root.icon = self.conf.faithlife_product_icon_path
 
     def run_logos(self, evt=None):
         self.start_thread(self.logos.start)
 
     def run_action_cmd(self, evt=None):
-        self.actioncmd()
+        if self.actioncmd:
+            self.actioncmd()
 
     def on_action_radio_clicked(self, evt=None):
         logging.debug("gui_app.ControlPanel.on_action_radio_clicked START")
@@ -649,17 +623,17 @@ class ControlWindow(GuiApp):
             elif self.gui.actionsvar.get() == 'install-icu':
                 self.actioncmd = self.install_icu
 
-    def run_indexing(self, evt=None):
+    def run_indexing(self):
         self.start_thread(self.logos.index)
 
-    def remove_library_catalog(self, evt=None):
+    def remove_library_catalog(self):
         control.remove_library_catalog(self)
 
-    def remove_indexes(self, evt=None):
+    def remove_indexes(self):
         self.gui.statusvar.set("Removing indexes…")
         self.start_thread(control.remove_all_index_files, app=self)
 
-    def install_icu(self, evt=None):
+    def install_icu(self):
         self.gui.statusvar.set("Installing ICU files…")
         self.start_thread(wine.enforce_icu_data_files, app=self)
 
@@ -700,7 +674,7 @@ class ControlWindow(GuiApp):
         self.update_latest_appimage_button()
 
     def update_to_latest_appimage(self, evt=None):
-        self.conf.wine_appimage_path = self.conf.wine_appimage_recommended_file_name  # noqa: E501
+        self.conf.wine_appimage_path = Path(self.conf.wine_appimage_recommended_file_name)  # noqa: E501
         self.start_indeterminate_progress()
         self.gui.statusvar.set("Updating to latest AppImage…")
         self.start_thread(self.set_appimage_symlink)
@@ -751,7 +725,7 @@ class ControlWindow(GuiApp):
         if self.installer_window is not None:
             # XXX: for some reason mypy thinks this is unreachable.
             # consider the relationship between these too classes anyway
-            self.installer_window._config_updated_hook() #type: ignore[unreachable]
+            self.installer_window._config_updated_hook()
         return super()._config_updated_hook()
 
     # XXX: should this live here or in installerWindow?

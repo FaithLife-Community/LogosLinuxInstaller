@@ -100,7 +100,7 @@ class WineRule:
 
 def check_wine_rules(
     wine_release: Optional[WineRelease],
-    release_version,
+    release_version: str,
     faithlife_product_version: str
 ):
     # Does not check for Staging. Will not implement: expecting merging of
@@ -181,7 +181,7 @@ def check_wine_rules(
         return True, "Default to trusting user override"
 
 
-def check_wine_version_and_branch(release_version, test_binary,
+def check_wine_version_and_branch(release_version: str, test_binary,
                                   faithlife_product_version):
     if not os.path.exists(test_binary):
         reason = "Binary does not exist."

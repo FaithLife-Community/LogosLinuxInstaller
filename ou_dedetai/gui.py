@@ -357,8 +357,9 @@ class ToolTip:
 
     def hide_tooltip(self, event=None):
         if self.tooltip_visible:
-            self.tooltip_window.destroy()
             self.tooltip_visible = False
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
 
 
 class PromptGui(Frame):
@@ -369,12 +370,14 @@ class PromptGui(Frame):
             self.options['title'] = title
         if prompt is not None:
             self.options['prompt'] = prompt
+        self.root = root
 
     def draw_prompt(self):
+        text = "Store Password"
         store_button = Button(
             self.root,
-            text="Store Password",
-            command=lambda: input_prompt(self.root, self.options)
+            text=text,
+            command=lambda: input_prompt(self.root, text, self.options)
         )
         store_button.pack(pady=20)
 

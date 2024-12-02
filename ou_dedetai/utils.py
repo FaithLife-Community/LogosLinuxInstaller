@@ -503,6 +503,7 @@ def check_appimage(filestr):
 
 
 def find_appimage_files(app: App) -> list[str]:
+    app.status("Finding available wine AppImages…")
     release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version #noqa: E501
     appimages = []
     directories = [
@@ -539,7 +540,7 @@ def find_appimage_files(app: App) -> list[str]:
     return appimages
 
 
-def find_wine_binary_files(app: App, release_version):
+def find_wine_binary_files(app: App, release_version: str) -> list[str]:
     wine_binary_path_list = [
         "/usr/local/bin",
         os.path.expanduser("~") + "/bin",
