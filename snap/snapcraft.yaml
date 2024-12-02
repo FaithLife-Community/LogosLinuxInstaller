@@ -351,13 +351,13 @@ parts:
       - -include
       - -usr/include
       - -usr/share/man
-      - -opt/wine-devel/include
-      - -opt/wine-devel/share
-      - -opt/wine-devel/applications
-      - -opt/wine-devel/bin/wine
-      - -opt/wine-devel/bin/wine-preloader
+      - -opt/wine-devel-amd64/include
+      - -opt/wine-devel-amd64/share
+      - -opt/wine-devel-amd64/applications
+      - -opt/wine-devel-amd64/bin/wine
+      - -opt/wine-devel-amd64/bin/wine-preloader
     override-stage: |
-      ln opt/wine-devel-amd64/bin/wine opt/wine-devel-amd64/bin/wine64
+      ln opt/wine-devel-amd64/bin/wine64 opt/wine-devel-amd64/bin/wine
       find . -type d -empty -delete
       craftctl default
 
