@@ -3,13 +3,16 @@ import signal
 import textwrap
 
 from ou_dedetai import tui_screen
-from ou_dedetai.tui_app import TUI
+from ou_dedetai.app import App
 
 
 # NOTE to reviewer: does this convay the original meaning?
 # The usages of the function seemed to have expected a list besides text_centered below
 # Which handled the string case. Is it faithful to remove the string case?
-def wrap_text(app: TUI, text: str) -> list[str]:
+def wrap_text(app: App, text: str) -> list[str]:
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     # Turn text into wrapped text, line by line, centered
     if "\n" in text:
         lines = text.splitlines()
@@ -20,15 +23,23 @@ def wrap_text(app: TUI, text: str) -> list[str]:
         return wrapped_text.splitlines()
 
 
-def write_line(app: TUI, stdscr: curses.window, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL): #noqa: E501
+def write_line(app: App, stdscr: curses.window, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL): #noqa: E501
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     try:
         stdscr.addnstr(start_y, start_x, text, char_limit, attributes)
     except curses.error:
         signal.signal(signal.SIGWINCH, app.signal_resize)
 
 
-def title(app, title_text, title_start_y_adj):
-    stdscr = app.get_main_window()
+def title(app: App, title_text, title_start_y_adj):
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
+    stdscr = app.main_window
+    if not stdscr:
+        raise Exception("Expected main window to be initialized, but it wasn't")
     title_lines = wrap_text(app, title_text)
     # title_start_y = max(0, app.window_height // 2 - len(title_lines) // 2)
     last_index = 0
@@ -40,7 +51,10 @@ def title(app, title_text, title_start_y_adj):
     return last_index
 
 
-def text_centered(app: TUI, text: str, start_y=0) -> tuple[int, list[str]]:
+def text_centered(app: App, text: str, start_y=0) -> tuple[int, list[str]]:
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     stdscr = app.get_menu_window()
     text_lines = wrap_text(app, text)
     text_start_y = start_y
@@ -53,7 +67,7 @@ def text_centered(app: TUI, text: str, start_y=0) -> tuple[int, list[str]]:
     return text_start_y, text_lines
 
 
-def spinner(app, index, start_y=0):
+def spinner(app: App, index: int, start_y: int = 0):
     spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"]
     i = index
     text_centered(app, spinner_chars[i], start_y)
@@ -62,7 +76,10 @@ def spinner(app, index, start_y=0):
 
 
 #FIXME: Display flickers.
-def confirm(app, question_text, height=None, width=None):
+def confirm(app: App, question_text: str, height=None, width=None):
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     stdscr = app.get_menu_window()
     question_text = question_text + " [Y/n]: "
     question_start_y, question_lines = text_centered(app, question_text)

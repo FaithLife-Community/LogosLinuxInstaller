@@ -454,7 +454,8 @@ class TUI(App):
             signal.signal(signal.SIGINT, self.end)
 
     def installing_pw_waiting(self):
-        self.start_thread(self.get_waiting, screen_id=15)
+        # self.start_thread(self.get_waiting, screen_id=15)
+        pass
 
     def choice_processor(self, stdscr, screen_id, choice):
         screen_actions = {
@@ -798,29 +799,19 @@ class TUI(App):
             self.handle_ask_response(choice)
 
     def _status(self, message: str, percent: int | None = None):
-        # XXX: update some screen? Something like get_waiting?
-        pass
-
-    def _install_started_hook(self):
-        self.get_waiting(self)
-
-    def get_waiting(self, screen_id=8):
-        text = ["Install is running…\n"]
-        processed_text = utils.str_array_to_string(text)
-
-        percent = installer.get_progress_pct(
-            self.installer_step, self.installer_step_count
-        )  # noqa: E501
         self.screen_q.put(
             self.stack_text(
-                screen_id,
+                8,
                 self.status_q,
                 self.status_e,
-                processed_text,
+                message,
                 wait=True,
-                percent=percent,
+                percent=percent or 0,
             )
-        )  # noqa: E501
+        )
+
+    def _install_started_hook(self):
+        self._status("Install is running…")
 
     # def get_password(self, dialog):
     #     question = (f"Logos Linux Installer needs to run a command as root. "

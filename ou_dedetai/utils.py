@@ -681,15 +681,6 @@ def grep(regexp, filepath):
     return found
 
 
-
-def str_array_to_string(text, delimeter="\n"):
-    try:
-        processed_text = delimeter.join(text)
-        return processed_text
-    except TypeError:
-        return text
-
-
 def untar_file(file_path, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
