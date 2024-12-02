@@ -358,7 +358,7 @@ parts:
       - -opt/wine-devel/bin/wine-preloader
     override-stage: |
       ln opt/wine-devel-amd64/bin/wine opt/wine-devel-amd64/bin/wine64
-      find . - type d -empty -delete
+      find . -type d -empty -delete
       craftctl default
 
   oudedetai:
