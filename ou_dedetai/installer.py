@@ -13,125 +13,40 @@ from . import utils
 from . import wine
 
 
-# XXX: ideally this function wouldn't be needed, would happen automatically by nature of config accesses #noqa: E501
-def ensure_product_choice(app: App):
+# This step doesn't do anything per-say, but "collects" all the choices in one step
+# The app would continue to work without this function
+def ensure_choices(app: App):
     app.installer_step_count += 1
-    app.status("Choose product…")
-    logging.debug('- config.FLPRODUCT')
 
-    logging.debug(f"> config.FLPRODUCT={app.conf.faithlife_product}")
+    app.status("Asking questions if needed…")
 
-
-# XXX: we don't need this install step anymore
-def ensure_version_choice(app: App):
-    app.installer_step_count += 1
-    ensure_product_choice(app=app)
-    app.installer_step += 1
-    app.status("Choose version…")
-    logging.debug('- config.TARGETVERSION')
-    # Accessing this ensures it's set
-    logging.debug(f"> config.TARGETVERSION={app.conf.faithlife_product_version=}")
-
-
-# XXX: no longer needed
-def ensure_release_choice(app: App):
-    app.installer_step_count += 1
-    ensure_version_choice(app=app)
-    app.installer_step += 1
-    app.status("Choose product release…")
-    logging.debug('- config.TARGET_RELEASE_VERSION')
-    logging.debug(f"> config.TARGET_RELEASE_VERSION={app.conf.faithlife_product_release}") #noqa: E501
-
-
-def ensure_install_dir_choice(app: App):
-    app.installer_step_count += 1
-    ensure_release_choice(app=app)
-    app.installer_step += 1
-    app.status("Choose installation folder…")
-    logging.debug('- config.INSTALLDIR')
-    # Accessing this sets install_dir and bin_dir
-    app.conf.install_dir
-    logging.debug(f"> config.INSTALLDIR={app.conf.install_dir=}")
-    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_dir}")
-
-
-def ensure_wine_choice(app: App):
-    app.installer_step_count += 1
-    ensure_install_dir_choice(app=app)
-    app.installer_step += 1
-    app.status("Choose wine binary…")
-    logging.debug('- config.SELECTED_APPIMAGE_FILENAME')
-    logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_URL')
-    logging.debug('- config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME')
-    logging.debug('- config.WINE_EXE')
-    logging.debug('- config.WINEBIN_CODE')
-
-    m = f"Preparing to process WINE_EXE. Currently set to: {app.conf.wine_binary}."  # noqa: E501
-    logging.debug(m)
-
-    logging.debug(f"> config.SELECTED_APPIMAGE_FILENAME={app.conf.wine_appimage_path}")
-    logging.debug(f"> config.RECOMMENDED_WINE64_APPIMAGE_URL={app.conf.wine_appimage_recommended_url}") #noqa: E501
-    logging.debug(f"> config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME={app.conf.wine_appimage_recommended_file_name}") # noqa: E501
-    logging.debug(f"> config.WINEBIN_CODE={app.conf.wine_binary_code}")
+    # Prompts (by nature of access and debug prints a number of choices the user has
+    logging.debug(f"> {app.conf.faithlife_product=}")
+    logging.debug(f"> {app.conf.faithlife_product_version=}")
+    logging.debug(f"> {app.conf.faithlife_product_release=}")
+    logging.debug(f"> {app.conf.install_dir=}")
+    logging.debug(f"> {app.conf.installer_binary_dir=}")
+    logging.debug(f"> {app.conf.wine_appimage_path=}")
+    logging.debug(f"> {app.conf.wine_appimage_recommended_url=}")
+    logging.debug(f"> {app.conf.wine_appimage_recommended_file_name=}")
+    logging.debug(f"> {app.conf.wine_binary_code=}")
     logging.debug(f"> {app.conf.wine_binary=}")
-
-
-# XXX: this isn't needed anymore
-def ensure_winetricks_choice(app: App):
-    app.installer_step_count += 1
-    ensure_wine_choice(app=app)
-    app.installer_step += 1
-    app.status("Choose winetricks binary…")
-    logging.debug('- config.WINETRICKSBIN')
-    # Accessing the winetricks_binary variable will do this.
-    logging.debug(f"> config.WINETRICKSBIN={app.conf.winetricks_binary}")
-
-
-# XXX: huh? What does this do?
-def ensure_install_fonts_choice(app: App):
-    app.installer_step_count += 1
-    ensure_winetricks_choice(app=app)
-    app.installer_step += 1
-    app.status("Ensuring install fonts choice…")
-    logging.debug('- config.SKIP_FONTS')
-
-    logging.debug(f"> config.SKIP_FONTS={app.conf.skip_install_fonts}")
-
-
-# XXX: huh? What does this do?
-def ensure_check_sys_deps_choice(app: App):
-    app.installer_step_count += 1
-    ensure_install_fonts_choice(app=app)
-    app.installer_step += 1
-    app.status(
-        "Ensuring check system dependencies choice…"
-    )
-    logging.debug('- config.SKIP_DEPENDENCIES')
-
-    logging.debug(f"> config.SKIP_DEPENDENCIES={app.conf._overrides.winetricks_skip}")
-
-
-# XXX: should this be it's own step? faithlife_product_version is asked
-def ensure_installation_config(app: App):
-    app.installer_step_count += 1
-    ensure_check_sys_deps_choice(app=app)
-    app.installer_step += 1
-    app.status("Ensuring installation config is set…")
-    logging.debug('- config.LOGOS_ICON_URL')
-    logging.debug('- config.LOGOS_VERSION')
-    logging.debug('- config.LOGOS64_URL')
-
-    logging.debug(f"> config.LOGOS_ICON_URL={app.conf.faithlife_product_icon_path}")
-    logging.debug(f"> config.LOGOS_VERSION={app.conf.faithlife_product_version}")
-    logging.debug(f"> config.LOGOS64_URL={app.conf.faithlife_installer_download_url}")
+    logging.debug(f"> {app.conf.winetricks_binary=}")
+    logging.debug(f"> {app.conf.skip_install_fonts=}")
+    logging.debug(f"> {app.conf._overrides.winetricks_skip=}")
+    logging.debug(f"> {app.conf.faithlife_product_icon_path}")
+    logging.debug(f"> {app.conf.faithlife_installer_download_url}")
+    # Debug print the entire config
+    logging.debug(f"> Config={app.conf.__dict__}")
 
     app._install_started_hook()
     app.status("Install is running…")
 
 
+
 def ensure_install_dirs(app: App):
     app.installer_step_count += 1
-    ensure_installation_config(app=app)
+    ensure_choices(app=app)
     app.installer_step += 1
     app.status("Ensuring installation directories…")
     logging.debug('- config.INSTALLDIR')
