@@ -154,8 +154,8 @@ parts:
       # - libsdl2  # joysticks
       - libvulkan1
       # - ccache  # requires up to 5GB extra space
-      # - gcc-9  # use built-in (most-recent) gcc
-      # - g++-9  # use built-in (most-recent) g++
+      - gcc-9
+      - g++-9
       # - wget  # not needed (already installed? unused?)
       - gcc-mingw-w64
       - g++-mingw-w64
@@ -165,7 +165,7 @@ parts:
       - libgcrypt20-dev
       - libpulse-dev
       - libudev-dev
-      # - libsane-dev
+      # - libsane-dev  # for scanners
       - libv4l-dev
       # - libkrb5-dev  # for kerberos
       - libgphoto2-dev
@@ -231,8 +231,8 @@ parts:
       ## values used for build
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
-      # - CC: "gcc-9"
-      # - CXX: "g++-9"
+      - CC: "gcc-9"
+      - CXX: "g++-9"
       - CROSSCC: "${CROSSCC_X64}"
       - CROSSCXX: "${CROSSCXX_X64}"
       - CFLAGS: "${CFLAGS_X64}"
@@ -281,8 +281,8 @@ parts:
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
-      # - CC: "gcc-9"  cc1: error: CPU you selected does not support x86-64 instruction set
-      # - CXX: "g++"  #"g++-9"
+      - CC: "gcc-9"
+      - CXX: "g++-9"
       - CROSSCC: "${CROSSCC_X32}"
       - CROSSCXX: "${CROSSCXX_X32}"
       - CFLAGS: "${CFLAGS_X32}"
@@ -335,8 +335,8 @@ parts:
       - LDFLAGS: "-Wl,-O1,--sort-common,--as-needed"
       - CROSSLDFLAGS: "${LDFLAGS}"
       - PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig
-      # - CC: "gcc-9"
-      # - CXX: "g++-9"
+      - CC: "gcc-9"
+      - CXX: "g++-9"
       - CROSSCC: "${CROSSCC_X32}"
       - CROSSCXX: "${CROSSCXX_X32}"
       - CFLAGS: "${CFLAGS_X64}"
