@@ -514,6 +514,7 @@ class ControlWindow(GuiApp):
         self.root = root
         self.root.title(f"{constants.APP_NAME} Control Panel")
         self.root.resizable(False, False)
+        self.installer_window: Optional[InstallerWindow] = None
         self.gui = gui.ControlGui(self.root, app=self)
         self.actioncmd: Optional[Callable[[], None]] = None
 
@@ -581,8 +582,6 @@ class ControlWindow(GuiApp):
             self.update_latest_appimage_button
         )
         self.root.bind('<<InstallFinished>>', self.update_app_button)
-
-        self.installer_window: Optional[InstallerWindow] = None
 
         self.update_logging_button()
 

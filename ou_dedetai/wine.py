@@ -100,14 +100,14 @@ class WineRule:
 
 def check_wine_rules(
     wine_release: Optional[WineRelease],
-    release_version: str,
+    release_version: Optional[str],
     faithlife_product_version: str
 ):
     # Does not check for Staging. Will not implement: expecting merging of
     # commits in time.
     logging.debug(f"Checking {wine_release} for {release_version}.")
     if faithlife_product_version == "10":
-        if utils.check_logos_release_version(release_version, 30, 1):
+        if release_version is not None and utils.check_logos_release_version(release_version, 30, 1): #noqa: E501
             required_wine_minimum = [7, 18]
         else:
             required_wine_minimum = [9, 10]

@@ -33,16 +33,22 @@ class LogosManager:
 
     def monitor_indexing(self):
         if self.app.conf.logos_indexer_exe in self.existing_processes:
-            indexer = self.processes.get(self.app.conf.logos_indexer_exe)
+            indexer = self.existing_processes.get(self.app.conf.logos_indexer_exe)
             if indexer and isinstance(indexer[0], psutil.Process) and indexer[0].is_running():  # noqa: E501
                 self.indexing_state = State.RUNNING
             else:
                 self.indexing_state = State.STOPPED
 
     def monitor_logos(self):
-        splash = self.existing_processes.get(self.app.conf.logos_exe, [])
-        login = self.existing_processes.get(self.app.conf.logos_login_exe, [])
-        cef = self.existing_processes.get(self.app.conf.logos_cef_exe, [])
+        splash = []
+        login = []
+        cef = []
+        if self.app.conf.logos_exe:
+            splash = self.existing_processes.get(self.app.conf.logos_exe, [])
+        if self.app.conf.logos_login_exe:
+            login = self.existing_processes.get(self.app.conf.logos_login_exe, [])
+        if self.app.conf.logos_cef_exe:
+            cef = self.existing_processes.get(self.app.conf.logos_cef_exe, [])
 
         splash_running = splash[0].is_running() if splash else False
         login_running = login[0].is_running() if login else False
@@ -68,9 +74,12 @@ class LogosManager:
 
     def get_logos_pids(self):
         app = self.app
-        self.existing_processes[app.conf.logos_exe] = system.get_pids(app.conf.logos_exe) # noqa: E501
-        self.existing_processes[app.conf.logos_indexer_exe] = system.get_pids(app.conf.logos_indexer_exe)  # noqa: E501
-        self.existing_processes[app.conf.logos_cef_exe] = system.get_pids(app.conf.logos_cef_exe) # noqa: E501
+        if app.conf.logos_exe:
+            self.existing_processes[app.conf.logos_exe] = system.get_pids(app.conf.logos_exe) # noqa: E501
+        if app.conf.logos_indexer_exe:
+            self.existing_processes[app.conf.logos_indexer_exe] = system.get_pids(app.conf.logos_indexer_exe)  # noqa: E501
+        if app.conf.logos_cef_exe:
+            self.existing_processes[app.conf.logos_cef_exe] = system.get_pids(app.conf.logos_cef_exe) # noqa: E501
 
     def monitor(self):
         if self.app.is_installed():
@@ -87,6 +96,8 @@ class LogosManager:
         wine_release, _ = wine.get_wine_release(self.app.conf.wine_binary)
 
         def run_logos():
+            if not self.app.conf.logos_exe:
+                raise ValueError("Could not find installed Logos EXE to run")
             process = wine.run_wine_proc(
                 self.app.conf.wine_binary,
                 self.app,
@@ -137,9 +148,11 @@ class LogosManager:
                 self.app.conf.logos_login_exe,
                 self.app.conf.logos_cef_exe
             ]:
-                process_list = self.processes.get(process_name)
-                if process_list:
-                    pids.extend([str(process.pid) for process in process_list])
+                if process_name is None:
+                    continue
+                process = self.processes.get(process_name)
+                if process:
+                    pids.append(str(process.pid))
                 else:
                     logging.debug(f"No Logos processes found for {process_name}.")  # noqa: E501
 
@@ -171,6 +184,8 @@ class LogosManager:
         index_finished = threading.Event()
 
         def run_indexing():
+            if not self.app.conf.logos_indexer_exe:
+                raise ValueError("Cannot find installed indexer")
             process = wine.run_wine_proc(
                 self.app.conf.wine_binary,
                 app=self.app,
@@ -218,9 +233,11 @@ class LogosManager:
         if self.app:
             pids = []
             for process_name in [self.app.conf.logos_indexer_exe]:
-                process_list = self.processes.get(process_name)
-                if process_list:
-                    pids.extend([str(process.pid) for process in process_list])
+                if process_name is None:
+                    continue
+                process = self.processes.get(process_name)
+                if process:
+                    pids.append(str(process.pid))
                 else:
                     logging.debug(f"No LogosIndexer processes found for {process_name}.")  # noqa: E501
 
@@ -284,5 +301,5 @@ class LogosManager:
             exe_args=exe_args
         )
         system.wait_pid(process)
-        wine.wineserver_wait(self.app.conf.wineserver_binary)
-        self.app.conf.faithlife_product_logging = state
+        wine.wineserver_wait(self.app)
+        self.app.conf.faithlife_product_logging = state == state_enabled
