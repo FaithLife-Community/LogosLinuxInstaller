@@ -1,3 +1,4 @@
+import copy
 import os
 from typing import Optional
 from dataclasses import dataclass
@@ -290,12 +291,12 @@ class PersistentConfiguration:
     faithlife_product_version: Optional[str] = None
     faithlife_product_release: Optional[str] = None
     faithlife_product_logging: Optional[bool] = None
-    install_dir: Optional[Path] = None
+    install_dir: Optional[str] = None
     winetricks_binary: Optional[str] = None
     wine_binary: Optional[str] = None
     # This is where to search for wine
     wine_binary_code: Optional[str] = None
-    backup_dir: Optional[Path] = None
+    backup_dir: Optional[str] = None
 
     # Color to use in curses. Either "Logos", "Light", or "Dark"
     curses_colors: str = "Logos"
@@ -329,23 +330,17 @@ class PersistentConfiguration:
 
     @classmethod
     def from_legacy(cls, legacy: LegacyConfiguration) -> "PersistentConfiguration":
-        backup_dir = None
-        if legacy.BACKUPDIR is not None:
-            backup_dir = Path(legacy.BACKUPDIR)
-        install_dir = None
-        if legacy.INSTALLDIR is not None:
-            install_dir = Path(legacy.INSTALLDIR)
         faithlife_product_logging = None
         if legacy.LOGS is not None:
             faithlife_product_logging = utils.parse_bool(legacy.LOGS)
         return PersistentConfiguration(
             faithlife_product=legacy.FLPRODUCT,
-            backup_dir=backup_dir,
+            backup_dir=legacy.BACKUPDIR,
             curses_colors=legacy.curses_colors or 'Logos',
             faithlife_product_release=legacy.TARGET_RELEASE_VERSION,
             faithlife_product_release_channel=legacy.logos_release_channel or 'stable',
             faithlife_product_version=legacy.TARGETVERSION,
-            install_dir=install_dir,
+            install_dir=legacy.INSTALLDIR,
             app_release_channel=legacy.lli_release_channel or 'stable',
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
@@ -356,7 +351,7 @@ class PersistentConfiguration:
     def write_config(self) -> None:
         config_file_path = LegacyConfiguration.config_file_path()
         # XXX: we may need to merge this dict with the legacy configuration's extended config (as we don't store that persistently anymore) #noqa: E501
-        output = self.__dict__
+        output = copy.deepcopy(self.__dict__)
 
         logging.info(f"Writing config to {config_file_path}")
         os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
@@ -365,12 +360,15 @@ class PersistentConfiguration:
             # Ensure all paths stored are relative to install_dir
             for k, v in output.items():
                 if k == "install_dir":
+                    if v is not None:
+                        output[k] = str(v)
                     continue
-                if isinstance(v, Path) or (isinstance(v, str) and v.startswith(str(self.install_dir))): #noqa: E501
-                    output[k] = utils.get_relative_path(v, str(self.install_dir))
+                if (isinstance(v, str) and v.startswith(self.install_dir)): #noqa: E501
+                    output[k] = utils.get_relative_path(v, self.install_dir)
 
         try:
             with open(config_file_path, 'w') as config_file:
+                # XXX: would it be possible to avoid writing if this would fail?
                 json.dump(output, config_file, indent=4, sort_keys=True)
                 config_file.write('\n')
         except IOError as e:
@@ -455,12 +453,7 @@ class Config:
     def _write(self) -> None:
         """Writes configuration to file and lets the app know something changed"""
         self._raw.write_config()
-        def update_config_hooks():
-            for hook in self.app._config_updated_hooks:
-                hook()
-        # Spin up a new thread to update the config just in case.
-        # We don't want a deadlock. Spinning up a new thread may be excessive
-        self.app.start_thread(update_config_hooks)
+        self.app._config_updated_event.set()
 
     def _relative_from_install_dir(self, path: Path | str) -> str:
         """Takes in a possibly absolute path under install dir and turns it into an
@@ -594,11 +587,15 @@ class Config:
 
     @property
     def winetricks_binary(self) -> str:
+        # FIXME: consider implications of having "Download" placeholder
+        # Should we return None instead?
         """This may be a path to the winetricks binary or it may be "Download"
         """
         question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {self.faithlife_product} requires on Linux."  # noqa: E501
         options = utils.get_winetricks_options()
         output = self._ask_if_not_found("winetricks_binary", question, options)
+        if output == "Download":
+            return output
         return self._absolute_from_install_dir(output)
 
     @winetricks_binary.setter
@@ -609,19 +606,34 @@ class Config:
             if not Path(value).exists():
                 raise ValueError("Winetricks binary must exist")
         if self._raw.winetricks_binary != value:
-            if value is not None:
+            if value == "Download":
+                self._raw.winetricks_binary = value
+            elif value is not None:
                 self._raw.winetricks_binary = self._relative_from_install_dir(value)
             else:
                 self._raw.winetricks_binary = None
             self._write()
 
     @property
+    def install_dir_default(self) -> str:
+        return f"{str(Path.home())}/{self.faithlife_product}Bible{self.faithlife_product_version}"  # noqa: E501
+
+    @property
     def install_dir(self) -> str:
-        default = f"{str(Path.home())}/{self.faithlife_product}Bible{self.faithlife_product_version}"  # noqa: E501
+        default = self.install_dir_default
         question = f"Where should {self.faithlife_product} files be installed to?: "  # noqa: E501
         options = [default, PROMPT_OPTION_DIRECTORY]
         output = self._ask_if_not_found("install_dir", question, options)
         return output
+    
+    @install_dir.setter
+    def install_dir(self, value: str | Path):
+        value = str(value)
+        if self._raw.install_dir != value:
+            self._raw.install_dir = value
+            # Reset cache that depends on install_dir
+            self._wine_appimage_files = None
+            self._write()
 
     @property
     # This used to be called APPDIR_BINDIR
@@ -658,8 +670,10 @@ class Config:
     def wine_binary(self, value: str):
         """Takes in a path to the wine binary and stores it as relative for storage"""
         # Make the path absolute for comparison
-        aboslute = self._absolute_from_install_dir(value)
         relative = self._relative_from_install_dir(value)
+        # XXX: consider this, it doesn't work at present as the wine_binary may be an
+        # appimage that hasn't been downloaded yet
+        # aboslute = self._absolute_from_install_dir(value)
         # if not Path(aboslute).is_file():
         #     raise ValueError("Wine Binary path must be a valid file")
 
@@ -841,8 +855,16 @@ class Config:
     @property
     def logos_exe(self) -> Optional[str]:
         # Cache a successful result
-        if self._logos_exe is None:
-            self._logos_exe = utils.find_installed_product(self.faithlife_product, self.wine_prefix) # noqa: E501
+        if (
+            # Ensure we have all the context we need before attempting
+            self._logos_exe is None
+            and self._raw.faithlife_product is not None
+            and self._raw.install_dir is not None
+        ):
+            self._logos_exe = utils.find_installed_product(
+                self._raw.faithlife_product,
+                self.wine_prefix
+            )
         return self._logos_exe
 
     @property

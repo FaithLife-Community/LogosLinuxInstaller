@@ -25,7 +25,8 @@ class App(abc.ABC):
     """
     _last_status: Optional[str] = None
     """The last status we had"""
-    _config_updated_hooks: list[Callable[[], None]] = []
+    config_updated_hooks: list[Callable[[], None]] = []
+    _config_updated_event: threading.Event = threading.Event()
 
     def __init__(self, config, **kwargs) -> None:
         # This lazy load is required otherwise these would be circular imports
@@ -38,6 +39,15 @@ class App(abc.ABC):
         self._threads = []
         # Ensure everything is good to start
         check_incompatibilities(self)
+
+        def _config_updated_hook_runner():
+            while True:
+                self._config_updated_event.wait()
+                self._config_updated_event.clear()
+                for hook in self.config_updated_hooks:
+                    hook()
+        _config_updated_hook_runner.__name__ = "Config Update Hook"
+        self.start_thread(_config_updated_hook_runner, daemon_bool=True)
 
     def ask(self, question: str, options: list[str]) -> str:
         """Asks the user a question with a list of supplied options
@@ -154,8 +164,8 @@ class App(abc.ABC):
     def is_installed(self) -> bool:
         """Returns whether the install was successful by
         checking if the installed exe exists and is executable"""
-        if self.conf._logos_exe is not None:
-            return os.access(self.conf._logos_exe, os.X_OK)
+        if self.conf.logos_exe is not None:
+            return os.access(self.conf.logos_exe, os.X_OK)
         return False
 
     def status(self, message: str, percent: Optional[int | float] = None):
@@ -190,10 +200,6 @@ class App(abc.ABC):
         May be sudo or pkexec for example"""
         from ou_dedetai.system import get_superuser_command
         return get_superuser_command()
-
-    def register_config_update_hook(self, func: Callable[[], None]) -> None:
-        """Register a function to be called when config is updated"""
-        self._config_updated_hooks += [func]
 
     def start_thread(self, task, *args, daemon_bool: bool = True, **kwargs):
         """Starts a new thread

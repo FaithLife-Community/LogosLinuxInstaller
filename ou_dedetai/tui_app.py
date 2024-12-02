@@ -130,7 +130,7 @@ class TUI(App):
         logging.debug(f"Use Python Dialog?: {self.use_python_dialog}")
         self.set_window_dimensions()
 
-        self.register_config_update_hook(self.set_curses_colors)
+        self.config_updated_hooks += [self.set_curses_colors]
 
     @property
     def active_screen(self) -> tui_screen.Screen:

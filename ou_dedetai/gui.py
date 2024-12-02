@@ -67,8 +67,8 @@ class InstallerGui(Frame):
         self.product_dropdown = Combobox(self, textvariable=self.productvar)
         self.product_dropdown.state(['readonly'])
         self.product_dropdown['values'] = ('Logos', 'Verbum')
-        if app.conf.faithlife_product in self.product_dropdown['values']:
-            self.product_dropdown.set(app.conf.faithlife_product)
+        if app.conf._raw.faithlife_product in self.product_dropdown['values']:
+            self.product_dropdown.set(app.conf._raw.faithlife_product)
         # version drop-down menu
         self.versionvar = StringVar()
         self.version_dropdown = Combobox(
@@ -79,8 +79,8 @@ class InstallerGui(Frame):
         self.version_dropdown.state(['readonly'])
         self.version_dropdown['values'] = ('9', '10')
         self.versionvar.set(self.version_dropdown['values'][1])
-        if app.conf.faithlife_product_version in self.version_dropdown['values']:
-            self.version_dropdown.set(app.conf.faithlife_product_version)
+        if app.conf._raw.faithlife_product_version in self.version_dropdown['values']:
+            self.version_dropdown.set(app.conf._raw.faithlife_product_version)
 
         # Release row.
         self.release_label = Label(self, text="Release: ")
@@ -93,10 +93,6 @@ class InstallerGui(Frame):
             self.release_dropdown['values'] = [app.conf._raw.faithlife_product_release]
             self.releasevar.set(app.conf._raw.faithlife_product_release)
 
-        # release check button
-        self.release_check_button = Button(self, text="Get Release List")
-        self.release_check_button.state(['disabled'])
-
         # Wine row.
         self.wine_label = Label(self, text="Wine exe: ")
         self.winevar = StringVar()
@@ -107,8 +103,6 @@ class InstallerGui(Frame):
         if self.app.conf._raw.wine_binary:
             self.wine_dropdown['values'] = [self.app.conf.wine_binary]
             self.winevar.set(self.app.conf.wine_binary)
-        self.wine_check_button = Button(self, text="Get EXE List")
-        self.wine_check_button.state(['disabled'])
 
         # Winetricks row.
         self.tricks_label = Label(self, text="Winetricks: ")
@@ -128,20 +122,13 @@ class InstallerGui(Frame):
 
         # Skip Dependencies row.
         self.skipdeps_label = Label(self, text="Install Dependencies: ")
-        self.skipdepsvar = BooleanVar(value=self.app.conf.skip_install_system_dependencies) #noqa: E501
+        self.skipdepsvar = BooleanVar(value=not self.app.conf.skip_install_system_dependencies) #noqa: E501
         self.skipdeps_checkbox = Checkbutton(self, variable=self.skipdepsvar)
 
         # Cancel/Okay buttons row.
         self.cancel_button = Button(self, text="Cancel")
         self.okay_button = Button(self, text="Install")
         self.okay_button.state(['disabled'])
-
-        # Status area.
-        s1 = Separator(self, orient='horizontal')
-        self.statusvar = StringVar()
-        self.status_label = Label(self, textvariable=self.statusvar)
-        self.progressvar = IntVar()
-        self.progress = Progressbar(self, variable=self.progressvar)
 
         # Place widgets.
         row = 0
@@ -151,11 +138,9 @@ class InstallerGui(Frame):
         row += 1
         self.release_label.grid(column=0, row=row, sticky='w', pady=2)
         self.release_dropdown.grid(column=1, row=row, sticky='w', pady=2)
-        self.release_check_button.grid(column=2, row=row, sticky='w', pady=2)
         row += 1
         self.wine_label.grid(column=0, row=row, sticky='w', pady=2)
         self.wine_dropdown.grid(column=1, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
-        self.wine_check_button.grid(column=4, row=row, sticky='e', pady=2)
         row += 1
         self.tricks_label.grid(column=0, row=row, sticky='w', pady=2)
         self.tricks_dropdown.grid(column=1, row=row, sticky='we', pady=2)
@@ -168,12 +153,6 @@ class InstallerGui(Frame):
         self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
         self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
         row += 1
-        # Status area
-        s1.grid(column=0, row=row, columnspan=5, sticky='we')
-        row += 1
-        self.status_label.grid(column=0, row=row, columnspan=5, sticky='w', pady=2)  # noqa: E501
-        row += 1
-        self.progress.grid(column=0, row=row, columnspan=5, sticky='we', pady=2)  # noqa: E501
 
 
 class ControlGui(Frame):

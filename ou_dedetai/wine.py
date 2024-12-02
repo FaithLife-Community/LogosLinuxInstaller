@@ -16,6 +16,9 @@ from . import system
 from . import utils
 
 def check_wineserver(app: App):
+    # FIXME: if the wine version changes, we may need to restart the wineserver
+    # (or at least kill it). Gotten into several states in dev where this happend
+    # Normally when an msi install failed
     try:
         # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of 
         # WINESERVER_EXE changed it to use wineserver_binary, this change may alter the 
