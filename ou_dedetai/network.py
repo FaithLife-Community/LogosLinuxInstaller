@@ -1,7 +1,10 @@
+import abc
+from dataclasses import dataclass, field
 import hashlib
 import json
 import logging
 import os
+import time
 from typing import Optional
 import requests
 import shutil
@@ -11,94 +14,104 @@ from pathlib import Path
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
+import requests.structures
+
 from ou_dedetai.app import App
 
 from . import constants
 from . import utils
 
+class Props(abc.ABC):
+    def __init__(self) -> None:
+        self._md5: Optional[str] = None
+        self._size: Optional[int] = None
 
-class Props():
-    def __init__(self, uri=None):
-        self.path = None
-        self.size = None
-        self.md5 = None
-        if uri is not None:
-            self.path = uri
+    @property
+    def size(self) -> Optional[int]:
+        if self._size is None:
+            self._size = self._get_size()
+        return self._size
 
+    @property
+    def md5(self) -> Optional[str]:
+        if self._md5 is None:
+            self._md5 = self._get_md5()
+        return self._md5
+
+    @abc.abstractmethod
+    def _get_size(self) -> Optional[int]:
+        """Get the size"""
+    
+    @abc.abstractmethod
+    def _get_md5(self) -> Optional[str]:
+        """Calculate the md5 sum"""
 
 class FileProps(Props):
-    def __init__(self, f=None):
-        super().__init__(f)
-        if f is not None:
-            self.path = Path(self.path)
-            if self.path.is_file():
-                self.get_size()
-                # self.get_md5()
+    def __init__(self, path: str | Path | None):
+        super(FileProps, self).__init__()
+        self.path = None
+        if path is not None:
+            self.path = Path(path)
 
-    def get_size(self):
+    def _get_size(self):
         if self.path is None:
             return
-        self.size = self.path.stat().st_size
-        return self.size
+        if Path(self.path).is_file():
+            return self.path.stat().st_size
 
-    def get_md5(self):
+    def _get_md5(self) -> Optional[str]:
         if self.path is None:
-            return
+            return None
         md5 = hashlib.md5()
         with self.path.open('rb') as f:
             for chunk in iter(lambda: f.read(524288), b''):
                 md5.update(chunk)
-        self.md5 = b64encode(md5.digest()).decode('utf-8')
-        logging.debug(f"{str(self.path)} MD5: {self.md5}")
-        return self.md5
+        return b64encode(md5.digest()).decode('utf-8')
+
+@dataclass
+class SoftwareReleaseInfo:
+    version: str
+    download_url: str
 
 
 class UrlProps(Props):
-    def __init__(self, url=None):
-        super().__init__(url)
-        self.headers = None
-        if url is not None:
-            self.get_headers()
-            self.get_size()
-            self.get_md5()
+    def __init__(self, url: str):
+        super(UrlProps, self).__init__()
+        self.path = url
+        self._headers: Optional[requests.structures.CaseInsensitiveDict] = None
 
-    def get_headers(self):
-        if self.path is None:
-            self.headers = None
+    @property
+    def headers(self) -> requests.structures.CaseInsensitiveDict:
+        if self._headers is None:
+            self._headers = self._get_headers()
+        return self._headers
+
+    def _get_headers(self) -> requests.structures.CaseInsensitiveDict:
         logging.debug(f"Getting headers from {self.path}.")
         try:
             h = {'Accept-Encoding': 'identity'}  # force non-compressed txfr
             r = requests.head(self.path, allow_redirects=True, headers=h)
         except requests.exceptions.ConnectionError:
             logging.critical("Failed to connect to the server.")
-            return None
+            raise
         except Exception as e:
             logging.error(e)
-            return None
+            raise
         # XXX: should we have a more generic catch for KeyboardInterrupt rather than deep in this function? #noqa: E501
         # except KeyboardInterrupt:
-        self.headers = r.headers
-        return self.headers
+        return r.headers
 
-    def get_size(self):
-        if self.headers is None:
-            r = self.get_headers()
-            if r is None:
-                return
+    def _get_size(self):
         content_length = self.headers.get('Content-Length')
         content_encoding = self.headers.get('Content-Encoding')
         if content_encoding is not None:
             logging.critical(f"The server requires receiving the file compressed as '{content_encoding}'.")  # noqa: E501
         logging.debug(f"{content_length=}")
         if content_length is not None:
-            self.size = int(content_length)
-        return self.size
+            self._size = int(content_length)
+        return self._size
 
-    def get_md5(self):
-        if self.headers is None:
-            r = self.get_headers()
-            if r is None:
-                return
+    def _get_md5(self):
         if self.headers.get('server') == 'AmazonS3':
             content_md5 = self.headers.get('etag')
             if content_md5 is not None:
@@ -111,14 +124,170 @@ class UrlProps(Props):
             content_md5 = content_md5.strip('"').strip("'")
         logging.debug(f"{content_md5=}")
         if content_md5 is not None:
-            self.md5 = content_md5
-        return self.md5
+            self._md5 = content_md5
+        return self._md5
+
+
+@dataclass
+class CachedRequests:
+    """This struct all network requests and saves to a cache"""
+    # Some of these values are cached to avoid github api rate-limits
+
+    faithlife_product_releases: dict[str, dict[str, dict[str, list[str]]]] = field(default_factory=dict) # noqa: E501
+    """Cache of faithlife releases.
+    
+    Since this depends on the user's selection we need to scope the cache based on that
+    The cache key is the product, version, and release channel
+    """
+    repository_latest_version: dict[str, str] = field(default_factory=dict)
+    """Cache of the latest versions keyed by repository slug
+    
+    Keyed by repository slug Owner/Repo
+    """
+    repository_latest_url: dict[str, str] = field(default_factory=dict)
+    """Cache of the latest download url keyed by repository slug
+    
+    Keyed by repository slug Owner/Repo
+    """
+
+
+    url_size_and_hash: dict[str, tuple[Optional[int], Optional[str]]] = field(default_factory=dict) # noqa: E501
+
+    last_updated: Optional[float] = None
+
+    @classmethod
+    def load(cls) -> "CachedRequests":
+        """Load the cache from file if exists"""
+        path = Path(constants.NETWORK_CACHE_PATH)
+        if path.exists():
+            with open(path, "r") as f:
+                try:
+                    output: dict = json.load(f)
+                    # Drop any unknown keys
+                    known_keys = CachedRequests().__dict__.keys()
+                    cache_keys = list(output.keys())
+                    for k in cache_keys:
+                        if k not in known_keys:
+                            del output[k]
+                    return CachedRequests(**output)
+                except json.JSONDecodeError:
+                    logging.warning("Failed to read cache JSON. Clearing...")
+        return CachedRequests(
+            last_updated=time.time()
+        )
+
+    def _write(self) -> None:
+        """Writes the cache to disk. Done internally when there are changes"""
+        path = Path(constants.NETWORK_CACHE_PATH)
+        path.parent.mkdir(exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(self.__dict__, f, indent=4, sort_keys=True, default=vars)
+            f.write("\n")
+
+
+    def _is_fresh(self) -> bool:
+        """Returns whether or not this cache is valid"""
+        if self.last_updated is None:
+            return False
+        valid_until = self.last_updated + constants.CACHE_LIFETIME_HOURS * 60 * 60
+        if valid_until <= time.time():
+            return False
+        return True
+
+    def clean_if_stale(self, force: bool = False):
+        if force or not self._is_fresh():
+            logging.debug("Cleaning out cache...")
+            self = CachedRequests(last_updated=time.time())
+            self._write()
+        else:
+            logging.debug("Cache is valid")
+
+
+class NetworkRequests:
+    """Uses the cache if found, otherwise retrieves the value from the network."""
+
+    # This struct uses functions to call due to some of the values requiring parameters
+
+    def __init__(self, force_clean: Optional[bool] = None) -> None:
+        self._cache = CachedRequests.load()
+        self._cache.clean_if_stale(force=force_clean or False)
+
+    def faithlife_product_releases(
+        self,
+        product: str,
+        version: str,
+        channel: str
+    ) -> list[str]:
+        releases = self._cache.faithlife_product_releases
+        if product not in releases:
+            releases[product] = {}
+        if version not in releases[product]:
+            releases[product][version] = {}
+        if (
+            channel 
+            not in releases[product][version]
+        ):
+            releases[product][version][channel] = _get_faithlife_product_releases(
+                faithlife_product=product,
+                faithlife_product_version=version,
+                faithlife_product_release_channel=channel
+            )
+            self._cache._write()
+        return releases[product][version][channel]
+    
+    def wine_appimage_recommended_url(self) -> str:
+        repo = "FaithLife-Community/wine-appimages"
+        return self._repo_latest_version(repo).download_url
+
+    def _url_size_and_hash(self, url: str) -> tuple[Optional[int], Optional[str]]:
+        """Attempts to get the size and hash from a URL.
+        Uses cache if it exists
+        
+        Returns:
+            bytes - from the Content-Length leader
+            md5_hash - from the Content-MD5 header or S3's etag
+        """
+        if url not in self._cache.url_size_and_hash:
+            props = UrlProps(url)
+            self._cache.url_size_and_hash[url] = props.size, props.md5
+            self._cache._write()
+        return self._cache.url_size_and_hash[url]
+
+    def url_size(self, url: str) -> Optional[int]:
+        return self._url_size_and_hash(url)[0]
+    
+    def url_md5(self, url: str) -> Optional[str]:
+        return self._url_size_and_hash(url)[1]
+
+    def _repo_latest_version(self, repository: str) -> SoftwareReleaseInfo:
+        if (
+            repository not in self._cache.repository_latest_version
+            or repository not in self._cache.repository_latest_url
+        ):
+            result = _get_latest_release_data(repository)
+            self._cache.repository_latest_version[repository] = result.version
+            self._cache.repository_latest_url[repository] = result.download_url
+            self._cache._write()
+        return SoftwareReleaseInfo(
+            version=self._cache.repository_latest_version[repository],
+            download_url=self._cache.repository_latest_url[repository]
+        )
+
+    def app_latest_version(self, channel: str) -> SoftwareReleaseInfo:
+        if channel == "stable":
+            repo = "FaithLife-Community/LogosLinuxInstaller"
+        else:
+            repo = "FaithLife-Community/test-builds"
+        return self._repo_latest_version(repo)
+    
+    def icu_latest_version(self) -> SoftwareReleaseInfo:
+        return self._repo_latest_version("FaithLife-Community/icu")
 
 
 def logos_reuse_download(
-    sourceurl,
-    file,
-    targetdir,
+    sourceurl: str,
+    file: str,
+    targetdir: str,
     app: App,
 ):
     dirs = [
@@ -133,7 +302,7 @@ def logos_reuse_download(
             file_path = Path(i) / file
             if os.path.isfile(file_path):
                 logging.info(f"{file} exists in {i}. Verifying properties.")
-                if verify_downloaded_file(
+                if _verify_downloaded_file(
                     sourceurl,
                     file_path,
                     app=app,
@@ -149,14 +318,14 @@ def logos_reuse_download(
                 else:
                     logging.info(f"Incomplete file: {file_path}.")
     if found == 1:
-        file_path = os.path.join(app.conf.download_dir, file)
+        file_path = Path(os.path.join(app.conf.download_dir, file))
         # Start download.
-        net_get(
+        _net_get(
             sourceurl,
             target=file_path,
             app=app,
         )
-        if verify_downloaded_file(
+        if _verify_downloaded_file(
             sourceurl,
             file_path,
             app=app,
@@ -171,24 +340,21 @@ def logos_reuse_download(
 
 
 # FIXME: refactor to raise rather than return None
-def net_get(url, target=None, app: Optional[App] = None, evt=None, q=None):
+def _net_get(url: str, target: Optional[Path]=None, app: Optional[App] = None):
     # TODO:
     # - Check available disk space before starting download
     logging.debug(f"Download source: {url}")
     logging.debug(f"Download destination: {target}")
-    target = FileProps(target)  # sets path and size attribs
-    if app and target.path:
-        app.status(f"Downloading {target.path.name}…")
+    target_props = FileProps(target)  # sets path and size attribs
+    if app and target_props.path:
+        app.status(f"Downloading {target_props.path.name}…")
     parsed_url = urlparse(url)
     domain = parsed_url.netloc  # Gets the requested domain
-    url = UrlProps(url)  # uses requests to set headers, size, md5 attribs
-    if url.headers is None:
-        logging.critical("Could not get headers.")
-        return None
+    url_props = UrlProps(url)  # uses requests to set headers, size, md5 attribs
 
     # Initialize variables.
     local_size = 0
-    total_size = url.size  # None or int
+    total_size = url_props.size  # None or int
     logging.debug(f"File size on server: {total_size}")
     percent = None
     chunk_size = 100 * 1024  # 100 KB default
@@ -200,14 +366,14 @@ def net_get(url, target=None, app: Optional[App] = None, evt=None, q=None):
     file_mode = 'wb'
 
     # If file exists and URL is resumable, set download Range.
-    if target.path is not None and target.path.is_file():
-        logging.debug(f"File exists: {str(target.path)}")
-        local_size = target.get_size()
+    if target_props.size:
+        logging.debug(f"File exists: {str(target_props.path)}")
+        local_size = target_props.size
         logging.info(f"Current downloaded size in bytes: {local_size}")
-        if url.headers.get('Accept-Ranges') == 'bytes':
+        if url_props.headers.get('Accept-Ranges') == 'bytes':
             logging.debug("Server accepts byte range; attempting to resume download.")  # noqa: E501
             file_mode = 'ab'
-            if type(url.size) is int:
+            if type(url_props.size) is int:
                 headers['Range'] = f'bytes={local_size}-{total_size}'
             else:
                 headers['Range'] = f'bytes={local_size}-'
@@ -216,15 +382,18 @@ def net_get(url, target=None, app: Optional[App] = None, evt=None, q=None):
 
     # Log download type.
     if 'Range' in headers.keys():
-        message = f"Continuing download for {url.path}."
+        message = f"Continuing download for {url_props.path}."
     else:
-        message = f"Starting new download for {url.path}."
+        message = f"Starting new download for {url_props.path}."
     logging.info(message)
 
     # Initiate download request.
     try:
-        if target.path is None:  # return url content as text
-            with requests.get(url.path, headers=headers) as r:
+        # FIXME: consider splitting this into two functions with a common base.
+        # One that writes into a file, and one that returns a str, 
+        # that share most of the internal logic
+        if target_props.path is None:  # return url content as text
+            with requests.get(url_props.path, headers=headers) as r:
                 if callable(r):
                     logging.error("Failed to retrieve data from the URL.")
                     return None
@@ -244,142 +413,96 @@ def net_get(url, target=None, app: Optional[App] = None, evt=None, q=None):
 
                 return r._content  # raw bytes
         else:  # download url to target.path
-            with requests.get(url.path, stream=True, headers=headers) as r:
-                with target.path.open(mode=file_mode) as f:
+            with requests.get(url_props.path, stream=True, headers=headers) as r:
+                with target_props.path.open(mode=file_mode) as f:
                     if file_mode == 'wb':
                         mode_text = 'Writing'
                     else:
                         mode_text = 'Appending'
-                    logging.debug(f"{mode_text} data to file {target.path}.")
+                    logging.debug(f"{mode_text} data to file {target_props.path}.")
                     for chunk in r.iter_content(chunk_size=chunk_size):
                         f.write(chunk)
-                        local_size = target.get_size()
+                        local_size = os.fstat(f.fileno()).st_size
                         if type(total_size) is int:
                             percent = round(local_size / total_size * 100)
                             # if None not in [app, evt]:
                             if app:
                                 # Send progress value to App
                                 app.status("Downloading...", percent=percent)
-                            elif q is not None:
-                                # Send progress value to queue param.
-                                q.put(percent)
     except requests.exceptions.RequestException as e:
         logging.error(f"Error occurred during HTTP request: {e}")
         return None  # Return None values to indicate an error condition
 
 
-def verify_downloaded_file(url, file_path, app: Optional[App]=None):
+def _verify_downloaded_file(url: str, file_path: Path | str, app: App):
     if app:
         app.status(f"Verifying {file_path}…", 0)
-    res = False
-    txt = f"{file_path} is the wrong size."
-    right_size = same_size(url, file_path)
-    if right_size:
-        txt = f"{file_path} has the wrong MD5 sum."
-        right_md5 = same_md5(url, file_path)
-        if right_md5:
-            txt = f"{file_path} is verified."
-            res = True
-    logging.info(txt)
-    return res
+    file_props = FileProps(file_path)
+    url_size = app.conf._network.url_size(url)
+    if url_size is not None and file_props.size != url_size:
+        logging.warning(f"{file_path} is the wrong size.")
+        return False
+    url_md5 = app.conf._network.url_md5(url)
+    if url_md5 is not None and file_props.md5 != url_md5:
+        logging.warning(f"{file_path} has the wrong MD5 sum.")
+        return False
+    logging.debug(f"{file_path} is verified.")
+    return True
 
 
-def same_md5(url, file_path):
-    logging.debug(f"Comparing MD5 of {url} and {file_path}.")
-    url_md5 = UrlProps(url).get_md5()
-    logging.debug(f"{url_md5=}")
-    if url_md5 is None:  # skip MD5 check if not provided with URL
-        res = True
-    else:
-        file_md5 = FileProps(file_path).get_md5()
-        logging.debug(f"{file_md5=}")
-        res = url_md5 == file_md5
-    return res
+def _get_first_asset_url(json_data: dict) -> str:
+    """Parses the github api response to find the first asset's download url
+    """
+    assets = json_data.get('assets') or []
+    if len(assets) == 0:
+        raise Exception("Failed to find the first asset in the repository data: "
+                        f"{json_data}")
+    first_asset = assets[0]
+    download_url: Optional[str] = first_asset.get('browser_download_url')
+    if download_url is None:
+        raise Exception("Failed to find the download URL in the repository data: "
+                        f"{json_data}")
+    return download_url
 
 
-def same_size(url, file_path):
-    logging.debug(f"Comparing size of {url} and {file_path}.")
-    url_size = UrlProps(url).size
-    if not url_size:
-        return True
-    file_size = FileProps(file_path).size
-    logging.debug(f"{url_size=} B; {file_size=} B")
-    res = url_size == file_size
-    return res
-
-
-def get_latest_release_data(repository):
-    release_url = f"https://api.github.com/repos/{repository}/releases/latest"
-    data = net_get(release_url)
-    if data:
-        try:
-            json_data = json.loads(data.decode())
-        except json.JSONDecodeError as e:
-            logging.error(f"Error decoding JSON response: {e}")
-            return None
-
-        return json_data
-    else:
-        logging.critical("Could not get latest release URL.")
-        return None
-
-
-def get_first_asset_url(json_data) -> Optional[str]:
-    release_url = None
-    if json_data:
-        # FIXME: Portential KeyError
-        release_url = json_data.get('assets')[0].get('browser_download_url')
-        logging.info(f"Release URL: {release_url}")
-    return release_url
-
-
-def get_tag_name(json_data) -> Optional[str]:
+def _get_version_name(json_data: dict) -> str:
     """Gets tag name from json data, strips leading v if exists"""
-    tag_name: Optional[str] = None
-    if json_data:
-        tag_name = json_data.get('tag_name')
-        logging.info(f"Release URL Tag Name: {tag_name}")
-    if tag_name is not None:
-        tag_name = tag_name.lstrip("v")
+    tag_name: Optional[str] = json_data.get('tag_name')
+    if tag_name is None:
+        raise Exception("Failed to find the tag_name in the repository data: "
+                        f"{json_data}")
+    # Trim a leading v to normalize the version
+    tag_name = tag_name.lstrip("v")
     return tag_name
 
 
-def get_oudedetai_latest_release_config(channel: str = "stable") -> tuple[str, str]:
-    """Get latest release information
+def _get_latest_release_data(repository) -> SoftwareReleaseInfo:
+    """Gets latest release information
     
+    Raises:
+        Exception - on failure to make network operation or parse github API
+        
     Returns:
-        url
-        version
+        SoftwareReleaseInfo
     """
-    if channel == "stable":
-        repo = "FaithLife-Community/LogosLinuxInstaller"
-    else:
-        repo = "FaithLife-Community/test-builds"
-    json_data = get_latest_release_data(repo)
-    oudedetai_url = get_first_asset_url(json_data)
-    if oudedetai_url is None:
-        logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501
-        raise ValueError("Failed to find latest installer version")
-    latest_version = get_tag_name(json_data)
-    if latest_version is None:
-        logging.critical(f"Unable to set {constants.APP_NAME} release without the tag.")  # noqa: E501
-        raise ValueError("Failed to find latest installer version")
-    logging.info(f"config.LLI_LATEST_VERSION={latest_version}")
+    release_url = f"https://api.github.com/repos/{repository}/releases/latest"
+    data = _net_get(release_url)
+    if data is None:
+        raise Exception("Could not get latest release URL.")
+    try:
+        json_data: dict = json.loads(data.decode())
+    except json.JSONDecodeError as e:
+        logging.error(f"Error decoding Github's JSON response: {e}")
+        raise
 
-    return oudedetai_url, latest_version
+    download_url = _get_first_asset_url(json_data)
+    version = _get_version_name(json_data)
+    return SoftwareReleaseInfo(
+        version=version,
+        download_url=download_url
+    )
 
-
-def get_recommended_appimage_url() -> str:
-    repo = "FaithLife-Community/wine-appimages"
-    json_data = get_latest_release_data(repo)
-    appimage_url = get_first_asset_url(json_data)
-    if appimage_url is None:
-        # FIXME: changed this to raise an exception as we can't continue.
-        raise ValueError("Unable to set recommended appimage config without URL.")  # noqa: E501
-    return appimage_url
-
-
-def get_recommended_appimage(app: App):
+def dwonload_recommended_appimage(app: App):
     wine64_appimage_full_filename = Path(app.conf.wine_appimage_recommended_file_name)  # noqa: E501
     dest_path = Path(app.conf.installer_binary_dir) / wine64_appimage_full_filename
     if dest_path.is_file():
@@ -392,16 +515,19 @@ def get_recommended_appimage(app: App):
             app=app
         )
 
-def get_logos_releases(app: App) -> list[str]:
-    # TODO: Use already-downloaded list if requested again.
-    logging.debug(f"Downloading release list for {app.conf.faithlife_product} {app.conf.faithlife_product_version}…")  # noqa: E501
+def _get_faithlife_product_releases(
+    faithlife_product: str,
+    faithlife_product_version: str,
+    faithlife_product_release_channel: str
+) -> list[str]:
+    logging.debug(f"Downloading release list for {faithlife_product} {faithlife_product_version}…")  # noqa: E501
     # NOTE: This assumes that Verbum release numbers continue to mirror Logos.
-    if app.conf.faithlife_product_release_channel == "beta":
+    if faithlife_product_release_channel == "beta":
         url = "https://clientservices.logos.com/update/v1/feed/logos10/beta.xml"  # noqa: E501
     else:
-        url = f"https://clientservices.logos.com/update/v1/feed/logos{app.conf.faithlife_product_version}/stable.xml"  # noqa: E501
+        url = f"https://clientservices.logos.com/update/v1/feed/logos{faithlife_product_version}/stable.xml"  # noqa: E501
     
-    response_xml_bytes = net_get(url)
+    response_xml_bytes = _net_get(url)
     if response_xml_bytes is None:
         raise Exception("Failed to get logos releases")
 
@@ -431,6 +557,14 @@ def get_logos_releases(app: App) -> list[str]:
     filtered_releases = releases
 
     return filtered_releases
+
+# XXX: remove this when it's no longer used
+def get_logos_releases(app: App) -> list[str]:
+    return _get_faithlife_product_releases(
+        faithlife_product=app.conf.faithlife_product,
+        faithlife_product_version=app.conf.faithlife_product_version,
+        faithlife_product_release_channel=app.conf.faithlife_product_release_channel
+    )
 
 
 def update_lli_binary(app: App):

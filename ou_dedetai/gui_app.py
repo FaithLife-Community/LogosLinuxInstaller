@@ -24,7 +24,6 @@ from . import constants
 from . import control
 from . import gui
 from . import installer
-from . import network
 from . import system
 from . import utils
 from . import wine
@@ -281,7 +280,7 @@ class InstallerWindow(GuiApp):
         self.installer_step = 0
         self.installer_step_count = 0
         self.config_thread = self.start_thread(
-            installer.ensure_installation_config,
+            installer.ensure_choices,
             app=self,
         )
 
@@ -342,8 +341,7 @@ class InstallerWindow(GuiApp):
             self.start_ensure_config()
 
     def get_logos_releases(self):
-        filtered_releases = network.get_logos_releases(self)
-        self.releases_q.put(filtered_releases)
+        self.releases_q.put(self.conf.faithlife_product_releases)
         self.root.event_generate(self.release_evt)
 
     def start_releases_check(self):
@@ -722,8 +720,6 @@ class ControlWindow(GuiApp):
     def _config_updated_hook(self) -> None:
         self.update_logging_button()
         if self.installer_window is not None:
-            # XXX: for some reason mypy thinks this is unreachable.
-            # consider the relationship between these too classes anyway
             self.installer_window._config_updated_hook()
         return super()._config_updated_hook()
 

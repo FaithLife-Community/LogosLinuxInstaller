@@ -289,7 +289,8 @@ def ensure_product_installed(app: App):
     app.status(f"Ensuring {app.conf.faithlife_product} is installed…")
 
     if not app.is_installed():
-        # XXX: should we try to cleanup on a failed msi?
+        # FIXME: Should we try to cleanup on a failed msi?
+        # Like terminating msiexec if already running for Logos
         process = wine.install_msi(app)
         system.wait_pid(process)
 

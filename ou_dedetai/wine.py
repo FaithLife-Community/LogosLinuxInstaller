@@ -11,7 +11,6 @@ from typing import Optional
 
 from ou_dedetai.app import App
 
-from . import constants
 from . import network
 from . import system
 from . import utils
@@ -418,15 +417,9 @@ def set_win_version(app: App, exe: str, windows_version: str):
 # XXX: consider when to run this (in the update case)
 def enforce_icu_data_files(app: App):
     app.status("Downloading ICU files...")
-    # XXX: consider moving the version and url information into config (and cached)
-    repo = "FaithLife-Community/icu"
-    json_data = network.get_latest_release_data(repo)
-    icu_url = network.get_first_asset_url(json_data)
-    icu_latest_version = network.get_tag_name(json_data)
+    icu_url = app.conf.icu_latest_version_url
+    icu_latest_version = app.conf.icu_latest_version
 
-    if icu_url is None:
-        logging.critical(f"Unable to set {constants.APP_NAME} release without URL.")  # noqa: E501
-        return
     icu_filename = os.path.basename(icu_url).removesuffix(".tar.gz")
     # Append the version to the file name so it doesn't collide with previous versions
     icu_filename = f"{icu_filename}-{icu_latest_version}.tar.gz"

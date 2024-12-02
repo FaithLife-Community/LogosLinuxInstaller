@@ -22,6 +22,7 @@ CACHE_LIFETIME_HOURS = 12
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{BINARY_NAME}.json")  # noqa: E501
 DEFAULT_APP_WINE_LOG_PATH= os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")  # noqa: E501
 DEFAULT_APP_LOG_PATH= os.path.expanduser(f"~/.local/state/FaithLife-Community/{BINARY_NAME}.log")  # noqa: E501
+NETWORK_CACHE_PATH = os.path.expanduser("~/.cache/FaithLife-Community/network.json")  # noqa: E501
 DEFAULT_WINEDEBUG = "fixme-all,err-all"
 LEGACY_CONFIG_FILES = [
     os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),  # noqa: E501

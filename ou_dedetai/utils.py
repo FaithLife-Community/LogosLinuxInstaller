@@ -595,7 +595,8 @@ def set_appimage_symlink(app: App):
     appimage_symlink_path = appdir_bindir / app.conf.wine_appimage_link_file_name
     if appimage_file_path.name == app.conf.wine_appimage_recommended_file_name:  # noqa: E501
         # Default case.
-        network.get_recommended_appimage(app)
+        # FIXME: consider other locations to enforce this, perhaps config?
+        network.dwonload_recommended_appimage(app)
         selected_appimage_file_path = appdir_bindir / appimage_file_path.name  # noqa: E501
         bindir_appimage = selected_appimage_file_path / app.conf.installer_binary_dir  # noqa: E501
         if not bindir_appimage.exists():

@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
-import time
 
 from ou_dedetai import network, utils, constants, wine
 
@@ -308,18 +307,6 @@ class PersistentConfiguration:
     # The Installer's release channel. Either "stable" or "beta"
     app_release_channel: str = "stable"
 
-    # Start Cache
-    # Some of these values are cached to avoid github api rate-limits
-    faithlife_product_releases: Optional[list[str]] = None
-    # FIXME: pull from legacy RECOMMENDED_WINE64_APPIMAGE_URL?
-    # in legacy refresh wasn't handled properly
-    wine_appimage_url: Optional[str] = None
-    app_latest_version_url: Optional[str] = None
-    app_latest_version: Optional[str] = None
-
-    last_updated: Optional[float] = None
-    # End Cache
-
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "PersistentConfiguration":
         # XXX: handle legacy migration
@@ -421,9 +408,7 @@ class Config:
     # Overriding programmatically generated values from ENV
     _overrides: EphemeralConfiguration
 
-    # XXX: Move this to it's own class/file.
-    # And check cache for all operations in network
-    # (similar to this struct but in network)
+    _network: network.NetworkRequests
 
     # Start Cache of values unlikely to change during operation.
     # i.e. filesystem traversals
@@ -447,21 +432,7 @@ class Config:
         self._raw = PersistentConfiguration.load_from_path(ephemeral_config.config_path)
         self._overrides = ephemeral_config
 
-        # Now check to see if the persistent cache is still valid
-        if (
-            ephemeral_config.check_updates_now 
-            or self._raw.last_updated is None 
-            or self._raw.last_updated + constants.CACHE_LIFETIME_HOURS * 60 * 60 <= time.time() #noqa: E501
-        ):
-            logging.debug("Cleaning out old cache.")
-            self._raw.faithlife_product_releases = None
-            self._raw.app_latest_version = None
-            self._raw.app_latest_version_url = None
-            self._raw.wine_appimage_url = None
-            self._raw.last_updated = time.time()
-            self._write()
-        else:
-            logging.debug("Cache is valid.")
+        self._network = network.NetworkRequests(ephemeral_config.check_updates_now)
 
         logging.debug("Current persistent config:")
         for k, v in self._raw.__dict__.items():
@@ -547,12 +518,17 @@ class Config:
             self._write()
 
     @property
+    def faithlife_product_releases(self) -> list[str]:
+        return self._network.faithlife_product_releases(
+            product=self.faithlife_product,
+            version=self.faithlife_product_version,
+            channel=self.faithlife_product_release_channel
+        )
+
+    @property
     def faithlife_product_release(self) -> str:
         question = f"Which version of {self.faithlife_product} {self.faithlife_product_version} do you want to install?: "  # noqa: E501
-        if self._raw.faithlife_product_releases is None:
-            self._raw.faithlife_product_releases = network.get_logos_releases(self.app) # noqa: E501
-            self._write()
-        options = self._raw.faithlife_product_releases
+        options = self.faithlife_product_releases
         return self._ask_if_not_found("faithlife_product_release", question, options)
 
     @faithlife_product_release.setter
@@ -734,10 +710,7 @@ class Config:
         """URL to recommended appimage.
         
         Talks to the network if required"""
-        if self._raw.wine_appimage_url is None:
-            self._raw.wine_appimage_url = network.get_recommended_appimage_url()
-            self._write()
-        return self._raw.wine_appimage_url
+        return self._network.wine_appimage_recommended_url()
     
     @property
     def wine_appimage_recommended_file_name(self) -> str:
@@ -807,9 +780,6 @@ class Config:
         else:
             new_channel = "stable"
         self._raw.app_release_channel = new_channel
-        # Reset dependents
-        self._raw.app_latest_version = None
-        self._raw.app_latest_version_url = None
         self._write()
     
     @property
@@ -914,14 +884,16 @@ class Config:
 
     @property
     def app_latest_version_url(self) -> str:
-        if self._raw.app_latest_version_url is None:
-            self._raw.app_latest_version_url, self._raw.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
-            self._write()
-        return self._raw.app_latest_version_url
+        return self._network.app_latest_version(self.app_release_channel).download_url
 
     @property
     def app_latest_version(self) -> str:
-        if self._raw.app_latest_version is None:
-            self._raw.app_latest_version_url, self._raw.app_latest_version = network.get_oudedetai_latest_release_config(self.app_release_channel) #noqa: E501
-            self._write()
-        return self._raw.app_latest_version
+        return self._network.app_latest_version(self.app_release_channel).version
+
+    @property
+    def icu_latest_version(self) -> str:
+        return self._network.icu_latest_version().version
+
+    @property
+    def icu_latest_version_url(self) -> str:
+        return self._network.icu_latest_version().download_url
