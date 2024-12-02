@@ -240,7 +240,7 @@ parts:
       - CROSSCFLAGS: "${CROSSCFLAGS_X64}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X64}"
     stage:
-      - -'*'
+      - -*
 
   wine32-tools:
     after: [wine-prep]
@@ -290,7 +290,7 @@ parts:
       - CROSSCFLAGS: "${CROSSCFLAGS_X32}"
       - CROSSCXXFLAGS: "${CROSSCFLAGS_X32}"
     stage:
-      - -'*'
+      - -*
 
   wine32:
     after:
