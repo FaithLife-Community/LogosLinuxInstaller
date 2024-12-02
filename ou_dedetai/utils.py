@@ -238,7 +238,9 @@ def get_winebin_code_and_desc(app: App, binary) -> Tuple[str, str | None]:
     return code, desc
 
 
-def get_wine_options(app: App, appimages, binaries) -> List[str]:  # noqa: E501
+def get_wine_options(app: App) -> List[str]:  # noqa: E501
+    appimages = app.conf.wine_app_image_files
+    binaries = app.conf.wine_binary_files
     logging.debug(f"{appimages=}")
     logging.debug(f"{binaries=}")
     wine_binary_options = []

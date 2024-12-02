@@ -270,10 +270,7 @@ class InstallerWindow(GuiApp):
         self.gui.winevar.set(wine_binary)
         # In case the product changes
         self.root.icon = Path(self.conf.faithlife_product_icon_path)
-        # XXX: this function has a lot of logic in it, 
-        # not sure if we want to run it every save.
-        # Ideally the path traversals this uses would be cached in Config
-        # self.update_wine_check_progress()
+        self.update_wine_check_progress()
 
     def start_ensure_config(self):
         # Ensure progress counter is reset.
@@ -478,10 +475,7 @@ class InstallerWindow(GuiApp):
             self.gui.statusvar.set("Failed to get release list. Check connection and try again.")  # noqa: E501
 
     def update_wine_check_progress(self):
-        release_version = self.conf.faithlife_product_release
-        binaries = utils.find_wine_binary_files(self, release_version)
-        app_images = utils.find_appimage_files(self)
-        wine_choices = utils.get_wine_options(self, app_images, binaries)
+        wine_choices = utils.get_wine_options(self)
         self.gui.wine_dropdown['values'] = wine_choices
         if not self.gui.winevar.get():
             # If no value selected, default to 1st item in list.
@@ -746,9 +740,9 @@ class ControlWindow(GuiApp):
         self.gui.loggingstatevar.set(state[:-1].title())
         self.gui.logging_button.state(['!disabled'])
 
+    # XXX: also call this when config changes. Maybe only then?
     def update_app_button(self, evt=None):
         self.gui.app_button.state(['!disabled'])
-        # XXX: we may need another hook here to update the product version should it change #noqa: E501
         self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
         self.configure_app_button()
         self.update_run_winetricks_button()

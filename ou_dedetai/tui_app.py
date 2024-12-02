@@ -661,7 +661,7 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Set AppImage":
             # TODO: Allow specifying the AppImage File
-            appimages = utils.find_appimage_files(self)
+            appimages = self.conf.wine_app_image_files
             # NOTE to reviewer: is this logic correct?
             appimage_choices = appimages
             appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])

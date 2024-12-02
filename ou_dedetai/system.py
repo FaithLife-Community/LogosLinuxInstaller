@@ -770,7 +770,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     )
 
     if os_name in bad_os:
-        # XXX: move the handling up here, possibly simplify?
         m = "Your distro requires manual dependency installation."
         logging.error(m)
         return

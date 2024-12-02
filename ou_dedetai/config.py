@@ -286,9 +286,6 @@ class PersistentConfiguration:
 
     # See naming conventions in Config
 
-    # XXX: store a version in this config?
-    #  Just in case we need to do conditional logic reading old version's configurations
-
     faithlife_product: Optional[str] = None
     faithlife_product_version: Optional[str] = None
     faithlife_product_release: Optional[str] = None
@@ -416,6 +413,8 @@ class Config:
     _download_dir: Optional[str] = None
     _wine_output_encoding: Optional[str] = None
     _installed_faithlife_product_release: Optional[str] = None
+    _wine_binary_files: Optional[list[str]] = None
+    _wine_appimage_files: Optional[list[str]] = None
 
     # Start constants
     _curses_colors_valid_values = ["Light", "Dark", "Logos"]
@@ -439,7 +438,6 @@ class Config:
             logging.debug(f"{k}: {v}")
 
     def _ask_if_not_found(self, parameter: str, question: str, options: list[str], dependent_parameters: Optional[list[str]] = None) -> str:  #noqa: E501
-        # XXX: should this also update the feedback?
         if not getattr(self._raw, parameter):
             if dependent_parameters is not None:
                 for dependent_config_key in dependent_parameters:
@@ -459,10 +457,22 @@ class Config:
         self._raw.write_config()
         self.app._config_updated_hook()
 
+    def _relative_from_install_dir(self, path: Path | str) -> str:
+        """Takes in a possibly absolute path under install dir and turns it into an
+        relative path if it is
+
+        Args:
+            path - can be absolute or relative to install dir
+        
+        Returns:
+            path - absolute
+        """
+        return str(Path(path).absolute()).lstrip(self.install_dir)
+
     def _absolute_from_install_dir(self, path: Path | str) -> str:
         """Takes in a possibly relative path under install dir and turns it into an
         absolute path
-        
+
         Args:
             path - can be absolute or relative to install dir
         
@@ -535,6 +545,8 @@ class Config:
     def faithlife_product_release(self, value: str):
         if self._raw.faithlife_product_release != value:
             self._raw.faithlife_product_release = value
+            # Reset dependents
+            self._wine_binary_files = None
             self._write()
 
     @property
@@ -592,7 +604,10 @@ class Config:
             if not Path(value).exists():
                 raise ValueError("Winetricks binary must exist")
         if self._raw.winetricks_binary != value:
-            self._raw.winetricks_binary = value
+            if value is not None:
+                self._raw.winetricks_binary = self._relative_from_install_dir(value)
+            else:
+                self._raw.winetricks_binary = None
             self._write()
 
     @property
@@ -623,11 +638,7 @@ class Config:
         output = self._raw.wine_binary
         if output is None:
             question = f"Which Wine AppImage or binary should the script use to install {self.faithlife_product} v{self.faithlife_product_version} in {self.install_dir}?: "  # noqa: E501
-            options = utils.get_wine_options(
-                self.app,
-                utils.find_appimage_files(self.app),
-                utils.find_wine_binary_files(self.app, self.faithlife_product_release)
-            )
+            options = utils.get_wine_options(self.app)
 
             choice = self.app.ask(question, options)
 
@@ -641,20 +652,32 @@ class Config:
     @wine_binary.setter
     def wine_binary(self, value: str):
         """Takes in a path to the wine binary and stores it as relative for storage"""
-        # XXX: change the logic to make ^ true
-        if (Path(self.install_dir) / value).exists():
-            value = str((Path(self.install_dir) / Path(value)).absolute())
-        if not Path(value).is_file():
+        # Make the path absolute for comparison
+        aboslute = self._absolute_from_install_dir(value)
+        relative = self._relative_from_install_dir(value)
+        if not Path(aboslute).is_file():
             raise ValueError("Wine Binary path must be a valid file")
 
-        if self._raw.wine_binary != value:
-            if value is not None:
-                value = str(Path(value).absolute())
-            self._raw.wine_binary = value
+        if self._raw.wine_binary != relative:
+            self._raw.wine_binary = relative
             # Reset dependents
             self._raw.wine_binary_code = None
             self._overrides.wine_appimage_path = None
             self._write()
+
+    @property
+    def wine_binary_files(self) -> list[str]:
+        if self._wine_binary_files is None:
+            self._wine_binary_files = utils.find_wine_binary_files(
+                self.app, self.faithlife_product_release
+            )
+        return self._wine_binary_files
+
+    @property
+    def wine_app_image_files(self) -> list[str]:
+        if self._wine_appimage_files is None:
+            self._wine_appimage_files = utils.find_appimage_files(self.app)
+        return self._wine_appimage_files
 
     @property
     def wine_binary_code(self) -> str:
