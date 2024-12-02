@@ -200,6 +200,8 @@ class MenuDialog(CursesDialog):
         self.stdscr.erase()
         self.app.active_screen.set_options(self.options)
         self.total_pages = (len(self.options) - 1) // self.app.options_per_page + 1
+        # Default menu_bottom to 0, it should get set to something larger
+        menu_bottom = 0
 
         self.question_start_y, self.question_lines = text_centered(self.app, self.question_text) #noqa: E501
         # Display the options, centered

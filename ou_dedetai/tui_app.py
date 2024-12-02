@@ -440,6 +440,9 @@ class TUI(App):
     def reset_screen(self):
         self.active_screen.running = 0
         self.active_screen.choice = "Processing"
+        self.current_option = 0
+        self.current_page = 0
+        self.total_pages = 0
 
     def go_to_main_menu(self):
         self.menu_screen.choice = "Processing"
