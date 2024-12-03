@@ -402,7 +402,6 @@ def set_renderer(app: App, renderer: str):
 
 def set_win_version(app: App, exe: str, windows_version: str):
     if exe == "logos":
-        # XXX: This never exits
         run_winetricks(app, '-q', 'settings', f'{windows_version}')
 
     elif exe == "indexer":

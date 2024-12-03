@@ -425,11 +425,14 @@ def _net_get(url: str, target: Optional[Path]=None, app: Optional[App] = None):
                         f.write(chunk)
                         local_size = os.fstat(f.fileno()).st_size
                         if type(total_size) is int:
-                            percent = round(local_size / total_size * 100)
+                            percent = round(local_size / total_size * 10)
                             # if None not in [app, evt]:
                             if app:
-                                # Send progress value to App
-                                app.status("Downloading...", percent=percent)
+                                # Show dots corresponding to show download progress
+                                # While we could use percent, it's likely to interfere
+                                # With whatever install step we are on
+                                message = "Downloading" + "." * percent + "\r"
+                                app.status(message)
     except requests.exceptions.RequestException as e:
         logging.error(f"Error occurred during HTTP request: {e}")
         return None  # Return None values to indicate an error condition

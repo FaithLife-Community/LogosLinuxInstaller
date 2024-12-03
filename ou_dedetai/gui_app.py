@@ -543,7 +543,7 @@ class ControlWindow(GuiApp):
         )
 
     def launch_winetricks(self, evt=None):
-        self.gui.statusvar.set("Launching Winetricks…")
+        self.status("Launching Winetricks…")
         # Start winetricks in thread.
         self.start_thread(self.run_winetricks)
         # Start thread to clear status after delay.
@@ -563,6 +563,7 @@ class ControlWindow(GuiApp):
         )
 
     def _status(self, message: str, percent: int | None = None):
+        message = message.lstrip("\r")
         if percent is not None:
             self.gui.progress.stop()
             self.gui.progress.state(['disabled'])

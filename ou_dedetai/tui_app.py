@@ -802,6 +802,8 @@ class TUI(App):
         self.switch_screen()
 
     def _status(self, message: str, percent: int | None = None):
+        message = message.lstrip("\r")
+        self.console_log.append(message)
         self.screen_q.put(
             self.stack_text(
                 8,

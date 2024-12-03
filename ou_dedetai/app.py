@@ -173,7 +173,14 @@ class App(abc.ABC):
         return False
 
     def status(self, message: str, percent: Optional[int | float] = None):
-        """A status update"""
+        """A status update
+        
+        Args:
+            message: str - if it ends with a \r that signifies that this message is
+                intended to be overrighten next time
+            percent: Optional[int] - percent of the way through the current install step
+                (if installing)
+        """
         if isinstance(percent, float):
             percent = round(percent * 100)
         # If we're installing
@@ -189,10 +196,21 @@ class App(abc.ABC):
         self._last_status = message
 
     def _status(self, message: str, percent: Optional[int] = None):
-        """Implementation for updating status pre-front end"""
+        """Implementation for updating status pre-front end
+        
+        Args:
+            message: str - if it ends with a \r that signifies that this message is
+                intended to be overrighten next time
+            percent: Optional[int] - percent complete of the current overall operation
+                if None that signifies we can't track the progress.
+                Feel free to implement a spinner
+        """
         # De-dup
         if message != self._last_status:
-            print(f"{message}")
+            if message.endswith("\r"):
+                print(f"{message}", end="\r")
+            else:
+                print(f"{message}")
 
     @property
     def superuser_command(self) -> str:
