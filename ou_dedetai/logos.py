@@ -103,7 +103,7 @@ class LogosManager:
                 self.app,
                 exe=self.app.conf.logos_exe
             )
-            if isinstance(process, subprocess.Popen):
+            if process is not None:
                 self.processes[self.app.conf.logos_exe] = process
 
         # Ensure wine version is compatible with Logos release version.
@@ -191,7 +191,7 @@ class LogosManager:
                 app=self.app,
                 exe=self.app.conf.logos_indexer_exe
             )
-            if isinstance(process, subprocess.Popen):
+            if process is not None:
                 self.processes[self.app.conf.logos_indexer_exe] = process
 
         def check_if_indexing(process):
@@ -300,6 +300,7 @@ class LogosManager:
             exe='reg',
             exe_args=exe_args
         )
-        system.wait_pid(process)
+        if process:
+            system.wait_pid(process)
         wine.wineserver_wait(self.app)
         self.app.conf.faithlife_product_logging = state == state_enabled
