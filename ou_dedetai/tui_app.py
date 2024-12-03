@@ -107,9 +107,6 @@ class TUI(App):
         # Before some function calls didn't pass use_python_dialog falling back to False
         # now it all respects use_python_dialog
         # some menus may open in dialog that didn't before.
-        #
-        # XXX: consider hard coding this to false for the time being
-        # Is there value in supportting both curses and dialog?
         self.use_python_dialog: bool = False
         if "dialog" in sys.modules and ephemeral_config.terminal_app_prefer_dialog is not False: #noqa: E501
             result = system.test_dialog_version()
@@ -125,6 +122,9 @@ class TUI(App):
                 logging.error(
                     "Dialog version is outdated. The program will fall back to Curses."
                 )  # noqa: E501
+        # FIXME: remove this hard-coding after considering whether we want to continue 
+        # to support both
+        self.use_python_dialog = False
 
         logging.debug(f"Use Python Dialog?: {self.use_python_dialog}")
         self.set_window_dimensions()

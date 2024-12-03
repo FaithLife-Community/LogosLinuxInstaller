@@ -424,7 +424,15 @@ def set_win_version(app: App, exe: str, windows_version: str):
         system.wait_pid(process)
 
 
-# XXX: consider when to run this (in the update case)
+# FIXME: Consider when to re-run this if it changes.
+# Perhaps we should have a "apply installation updates"
+# or similar mechanism to ensure all of our latest methods are installed
+# including but not limited to: system packages, winetricks options,
+# icu files, fonts, registry edits, etc.
+#
+# Seems like we want to have a more holistic mechanism for ensuring
+# all users use the latest and greatest.
+# Sort of like an update, but for wine and all of the bits underneath "Logos" itself
 def enforce_icu_data_files(app: App):
     app.status("Downloading ICU files...")
     icu_url = app.conf.icu_latest_version_url

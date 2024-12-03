@@ -767,7 +767,7 @@ class Config:
         """Takes in a path to the wine binary and stores it as relative for storage"""
         # Make the path absolute for comparison
         relative = self._relative_from_install_dir(value)
-        # XXX: consider this, it doesn't work at present as the wine_binary may be an
+        # FIXME: consider this, it doesn't work at present as the wine_binary may be an
         # appimage that hasn't been downloaded yet
         # aboslute = self._absolute_from_install_dir(value)
         # if not Path(aboslute).is_file():
