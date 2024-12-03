@@ -33,7 +33,11 @@ class TUI(App):
         super().__init__(ephemeral_config)
         self.stdscr = stdscr
         self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
-        self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
+        product_name = self.conf._raw.faithlife_product or "Logos"
+        if self.is_installed():
+            self.subtitle = f"{product_name} Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
+        else:
+            self.subtitle = f"{product_name} not installed"
         # else:
         #    self.title = f"Welcome to {constants.APP_NAME} ({constants.LLI_CURRENT_VERSION})"  # noqa: E501
         self.console_message = "Starting TUI…"
@@ -457,8 +461,6 @@ class TUI(App):
             0: self.main_menu_select,
             1: self.custom_appimage_select,
             2: self.handle_ask_response,
-            3: self.handle_ask_file_response,
-            4: self.handle_ask_directory_response,
             8: self.waiting,
             10: self.waiting_releases,
             11: self.winetricks_menu_select,
@@ -485,7 +487,12 @@ class TUI(App):
         else:
             action = screen_actions.get(screen_id)
             if action:
-                action(choice) #type: ignore[operator]
+                # Start the action in a new thread to not interrupt the input thread
+                self.start_thread(
+                    action,
+                    choice,
+                    daemon_bool=False,
+                )
             else:
                 pass
 
@@ -515,7 +522,6 @@ class TUI(App):
             self.start_thread(
                 _install,
                 daemon_bool=True,
-                app=self,
             )
         elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release(self)
@@ -751,6 +757,7 @@ class TUI(App):
     _exit_option = "Return to Main Menu"
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
+        self.ask_answer_event.clear()
         if isinstance(options, str):
             answer = options
         elif isinstance(options, list):
@@ -765,11 +772,11 @@ class TUI(App):
             self.ask_answer_event.wait()
             answer = self.ask_answer_queue.get()
 
+        self.ask_answer_event.clear()
         if answer == PROMPT_OPTION_DIRECTORY or answer == PROMPT_OPTION_FILE:
-            stack_index = 3 if answer == PROMPT_OPTION_FILE else 4
             self.screen_q.put(
                 self.stack_input(
-                    stack_index,
+                    2,
                     Queue(),
                     threading.Event(),
                     question,
@@ -778,23 +785,20 @@ class TUI(App):
             )  # noqa: E501
             # Now wait for it to complete
             self.ask_answer_event.wait()
-            answer = self.ask_answer_queue.get()
+            new_answer = self.ask_answer_queue.get()
+            if answer == PROMPT_OPTION_DIRECTORY:
+                # Make the directory if it doesn't exit.
+                # form a terminal UI, it's not easy for the user to manually
+                os.makedirs(new_answer, exist_ok=True)
+
+            answer = new_answer
 
         return answer
 
-    def handle_ask_response(self, choice: Optional[str]):
-        if choice is not None:
-            self.ask_answer_queue.put(choice)
-            self.ask_answer_event.set()
-            self.switch_screen()
-
-    def handle_ask_file_response(self, choice: Optional[str]):
-        if choice is not None and Path(choice).exists() and Path(choice).is_file():
-            self.handle_ask_response(choice)
-
-    def handle_ask_directory_response(self, choice: Optional[str]):
-        if choice is not None and Path(choice).exists() and Path(choice).is_dir():
-            self.handle_ask_response(choice)
+    def handle_ask_response(self, choice: str):
+        self.ask_answer_queue.put(choice)
+        self.ask_answer_event.set()
+        self.switch_screen()
 
     def _status(self, message: str, percent: int | None = None):
         self.screen_q.put(

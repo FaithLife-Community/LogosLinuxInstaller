@@ -132,7 +132,11 @@ class App(abc.ABC):
         for thread in self._threads:
             # Only wait on non-daemon threads.
             if not thread.daemon:
-                thread.join()
+                try:
+                    thread.join()
+                except RuntimeError:
+                    # Will happen if we try to join the current thread
+                    pass
         # Remove pid file if exists
         try:
             os.remove(constants.PID_FILE)

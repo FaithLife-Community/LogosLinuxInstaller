@@ -30,7 +30,9 @@ def write_line(app: App, stdscr: curses.window, start_y, start_x, text, char_lim
     try:
         stdscr.addnstr(start_y, start_x, text, char_limit, attributes)
     except curses.error:
-        signal.signal(signal.SIGWINCH, app.signal_resize)
+        # FIXME: what do we want to do to handle this error?
+        # Before we were registering a signal handler
+        pass
 
 
 def title(app: App, title_text, title_start_y_adj):

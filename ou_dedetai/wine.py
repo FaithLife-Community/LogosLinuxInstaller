@@ -24,6 +24,9 @@ def check_wineserver(app: App):
         # WINESERVER_EXE changed it to use wineserver_binary, this change may alter the 
         # behavior, to match what the code intended
         process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-p"])
+        if not process:
+            logging.debug("Failed to spawn wineserver to check it")
+            return False
         system.wait_pid(process)
         return process.returncode == 0
     except Exception:
@@ -33,12 +36,18 @@ def check_wineserver(app: App):
 def wineserver_kill(app: App):
     if check_wineserver(app):
         process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-k"])
+        if not process:
+            logging.debug("Failed to spawn wineserver to kill it")
+            return False
         system.wait_pid(process)
 
 
 def wineserver_wait(app: App):
     if check_wineserver(app):
         process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-w"])
+        if not process:
+            logging.debug("Failed to spawn wineserver to wait for it")
+            return False
         system.wait_pid(process)
 
 
@@ -240,6 +249,8 @@ def wine_reg_install(app: App, reg_file, wine64_binary):
     )
     # NOTE: For some reason system.wait_pid results in the reg install failing.
     # system.wait_pid(process)
+    if process is None:
+        app.exit("Failed to spawn command to install reg file")
     process.wait()
     if process is None or process.returncode != 0:
         failed = "Failed to install reg file"
@@ -298,7 +309,7 @@ def run_wine_proc(
     exe_args=list(),
     init=False,
     additional_wine_dll_overrides: Optional[str] = None
-):
+) -> Optional[subprocess.Popen[bytes]]:
     logging.debug("Getting wine environment.")
     env = get_wine_env(app, additional_wine_dll_overrides)
     if isinstance(winecmd, Path):
@@ -354,6 +365,8 @@ def run_winetricks(app: App, *args):
         cmd.insert(0, "-q")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
     process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
+    if process is None:
+        app.exit("Failed to spawn winetricks")
     system.wait_pid(process)
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     wineserver_wait(app)
@@ -408,6 +421,8 @@ def set_win_version(app: App, exe: str, windows_version: str):
             exe='reg',
             exe_args=exe_args
         )
+        if process is None:
+            app.exit("Failed to spawn command to set windows version for indexer")
         system.wait_pid(process)
 
 

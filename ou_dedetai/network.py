@@ -556,14 +556,6 @@ def _get_faithlife_product_releases(
 
     return filtered_releases
 
-# XXX: remove this when it's no longer used
-def get_logos_releases(app: App) -> list[str]:
-    return _get_faithlife_product_releases(
-        faithlife_product=app.conf.faithlife_product,
-        faithlife_product_version=app.conf.faithlife_product_version,
-        faithlife_product_release_channel=app.conf.faithlife_product_release_channel
-    )
-
 
 def update_lli_binary(app: App):
     lli_file_path = os.path.realpath(sys.argv[0])

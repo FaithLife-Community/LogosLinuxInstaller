@@ -109,7 +109,7 @@ def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.Co
     return None
 
 
-def popen_command(command, retries=1, delay=0, **kwargs):
+def popen_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.Popen[bytes]]: #noqa: E501
     shell = kwargs.get("shell", False)
     env = kwargs.get("env", None)
     cwd = kwargs.get("cwd", None)
@@ -134,7 +134,6 @@ def popen_command(command, retries=1, delay=0, **kwargs):
     process_group = kwargs.get("process_group", None)
     encoding = kwargs.get("encoding", None)
     errors = kwargs.get("errors", None)
-    text = kwargs.get("text", None)
 
     if retries < 1:
         retries = 1
@@ -170,7 +169,7 @@ def popen_command(command, retries=1, delay=0, **kwargs):
                 process_group=process_group,
                 encoding=encoding,
                 errors=errors,
-                text=text
+                text=False
             )
             return process
 
@@ -902,7 +901,7 @@ def install_winetricks(
     app.conf.winetricks_binary = f"{installdir}/winetricks"
     logging.debug("Winetricks installed.")
 
-def wait_pid(process):
+def wait_pid(process: subprocess.Popen):
     os.waitpid(-process.pid, 0)
 
 
