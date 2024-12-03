@@ -42,12 +42,6 @@ class Screen:
     def get_stdscr(self) -> curses.window:
         return self.app.stdscr
 
-    def get_screen_id(self):
-        return self.screen_id
-
-    def get_choice(self):
-        return self.choice
-
     def wait_event(self):
         self.event.wait()
 
@@ -454,9 +448,6 @@ class TaskListDialog(DialogScreen):
         self.elements = elements
         self.updated = True
 
-    def get_text(self):
-        return self.text
-
 
 class BuildListDialog(DialogScreen):
     def __init__(self, app, screen_id, queue, event, question, options, list_height=None, height=None, width=None): #noqa: E501
@@ -506,9 +497,6 @@ class CheckListDialog(DialogScreen):
                                                      self.options, self.height, 
                                                      self.width, self.list_height)
             self.running = 2
-
-    def get_question(self):
-        return self.question
 
     def set_options(self, new_options):
         self.options = new_options

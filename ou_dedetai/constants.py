@@ -25,8 +25,9 @@ DEFAULT_APP_LOG_PATH= os.path.expanduser(f"~/.local/state/FaithLife-Community/{B
 NETWORK_CACHE_PATH = os.path.expanduser("~/.cache/FaithLife-Community/network.json")  # noqa: E501
 DEFAULT_WINEDEBUG = "fixme-all,err-all"
 LEGACY_CONFIG_FILES = [
-    os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),  # noqa: E501
-    os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
+    os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),
+    os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json"),
+    os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
 ]
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
 LLI_CURRENT_VERSION = "4.0.0-beta.4"

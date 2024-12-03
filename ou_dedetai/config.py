@@ -19,7 +19,7 @@ class LegacyConfiguration:
     FLPRODUCT: Optional[str] = None
     TARGETVERSION: Optional[str] = None
     TARGET_RELEASE_VERSION: Optional[str] = None
-    current_logos_version: Optional[str] = None
+    current_logos_version: Optional[str] = None # Unused in new code
     curses_colors: Optional[str] = None
     INSTALLDIR: Optional[str] = None
     WINETRICKSBIN: Optional[str] = None
@@ -28,9 +28,9 @@ class LegacyConfiguration:
     WINECMD_ENCODING: Optional[str] = None
     LOGS: Optional[str] = None
     BACKUPDIR: Optional[str] = None
-    LAST_UPDATED: Optional[str] = None
-    RECOMMENDED_WINE64_APPIMAGE_URL: Optional[str] = None
-    LLI_LATEST_VERSION: Optional[str] = None
+    LAST_UPDATED: Optional[str] = None # Unused in new code
+    RECOMMENDED_WINE64_APPIMAGE_URL: Optional[str] = None # Unused in new code
+    LLI_LATEST_VERSION: Optional[str] = None # Unused in new code
     logos_release_channel: Optional[str] = None
     lli_release_channel: Optional[str] = None
 
@@ -42,10 +42,11 @@ class LegacyConfiguration:
     CUSTOMBINPATH: Optional[str] = None
     DEBUG: Optional[bool] = None
     DELETE_LOG: Optional[str] = None
-    DIALOG: Optional[str] = None
+    # XXX: Do we need to load this? For dialog detection?
+    DIALOG: Optional[str] = None # Unused in new code
     LOGOS_LOG: Optional[str] = None
     wine_log: Optional[str] = None
-    LOGOS_EXE: Optional[str] = None
+    LOGOS_EXE: Optional[str] = None # Unused in new code
     # This is the logos installer executable name (NOT path)
     LOGOS_EXECUTABLE: Optional[str] = None
     LOGOS_VERSION: Optional[str] = None
@@ -67,7 +68,6 @@ class LegacyConfiguration:
 
     @classmethod
     def config_file_path(cls) -> str:
-        # XXX: consider legacy config files
         return os.getenv("CONFIG_PATH") or constants.DEFAULT_CONFIG_PATH
 
     @classmethod
@@ -75,14 +75,19 @@ class LegacyConfiguration:
         """Find the relevant config file and load it"""
         # Update config from CONFIG_FILE.
         config_file_path = LegacyConfiguration.config_file_path()
-        if not utils.file_exists(config_file_path):  # noqa: E501
+        # This moves the first legacy config to the new location
+        if not utils.file_exists(config_file_path):
             for legacy_config in constants.LEGACY_CONFIG_FILES:
                 if utils.file_exists(legacy_config):
-                    return LegacyConfiguration.load_from_path(legacy_config)
-        else:
+                    os.rename(legacy_config, config_file_path)
+                    break
+        # This may be a config that used to be in the legacy location
+        # Now it's all in the same location
+        if utils.file_exists(config_file_path):
             return LegacyConfiguration.load_from_path(config_file_path)
-        logging.debug("Couldn't find config file, loading defaults...")
-        return LegacyConfiguration()
+        else:
+            logging.debug("Couldn't find config file, loading defaults...")
+            return LegacyConfiguration()
 
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "LegacyConfiguration":
@@ -305,16 +310,26 @@ class PersistentConfiguration:
     # The Installer's release channel. Either "stable" or "beta"
     app_release_channel: str = "stable"
 
+    _legacy: Optional[LegacyConfiguration] = None
+    """A Copy of the legacy configuration.
+    
+    Merge this when writing.
+    Kept just in case the user wants to go back to an older installer version
+    """
+
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "PersistentConfiguration":
-        # XXX: handle legacy migration
-
         # First read in the legacy configuration
-        new_config: PersistentConfiguration = PersistentConfiguration.from_legacy(LegacyConfiguration.load_from_path(config_file_path)) #noqa: E501
+        legacy = LegacyConfiguration.load_from_path(config_file_path)
+        new_config: PersistentConfiguration = PersistentConfiguration.from_legacy(legacy) #noqa: E501
 
         new_keys = new_config.__dict__.keys()
 
         config_dict = new_config.__dict__
+
+        # Check to see if this config is actually "legacy"
+        if len([k for k, v in legacy.__dict__.items() if v is not None]) > 1:
+            config_dict["_legacy"] = legacy
 
         if config_file_path.endswith('.json') and Path(config_file_path).exists():
             with open(config_file_path, 'r') as config_file:
@@ -351,13 +366,26 @@ class PersistentConfiguration:
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
             winetricks_binary=winetricks_binary,
-            faithlife_product_logging=faithlife_product_logging
+            faithlife_product_logging=faithlife_product_logging,
+            _legacy=legacy
         )
     
     def write_config(self) -> None:
         config_file_path = LegacyConfiguration.config_file_path()
-        # XXX: we may need to merge this dict with the legacy configuration's extended config (as we don't store that persistently anymore) #noqa: E501
+        # Copy the values into a flat structure for easy json dumping
         output = copy.deepcopy(self.__dict__)
+        # Merge the legacy dictionary if present
+        if self._legacy is not None:
+            output |= self._legacy.__dict__
+        
+        # Remove all keys starting with _ (to remove legacy from the saved blob)
+        for k in list(output.keys()):
+            if (
+                k.startswith("_")
+                or output[k] is None
+                or k == "CONFIG_FILE"
+            ):
+                del output[k]
 
         logging.info(f"Writing config to {config_file_path}")
         os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
@@ -365,7 +393,7 @@ class PersistentConfiguration:
         if self.install_dir is not None:
             # Ensure all paths stored are relative to install_dir
             for k, v in output.items():
-                if k == "install_dir":
+                if k in ["install_dir", "INSTALLDIR", "WINETRICKSBIN"]:
                     if v is not None:
                         output[k] = str(v)
                     continue
@@ -374,8 +402,10 @@ class PersistentConfiguration:
 
         try:
             with open(config_file_path, 'w') as config_file:
-                # XXX: would it be possible to avoid writing if this would fail?
-                json.dump(output, config_file, indent=4, sort_keys=True)
+                # Write this into a string first to avoid partial writes
+                # if encoding fails (which it shouldn't)
+                json_str = json.dumps(output, indent=4, sort_keys=True)
+                config_file.write(json_str)
                 config_file.write('\n')
         except IOError as e:
             logging.error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
@@ -602,7 +632,7 @@ class Config:
             self._raw.winetricks_binary is not None and
             not Path(self._absolute_from_install_dir(self._raw.winetricks_binary)).exists() #noqa: E501
         ):
-            logging.warning("Given winetricks doesn't exist. Downloading from internet")
+            logging.info("Given winetricks doesn't exist. Downloading from internet")
             self._raw.winetricks_binary = None
 
         if (

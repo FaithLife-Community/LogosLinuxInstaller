@@ -355,7 +355,7 @@ class TUI(App):
             ):
                 self.choice_q.put("Return to Main Menu")
         else:
-            if self.active_screen.get_screen_id == 14:
+            if self.active_screen.screen_id == 14:
                 self.update_tty_dimensions()
                 if self.window_height > 9:
                     self.switch_q.put(1)
@@ -408,7 +408,7 @@ class TUI(App):
                     if self.choice_q.qsize() > 0:
                         self.choice_processor(
                             self.menu_window,
-                            self.active_screen.get_screen_id(),
+                            self.active_screen.screen_id,
                             self.choice_q.get(),
                         )
 

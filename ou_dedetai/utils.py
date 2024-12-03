@@ -161,37 +161,12 @@ def get_current_logos_version(install_dir: str) -> Optional[str]:
     return None
 
 
-def convert_logos_release(logos_release):
-    if logos_release is not None:
-        ver_major = logos_release.split('.')[0]
-        ver_minor = logos_release.split('.')[1]
-        release = logos_release.split('.')[2]
-        point = logos_release.split('.')[3]
-    else:
-        ver_major = 0
-        ver_minor = 0
-        release = 0
-        point = 0
-
-    logos_release_arr = [
-        int(ver_major),
-        int(ver_minor),
-        int(release),
-        int(point),
-    ]
-    return logos_release_arr
-
 def check_logos_release_version(version, threshold, check_version_part):
     if version is not None:
         version_parts = list(map(int, version.split('.')))
         return version_parts[check_version_part - 1] < threshold
     else:
         return False
-
-
-def filter_versions(versions, threshold, check_version_part):
-    return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]  # noqa: E501
-
 
 # FIXME: consider where we want this
 def get_winebin_code_and_desc(app: App, binary) -> Tuple[str, str | None]:
@@ -354,15 +329,6 @@ def get_folder_group_size(src_dirs: list[Path], q: queue.Queue[int]):
             continue
         src_size += get_path_size(d)
     q.put(src_size)
-
-
-def get_copy_progress(dest_path, txfr_size, dest_size_init=0):
-    dest_size_now = get_path_size(dest_path)
-    if dest_size_now is None:
-        dest_size_now = 0
-    size_diff = dest_size_now - dest_size_init
-    progress = round(size_diff / txfr_size * 100)
-    return progress
 
 
 def get_latest_folder(folder_path):
@@ -714,27 +680,6 @@ def get_relative_path(path: Path | str, base_path: str) -> str | Path:
         else:
             return path
 
-
-def create_dynamic_path(path, base_path):
-    if is_relative_path(path):
-        if isinstance(path, str):
-            path = Path(path)
-        if isinstance(base_path, str):
-            base_path = Path(base_path)
-        logging.debug(f"dynamic_path: {base_path / path}")
-        return base_path / path
-    else:
-        logging.debug(f"dynamic_path: {Path(path)}")
-        return Path(path)
-
-
-def get_config_var(var):
-    if var is not None:
-        if callable(var):
-            return var()
-        return var
-    else:
-        return None
 
 def stopwatch(start_time=None, interval=10.0):
     if start_time is None:

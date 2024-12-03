@@ -339,20 +339,6 @@ def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfigura
     # Initialize logging.
     msg.initialize_logging(log_level, app_log_path)
 
-    # XXX: do this in the new scheme (read then write the config).
-    # We also want to remove the old file, (stored in CONFIG_FILE?)
-
-    # # Update config from CONFIG_FILE.
-    # if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
-    #     for legacy_config in constants.LEGACY_CONFIG_FILES:
-    #         if utils.file_exists(legacy_config):
-    #             config.set_config_env(legacy_config)
-    #             utils.write_config(config.CONFIG_FILE)
-    #             os.remove(legacy_config)
-    #             break
-    # else:
-    #     config.set_config_env(config.CONFIG_FILE)
-
     # Parse CLI args and update affected config vars.
     return parse_args(cli_args, parser)
 
@@ -411,8 +397,6 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
 def main():
     ephemeral_config, action = setup_config()
     system.check_architecture()
-
-    # XXX: consider configuration migration from legacy to new
 
     # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
     # can be run in conjunction with other actions, so it gets special

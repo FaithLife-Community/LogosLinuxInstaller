@@ -141,7 +141,7 @@ def popen_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.
     if isinstance(command, str) and not shell:
         command = command.split()
 
-    for attempt in range(retries):
+    for _ in range(retries):
         try:
             process = subprocess.Popen(
                 command,
