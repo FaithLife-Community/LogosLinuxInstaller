@@ -160,7 +160,7 @@ class LogosManager:
                 try:
                     system.run_command(['kill', '-9'] + pids)
                     self.logos_state = State.STOPPED
-                    self.app.status(f"Stopped Logos processes at PIDs {', '.join(pids)}.")  # noqa: E501
+                    logging.debug(f"Stopped Logos processes at PIDs {', '.join(pids)}.")  # noqa: E501
                 except Exception as e:
                     logging.debug(f"Error while stopping Logos processes: {e}.")  # noqa: E501
             else:
