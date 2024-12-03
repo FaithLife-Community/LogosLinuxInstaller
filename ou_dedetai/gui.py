@@ -156,12 +156,10 @@ class InstallerGui(Frame):
 
 
 class ControlGui(Frame):
-    def __init__(self, root, app: App, *args, **kwargs):
+    def __init__(self, root, *args, **kwargs):
         super(ControlGui, self).__init__(root, **kwargs)
         self.config(padding=5)
         self.grid(row=0, column=0, sticky='nwes')
-
-        self.app = app
 
         # Run/install app button
         self.app_buttonvar = StringVar()

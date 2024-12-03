@@ -9,6 +9,7 @@ from queue import Queue
 
 import shutil
 from threading import Event
+import threading
 from tkinter import PhotoImage, messagebox
 from tkinter import Tk
 from tkinter import Toplevel
@@ -38,29 +39,15 @@ class GuiApp(App):
         self.root = root
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
-        # XXX: would it be possible to use root.bind to call this from the main loop?
-        # So we don't need to make our own root?
-        error_q: Queue[Exception] = Queue()
-        answer_q: Queue[Optional[str]] = Queue()
-        answer_event = Event()
-        def spawn_dialog(options: list[str]):
-            # Create a new popup (with it's own event loop)
-            try:
-                pop_up = ChoicePopUp(question, options, answer_q, answer_event)
+        # This cannot be run from the main thread as the dialog will never appear
+        # since the tinker mainloop hasn't started and we block on a response
 
-                # Run the mainloop in this thread
-                pop_up.mainloop()
-            except RuntimeError as e:
-                # Let the other thread know we failed.
-                error_q.put(e)
-                answer_event.set()
-                # raise e
         if isinstance(options, list):
-            self.start_thread(spawn_dialog, options)
+            answer_q: Queue[Optional[str]] = Queue()
+            answer_event = Event()
+            ChoicePopUp(question, options, answer_q, answer_event)
 
             answer_event.wait()
-            if not error_q.empty():
-                raise error_q.get()
             answer: Optional[str] = answer_q.get()
         elif isinstance(options, str):
             answer = options
@@ -159,20 +146,20 @@ class Root(Tk):
         self.iconphoto(False, self.pi)
 
 
-class ChoicePopUp(Tk):
+class ChoicePopUp:
     """Creates a pop-up with a choice"""
     def __init__(self, question: str, options: list[str], answer_q: Queue[Optional[str]], answer_event: Event, **kwargs): #noqa: E501
+        self.root = Toplevel()
         # Set root parameters.
-        super().__init__()
-        self.title(f"Quesiton: {question.strip().strip(':')}")
-        self.resizable(False, False)
-        self.gui = gui.ChoiceGui(self, question, options)
+        self.gui = gui.ChoiceGui(self.root, question, options)
+        self.root.title(f"Quesiton: {question.strip().strip(':')}")
+        self.root.resizable(False, False)
         # Set root widget event bindings.
-        self.bind(
+        self.root.bind(
             "<Return>",
             self.on_confirm_choice
         )
-        self.bind(
+        self.root.bind(
             "<Escape>",
             self.on_cancel_released
         )
@@ -187,12 +174,12 @@ class ChoicePopUp(Tk):
         answer = self.gui.answer_dropdown.get()
         self.answer_q.put(answer)
         self.answer_event.set()
-        self.destroy()
+        self.root.destroy()
 
     def on_cancel_released(self, evt=None):
         self.answer_q.put(None)
         self.answer_event.set()
-        self.destroy()
+        self.root.destroy()
 
 
 class InstallerWindow:
@@ -406,13 +393,13 @@ class InstallerWindow:
 
 
 class ControlWindow(GuiApp):
-    def __init__(self, root, ephemeral_config: EphemeralConfiguration, *args, **kwargs):
+    def __init__(self, root, control_gui: gui.ControlGui, 
+                 ephemeral_config: EphemeralConfiguration, *args, **kwargs):
         super().__init__(root, ephemeral_config)
+
         # Set root parameters.
         self.root = root
-        self.root.title(f"{constants.APP_NAME} Control Panel")
-        self.root.resizable(False, False)
-        self.gui = gui.ControlGui(self.root, app=self)
+        self.gui = control_gui
         self.actioncmd: Optional[Callable[[], None]] = None
 
         text = self.gui.update_lli_label.cget('text')
@@ -709,5 +696,24 @@ class ControlWindow(GuiApp):
 def control_panel_app(ephemeral_config: EphemeralConfiguration):
     classname = constants.BINARY_NAME
     root = Root(className=classname)
-    ControlWindow(root, ephemeral_config, class_=classname)
+
+    # Need to title/resize and create the initial gui
+    # BEFORE mainloop is started to get sizing correct
+    # other things in the ControlWindow constructor are run after mainloop is running
+    # To allow them to ask questions while the mainloop is running
+    root.title(f"{constants.APP_NAME} Control Panel")
+    root.resizable(False, False)
+    control_gui = gui.ControlGui(root)
+
+    def _start_control_panel():
+        ControlWindow(root, control_gui, ephemeral_config, class_=classname)
+
+    # Start the control panel on a new thread so it can open dialogs
+    # as a part of it's constructor
+    threading.Thread(
+        name=f"{constants.APP_NAME} GUI main loop",
+        target=_start_control_panel,
+        daemon=True
+    ).start()
+
     root.mainloop()
