@@ -94,7 +94,7 @@ class CLI(App):
         utils.update_to_latest_lli_release(self)
 
     def winetricks(self):
-        wine.run_winetricks_cmd(self, *(self.conf._overrides.winetricks_args or []))
+        wine.run_winetricks(self, *(self.conf._overrides.winetricks_args or []))
 
     _exit_option: str = "Exit"
 

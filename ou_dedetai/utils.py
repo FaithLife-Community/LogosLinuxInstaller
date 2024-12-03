@@ -589,8 +589,8 @@ def set_appimage_symlink(app: App):
         logging.debug("No need to set appimage symlink, as it wasn't set")
         return
 
-    logging.debug(f"config.APPIMAGE_FILE_PATH={app.conf.wine_appimage_path}")
-    logging.debug(f"config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME={app.conf.wine_appimage_recommended_file_name}")
+    logging.debug(f"{app.conf.wine_appimage_path=}")
+    logging.debug(f"{app.conf.wine_appimage_recommended_file_name=}")
     appimage_file_path = Path(app.conf.wine_appimage_path)
     appdir_bindir = Path(app.conf.installer_binary_dir)
     appimage_symlink_path = appdir_bindir / app.conf.wine_appimage_link_file_name

@@ -48,24 +48,20 @@ def ensure_install_dirs(app: App):
     ensure_choices(app=app)
     app.installer_step += 1
     app.status("Ensuring installation directories…")
-    logging.debug('- config.INSTALLDIR')
-    logging.debug('- config.WINEPREFIX')
-    logging.debug('- data/bin')
-    logging.debug('- data/wine64_bottle')
     wine_dir = Path("")
 
     bin_dir = Path(app.conf.installer_binary_dir)
     bin_dir.mkdir(parents=True, exist_ok=True)
     logging.debug(f"> {bin_dir} exists?: {bin_dir.is_dir()}")
 
-    logging.debug(f"> config.INSTALLDIR={app.conf.installer_binary_dir}")
-    logging.debug(f"> config.APPDIR_BINDIR={app.conf.installer_binary_dir}")
+    logging.debug(f"> {app.conf.install_dir=}")
+    logging.debug(f"> {app.conf.installer_binary_dir=}")
 
     wine_dir = Path(f"{app.conf.wine_prefix}")
     wine_dir.mkdir(parents=True, exist_ok=True)
 
     logging.debug(f"> {wine_dir} exists: {wine_dir.is_dir()}")
-    logging.debug(f"> config.WINEPREFIX={app.conf.wine_prefix}")
+    logging.debug(f"> {app.conf.wine_prefix=}")
 
 
 def ensure_sys_deps(app: App):
@@ -110,20 +106,16 @@ def ensure_wine_executables(app: App):
     ensure_appimage_download(app=app)
     app.installer_step += 1
     app.status("Ensuring wine executables are available…")
-    logging.debug('- config.WINESERVER_EXE')
-    logging.debug('- wine')
-    logging.debug('- wine64')
-    logging.debug('- wineserver')
 
     create_wine_appimage_symlinks(app=app)
 
     # PATH is modified if wine appimage isn't found, but it's not modified
     # during a restarted installation, so shutil.which doesn't find the
     # executables in that case.
-    logging.debug(f"> wine path: {app.conf.wine_binary}")
-    logging.debug(f"> wine64 path: {app.conf.wine64_binary}")
-    logging.debug(f"> wineserver path: {app.conf.wineserver_binary}")
-    logging.debug(f"> winetricks path: {app.conf.winetricks_binary}")
+    logging.debug(f"> {app.conf.wine_binary=}")
+    logging.debug(f"> {app.conf.wine64_binary=}")
+    logging.debug(f"> {app.conf.wineserver_binary=}")
+    logging.debug(f"> {app.conf.winetricks_binary=}")
 
 
 def ensure_winetricks_executable(app: App):
@@ -296,7 +288,7 @@ def ensure_product_installed(app: App):
     # Clean up temp files, etc.
     utils.clean_all()
 
-    logging.debug(f"> Product path: config.LOGOS_EXE={app.conf.logos_exe}")
+    logging.debug(f"> {app.conf.logos_exe=}")
 
 
 def ensure_config_file(app: App):

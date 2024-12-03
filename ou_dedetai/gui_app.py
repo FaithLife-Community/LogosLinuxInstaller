@@ -354,11 +354,11 @@ class InstallerWindow:
 
     def set_skip_fonts(self, evt=None):
         self.conf.skip_install_fonts = not self.gui.fontsvar.get()  # invert True/False
-        logging.debug(f"> config.SKIP_FONTS={self.conf.skip_install_fonts}")
+        logging.debug(f"> {self.conf.skip_install_fonts=}")
 
     def set_skip_dependencies(self, evt=None):
         self.conf.skip_install_system_dependencies = self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
-        logging.debug(f"> config.SKIP_DEPENDENCIES={self.conf.skip_install_system_dependencies}") #noqa: E501
+        logging.debug(f"> {self.conf.skip_install_system_dependencies=}") #noqa: E501
 
     def on_okay_released(self, evt=None):
         # Update desktop panel icon.
@@ -431,7 +431,6 @@ class ControlWindow(GuiApp):
         self.gui.deps_button.config(command=self.install_deps)
         self.gui.backup_button.config(command=self.run_backup)
         self.gui.restore_button.config(command=self.run_restore)
-        # XXX: do these need to be manual?
         self.gui.update_lli_button.config(
             command=self.update_to_latest_lli_release
         )

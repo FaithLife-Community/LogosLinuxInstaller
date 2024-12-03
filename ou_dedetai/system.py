@@ -227,7 +227,7 @@ def get_dialog() -> str:
         sys.exit(1)
 
     dialog = os.getenv('DIALOG')
-    # Set config.DIALOG.
+    # find dialog
     if dialog is not None:
         dialog = dialog.lower()
         if dialog not in ['cli', 'curses', 'tk']:

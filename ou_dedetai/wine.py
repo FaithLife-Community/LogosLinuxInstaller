@@ -347,13 +347,7 @@ def run_wine_proc(
     return process
 
 
-def run_winetricks(app: App, cmd=None):
-    process = run_wine_proc(app.conf.winetricks_binary, app=app, exe=cmd)
-    system.wait_pid(process)
-    wineserver_wait(app)
-
-# XXX: this function looks similar to the one above. duplicate?
-def run_winetricks_cmd(app: App, *args):
+def run_winetricks(app: App, *args):
     cmd = [*args]
     # FIXME: test this to ensure it behaves as expected
     if "-q" not in args and app.conf.winetricks_binary:
@@ -372,7 +366,7 @@ def run_winetricks_cmd(app: App, *args):
 
 def install_d3d_compiler(app: App):
     cmd = ['d3dcompiler_47']
-    run_winetricks_cmd(app, *cmd)
+    run_winetricks(app, *cmd)
 
 
 def install_fonts(app: App):
@@ -381,23 +375,23 @@ def install_fonts(app: App):
         for i, f in enumerate(fonts):
             app.status(f"Configuring font: {f}…", i / len(fonts)) # noqa: E501
             args = [f]
-            run_winetricks_cmd(app, *args)
+            run_winetricks(app, *args)
 
 
 def install_font_smoothing(app: App):
     logging.info("Setting font smoothing…")
     args = ['settings', 'fontsmooth=rgb']
-    run_winetricks_cmd(app, *args)
+    run_winetricks(app, *args)
 
 
 def set_renderer(app: App, renderer: str):
-    run_winetricks_cmd(app, "-q", "settings", f"renderer={renderer}")
+    run_winetricks(app, "-q", "settings", f"renderer={renderer}")
 
 
 def set_win_version(app: App, exe: str, windows_version: str):
     if exe == "logos":
         # XXX: This never exits
-        run_winetricks_cmd(app, '-q', 'settings', f'{windows_version}')
+        run_winetricks(app, '-q', 'settings', f'{windows_version}')
 
     elif exe == "indexer":
         reg = f"HKCU\\Software\\Wine\\AppDefaults\\{app.conf.faithlife_product}Indexer.exe"  # noqa: E501

@@ -97,8 +97,6 @@ class UrlProps(Props):
         except Exception as e:
             logging.error(e)
             raise
-        # XXX: should we have a more generic catch for KeyboardInterrupt rather than deep in this function? #noqa: E501
-        # except KeyboardInterrupt:
         return r.headers
 
     def _get_size(self):
