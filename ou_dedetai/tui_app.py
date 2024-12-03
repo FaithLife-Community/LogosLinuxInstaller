@@ -579,6 +579,7 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Run Winetricks":
             self.reset_screen()
+            self.status("Running winetricks...")
             wine.run_winetricks(self)
             self.go_to_main_menu()
         elif choice == "Install d3dcompiler":

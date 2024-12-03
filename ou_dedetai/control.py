@@ -13,7 +13,6 @@ from pathlib import Path
 
 from ou_dedetai.app import App
 
-from . import constants
 from . import system
 from . import utils
 
@@ -202,25 +201,25 @@ def remove_library_catalog(app: App):
 
 def set_winetricks(app: App):
     app.status("Preparing winetricks…")
-    if app.conf.winetricks_binary != constants.DOWNLOAD:
+    if app.conf._winetricks_binary is not None:
         valid = True
         # Double check it's a valid winetricks
-        if not Path(app.conf.winetricks_binary).exists():
+        if not Path(app.conf._winetricks_binary).exists():
             logging.warning("Winetricks path does not exist, downloading instead...")
             valid = False
-        if not os.access(app.conf.winetricks_binary, os.X_OK):
+        if not os.access(app.conf._winetricks_binary, os.X_OK):
             logging.warning("Winetricks path given is not executable, downloading instead...") #noqa: E501
             valid = False
-        if not utils.check_winetricks_version(app.conf.winetricks_binary):
+        if not utils.check_winetricks_version(app.conf._winetricks_binary):
             logging.warning("Winetricks version mismatch, downloading instead...")
             valid = False
         if valid:
-            logging.info(f"Found valid winetricks: {app.conf.winetricks_binary}")
+            logging.info(f"Found valid winetricks: {app.conf._winetricks_binary}")
             return 0
         # Continue executing the download if it wasn't valid
 
     system.install_winetricks(app.conf.installer_binary_dir, app)
-    app.conf.wine_binary = os.path.join(
+    app.conf.winetricks_binary = os.path.join(
         app.conf.installer_binary_dir,
         "winetricks"
     )

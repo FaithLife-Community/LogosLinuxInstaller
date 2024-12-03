@@ -31,7 +31,7 @@ def ensure_choices(app: App):
     logging.debug(f"> {app.conf.wine_appimage_recommended_file_name=}")
     logging.debug(f"> {app.conf.wine_binary_code=}")
     logging.debug(f"> {app.conf.wine_binary=}")
-    logging.debug(f"> {app.conf.winetricks_binary=}")
+    logging.debug(f"> {app.conf._raw.winetricks_binary=}")
     logging.debug(f"> {app.conf.skip_install_fonts=}")
     logging.debug(f"> {app.conf._overrides.winetricks_skip=}")
     logging.debug(f"> {app.conf.faithlife_product_icon_path}")
@@ -115,7 +115,7 @@ def ensure_wine_executables(app: App):
     logging.debug(f"> {app.conf.wine_binary=}")
     logging.debug(f"> {app.conf.wine64_binary=}")
     logging.debug(f"> {app.conf.wineserver_binary=}")
-    logging.debug(f"> {app.conf.winetricks_binary=}")
+    logging.debug(f"> {app.conf._raw.winetricks_binary=}")
 
 
 def ensure_winetricks_executable(app: App):
@@ -124,8 +124,9 @@ def ensure_winetricks_executable(app: App):
     app.installer_step += 1
     app.status("Ensuring winetricks executable is available…")
 
-    app.status("Downloading winetricks from the Internet…")
-    system.install_winetricks(app.conf.installer_binary_dir, app=app)
+    if app.conf._winetricks_binary is None:
+        app.status("Downloading winetricks from the Internet…")
+        system.install_winetricks(app.conf.installer_binary_dir, app=app)
 
     logging.debug(f"> {app.conf.winetricks_binary} is executable?: {os.access(app.conf.winetricks_binary, os.X_OK)}")  # noqa: E501
     return 0

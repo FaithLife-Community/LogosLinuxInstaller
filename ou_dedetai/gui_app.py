@@ -282,9 +282,6 @@ class InstallerWindow:
         # In case the product changes
         self.root.icon = Path(self.conf.faithlife_product_icon_path)
 
-        if self.conf._raw.winetricks_binary is None:
-            self.conf.winetricks_binary = self.gui.tricksvar.get()
-
         wine_choices = utils.get_wine_options(self.app)
         self.gui.wine_dropdown['values'] = wine_choices
         if not self.gui.winevar.get():

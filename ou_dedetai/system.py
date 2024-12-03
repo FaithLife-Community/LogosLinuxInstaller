@@ -877,8 +877,11 @@ def install_winetricks(
     installdir,
     app: App,
     version=constants.WINETRICKS_VERSION,
-):
-    app.status(f"Installing winetricks v{version}…")
+    status_messages: bool = True
+) -> str:
+    winetricks_path = f"{installdir}/winetricks"
+    if status_messages:
+        app.status(f"Installing winetricks v{version}…")
     base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
     zip_name = f"{version}.zip"
     network.logos_reuse_download(
@@ -886,6 +889,7 @@ def install_winetricks(
         zip_name,
         app.conf.download_dir,
         app=app,
+        status_messages=status_messages
     )
     wtzip = f"{app.conf.download_dir}/{zip_name}"
     logging.debug(f"Extracting winetricks script into {installdir}…")
@@ -897,9 +901,10 @@ def install_winetricks(
             if zi.filename == 'winetricks':
                 z.extract(zi, path=installdir)
                 break
-    os.chmod(f"{installdir}/winetricks", 0o755)
-    app.conf.winetricks_binary = f"{installdir}/winetricks"
+    os.chmod(winetricks_path, 0o755)
+    app.conf.winetricks_binary = winetricks_path
     logging.debug("Winetricks installed.")
+    return winetricks_path
 
 def wait_pid(process: subprocess.Popen):
     os.waitpid(-process.pid, 0)

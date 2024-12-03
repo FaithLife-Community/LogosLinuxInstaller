@@ -333,6 +333,12 @@ class PersistentConfiguration:
         faithlife_product_logging = None
         if legacy.LOGS is not None:
             faithlife_product_logging = utils.parse_bool(legacy.LOGS)
+        winetricks_binary = None
+        if (
+            legacy.WINETRICKSBIN is not None
+            and legacy.WINETRICKSBIN != constants.DOWNLOAD
+        ):
+            winetricks_binary = legacy.WINETRICKSBIN
         return PersistentConfiguration(
             faithlife_product=legacy.FLPRODUCT,
             backup_dir=legacy.BACKUPDIR,
@@ -344,7 +350,7 @@ class PersistentConfiguration:
             app_release_channel=legacy.lli_release_channel or 'stable',
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
-            winetricks_binary=legacy.WINETRICKSBIN,
+            winetricks_binary=winetricks_binary,
             faithlife_product_logging=faithlife_product_logging
         )
     
@@ -465,7 +471,10 @@ class Config:
         Returns:
             path - absolute
         """
-        return str(Path(path).absolute()).lstrip(self.install_dir)
+        output = str(path)
+        if Path(path).is_absolute() and output.startswith(self.install_dir):
+            output = output[len(self.install_dir):].lstrip("/")
+        return output
 
     def _absolute_from_install_dir(self, path: Path | str) -> str:
         """Takes in a possibly relative path under install dir and turns it into an
@@ -587,32 +596,69 @@ class Config:
 
     @property
     def winetricks_binary(self) -> str:
-        # FIXME: consider implications of having "Download" placeholder
-        # Should we return None instead?
-        """This may be a path to the winetricks binary or it may be "Download"
-        """
-        question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {self.faithlife_product} requires on Linux."  # noqa: E501
-        options = utils.get_winetricks_options()
-        output = self._ask_if_not_found("winetricks_binary", question, options)
-        if output == "Download":
-            return output
-        return self._absolute_from_install_dir(output)
+        """Download winetricks if it doesn't exist"""
+        from ou_dedetai import system
+        if (
+            self._raw.winetricks_binary is not None and
+            not Path(self._absolute_from_install_dir(self._raw.winetricks_binary)).exists() #noqa: E501
+        ):
+            logging.warning("Given winetricks doesn't exist. Downloading from internet")
+            self._raw.winetricks_binary = None
+
+        if (
+            self._winetricks_binary is None
+            # Informs mypy of the type without relying on implementation of 
+            # self._winetricks_binary
+            or self._raw.winetricks_binary is None
+        ):
+            self._raw.winetricks_binary = system.install_winetricks(
+                self.installer_binary_dir,
+                app=self.app,
+                status_messages=False
+            )
+        return self._absolute_from_install_dir(self._raw.winetricks_binary)
 
     @winetricks_binary.setter
     def winetricks_binary(self, value: Optional[str | Path]):
         if value is not None:
-            value = str(value)
-        if value is not None and value != "Download":
-            if not Path(value).exists():
+            # Legacy had this value be "Download" when the user wanted the default
+            # Now we encode that in None
+            if value == constants.DOWNLOAD:
+                value = None
+            else:
+                value = self._relative_from_install_dir(value)
+        if value is not None:
+            if not Path(self._absolute_from_install_dir(value)).exists():
                 raise ValueError("Winetricks binary must exist")
         if self._raw.winetricks_binary != value:
-            if value == "Download":
-                self._raw.winetricks_binary = value
-            elif value is not None:
+            if value is not None:
                 self._raw.winetricks_binary = self._relative_from_install_dir(value)
             else:
                 self._raw.winetricks_binary = None
             self._write()
+
+    @property
+    def _winetricks_binary(self) -> Optional[str]:
+        """Get the path to winetricks
+        
+        Prompt if the user has any choices besides download
+        """
+        question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {self.faithlife_product} requires on Linux."  # noqa: E501
+        options = utils.get_winetricks_options()
+        # Only prompt if the user has other options besides Downloading.
+        # the legacy WINETRICKSBIN config key is still supported.
+        if len(options) == 1:
+            # Use whatever we have stored
+            output = self._raw.winetricks_binary
+        else:
+            if self._raw.winetricks_binary is None:
+                self.winetricks_binary = self.app.ask(question, options)
+            output = self._raw.winetricks_binary
+
+        if output is not None:
+            return self._absolute_from_install_dir(output)
+        else:
+            return None
 
     @property
     def install_dir_default(self) -> str:

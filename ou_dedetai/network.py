@@ -287,6 +287,7 @@ def logos_reuse_download(
     file: str,
     targetdir: str,
     app: App,
+    status_messages: bool = True
 ):
     dirs = [
         app.conf.install_dir,
@@ -304,6 +305,7 @@ def logos_reuse_download(
                     sourceurl,
                     file_path,
                     app=app,
+                    status_messages=status_messages
                 ):
                     logging.info(f"{file} properties match. Using it…")
                     logging.debug(f"Copying {file} into {targetdir}")
@@ -327,6 +329,7 @@ def logos_reuse_download(
             sourceurl,
             file_path,
             app=app,
+            status_messages=status_messages
         ):
             logging.debug(f"Copying: {file} into: {targetdir}")
             try:
@@ -432,8 +435,8 @@ def _net_get(url: str, target: Optional[Path]=None, app: Optional[App] = None):
         return None  # Return None values to indicate an error condition
 
 
-def _verify_downloaded_file(url: str, file_path: Path | str, app: App):
-    if app:
+def _verify_downloaded_file(url: str, file_path: Path | str, app: App, status_messages: bool = True): #noqa: E501
+    if status_messages:
         app.status(f"Verifying {file_path}…", 0)
     file_props = FileProps(file_path)
     url_size = app.conf._network.url_size(url)

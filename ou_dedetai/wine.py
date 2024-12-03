@@ -360,7 +360,6 @@ def run_wine_proc(
 
 def run_winetricks(app: App, *args):
     cmd = [*args]
-    # FIXME: test this to ensure it behaves as expected
     if "-q" not in args and app.conf.winetricks_binary:
         cmd.insert(0, "-q")
     logging.info(f"running \"winetricks {' '.join(cmd)}\"")
