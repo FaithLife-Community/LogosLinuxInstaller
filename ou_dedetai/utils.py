@@ -168,7 +168,7 @@ def check_logos_release_version(version, threshold, check_version_part):
     else:
         return False
 
-# FIXME: consider where we want this
+
 def get_winebin_code_and_desc(app: App, binary) -> Tuple[str, str | None]:
     """Gets the type of wine in use and it's description
     
@@ -499,11 +499,6 @@ def find_appimage_files(app: App) -> list[str]:
                 else:
                     logging.info(f"AppImage file {p} not added: {output2}")
 
-    # FIXME: consider if this messaging is needed
-    # if app:
-    #     app.appimage_q.put(appimages)
-    #     app.root.event_generate(app.appimage_evt)
-
     return appimages
 
 
@@ -562,7 +557,6 @@ def set_appimage_symlink(app: App):
     appimage_symlink_path = appdir_bindir / app.conf.wine_appimage_link_file_name
     if appimage_file_path.name == app.conf.wine_appimage_recommended_file_name:  # noqa: E501
         # Default case.
-        # FIXME: consider other locations to enforce this, perhaps config?
         network.dwonload_recommended_appimage(app)
         selected_appimage_file_path = appdir_bindir / appimage_file_path.name  # noqa: E501
         bindir_appimage = selected_appimage_file_path / app.conf.installer_binary_dir  # noqa: E501

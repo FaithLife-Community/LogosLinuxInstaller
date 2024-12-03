@@ -695,7 +695,6 @@ class TUI(App):
             self.go_to_main_menu()
 
     def custom_appimage_select(self, choice: str):
-        # FIXME
         if choice == "Input Custom AppImage":
             appimage_filename = self.ask("Enter AppImage filename: ", [PROMPT_OPTION_FILE]) #noqa: E501
         else:

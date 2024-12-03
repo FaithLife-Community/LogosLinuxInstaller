@@ -81,13 +81,16 @@ def backup_and_restore(mode: str, app: App):
 
     # Get source transfer size.
     q: queue.Queue[int] = queue.Queue()
-    app.status("Calculating backup size…")
+    message = "Calculating backup size…"
+    app.status(message)
+    i = 0
     t = app.start_thread(utils.get_folder_group_size, src_dirs, q)
     try:
         while t.is_alive():
-            # FIXME: consider showing a sign of life to the app
+            i += 1
+            i = i % 20
+            app.status(f"{message}{"." * i}\r")
             time.sleep(0.5)
-        print()
     except KeyboardInterrupt:
         print()
         app.exit("Cancelled with Ctrl+C.")

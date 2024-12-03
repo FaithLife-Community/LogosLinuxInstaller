@@ -333,7 +333,7 @@ def ensure_launcher_shortcuts(app: App):
         app.status("Creating launcher shortcuts…")
         create_launcher_shortcuts(app)
     else:
-        # FIXME: Is this because it's hard to find the python binary?
+        # Speculation: Is this because it's hard to find the python binary?
         app.status(
             "Running from source. Skipping launcher creation.",
         )
