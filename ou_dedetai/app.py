@@ -79,7 +79,13 @@ class App(abc.ABC):
 
             # Not valid
             return None
-            
+
+        # Check to see if we're supposed to prompt the user
+        if self.conf._overrides.assume_yes:
+            # Get the first non-dynamic option
+            for option in options:
+                if option not in [PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE]:
+                    return option
 
         passed_options: list[str] | str = options
         if len(passed_options) == 1 and (
@@ -181,6 +187,10 @@ class App(abc.ABC):
             percent: Optional[int] - percent of the way through the current install step
                 (if installing)
         """
+        # Check to see if we want to suppress all output
+        if self.conf._overrides.quiet:
+            return
+
         if isinstance(percent, float):
             percent = round(percent * 100)
         # If we're installing
@@ -188,10 +198,11 @@ class App(abc.ABC):
             current_step_percent = percent or 0
             # We're further than the start of our current step, percent more
             installer_percent = round((self.installer_step * 100 + current_step_percent) / self.installer_step_count) # noqa: E501
-            logging.debug(f"Install step {self.installer_step} of {self.installer_step_count}")  # noqa: E501
+            logging.debug(f"Install {installer_percent}: {message}")
             self._status(message, percent=installer_percent)
         else:
             # Otherwise just print status using the progress given
+            logging.debug(f"{message}: {percent}")
             self._status(message, percent)
         self._last_status = message
 

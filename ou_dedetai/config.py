@@ -207,6 +207,14 @@ class EphemeralConfiguration:
     config_path: str
     """Path this config was loaded from"""
 
+    assume_yes: bool = False
+    """Whether to assume yes to all prompts or ask the user
+    
+    Useful for non-interactive installs"""
+
+    quiet: bool = False
+    """Whether or not to output any non-error messages"""
+
     dialog: Optional[str] = None
     """Override if we want to select a specific type of front-end
     

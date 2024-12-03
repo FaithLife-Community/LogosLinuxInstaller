@@ -84,6 +84,15 @@ def get_parser():
         '-P', '--passive', action='store_true',
         help='run product installer non-interactively',
     )
+    cfg.add_argument(
+        '-y', '--assume-yes', action='store_true',
+        help='Assumes yes (or default) to all prompts. '
+        'Useful for entirely non-interactive installs',
+    )
+    cfg.add_argument(
+        '-q', '--quiet', action='store_true',
+        help='Suppress all non-error output',
+    )
 
     # Define runtime actions (mutually exclusive).
     grp = parser.add_argument_group(
@@ -200,6 +209,10 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
     else:
         ephemeral_config = EphemeralConfiguration.load()
 
+    if args.quiet:
+        msg.update_log_level(logging.WARNING)
+        ephemeral_config.quiet = True
+
     if args.verbose:
         msg.update_log_level(logging.INFO)
 
@@ -243,7 +256,10 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
             message = f"Custom binary path does not exist: \"{args.custom_binary_path}\"\n"  # noqa: E501
             parser.exit(status=1, message=message)
 
-    if args.passive:
+    if args.assume_yes:
+        ephemeral_config.assume_yes = True
+
+    if args.passive or args.assume_yes:
         ephemeral_config.faithlife_install_passive = True
 
 
