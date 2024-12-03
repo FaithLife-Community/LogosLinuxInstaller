@@ -364,8 +364,6 @@ class TUI:
             utils.start_thread(self.get_winetricksbin, config.use_python_dialog)
         elif task == 'INSTALL' or task == 'INSTALLING':
             utils.start_thread(self.get_waiting, config.use_python_dialog)
-        elif task == 'INSTALLING_PW':
-            utils.start_thread(self.get_waiting, config.use_python_dialog, screen_id=15)
         elif task == 'CONFIG':
             utils.start_thread(self.get_config, config.use_python_dialog)
         elif task == 'DONE':
@@ -839,11 +837,6 @@ class TUI:
         self.menu_options = options
         #TODO: Switch to msg.logos_continue_message
         self.screen_q.put(self.stack_menu(9, self.config_q, self.config_e, question, options, dialog=dialog))
-
-    # def get_password(self, dialog):
-    #     question = (f"Logos Linux Installer needs to run a command as root. "
-    #                 f"Please provide your password to provide escalation privileges.")
-    #     self.screen_q.put(self.stack_password(15, self.password_q, self.password_e, question, dialog=dialog))
 
     def get_backup_path(self, mode):
         self.tmp = mode
