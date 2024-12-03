@@ -42,7 +42,6 @@ class LegacyConfiguration:
     CUSTOMBINPATH: Optional[str] = None
     DEBUG: Optional[bool] = None
     DELETE_LOG: Optional[str] = None
-    # XXX: Do we need to load this? For dialog detection?
     DIALOG: Optional[str] = None # Unused in new code
     LOGOS_LOG: Optional[str] = None
     wine_log: Optional[str] = None
@@ -208,6 +207,10 @@ class EphemeralConfiguration:
     config_path: str
     """Path this config was loaded from"""
 
+    dialog: Optional[str] = None
+    """Override if we want to select a specific type of front-end
+    
+    Accepted values: tk (GUI), curses (TUI), cli (CLI)"""
 
     winetricks_args: Optional[list[str]] = None
     """Arguments to winetricks if the action is running winetricks"""
@@ -264,7 +267,8 @@ class EphemeralConfiguration:
             wine_appimage_link_file_name=legacy.APPIMAGE_LINK_SELECTION_NAME,
             wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME,
             wine_output_encoding=legacy.WINECMD_ENCODING,
-            terminal_app_prefer_dialog=terminal_app_prefer_dialog
+            terminal_app_prefer_dialog=terminal_app_prefer_dialog,
+            dialog=legacy.DIALOG
         )
 
     @classmethod
@@ -815,7 +819,8 @@ class Config:
             self._overrides.wine_appimage_path = value
             # Reset dependents
             self._raw.wine_binary_code = None
-            # XXX: Should we save? There should be something here we should store
+            # NOTE: we don't save this persistently, it's assumed
+            # it'll be saved under wine_binary if it's used
 
     @property
     def wine_appimage_link_file_name(self) -> str:

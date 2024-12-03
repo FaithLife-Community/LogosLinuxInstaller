@@ -304,7 +304,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
 
 
 def run_control_panel(ephemeral_config: EphemeralConfiguration):
-    dialog = system.get_dialog()
+    dialog = ephemeral_config.dialog or system.get_dialog()
     logging.info(f"Using DIALOG: {dialog}")
     if dialog == 'tk':
         gui_app.control_panel_app(ephemeral_config)
