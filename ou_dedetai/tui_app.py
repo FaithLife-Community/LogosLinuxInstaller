@@ -32,12 +32,7 @@ class TUI(App):
     def __init__(self, stdscr: curses.window, ephemeral_config: EphemeralConfiguration):
         super().__init__(ephemeral_config)
         self.stdscr = stdscr
-        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
-        product_name = self.conf._raw.faithlife_product or "Logos"
-        if self.is_installed():
-            self.subtitle = f"{product_name} Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
-        else:
-            self.subtitle = f"{product_name} not installed"
+        self.set_title()
         # else:
         #    self.title = f"Welcome to {constants.APP_NAME} ({constants.LLI_CURRENT_VERSION})"  # noqa: E501
         self.console_message = "Starting TUI…"
@@ -134,7 +129,17 @@ class TUI(App):
         logging.debug(f"Use Python Dialog?: {self.use_python_dialog}")
         self.set_window_dimensions()
 
-        self.config_updated_hooks += [self.set_curses_colors]
+        self.config_updated_hooks += [self._config_update_hook]
+
+    def set_title(self):
+        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
+        product_name = self.conf._raw.faithlife_product or "Logos"
+        if self.is_installed():
+            self.subtitle = f"{product_name} Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
+        else:
+            self.subtitle = f"{product_name} not installed"
+        # Reset the console to force a re-draw
+        self._console = None
 
     @property
     def active_screen(self) -> tui_screen.Screen:
@@ -639,6 +644,9 @@ class TUI(App):
             self.reset_screen()
             control.edit_file(self.conf.config_file_path)
             self.go_to_main_menu()
+        elif choice == "Reload Config":
+            self.conf.reload()
+            self.go_to_main_menu()
         elif choice == "Change Logos Release Channel":
             self.reset_screen()
             self.conf.toggle_faithlife_product_release_channel()
@@ -815,6 +823,10 @@ class TUI(App):
             )
         )
 
+    def _config_update_hook(self):
+        self.set_curses_colors()
+        self.set_title()
+
     # def get_password(self, dialog):
     #     question = (f"Logos Linux Installer needs to run a command as root. "
     #                 f"Please provide your password to provide escalation privileges.")
@@ -952,7 +964,7 @@ class TUI(App):
             ]
             labels.extend(labels_catalog)
 
-        labels_utilities = ["Install Dependencies", "Edit Config"]
+        labels_utilities = ["Install Dependencies", "Edit Config", "Reload Config"]
         labels.extend(labels_utilities)
 
         if self.is_installed():

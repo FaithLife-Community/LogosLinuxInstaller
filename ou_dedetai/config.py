@@ -532,7 +532,15 @@ class Config:
             return str(Path(self.install_dir) / path)
         return str(path)
 
-    # XXX: Add a reload command to resolve #168 (at least plumb the backend)
+    def reload(self):
+        """Re-loads the configuration file on disk"""
+        self._raw = PersistentConfiguration.load_from_path(self._overrides.config_path)
+        # Also clear out our cached values
+        self._logos_exe = self._download_dir = self._wine_output_encoding = None
+        self._installed_faithlife_product_release = self._wine_binary_files = None
+        self._wine_appimage_files = None
+
+        self.app._config_updated_event.set()
 
     @property
     def config_file_path(self) -> str:

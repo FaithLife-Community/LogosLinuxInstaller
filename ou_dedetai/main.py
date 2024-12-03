@@ -84,6 +84,8 @@ def get_parser():
         '-P', '--passive', action='store_true',
         help='run product installer non-interactively',
     )
+    # XXX: consider if we want to keep --assume-yes and --quiet
+    # Don't want to support more than we'd use
     cfg.add_argument(
         '-y', '--assume-yes', action='store_true',
         help='Assumes yes (or default) to all prompts. '
