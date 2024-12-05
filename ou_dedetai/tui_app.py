@@ -10,7 +10,11 @@ from queue import Queue
 from typing import Any, Optional
 
 from ou_dedetai.app import App
-from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
+from ou_dedetai.constants import (
+    PROMPT_ANSWER_COME_AGAIN,
+    PROMPT_OPTION_DIRECTORY,
+    PROMPT_OPTION_FILE
+)
 from ou_dedetai.config import EphemeralConfiguration
 
 from . import control
@@ -69,6 +73,8 @@ class TUI(App):
         # Window and Screen Management
         self.tui_screens: list[tui_screen.Screen] = []
         self.menu_options: list[Any] = []
+
+        self._installer_thread: Optional[threading.Thread] = None
 
         # Default height and width to something reasonable so these values are always
         # ints, on each loop these values will be updated to their real values
@@ -483,6 +489,8 @@ class TUI(App):
 
         # Capture menu exiting before processing in the rest of the handler
         if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
+            if choice == "Return to Main Menu":
+                self.tui_screens = []
             self.reset_screen()
             self.switch_q.put(1)
             # FIXME: There is some kind of graphical glitch that activates on returning
@@ -515,8 +523,10 @@ class TUI(App):
 
     def main_menu_select(self, choice):
         def _install():
+            self.status("Installing...")
             installer.install(app=self)
             self.update_main_window_contents()
+            self.go_to_main_menu()
         if choice is None or choice == "Exit":
             logging.info("Exiting installation.")
             self.tui_screens = []
@@ -525,10 +535,17 @@ class TUI(App):
             self.reset_screen()
             self.installer_step = 0
             self.installer_step_count = 0
-            self.start_thread(
-                _install,
-                daemon_bool=True,
-            )
+            if self._installer_thread is None:
+                self._installer_thread = self.start_thread(
+                    _install,
+                    daemon_bool=True,
+                )
+            else:
+                # Looks like we returned to the main menu mid-install
+                # Tell the app to ask us that question again.
+                self.ask_answer_queue.put(PROMPT_ANSWER_COME_AGAIN)
+                self.ask_answer_event.set()
+
         elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release(self)
         elif self.conf._raw.faithlife_product and choice == f"Run {self.conf._raw.faithlife_product}": #noqa: E501
@@ -779,12 +796,12 @@ class TUI(App):
                 )
             )  # noqa: E501
 
-            # Now wait for it to complete
+            # Now wait for it to complete.
             self.ask_answer_event.wait()
             answer = self.ask_answer_queue.get()
 
         self.ask_answer_event.clear()
-        if answer == PROMPT_OPTION_DIRECTORY or answer == PROMPT_OPTION_FILE:
+        if answer in [PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE]:
             self.screen_q.put(
                 self.stack_input(
                     2,
@@ -809,7 +826,6 @@ class TUI(App):
     def handle_ask_response(self, choice: str):
         self.ask_answer_queue.put(choice)
         self.ask_answer_event.set()
-        self.switch_screen()
 
     def _status(self, message: str, percent: int | None = None):
         message = message.lstrip("\r")

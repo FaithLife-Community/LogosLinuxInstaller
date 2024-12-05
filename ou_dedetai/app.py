@@ -8,7 +8,11 @@ import threading
 from typing import Callable, NoReturn, Optional
 
 from ou_dedetai import constants
-from ou_dedetai.constants import PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE
+from ou_dedetai.constants import (
+    PROMPT_ANSWER_COME_AGAIN,
+    PROMPT_OPTION_DIRECTORY,
+    PROMPT_OPTION_FILE
+)
 
 
 class App(abc.ABC):
@@ -63,6 +67,9 @@ class App(abc.ABC):
             # This MUST have the same indexes as above
             simple_options_lower = [opt.lower() for opt in simple_options]
 
+            # Easiest case first
+            if answer == PROMPT_ANSWER_COME_AGAIN:
+                return None
             # Case sensitive check first
             if answer in simple_options:
                 return answer
@@ -99,9 +106,12 @@ class App(abc.ABC):
 
         answer = self._ask(question, passed_options)
         while answer is None or validate_result(answer, options) is None:
-            invalid_response = "That response is not valid, please try again."
-            new_question = f"{invalid_response}\n{question}"
-            answer = self._ask(new_question, passed_options)
+            if answer == PROMPT_ANSWER_COME_AGAIN:
+                answer = self._ask(question, passed_options)
+            else:
+                invalid_response = "That response is not valid, please try again."
+                new_question = f"{invalid_response}\n{question}"
+                answer = self._ask(new_question, passed_options)
 
         if answer is not None:
             answer = validate_result(answer, options)
