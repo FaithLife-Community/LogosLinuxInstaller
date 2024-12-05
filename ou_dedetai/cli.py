@@ -3,7 +3,6 @@ import shutil
 import threading
 from typing import Optional, Tuple
 
-from ou_dedetai import constants
 from ou_dedetai.app import App
 from ou_dedetai.config import EphemeralConfiguration
 from ou_dedetai.system import SuperuserCommandNotFound
@@ -22,6 +21,7 @@ class CLI(App):
         self.input_q: queue.Queue[Tuple[str, list[str]] | None] = queue.Queue()
         self.input_event = threading.Event()
         self.choice_event = threading.Event()
+        self.start_thread(self.user_input_processor)
 
     def backup(self):
         control.backup(app=self)
@@ -36,17 +36,8 @@ class CLI(App):
         control.set_winetricks(self)
 
     def install_app(self):
-        def install(app: CLI):
-            installer.install(app)
-            app.exit("Install has finished", intended=True)
-        self.thread = threading.Thread(
-            name=f"{constants.APP_NAME} install",
-            target=install,
-            daemon=False,
-            args=[self]
-        )
-        self.thread.start()
-        self.user_input_processor()
+        installer.install(self)
+        self.exit("Install has finished", intended=True)
 
     def install_d3d_compiler(self):
         wine.install_d3d_compiler(self)
@@ -77,6 +68,9 @@ class CLI(App):
 
     def run_installed_app(self):
         self.logos.start()
+
+    def stop_installed_app(self):
+        self.logos.stop()
 
     def run_winetricks(self):
         wine.run_winetricks(self)
@@ -135,7 +129,7 @@ class CLI(App):
             # Rather than sending a new one. This allows the current line to update
             prefix += "\r"
             end = "\r"
-        if percent:
+        if percent is not None:
             percent_per_char = 5
             chars_of_progress = round(percent / percent_per_char)
             chars_remaining = round((100 - percent) / percent_per_char)

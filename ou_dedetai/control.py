@@ -162,7 +162,7 @@ def remove_install_dir(app: App):
         return
     if app.approve(question):
         shutil.rmtree(folder)
-        logging.warning(f"Deleted folder and all its contents: {folder}")
+        logging.info(f"Deleted folder and all its contents: {folder}")
 
 
 def remove_all_index_files(app: App):

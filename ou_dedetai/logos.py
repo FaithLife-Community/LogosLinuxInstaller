@@ -74,8 +74,14 @@ class LogosManager:
 
     def get_logos_pids(self):
         app = self.app
+        # FIXME: consider refactoring to make one call to get a system pids
+        # Currently this gets all system pids 4 times
         if app.conf.logos_exe:
             self.existing_processes[app.conf.logos_exe] = system.get_pids(app.conf.logos_exe) # noqa: E501
+        if app.conf.wine_user:
+            # Also look for the system's Logos.exe (this may be the login window)
+            logos_system_exe = f"C:\\users\\{app.conf.wine_user}\\AppData\\Local\\Logos\\System\\Logos.exe" #noqa: E501
+            self.existing_processes[logos_system_exe] = system.get_pids(logos_system_exe) # noqa: E501
         if app.conf.logos_indexer_exe:
             self.existing_processes[app.conf.logos_indexer_exe] = system.get_pids(app.conf.logos_indexer_exe)  # noqa: E501
         if app.conf.logos_cef_exe:
@@ -141,31 +147,26 @@ class LogosManager:
     def stop(self):
         logging.debug("Stopping LogosManager.")
         self.logos_state = State.STOPPING
-        if self.app:
-            pids = []
-            for process_name in [
-                self.app.conf.logos_exe,
-                self.app.conf.logos_login_exe,
-                self.app.conf.logos_cef_exe
-            ]:
-                if process_name is None:
-                    continue
-                process = self.processes.get(process_name)
-                if process:
-                    pids.append(str(process.pid))
-                else:
-                    logging.debug(f"No Logos processes found for {process_name}.")  # noqa: E501
+        if len(self.existing_processes) == 0:
+            self.get_logos_pids()
 
-            if pids:
-                try:
-                    system.run_command(['kill', '-9'] + pids)
-                    self.logos_state = State.STOPPED
-                    logging.debug(f"Stopped Logos processes at PIDs {', '.join(pids)}.")  # noqa: E501
-                except Exception as e:
-                    logging.debug(f"Error while stopping Logos processes: {e}.")  # noqa: E501
-            else:
-                logging.debug("No Logos processes to stop.")
+        pids: list[str] = []
+        for processes in self.processes.values():
+            pids.append(str(processes.pid))
+
+        for existing_processes in self.existing_processes.values():
+            pids.extend(str(proc.pid) for proc in existing_processes)
+
+        if pids:
+            try:
+                system.run_command(['kill', '-9'] + pids)
                 self.logos_state = State.STOPPED
+                logging.debug(f"Stopped Logos processes at PIDs {', '.join(pids)}.")  # noqa: E501
+            except Exception as e:
+                logging.debug(f"Error while stopping Logos processes: {e}.")  # noqa: E501
+        else:
+            logging.debug("No Logos processes to stop.")
+            self.logos_state = State.STOPPED
         wine.wineserver_wait(self.app)
 
     def end_processes(self):
@@ -194,11 +195,11 @@ class LogosManager:
             if process is not None:
                 self.processes[self.app.conf.logos_indexer_exe] = process
 
-        def check_if_indexing(process):
+        def check_if_indexing(process: threading.Thread):
             start_time = time.time()
             last_time = start_time
             update_send = 0
-            while process.poll() is None:
+            while process.is_alive():
                 update, last_time = utils.stopwatch(last_time, 3)
                 if update:
                     update_send = update_send + 1
@@ -218,7 +219,7 @@ class LogosManager:
             wine.wineserver_wait(app=self.app)
 
         wine.wineserver_kill(self.app)
-        self.app.status("Indexing has begun…")
+        self.app.status("Indexing has begun…", 0)
         index_thread = self.app.start_thread(run_indexing, daemon_bool=False)
         self.indexing_state = State.RUNNING
         self.app.start_thread(

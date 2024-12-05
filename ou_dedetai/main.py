@@ -84,8 +84,6 @@ def get_parser():
         '-P', '--passive', action='store_true',
         help='run product installer non-interactively',
     )
-    # XXX: consider if we want to keep --assume-yes and --quiet
-    # Don't want to support more than we'd use
     cfg.add_argument(
         '-y', '--assume-yes', action='store_true',
         help='Assumes yes (or default) to all prompts. '
@@ -112,6 +110,11 @@ def get_parser():
     cmd.add_argument(
         '--run-installed-app', '-C', action='store_true',
         help='run installed FaithLife app',
+    )
+    # NOTE to reviewers: this function was added mostly for tests
+    cmd.add_argument(
+        '--stop-installed-app', action='store_true',
+        help='stop the installed FaithLife app if running',
     )
     cmd.add_argument(
         '--run-indexing', action='store_true',
@@ -292,6 +295,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
         'restore',
         'run_indexing',
         'run_installed_app',
+        'stop_installed_app',
         'run_winetricks',
         'set_appimage',
         'toggle_app_logging',
@@ -394,6 +398,7 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
         'restore',
         'run_indexing',
         'run_installed_app',
+        'stop_installed_app',
         'run_winetricks',
         'set_appimage',
         'toggle_app_logging',

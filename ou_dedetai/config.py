@@ -67,7 +67,7 @@ class LegacyConfiguration:
 
     @classmethod
     def config_file_path(cls) -> str:
-        return os.getenv("CONFIG_PATH") or constants.DEFAULT_CONFIG_PATH
+        return os.getenv("CONFIG_FILE") or constants.DEFAULT_CONFIG_PATH
 
     @classmethod
     def load(cls) -> "LegacyConfiguration":
@@ -82,20 +82,15 @@ class LegacyConfiguration:
                     break
         # This may be a config that used to be in the legacy location
         # Now it's all in the same location
-        if utils.file_exists(config_file_path):
-            return LegacyConfiguration.load_from_path(config_file_path)
-        else:
-            logging.debug("Couldn't find config file, loading defaults...")
-            return LegacyConfiguration()
+        return LegacyConfiguration.load_from_path(config_file_path)
 
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "LegacyConfiguration":
         config_dict = {}
         
         if not Path(config_file_path).exists():
-            return LegacyConfiguration(CONFIG_FILE=config_file_path)
-
-        if config_file_path.endswith('.json'):
+            pass
+        elif config_file_path.endswith('.json'):
             try:
                 with open(config_file_path, 'r') as config_file:
                     cfg = json.load(config_file)
@@ -158,6 +153,7 @@ class EphemeralConfiguration:
     
     # Start user overridable via env or cli arg
     installer_binary_dir: Optional[str]
+    install_dir: Optional[str]
     wineserver_binary: Optional[str]
     faithlife_product_version: Optional[str]
     faithlife_installer_name: Optional[str]
@@ -252,6 +248,9 @@ class EphemeralConfiguration:
         terminal_app_prefer_dialog = None
         if legacy.use_python_dialog is not None:
             terminal_app_prefer_dialog = utils.parse_bool(legacy.use_python_dialog)
+        install_dir = None
+        if legacy.INSTALLDIR is not None:
+            install_dir = str(Path(os.path.expanduser(legacy.INSTALLDIR)).absolute())
         return EphemeralConfiguration(
             installer_binary_dir=legacy.APPDIR_BINDIR,
             wineserver_binary=legacy.WINESERVER_EXE,
@@ -276,7 +275,8 @@ class EphemeralConfiguration:
             wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME,
             wine_output_encoding=legacy.WINECMD_ENCODING,
             terminal_app_prefer_dialog=terminal_app_prefer_dialog,
-            dialog=legacy.DIALOG
+            dialog=legacy.DIALOG,
+            install_dir=install_dir
         )
 
     @classmethod
@@ -366,6 +366,9 @@ class PersistentConfiguration:
             and legacy.WINETRICKSBIN != constants.DOWNLOAD
         ):
             winetricks_binary = legacy.WINETRICKSBIN
+        install_dir = None
+        if legacy.INSTALLDIR is not None:
+            install_dir = str(Path(os.path.expanduser(legacy.INSTALLDIR)).absolute())
         return PersistentConfiguration(
             faithlife_product=legacy.FLPRODUCT,
             backup_dir=legacy.BACKUPDIR,
@@ -373,7 +376,7 @@ class PersistentConfiguration:
             faithlife_product_release=legacy.TARGET_RELEASE_VERSION,
             faithlife_product_release_channel=legacy.logos_release_channel or 'stable',
             faithlife_product_version=legacy.TARGETVERSION,
-            install_dir=legacy.INSTALLDIR,
+            install_dir=install_dir,
             app_release_channel=legacy.lli_release_channel or 'stable',
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
@@ -576,7 +579,8 @@ class Config:
             # Set dependents
             self._raw.faithlife_product_release = None
             # Install Dir has the name of the product and it's version. Reset it too
-            self._raw.install_dir = None
+            if self._overrides.install_dir is None:
+                self._raw.install_dir = None
             # Wine is dependent on the product/version selected
             self._raw.wine_binary = None
             self._raw.wine_binary_code = None
@@ -716,6 +720,8 @@ class Config:
 
     @property
     def install_dir(self) -> str:
+        if self._overrides.install_dir:
+            return self._overrides.install_dir
         default = self.install_dir_default
         question = f"Where should {self.faithlife_product} files be installed to?: "  # noqa: E501
         options = [default, PROMPT_OPTION_DIRECTORY]
@@ -724,7 +730,7 @@ class Config:
     
     @install_dir.setter
     def install_dir(self, value: str | Path):
-        value = str(value)
+        value = str(Path(value).absolute())
         if self._raw.install_dir != value:
             self._raw.install_dir = value
             # Reset cache that depends on install_dir

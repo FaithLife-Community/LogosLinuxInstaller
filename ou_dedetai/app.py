@@ -206,6 +206,7 @@ class App(abc.ABC):
             self._status(message, percent)
         self._last_status = message
 
+    @abc.abstractmethod
     def _status(self, message: str, percent: Optional[int] = None):
         """Implementation for updating status pre-front end
         

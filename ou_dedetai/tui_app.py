@@ -589,7 +589,9 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Install d3dcompiler":
             self.reset_screen()
+            self.status("Installing d3dcompiler...")
             wine.install_d3d_compiler(self)
+            self.go_to_main_menu()
         elif choice == "Install Fonts":
             self.reset_screen()
             wine.install_fonts(self)
