@@ -813,6 +813,8 @@ class TUI(App):
 
     def _status(self, message: str, percent: int | None = None):
         message = message.lstrip("\r")
+        if self.console_log[-1] == message:
+            return
         self.console_log.append(message)
         self.screen_q.put(
             self.stack_text(
