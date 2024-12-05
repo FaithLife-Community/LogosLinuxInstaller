@@ -478,7 +478,6 @@ def find_appimage_files(app: App) -> list[str]:
         app.conf.installer_binary_dir,
         app.conf.download_dir
     ]
-    # FIXME: consider what we should do with this, promote to top level config?
     if app.conf._overrides.custom_binary_path is not None:
         directories.append(app.conf._overrides.custom_binary_path)
 
