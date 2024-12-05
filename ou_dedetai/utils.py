@@ -233,7 +233,7 @@ def get_wine_options(app: App) -> List[str]:  # noqa: E501
         # Create wine binary option array
         wine_binary_options.append(wine_binary_path)
     logging.debug(f"{wine_binary_options=}")
-    return wine_binary_options
+    return list(set(wine_binary_options))
 
 
 def get_winetricks_options() -> list[str]:
