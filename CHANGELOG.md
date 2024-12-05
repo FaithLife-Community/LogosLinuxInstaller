@@ -1,8 +1,11 @@
 # Changelog
 
 - 4.0.0-beta.5
-	<!-- XXX: populate me -->
-	- ???
+	- Implemented network cache [N. Shaaban]
+	- Refactored configuration handling (no user action required) [N. Shaaban]
+	- Fix #17 [T. H. Wright]
+	- Make dependency lists more precise [M. Marti, N. Shaaban]
+	- Fix #230 [N. Shaaban]
 - 4.0.0-beta.4
 	- Fix #220 [N. Shaaban]
 - 4.0.0-beta.3
