@@ -541,6 +541,7 @@ class TUI(App):
                     daemon_bool=True,
                 )
             else:
+                # XXX: consider how to reset choices
                 # Looks like we returned to the main menu mid-install
                 # Tell the app to ask us that question again.
                 self.ask_answer_queue.put(PROMPT_ANSWER_COME_AGAIN)

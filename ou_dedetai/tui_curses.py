@@ -1,4 +1,6 @@
 import curses
+import os
+from pathlib import Path
 import signal
 import textwrap
 
@@ -160,6 +162,35 @@ class UserInputDialog(CursesDialog):
             elif key == curses.KEY_BACKSPACE or key == 127:
                 if len(self.user_input) > 0:
                     self.user_input = self.user_input[:-1]
+            elif key == 9: # Tab
+                # Handle tab complete if the input is path life
+                if self.user_input.startswith("~"):
+                    self.user_input = os.path.expanduser(self.user_input)
+                if self.user_input.startswith(os.path.sep):
+                    path = Path(self.user_input)
+                    dir_path = path.parent
+                    if self.user_input.endswith(os.path.sep):
+                        path_name = ""
+                        dir_path = path
+                    elif path.parent.exists():
+                        path_name = path.name
+                    if dir_path.exists():
+                        options = os.listdir(dir_path)
+                        options = [option for option in options if option.startswith(path_name)] #noqa: E501
+                        # Displaying all these options may be complicated, for now for
+                        # now only display if there is only one option
+                        if len(options) == 1:
+                            self.user_input = options[0]
+                            if Path(self.user_input).is_dir():
+                                self.user_input += os.path.sep
+                        # Or see if all the options have the same prefix
+                        common_chars = ""
+                        for i in range(min([len(option) for option in options])):
+                            # If all of the options are the same
+                            if len(set([option[i] for option in options])) == 1:
+                                common_chars += options[0][i]
+                        if common_chars:
+                            self.user_input = str(dir_path / common_chars)
             else:
                 self.user_input += chr(key)
         except KeyboardInterrupt:

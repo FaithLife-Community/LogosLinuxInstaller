@@ -560,7 +560,7 @@ class Config:
         if self._raw.faithlife_product != value:
             self._raw.faithlife_product = value
             # Reset dependent variables
-            self._raw.faithlife_product_release = None
+            self.faithlife_product_version = None # type: ignore[assignment]
 
             self._write()
 
