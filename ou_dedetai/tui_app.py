@@ -509,6 +509,7 @@ class TUI(App):
         self.total_pages = 0
 
     def go_to_main_menu(self):
+        self.reset_screen()
         self.menu_screen.choice = "Processing"
         self.choice_q.put("Return to Main Menu")
 
@@ -530,12 +531,12 @@ class TUI(App):
             )
         elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release(self)
-        elif choice == f"Run {self.conf.faithlife_product}":
+        elif self.conf._raw.faithlife_product and choice == f"Run {self.conf._raw.faithlife_product}": #noqa: E501
             self.reset_screen()
             self.logos.start()
             self.menu_screen.set_options(self.set_tui_menu_options())
             self.switch_q.put(1)
-        elif choice == f"Stop {self.conf.faithlife_product}":
+        elif self.conf._raw.faithlife_product and choice == f"Stop {self.conf.faithlife_product}": #noqa: E501
             self.reset_screen()
             self.logos.stop()
             self.menu_screen.set_options(self.set_tui_menu_options())
@@ -575,7 +576,7 @@ class TUI(App):
         elif choice == "Change Color Scheme":
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
-            self.reset_screen()
+            self.go_to_main_menu()
 
     def winetricks_menu_select(self, choice):
         if choice == "Download or Update Winetricks":
