@@ -499,7 +499,7 @@ class ControlWindow(GuiApp):
         self.start_thread(control.restore, app=self)
 
     def install_deps(self, evt=None):
-        self.status("Installing dependencies...")
+        self.status("Installing dependencies…")
         self.start_thread(utils.install_dependencies, self)
 
     def open_file_dialog(self, filetype_name, filetype_extension):

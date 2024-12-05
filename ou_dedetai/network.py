@@ -169,7 +169,7 @@ class CachedRequests:
                             del output[k]
                     return CachedRequests(**output)
                 except json.JSONDecodeError:
-                    logging.warning("Failed to read cache JSON. Clearing...")
+                    logging.warning("Failed to read cache JSON. Clearing…")
         return CachedRequests(
             last_updated=time.time()
         )
@@ -194,7 +194,7 @@ class CachedRequests:
 
     def clean_if_stale(self, force: bool = False):
         if force or not self._is_fresh():
-            logging.debug("Cleaning out cache...")
+            logging.debug("Cleaning out cache…")
             self = CachedRequests(last_updated=time.time())
             self._write()
         else:

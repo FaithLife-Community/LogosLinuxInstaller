@@ -33,7 +33,7 @@ def restore(app: App):
 # for a more detailed progress bar
 # FIXME: consider moving this into it's own file/module.
 def backup_and_restore(mode: str, app: App):
-    app.status(f"Starting {mode}...")
+    app.status(f"Starting {mode}…")
     data_dirs = ['Data', 'Documents', 'Users']
     backup_dir = Path(app.conf.backup_dir).expanduser().resolve()
 
@@ -208,13 +208,13 @@ def set_winetricks(app: App):
         valid = True
         # Double check it's a valid winetricks
         if not Path(app.conf._winetricks_binary).exists():
-            logging.warning("Winetricks path does not exist, downloading instead...")
+            logging.warning("Winetricks path does not exist, downloading instead…")
             valid = False
         if not os.access(app.conf._winetricks_binary, os.X_OK):
-            logging.warning("Winetricks path given is not executable, downloading instead...") #noqa: E501
+            logging.warning("Winetricks path given is not executable, downloading instead…") #noqa: E501
             valid = False
         if not utils.check_winetricks_version(app.conf._winetricks_binary):
-            logging.warning("Winetricks version mismatch, downloading instead...")
+            logging.warning("Winetricks version mismatch, downloading instead…")
             valid = False
         if valid:
             logging.info(f"Found valid winetricks: {app.conf._winetricks_binary}")

@@ -98,7 +98,7 @@ class OuDedetai:
             not output.exists()
             or cls._source_last_update() > os.stat(str(output)).st_mtime
         ):
-            print("Building binary...")
+            print("Building binary…")
             if output.exists():
                 os.remove(str(output))
             run_cmd(f"{REPOSITORY_ROOT_PATH / "scripts" / "build-binary.sh"}")

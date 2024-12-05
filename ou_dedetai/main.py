@@ -336,7 +336,7 @@ def run_control_panel(ephemeral_config: EphemeralConfiguration):
         except KeyboardInterrupt:
             raise
         except SystemExit:
-            logging.info("Caught SystemExit, exiting gracefully...")
+            logging.info("Caught SystemExit, exiting gracefully…")
             raise
         except curses.error as e:
             logging.error(f"Curses error in run_control_panel(): {e}")

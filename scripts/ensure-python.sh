@@ -26,7 +26,7 @@ if [[ ${ans,,} != 'y' && $ans != '' ]]; then
 fi
 
 # Download and build python3.12 from source.
-echo "Downloading $python_src..."
+echo "Downloading $python_src…"
 wget "$python_src"
 if [[ -r "$tarxz" ]]; then
     tar xf "$tarxz"
@@ -44,7 +44,7 @@ else
 fi
 
 # Install python.
-echo "Installing..."
+echo "Installing…"
 ./configure --enable-shared --prefix="$prefix"
 make
 sudo make install

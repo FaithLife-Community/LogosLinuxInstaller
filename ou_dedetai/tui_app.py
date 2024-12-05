@@ -523,7 +523,7 @@ class TUI(App):
 
     def main_menu_select(self, choice):
         def _install():
-            self.status("Installing...")
+            self.status("Installing…")
             installer.install(app=self)
             self.update_main_window_contents()
             self.go_to_main_menu()
@@ -603,12 +603,12 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Run Winetricks":
             self.reset_screen()
-            self.status("Running winetricks...")
+            self.status("Running winetricks…")
             wine.run_winetricks(self)
             self.go_to_main_menu()
         elif choice == "Install d3dcompiler":
             self.reset_screen()
-            self.status("Installing d3dcompiler...")
+            self.status("Installing d3dcompiler…")
             wine.install_d3d_compiler(self)
             self.go_to_main_menu()
         elif choice == "Install Fonts":
@@ -749,7 +749,7 @@ class TUI(App):
     def renderer_select(self, choice):
         if choice in ["gdi", "gl", "vulkan"]:
             self.reset_screen()
-            self.status(f"Changing renderer to {choice}.")
+            self.status(f"Changing renderer to {choice}.", 0)
             wine.set_renderer(self, choice)
             self.status(f"Changed renderer to {choice}.", 100)
             self.go_to_main_menu()

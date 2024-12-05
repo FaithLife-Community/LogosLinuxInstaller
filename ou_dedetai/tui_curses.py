@@ -8,9 +8,6 @@ from ou_dedetai import tui_screen
 from ou_dedetai.app import App
 
 
-# NOTE to reviewer: does this convay the original meaning?
-# The usages of the function seemed to have expected a list besides text_centered below
-# Which handled the string case. Is it faithful to remove the string case?
 def wrap_text(app: App, text: str) -> list[str]:
     from ou_dedetai.tui_app import TUI
     if not isinstance(app, TUI):
@@ -32,8 +29,8 @@ def write_line(app: App, stdscr: curses.window, start_y, start_x, text, char_lim
     try:
         stdscr.addnstr(start_y, start_x, text, char_limit, attributes)
     except curses.error:
-        # FIXME: what do we want to do to handle this error?
-        # Before we were registering a signal handler
+        # This may happen if we try to write beyond the screen limits
+        # May happen when the window is resized before we've handled it
         pass
 
 
@@ -335,10 +332,6 @@ class MenuDialog(CursesDialog):
                 self.user_input = self.options[self.app.current_option]
             elif key == ord('\x1b'):
                 signal.signal(signal.SIGINT, self.app.end)
-            # FIXME: do we need to log this?
-            # else:
-            #     logging.debug(f"Input unknown: {key}")
-            #     pass
         except KeyboardInterrupt:
             signal.signal(signal.SIGINT, self.app.end)
 

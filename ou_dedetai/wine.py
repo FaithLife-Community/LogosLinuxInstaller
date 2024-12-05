@@ -20,9 +20,6 @@ def check_wineserver(app: App):
     # (or at least kill it). Gotten into several states in dev where this happend
     # Normally when an msi install failed
     try:
-        # NOTE to reviewer: this used to be a non-existent key WINESERVER instead of 
-        # WINESERVER_EXE changed it to use wineserver_binary, this change may alter the 
-        # behavior, to match what the code intended
         process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-p"])
         if not process:
             logging.debug("Failed to spawn wineserver to check it")
@@ -434,7 +431,7 @@ def set_win_version(app: App, exe: str, windows_version: str):
 # all users use the latest and greatest.
 # Sort of like an update, but for wine and all of the bits underneath "Logos" itself
 def enforce_icu_data_files(app: App):
-    app.status("Downloading ICU files...")
+    app.status("Downloading ICU files…")
     icu_url = app.conf.icu_latest_version_url
     icu_latest_version = app.conf.icu_latest_version
 
@@ -448,7 +445,7 @@ def enforce_icu_data_files(app: App):
         app=app
     )
 
-    app.status("Copying ICU files...")
+    app.status("Copying ICU files…")
 
     drive_c = f"{app.conf.wine_prefix}/drive_c"
     utils.untar_file(f"{app.conf.download_dir}/{icu_filename}", drive_c)
