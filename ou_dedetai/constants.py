@@ -45,8 +45,6 @@ SUPPORT_MESSAGE = f"If you need help, please consult:\n{WIKI_LINK}\nIf that does
 # Strings for choosing a follow up file or directory
 PROMPT_OPTION_DIRECTORY = "Choose Directory"
 PROMPT_OPTION_FILE = "Choose File"
-# Useful for signaling the app to ask the same question again.
-PROMPT_ANSWER_COME_AGAIN = "Come Again? I didn't quite get that."
 
 # String for when a binary is meant to be downloaded later
 DOWNLOAD = "Download"

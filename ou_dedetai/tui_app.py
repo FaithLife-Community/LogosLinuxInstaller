@@ -11,7 +11,6 @@ from typing import Any, Optional
 
 from ou_dedetai.app import App
 from ou_dedetai.constants import (
-    PROMPT_ANSWER_COME_AGAIN,
     PROMPT_OPTION_DIRECTORY,
     PROMPT_OPTION_FILE
 )
@@ -29,6 +28,13 @@ from . import utils
 from . import wine
 
 console_message = ""
+
+
+class ReturningToMainMenu(Exception):
+    """Exception raised when user returns to the main menu
+    
+    effectively stopping execution on the executing thread where this exception 
+    originated from"""
 
 
 # TODO: Fix hitting cancel in Dialog Screens; currently crashes program.
@@ -63,6 +69,7 @@ class TUI(App):
         self.password_e = threading.Event()
         self.appimage_q: Queue[str] = Queue()
         self.appimage_e = threading.Event()
+        self._installer_thread: Optional[threading.Thread] = None
 
         self.terminal_margin = 0
         self.resizing = False
@@ -73,8 +80,6 @@ class TUI(App):
         # Window and Screen Management
         self.tui_screens: list[tui_screen.Screen] = []
         self.menu_options: list[Any] = []
-
-        self._installer_thread: Optional[threading.Thread] = None
 
         # Default height and width to something reasonable so these values are always
         # ints, on each loop these values will be updated to their real values
@@ -488,7 +493,7 @@ class TUI(App):
         }
 
         # Capture menu exiting before processing in the rest of the handler
-        if screen_id != 0 and (choice == "Return to Main Menu" or choice == "Exit"):
+        if screen_id not in [0, 2] and (choice in ["Return to Main Menu", "Exit"]):
             if choice == "Return to Main Menu":
                 self.tui_screens = []
             self.reset_screen()
@@ -523,10 +528,13 @@ class TUI(App):
 
     def main_menu_select(self, choice):
         def _install():
-            self.status("Installing…")
-            installer.install(app=self)
-            self.update_main_window_contents()
-            self.go_to_main_menu()
+            try:
+                self.status("Installing…")
+                installer.install(app=self)
+                self.update_main_window_contents()
+                self.go_to_main_menu()
+            except ReturningToMainMenu:
+                pass
         if choice is None or choice == "Exit":
             logging.info("Exiting installation.")
             self.tui_screens = []
@@ -535,17 +543,17 @@ class TUI(App):
             self.reset_screen()
             self.installer_step = 0
             self.installer_step_count = 0
-            if self._installer_thread is None:
-                self._installer_thread = self.start_thread(
-                    _install,
-                    daemon_bool=True,
-                )
-            else:
-                # XXX: consider how to reset choices
-                # Looks like we returned to the main menu mid-install
-                # Tell the app to ask us that question again.
-                self.ask_answer_queue.put(PROMPT_ANSWER_COME_AGAIN)
-                self.ask_answer_event.set()
+            if self._installer_thread is not None:
+                # The install thread should have completed with ReturningToMainMenu
+                # Check just in case
+                if self._installer_thread.is_alive():
+                    raise Exception("Previous install is still running")
+                # Reset user choices and try again!
+                self.conf.faithlife_product = None # type: ignore[assignment]
+            self._installer_thread = self.start_thread(
+                _install,
+                daemon_bool=True,
+            )
 
         elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release(self)
@@ -578,7 +586,6 @@ class TUI(App):
                     self.set_winetricks_menu_options(),
                 )
             )  # noqa: E501
-            self.choice_q.put("0")
         elif choice.startswith("Utilities"):
             self.reset_screen()
             self.screen_q.put(
@@ -590,7 +597,6 @@ class TUI(App):
                     self.set_utilities_menu_options(),
                 )
             )  # noqa: E501
-            self.choice_q.put("0")
         elif choice == "Change Color Scheme":
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
@@ -821,6 +827,12 @@ class TUI(App):
                 os.makedirs(new_answer, exist_ok=True)
 
             answer = new_answer
+
+        if answer == self._exit_option:
+            self.tui_screens = []
+            self.reset_screen()
+            self.switch_q.put(1)
+            raise ReturningToMainMenu
 
         return answer
 
