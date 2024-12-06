@@ -343,15 +343,18 @@ class PersistentConfiguration:
         if len([k for k, v in legacy.__dict__.items() if v is not None]) > 1:
             config_dict["_legacy"] = legacy
 
-        if config_file_path.endswith('.json') and Path(config_file_path).exists():
-            with open(config_file_path, 'r') as config_file:
-                cfg = json.load(config_file)
+        if Path(config_file_path).exists():
+            if config_file_path.endswith('.json'):
+                with open(config_file_path, 'r') as config_file:
+                    cfg = json.load(config_file)
 
-            for key, value in cfg.items():
-                if key in new_keys:
-                    config_dict[key] = value
+                for key, value in cfg.items():
+                    if key in new_keys:
+                        config_dict[key] = value
+            else:
+                logging.info("Not reading new values from non-json config")
         else:
-            logging.info("Not reading new values from non-json config")
+            logging.info("Not reading new values from non-existant config")
 
         return PersistentConfiguration(**config_dict)
 
