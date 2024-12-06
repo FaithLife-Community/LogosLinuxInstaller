@@ -223,12 +223,6 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
 
     if args.debug:
         msg.update_log_level(logging.DEBUG)
-        # Also add stdout for debugging purposes
-        stdout_h = logging.StreamHandler(sys.stdout)
-        stdout_h.name = "terminal"
-        stdout_h.setLevel(logging.DEBUG)
-        stdout_h.addFilter(msg.DeduplicateFilter())
-        logging.root.addHandler(stdout_h)
 
     if args.delete_log:
         ephemeral_config.delete_log = True
@@ -421,6 +415,7 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
 
 def main():
     msg.initialize_logging()
+    handlers = logging.getLogger().handlers
     ephemeral_config, action = setup_config()
     system.check_architecture()
 

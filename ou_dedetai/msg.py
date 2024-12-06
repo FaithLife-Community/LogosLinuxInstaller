@@ -93,6 +93,8 @@ def initialize_logging():
     file_h.name = "logfile"
     file_h.setLevel(logging.DEBUG)
     file_h.addFilter(DeduplicateFilter())
+    # FIXME: Consider adding stdout that displays INFO/DEBUG (if configured)
+    # and edit stderr to only display WARN/ERROR/CRITICAL
     # stdout_h = logging.StreamHandler(sys.stdout)
     # stdout_h.setLevel(stdout_log_level)
     stderr_h = logging.StreamHandler(sys.stderr)
