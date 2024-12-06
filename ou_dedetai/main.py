@@ -415,7 +415,6 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
 
 def main():
     msg.initialize_logging()
-    handlers = logging.getLogger().handlers
     ephemeral_config, action = setup_config()
     system.check_architecture()
 
