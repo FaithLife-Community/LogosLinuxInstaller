@@ -358,8 +358,10 @@ def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfigura
     del temp
 
     # Set runtime config.
-    # Initialize logging.
-    msg.initialize_logging(log_level, app_log_path)
+    # Update log configuration.
+    msg.update_log_level(log_level)
+    msg.update_log_path(app_log_path)
+    # test = logging.getLogger().handlers
 
     # Parse CLI args and update affected config vars.
     return parse_args(cli_args, parser)
@@ -418,6 +420,7 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
 
 
 def main():
+    msg.initialize_logging()
     ephemeral_config, action = setup_config()
     system.check_architecture()
 

@@ -7,6 +7,8 @@ import sys
 
 from pathlib import Path
 
+from ou_dedetai import constants
+
 
 class GzippedRotatingFileHandler(RotatingFileHandler):
     def doRollover(self):
@@ -60,7 +62,7 @@ def get_log_level_name(level):
     return name
 
 
-def initialize_logging(log_level: str | int, app_log_path: str):
+def initialize_logging():
     '''
     Log levels:
         Level       Value   Description
@@ -72,6 +74,7 @@ def initialize_logging(log_level: str | int, app_log_path: str):
         NOTSET      0       all events are handled
     '''
 
+    app_log_path = constants.DEFAULT_APP_LOG_PATH
     # Ensure the application log's directory exists
     os.makedirs(os.path.dirname(app_log_path), exist_ok=True)
 
@@ -79,8 +82,6 @@ def initialize_logging(log_level: str | int, app_log_path: str):
     log_parent = Path(app_log_path).parent
     if not log_parent.is_dir():
         log_parent.mkdir(parents=True)
-
-    logging.debug(f"Installer log file: {app_log_path}")
 
     # Define logging handlers.
     file_h = GzippedRotatingFileHandler(
@@ -96,7 +97,7 @@ def initialize_logging(log_level: str | int, app_log_path: str):
     # stdout_h.setLevel(stdout_log_level)
     stderr_h = logging.StreamHandler(sys.stderr)
     stderr_h.name = "terminal"
-    stderr_h.setLevel(log_level)
+    stderr_h.setLevel(logging.WARN)
     stderr_h.addFilter(DeduplicateFilter())
     handlers: list[logging.Handler] = [
         file_h,
@@ -111,6 +112,7 @@ def initialize_logging(log_level: str | int, app_log_path: str):
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=handlers,
     )
+    logging.debug(f"Installer log file: {app_log_path}")
 
 
 def initialize_tui_logging():
@@ -121,10 +123,19 @@ def initialize_tui_logging():
             break
 
 
-def update_log_level(new_level):
+def update_log_level(new_level: int | str):
     # Update logging level from config.
     for h in logging.getLogger().handlers:
         if type(h) is logging.StreamHandler:
             h.setLevel(new_level)
     logging.info(f"Terminal log level set to {get_log_level_name(new_level)}")
 
+
+def update_log_path(app_log_path: str | Path):
+    for h in logging.getLogger().handlers:
+        if type(h) is GzippedRotatingFileHandler and h.name == "logfile":
+            new_base_filename = os.path.abspath(os.fspath(app_log_path))
+            if new_base_filename != h.baseFilename:
+                # One last message on the old log to let them know it moved
+                logging.debug(f"Installer log file changed to: {app_log_path}")
+                h.baseFilename = new_base_filename
