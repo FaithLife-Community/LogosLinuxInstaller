@@ -1,20 +1,31 @@
 #!/usr/bin/env python3
+import argparse
+import curses
+try:
+    import dialog  # noqa: F401
+except ImportError:
+    pass
 import logging
 import os
-import argparse
+import shutil
+import sys
 
-import config
-import control
-import gui_app
-import installer
-import msg
-import tui_app
-import utils
-import wine
+from . import cli
+from . import config
+from . import control
+from . import gui_app
+from . import msg
+from . import network
+from . import system
+from . import tui_app
+from . import utils
+from . import wine
+
+from .config import processes, threads
 
 
 def get_parser():
-    desc = "Installs FaithLife Bible Software with Wine on Linux."
+    desc = "Installs FaithLife Bible Software with Wine."
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
         '-v', '--version', action='version',
@@ -27,16 +38,20 @@ def get_parser():
     # Define options that affect runtime config.
     cfg = parser.add_argument_group(title="runtime config options")
     cfg.add_argument(
-        '-F', '--skip-fonts', action='store_true',
-        help='skip font installations',
-    )
-    cfg.add_argument(
         '-a', '--check-for-updates', action='store_true',
         help='force a check for updates'
     )
     cfg.add_argument(
         '-K', '--skip-dependencies', action='store_true',
         help='skip dependencies check and installation',
+    )
+    cfg.add_argument(
+        '-F', '--skip-fonts', action='store_true',
+        help='skip font installations',
+    )
+    cfg.add_argument(
+        '-W', '--skip-winetricks', action='store_true',
+        help='skip winetricks installations. For development purposes only!!!',
     )
     cfg.add_argument(
         '-V', '--verbose', action='store_true',
@@ -123,7 +138,7 @@ def get_parser():
     )
     cmd.add_argument(
         '--update-self', '-u', action='store_true',
-        help='Update Logos Linux Installer to the latest release.',
+        help=f'Update {config.name_app} to the latest release.',
     )
     cmd.add_argument(
         '--update-latest-appimage', '-U', action='store_true',
@@ -140,6 +155,18 @@ def get_parser():
     cmd.add_argument(
         '--run-winetricks', action='store_true',
         help='start Winetricks window',
+    )
+    cmd.add_argument(
+        '--install-d3d-compiler', action='store_true',
+        help='Install d3dcompiler through Winetricks',
+    )
+    cmd.add_argument(
+        '--install-fonts', action='store_true',
+        help='Install fonts through Winetricks',
+    )
+    cmd.add_argument(
+        '--install-icu', action='store_true',
+        help='Install ICU data files for Logos 30+',
     )
     cmd.add_argument(
         '--toggle-app-logging', action='store_true',
@@ -163,6 +190,10 @@ def get_parser():
         # help='check resources'
         help=argparse.SUPPRESS,
     )
+    cmd.add_argument(
+        '--winetricks', nargs='+',
+        help="run winetricks command",
+    )
     return parser
 
 
@@ -180,10 +211,16 @@ def parse_args(args, parser):
     if args.delete_log:
         config.DELETE_LOG = True
 
+    if args.set_appimage:
+        config.APPIMAGE_FILE_PATH = args.set_appimage[0]
+
     if args.skip_fonts:
         config.SKIP_FONTS = True
 
-    if args.check_for_updates:
+    if args.skip_winetricks:
+        config.SKIP_WINETRICKS = True
+
+    if network.check_for_updates:
         config.CHECK_UPDATES = True
 
     if args.skip_dependencies:
@@ -204,24 +241,27 @@ def parse_args(args, parser):
 
     # Set ACTION function.
     actions = {
-        'install_app': installer.ensure_launcher_shortcuts,
-        'run_installed_app': wine.run_logos,
-        'run_indexing': wine.run_indexing,
-        'remove_library_catalog': control.remove_library_catalog,
-        'remove_index_files': control.remove_all_index_files,
-        'edit_config': control.edit_config,
-        'install_dependencies': utils.check_dependencies,
-        'backup': control.backup,
-        'restore': control.restore,
-        'update_self': utils.update_to_latest_lli_release,
-        'update_latest_appimage': utils.update_to_latest_recommended_appimage,
-        'set_appimage': utils.set_appimage_symlink,
-        # 'get_winetricks': control.get_winetricks,
-        'get_winetricks': control.set_winetricks,
-        'run_winetricks': wine.run_winetricks,
-        'toggle_app_logging': wine.switch_logging,
-        'create_shortcuts': installer.ensure_launcher_shortcuts,
-        'remove_install_dir': control.remove_install_dir,
+        'backup': cli.backup,
+        'create_shortcuts': cli.create_shortcuts,
+        'edit_config': cli.edit_config,
+        'get_winetricks': cli.get_winetricks,
+        'install_app': cli.install_app,
+        'install_d3d_compiler': cli.install_d3d_compiler,
+        'install_dependencies': cli.install_dependencies,
+        'install_fonts': cli.install_fonts,
+        'install_icu': cli.install_icu,
+        'remove_index_files': cli.remove_index_files,
+        'remove_install_dir': cli.remove_install_dir,
+        'remove_library_catalog': cli.remove_library_catalog,
+        'restore': cli.restore,
+        'run_indexing': cli.run_indexing,
+        'run_installed_app': cli.run_installed_app,
+        'run_winetricks': cli.run_winetricks,
+        'set_appimage': cli.set_appimage,
+        'toggle_app_logging': cli.toggle_app_logging,
+        'update_self': cli.update_self,
+        'update_latest_appimage': cli.update_latest_appimage,
+        'winetricks': cli.winetricks,
     }
 
     config.ACTION = None
@@ -241,6 +281,8 @@ def parse_args(args, parser):
                 if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
                     e = f"{config.APPIMAGE_FILE_PATH} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
+            if arg == 'winetricks':
+                config.winetricks_args = getattr(args, 'winetricks')
             config.ACTION = action
             break
     if config.ACTION is None:
@@ -253,10 +295,26 @@ def run_control_panel():
     if config.DIALOG is None or config.DIALOG == 'tk':
         gui_app.control_panel_app()
     else:
-        tui_app.control_panel_app()
+        try:
+            curses.wrapper(tui_app.control_panel_app)
+        except KeyboardInterrupt:
+            raise
+        except SystemExit:
+            logging.info("Caught SystemExit, exiting gracefully...")
+            try:
+                close()
+            except Exception as e:
+                raise e
+            raise
+        except curses.error as e:
+            logging.error(f"Curses error in run_control_panel(): {e}")
+            raise e
+        except Exception as e:
+            logging.error(f"An error occurred in run_control_panel(): {e}")
+            raise e
 
 
-def main():
+def set_config():
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
@@ -269,9 +327,13 @@ def main():
     utils.set_default_config()
 
     # Update config from CONFIG_FILE.
-    if not utils.file_exists(config.CONFIG_FILE) and utils.file_exists(config.LEGACY_CONFIG_FILE):  # noqa: E501
-        config.set_config_env(config.LEGACY_CONFIG_FILE)
-        utils.write_config(config.CONFIG_FILE)
+    if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
+        for legacy_config in config.LEGACY_CONFIG_FILES:
+            if utils.file_exists(legacy_config):
+                config.set_config_env(legacy_config)
+                utils.write_config(config.CONFIG_FILE)
+                os.remove(legacy_config)
+                break
     else:
         config.set_config_env(config.CONFIG_FILE)
 
@@ -294,13 +356,92 @@ def main():
     if config.LOG_LEVEL != current_log_level:
         msg.update_log_level(config.LOG_LEVEL)
 
+
+def set_dialog():
     # Set DIALOG and GUI variables.
     if config.DIALOG is None:
-        utils.get_dialog()
+        system.get_dialog()
     else:
         config.DIALOG = config.DIALOG.lower()
-        if config.DIALOG == 'tk':
-            config.GUI = True
+
+    if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:  # noqa: E501
+        config.use_python_dialog = system.test_dialog_version()
+
+        if config.use_python_dialog is None:
+            logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")  # noqa: E501
+            config.use_python_dialog = False
+        elif config.use_python_dialog:
+            logging.debug("Dialog version is up-to-date.")
+            config.use_python_dialog = True
+        else:
+            logging.error("Dialog version is outdated. The program will fall back to Curses.")  # noqa: E501
+            config.use_python_dialog = False
+    logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
+    # Set Architecture
+
+    config.architecture, config.bits = system.get_architecture()
+    logging.debug(f"Current Architecture: {config.architecture}, {config.bits}bit.")
+    system.check_architecture()
+
+
+def check_incompatibilities():
+    # Check for AppImageLauncher
+    if shutil.which('AppImageLauncher'):
+        question_text = "Remove AppImageLauncher? A reboot will be required."
+        secondary = (
+            "Your system currently has AppImageLauncher installed.\n"
+            f"{config.name_app} is not compatible with AppImageLauncher.\n"
+            f"For more information, see: {config.repo_link}/issues/114"
+        )
+        no_text = "User declined to remove AppImageLauncher."
+        msg.logos_continue_question(question_text, no_text, secondary)
+        system.remove_appimagelauncher()
+
+
+def run():
+    # Run desired action (requested function, defaults to control_panel)
+    if config.ACTION == "disabled":
+        msg.logos_error("That option is disabled.", "info")
+    if config.ACTION.__name__ == 'run_control_panel':
+        # if utils.app_is_installed():
+        #     wine.set_logos_paths()
+        config.ACTION()  # run control_panel right away
+        return
+
+    # Only control_panel ACTION uses TUI/GUI interface; all others are CLI.
+    config.DIALOG = 'cli'
+
+    install_required = [
+        'backup',
+        'create_shortcuts',
+        'install_d3d_compiler',
+        'install_fonts',
+        'install_icu',
+        'remove_index_files',
+        'remove_library_catalog',
+        'restore',
+        'run_indexing',
+        'run_installed_app',
+        'run_winetricks',
+        'set_appimage',
+        'toggle_app_logging',
+        'winetricks',
+    ]
+    if config.ACTION.__name__ not in install_required:
+        logging.info(f"Running function: {config.ACTION.__name__}")
+        config.ACTION()
+    elif utils.app_is_installed():  # install_required; checking for app
+        # wine.set_logos_paths()
+        # Run the desired Logos action.
+        logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
+        config.ACTION()
+    else:  # install_required, but app not installed
+        msg.logos_error("App not installed…")
+
+
+def main():
+    set_config()
+    set_dialog()
 
     # Log persistent config.
     utils.log_current_persistent_config()
@@ -311,7 +452,6 @@ def main():
     if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
         control.delete_log_file_contents()
 
-    # Run desired action (requested function, defaulting to installer)
     # Run safety checks.
     # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
     # self-update when updating LLI as it asks for a confirmation in the CLI.
@@ -324,32 +464,32 @@ def main():
     logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
     logging.debug(f"Installer log file: {config.LOGOS_LOG}")
 
-    utils.check_for_updates()
+    check_incompatibilities()
 
-    # Check if app is installed.
-    install_required = [
-        'backup',
-        'create_shortcuts',
-        'remove_all_index_files',
-        'remove_library_catalog',
-        'restore',
-        'run_indexing',
-        'run_logos',
-        'switch_logging',
-    ]
-    if config.ACTION == "disabled":
-        msg.logos_error("That option is disabled.", "info")
-    elif config.ACTION.__name__ not in install_required:
-        logging.info(f"Running function: {config.ACTION.__name__}")
-        config.ACTION()
-    elif utils.app_is_installed():
-        # Run the desired Logos action.
-        logging.info(f"Running function: {config.ACTION.__name__}")
-        config.ACTION()  # defaults to run_control_panel()
+    network.check_for_updates()
+
+    run()
+
+
+def close():
+    logging.debug(f"Closing {config.name_app}.")
+    for thread in threads:
+        # Only wait on non-daemon threads.
+        if not thread.daemon:
+            thread.join()
+    # Only kill wine processes if closing the Control Panel. Otherwise, some
+    # CLI commands get killed as soon as they're started.
+    if config.ACTION.__name__ == 'run_control_panel' and len(processes) > 0:
+        wine.end_wine_processes()
     else:
-        logging.info("Starting Control Panel")
-        run_control_panel()
+        logging.debug("No extra processes found.")
+    logging.debug(f"Closing {config.name_app} finished.")
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        close()
+
+    close()

@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-import installer
+import ou_dedetai.installer as installer
 
 
 class TestInstaller(unittest.TestCase):
@@ -19,12 +19,3 @@ class TestInstaller(unittest.TestCase):
     def test_get_progress_pct_over100(self):
         pct = installer.get_progress_pct(15, 10)
         self.assertEqual(100, pct)
-
-    def test_grep_found(self):
-        self.assertTrue(installer.grep(r'LOGOS_DIR', self.grepfile))
-
-    def test_grep_nofile(self):
-        self.assertIsNone(installer.grep(r'test', 'thisfiledoesnotexist'))
-
-    def test_grep_notfound(self):
-        self.assertFalse(installer.grep(r'TEST_NOT_IN_FILE', self.grepfile))
