@@ -340,7 +340,9 @@ def ensure_launcher_shortcuts(app: App):
 
 def install(app: App):
     """Entrypoint for installing"""
+    app.status('Installing…')
     ensure_launcher_shortcuts(app)
+    app.status("Install Complete!", 100)
 
 
 def get_progress_pct(current, total):

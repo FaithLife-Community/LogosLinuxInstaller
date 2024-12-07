@@ -88,6 +88,35 @@ class GuiApp(App):
             return "pkexec"
         else:
             raise system.SuperuserCommandNotFound("No superuser command found. Please install pkexec.")  # noqa: E501
+    
+    def populate_defaults(self) -> None:
+        """If any prompt is unset, set it to it's default value
+        
+        Useful for startign the UI at an installable state,
+        the user can change these choices later"""
+
+        # For the GUI, use defaults until user says otherwise.
+        # XXX: move these to constants
+        if self.conf._raw.faithlife_product is None:
+            self.conf.faithlife_product = constants.FAITHLIFE_PRODUCTS[0]
+        if self.conf._raw.faithlife_product_version is None:
+            self.conf.faithlife_product_version = constants.FAITHLIFE_PRODUCT_VERSIONS[0] #noqa: E501
+
+        # Now that we know product and version are set we can download the releases
+        # And use the first one
+        # This will delay the UI from loading, but will be more robust if it's done in a
+        # blocking manner like it is
+        if self.conf._raw.faithlife_product_release is None:
+            self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
+
+        # Set the install_dir to default, no option in the GUI to change it
+        if self.conf._raw.install_dir is None:
+            self.conf.install_dir = self.conf.install_dir_default
+
+        if self.conf._raw.wine_binary is None:
+            wine_choices = utils.get_wine_options(self)
+            if len(wine_choices) > 0:
+                self.conf.wine_binary = wine_choices[0]
 
 class Root(Tk):
     def __init__(self, *args, **kwargs):
@@ -237,56 +266,36 @@ class InstallerWindow:
         self.get_winetricks_options()
 
         self.app.config_updated_hooks += [self._config_updated_hook]
+        # Ensure default choices are set so user isn't App.ask'ed
+        self.app.populate_defaults()
         # Start out enforcing this
         self._config_updated_hook()
 
     def _config_updated_hook(self):
         """Update the GUI to reflect changes in the configuration/network""" #noqa: E501
 
-        # The product/version dropdown values are static, they will always be populated
+        self.app.populate_defaults()
 
-        # Tor the GUI, use defaults until user says otherwise.
-        if self.conf._raw.faithlife_product is None:
-            self.conf.faithlife_product = self.gui.product_dropdown['values'][0]
+        # Fill in the UI elements from the config
         self.gui.productvar.set(self.conf.faithlife_product)
-        if self.conf._raw.faithlife_product_version is None:
-            self.conf.faithlife_product_version = self.gui.version_dropdown['values'][-1] #noqa :E501
         self.gui.versionvar.set(self.conf.faithlife_product_version) # noqa: E501
 
         # Now that we know product and version are set we can download the releases
-        # And use the first one
-        # FIXME: consider what to do if network is slow, we may want to do this on a
-        # Separate thread to not hang the UI
         self.gui.release_dropdown['values'] = self.conf.faithlife_product_releases
-        if self.conf._raw.faithlife_product_release is None:
-            self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
         self.gui.releasevar.set(self.conf.faithlife_product_release)
-
-        # Set the install_dir to default, no option in the GUI to change it
-        if self.conf._raw.install_dir is None:
-            self.conf.install_dir = self.conf.install_dir_default
 
         self.gui.skipdepsvar.set(not self.conf.skip_install_system_dependencies)
         self.gui.fontsvar.set(not self.conf.skip_install_fonts)
 
-        # Returns either wine_binary if set, or self.gui.wine_dropdown['values'] if it has a value, otherwise '' #noqa: E501
-        wine_binary: Optional[str] = self.conf._raw.wine_binary
-        if wine_binary is None:
-            if len(self.gui.wine_dropdown['values']) > 0:
-                wine_binary = self.gui.wine_dropdown['values'][0]
-                self.app.conf.wine_binary = wine_binary
-            else:
-                wine_binary = ''
-
-        self.gui.winevar.set(wine_binary)
         # In case the product changes
         self.root.icon = Path(self.conf.faithlife_product_icon_path)
 
-        wine_choices = utils.get_wine_options(self.app)
-        self.gui.wine_dropdown['values'] = wine_choices
+        self.gui.wine_dropdown['values'] = utils.get_wine_options(self.app)
         if not self.gui.winevar.get():
             # If no value selected, default to 1st item in list.
             self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
+
+        self.gui.winevar.set(self.conf._raw.wine_binary or '')
 
         # At this point all variables are populated, we're ready to install!
         self.set_input_widgets_state('enabled', [self.gui.okay_button])
@@ -361,25 +370,24 @@ class InstallerWindow:
         # Update desktop panel icon.
         self.start_install_thread()
 
-    def on_cancel_released(self, evt=None):
+    def close(self):
         self.app.config_updated_hooks.remove(self._config_updated_hook)
         # Reset status
         self.app.clear_status()
         self.win.destroy()
+
+    def on_cancel_released(self, evt=None):
+        self.app.clear_status()
+        self.close()
         return 1
 
     def start_install_thread(self, evt=None):
         def _install():
             """Function to handle the install"""
+            # Close the options window and let the install run
+            self.close()
             installer.install(self.app)
             # Install complete, cleaning up...
-            self.app._status("", 0)
-            self.gui.okay_button.config(
-                text="Exit",
-                command=self.on_cancel_released,
-            )
-            self.gui.okay_button.state(['!disabled'])
-            self.win.destroy()
             return 0
 
         # Setup for the install
@@ -399,9 +407,8 @@ class ControlWindow(GuiApp):
         self.gui = control_gui
         self.actioncmd: Optional[Callable[[], None]] = None
 
-        text = self.gui.update_lli_label.cget('text')
         ver = constants.LLI_CURRENT_VERSION
-        text = f"{text}\ncurrent: v{ver}\nlatest: v{self.conf.app_latest_version}"
+        text = f"Update {constants.APP_NAME}\ncurrent: v{ver}\nlatest: v{self.conf.app_latest_version}" #noqa: E501
         self.gui.update_lli_label.config(text=text)
         self.gui.run_indexing_radio.config(
             command=self.on_action_radio_clicked
@@ -445,6 +452,22 @@ class ControlWindow(GuiApp):
 
     def edit_config(self):
         control.edit_file(self.conf.config_file_path)
+
+    def run_install(self, evt=None):
+        """Directly install the product.
+        
+        Fallback to defaults if we don't know a response"""
+        def _install():
+            self.populate_defaults()
+            installer.install(self)
+            # Enable the run button
+            self.gui.app_button.state(['!disabled'])
+            self.update_app_button()
+        # Disable the install buttons
+        self.gui.app_button.state(['disabled'])
+        self.gui.app_install_advanced.state(['disabled'])
+        # Start the install thread.
+        self.start_thread(_install)
 
     def run_installer(self, evt=None):
         classname = constants.BINARY_NAME
@@ -589,8 +612,11 @@ class ControlWindow(GuiApp):
             self.gui.app_button.config(command=self.run_logos)
             self.gui.get_winetricks_button.state(['!disabled'])
             self.gui.logging_button.state(['!disabled'])
+            self.gui.app_install_advanced.grid_forget()
         else:
-            self.gui.app_button.config(command=self.run_installer)
+            self.gui.app_button.config(command=self.run_install)
+            self.gui.app_install_advanced.config(command=self.run_installer)
+            self.gui.show_advanced_install_button()
 
     def update_latest_lli_release_button(self, evt=None):
         msg = None

@@ -40,6 +40,9 @@ LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dot
 PID_FILE = f'/tmp/{BINARY_NAME}.pid'
 WINETRICKS_VERSION = '20220411'
 
+FAITHLIFE_PRODUCTS = ["Logos", "Verbum"]
+FAITHLIFE_PRODUCT_VERSIONS = ["10", "9"]
+
 SUPPORT_MESSAGE = f"If you need help, please consult:\n{WIKI_LINK}\nIf that doesn't answer your question, please send the following files {DEFAULT_CONFIG_PATH}, {DEFAULT_APP_WINE_LOG_PATH} and {DEFAULT_APP_LOG_PATH} to one of the following group chats:\nTelegram: {TELEGRAM_LINK}\nMatrix: {MATRIX_LINK}"  # noqa: E501
 
 # Strings for choosing a follow up file or directory

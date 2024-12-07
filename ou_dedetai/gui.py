@@ -167,6 +167,10 @@ class ControlGui(Frame):
         self.app_label = Label(self, text="FaithLife app")
         self.app_button = Button(self, textvariable=self.app_buttonvar)
 
+        self.app_install_advancedvar = StringVar()
+        self.app_install_advancedvar.set("Advanced Install")
+        self.app_install_advanced = Button(self, textvariable=self.app_install_advancedvar) #noqa: E501
+
         # Installed app actions
         # -> Run indexing, Remove library catalog, Remove all index files
         s1 = Separator(self, orient='horizontal')
@@ -210,7 +214,9 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        self.update_lli_label = Label(self, text=f"Update {constants.APP_NAME}")  # noqa: E501
+        # The normal text has three lines. Make this the same 
+        # in order for tkinker to know how large to draw it
+        self.update_lli_label = Label(self, text=f"Update {constants.APP_NAME}\n\n")  # noqa: E501
         self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(
@@ -249,6 +255,7 @@ class ControlGui(Frame):
         row = 0
         self.app_label.grid(column=0, row=row, sticky='w', pady=2)
         self.app_button.grid(column=1, row=row, sticky='w', pady=2)
+        self.show_advanced_install_button()
         row += 1
         s1.grid(column=0, row=1, columnspan=3, sticky='we', pady=2)
         row += 1
@@ -296,6 +303,8 @@ class ControlGui(Frame):
         row += 1
         self.progress.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
 
+    def show_advanced_install_button(self):
+        self.app_install_advanced.grid(column=2, row=0, sticky='w', pady=2)
 
 class ToolTip:
     def __init__(self, widget, text):

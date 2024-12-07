@@ -555,7 +555,7 @@ class Config:
     @property
     def faithlife_product(self) -> str:
         question = "Choose which FaithLife product the script should install: "  # noqa: E501
-        options = ["Logos", "Verbum"]
+        options = constants.FAITHLIFE_PRODUCTS
         return self._ask_if_not_found("faithlife_product", question, options, ["faithlife_product_version", "faithlife_product_release"]) # noqa: E501
 
     @faithlife_product.setter
@@ -572,7 +572,7 @@ class Config:
         if self._overrides.faithlife_product_version is not None:
             return self._overrides.faithlife_product_version
         question = f"Which version of {self.faithlife_product} should the script install?: "  # noqa: E501
-        options = ["10", "9"]
+        options = constants.FAITHLIFE_PRODUCT_VERSIONS
         return self._ask_if_not_found("faithlife_product_version", question, options, []) # noqa: E501
 
     @faithlife_product_version.setter

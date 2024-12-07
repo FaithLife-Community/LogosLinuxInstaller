@@ -144,7 +144,7 @@ class TUI(App):
 
     def set_title(self):
         self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
-        product_name = self.conf._raw.faithlife_product or "Logos"
+        product_name = self.conf._raw.faithlife_product or constants.FAITHLIFE_PRODUCTS[0] #noqa: E501
         if self.is_installed():
             self.subtitle = f"{product_name} Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
         else:
@@ -529,7 +529,6 @@ class TUI(App):
     def main_menu_select(self, choice):
         def _install():
             try:
-                self.status("Installing…")
                 installer.install(app=self)
                 self.update_main_window_contents()
                 self.go_to_main_menu()
