@@ -3,7 +3,7 @@ import os
 import unittest
 from pathlib import Path
 
-import config
+import ou_dedetai.config as config
 
 
 class TestConfig(unittest.TestCase):

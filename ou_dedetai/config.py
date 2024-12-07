@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import tempfile
+from datetime import datetime
+from typing import Optional
 
 
 LOG_LEVELS = {
@@ -11,13 +13,20 @@ LOG_LEVELS = {
     "INFO": logging.INFO,
     "DEBUG": logging.DEBUG,
 }
+# Define app name variables.
+name_app = 'Ou Dedetai'
+name_binary = 'oudedetai'
+name_package = 'ou_dedetai'
+repo_link = "https://github.com/FaithLife-Community/LogosLinuxInstaller"
 
 # Define and set variables that are required in the config file.
 core_config_keys = [
-    "FLPRODUCT", "TARGETVERSION", "LOGOS_RELEASE_VERSION",
+    "FLPRODUCT", "TARGETVERSION", "TARGET_RELEASE_VERSION",
+    "current_logos_version", "curses_colors",
     "INSTALLDIR", "WINETRICKSBIN", "WINEBIN_CODE", "WINE_EXE",
     "WINECMD_ENCODING", "LOGS", "BACKUPDIR", "LAST_UPDATED",
-    "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION"
+    "RECOMMENDED_WINE64_APPIMAGE_URL", "LLI_LATEST_VERSION",
+    "logos_release_channel", "lli_release_channel",
 ]
 for k in core_config_keys:
     globals()[k] = os.getenv(k)
@@ -25,14 +34,15 @@ for k in core_config_keys:
 # Define and set additional variables that can be set in the env.
 extended_config = {
     'APPIMAGE_LINK_SELECTION_NAME': 'selected_wine.AppImage',
+    'APPDIR_BINDIR': None,
     'CHECK_UPDATES': False,
     'CONFIG_FILE': None,
     'CUSTOMBINPATH': None,
     'DEBUG': False,
     'DELETE_LOG': None,
     'DIALOG': None,
-    'LOG_LEVEL': logging.WARNING,
-    'LOGOS_LOG': os.path.expanduser("~/.local/state/Logos_on_Linux/Logos_on_Linux.log"),  # noqa: E501
+    'LOGOS_LOG': os.path.expanduser(f"~/.local/state/FaithLife-Community/{name_binary}.log"),  # noqa: E501
+    'wine_log': os.path.expanduser("~/.local/state/FaithLife-Community/wine.log"),  # noqa: #E501
     'LOGOS_EXE': None,
     'LOGOS_EXECUTABLE': None,
     'LOGOS_VERSION': None,
@@ -42,11 +52,14 @@ extended_config = {
     'SELECTED_APPIMAGE_FILENAME': None,
     'SKIP_DEPENDENCIES': False,
     'SKIP_FONTS': False,
+    'SKIP_WINETRICKS': False,
+    'use_python_dialog': None,
     'VERBOSE': False,
-    'WINE_EXE': None,
+    'WINEBIN_CODE': None,
     'WINEDEBUG': "fixme-all,err-all",
     'WINEDLLOVERRIDES': '',
     'WINEPREFIX': None,
+    'WINE_EXE': None,
     'WINESERVER_EXE': None,
     'WINETRICKS_UNATTENDED': None,
 }
@@ -60,54 +73,86 @@ for key, default in extended_config.items():
     globals()[key] = val
 
 # Set other run-time variables not set in the env.
-ACTION = 'app'
-APPDIR_BINDIR = None
-APPIMAGE_FILE_PATH = None
-BADPACKAGES = None
-DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.json")  # noqa: E501
-GUI = None
-INSTALL_STEP = 0
-INSTALL_STEPS_COUNT = 0
+ACTION: str = 'app'
+APPIMAGE_FILE_PATH: Optional[str] = None
+BADPACKAGES: Optional[str] = None # This isn't presently used, but could be if needed.
+DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{name_binary}.json")  # noqa: E501
+FLPRODUCTi: Optional[str] = None
+INSTALL_STEP: int = 0
+INSTALL_STEPS_COUNT: int = 0
+architecture = None
+bits = None
+ELFPACKAGES = None
 L9PACKAGES = None
-LEGACY_CONFIG_FILE = os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
+LEGACY_CONFIG_FILES = [
+    os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),  # noqa: E501
+    os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")  # noqa: E501
+]
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti"
-LLI_CURRENT_VERSION = "4.0.0-alpha.6"
-LLI_LATEST_VERSION = None
-LLI_TITLE = "Logos Linux Installer"
+LLI_CURRENT_VERSION = "4.0.0-beta.4"
+LLI_LATEST_VERSION: Optional[str] = None
+LLI_TITLE = name_app
+LOG_LEVEL = logging.WARNING
 LOGOS_BLUE = '#0082FF'
 LOGOS_GRAY = '#E7E7E7'
 LOGOS_WHITE = '#FCFCFC'
 # LOGOS_WHITE = '#F7F7F7'
 LOGOS_DIR = os.path.dirname(LOGOS_EXE) if LOGOS_EXE else None  # noqa: F821
-LOGOS_FORCE_ROOT = False
-LOGOS_ICON_FILENAME = None
-LOGOS_ICON_URL = None
-LOGOS_LATEST_VERSION_FILENAME = "LogosLinuxInstaller"
-LOGOS_LATEST_VERSION_URL = None
-LOGOS9_RELEASES = None      # used to save downloaded releases list
+LOGOS_FORCE_ROOT: bool = False
+LOGOS_ICON_FILENAME: Optional[str] = None
+LOGOS_ICON_URL: Optional[str] = None
+LOGOS_LATEST_VERSION_FILENAME = name_binary
+LOGOS_LATEST_VERSION_URL: Optional[str] = None
+LOGOS9_RELEASES = None      # used to save downloaded releases list # FIXME: not set #noqa: E501
 LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
 LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"  # noqa: E501
-LOGOS10_RELEASES = None     # used to save downloaded releases list
-MYDOWNLOADS = None
-OS_NAME = None
-OS_RELEASE = None
-PACKAGE_MANAGER_COMMAND_INSTALL = None
-PACKAGE_MANAGER_COMMAND_REMOVE = None
-PACKAGE_MANAGER_COMMAND_QUERY = None
-PACKAGES = None
-PASSIVE = None
-PRESENT_WORKING_DIRECTORY = os.getcwd()
-REBOOT_REQUIRED = None
-RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME = None
-RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION = None
-RECOMMENDED_WINE64_APPIMAGE_FILENAME = None
-RECOMMENDED_WINE64_APPIMAGE_VERSION = None
-RECOMMENDED_WINE64_APPIMAGE_BRANCH = None
-SUPERUSER_COMMAND = None
-VERBUM_PATH = None
+LOGOS10_RELEASES = None     # used to save downloaded releases list # FIXME: not set #noqa: E501
+MYDOWNLOADS: Optional[str] = None # FIXME: Should this use ~/.cache?
+OS_NAME: Optional[str] = None
+OS_RELEASE: Optional[str] = None
+PACKAGE_MANAGER_COMMAND_INSTALL: Optional[list[str]] = None
+PACKAGE_MANAGER_COMMAND_REMOVE: Optional[list[str]] = None
+PACKAGE_MANAGER_COMMAND_QUERY: Optional[list[str]] = None
+PACKAGES: Optional[str] = None
+PASSIVE: Optional[bool] = None
+pid_file = f'/tmp/{name_binary}.pid'
+PRESENT_WORKING_DIRECTORY: str = os.getcwd()
+QUERY_PREFIX: Optional[str] = None
+REBOOT_REQUIRED: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_FULL_VERSION: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_FILENAME: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_VERSION: Optional[str] = None
+RECOMMENDED_WINE64_APPIMAGE_BRANCH: Optional[str] = None
+SUPERUSER_COMMAND: Optional[str] = None
+VERBUM_PATH: Optional[str] = None
 WINETRICKS_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/5904ee355e37dff4a3ab37e1573c56cffe6ce223/src/winetricks"  # noqa: E501
 WINETRICKS_VERSION = '20220411'
+wine_user = None
 WORKDIR = tempfile.mkdtemp(prefix="/tmp/LBS.")
+install_finished = False
+console_log = []
+margin = 2
+console_log_lines = 1
+current_option = 0
+current_page = 0
+total_pages = 0
+options_per_page = 8
+resizing = False
+processes = {}
+threads = []
+logos_login_cmd = None
+logos_cef_cmd = None
+logos_indexer_cmd = None
+logos_indexer_exe = None
+logos_linux_installer_status = None
+logos_linux_installer_status_info = {
+    0: "yes",
+    1: "uptodate",
+    2: "no",
+    None: "config.LLI_CURRENT_VERSION or config.LLI_LATEST_VERSION is not set.",  # noqa: E501
+}
+check_if_indexing = None
 
 
 def get_config_file_dict(config_file_path):
@@ -171,3 +216,7 @@ def get_env_config():
         if val is not None:
             logging.info(f"Setting '{var}' to '{val}'")
             globals()[var] = val
+
+
+def get_timestamp():
+    return datetime.today().strftime('%Y-%m-%dT%H%M%S')

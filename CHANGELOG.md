@@ -1,5 +1,54 @@
 # Changelog
 
+- 4.0.0-beta.4
+	- Fix #220 [N. Shaaban]
+- 4.0.0-beta.3
+	- Fix various regressions from beta (e.g., #209, #213) [N. Shaaban]
+	- Fix #191 [N. Shaaban]
+- 4.0.0-beta.2
+	- Fix #171 [N. Marti]
+	- Fix #185 [N. Marti]
+- 4.0.0-beta.1
+	- Migrate .config and logs from `~/.config/Logos_on_Linux` and `~/.local/state/Logos_on_Linux` to `~/.config/FaithLife-Community` and `~/.local/state/FaithLife-Community`
+	- Add Logos State Manager [T. H. Wright, N. Marti]
+	- Numerous bug fixes [N. Marti, ctrlaltf24]
+	- Make config.WINE_EXE dynamic [T. H. Wright]
+	- Add Docker Build File [jimbob88]
+	- Fix numerous TUI issues [T. H. Wright]
+	- Fix #16 [T. H. Wright]
+	- Fix #84 [T. H. Wright]
+	- Fix #106 [T. H. Wright]
+	- Fix #127 [T. H. Wright]
+	- Fix #128 [T. H. Wright]
+	- Fix #142 [T. H. Wright]
+	- Fix #143 [T. H. Wright]
+	- Fix #153 [T. H. Wright]
+	- Fix #157 [T. H. Wright]
+	- Fix #181 [T. H. Wright]
+	- Fix #188 [T. H. Wright]
+- 4.0.0-alpha.14
+	- Fix install routine [N. Marti, T. H. Wright]
+	- Fix #144, #154, #156
+- 4.0.0-alpha.13
+	- Fix #22. [T. Bleher, J. Goodman, N. Marti, S. Freilichtbuenhe, M. Malevic, T. H. Wright]
+	- Fix package installer and TUI app. Also fix #135, #136, #140. [T. H. Wright, N. Marti]
+	- Introduce network.py and system.py
+- 4.0.0-alpha.12
+	- Fix TUI app's installer [T. H. Wright]
+- 4.0.0-alpha.11
+	- Fix #124 [T. H. Wright]
+- 4.0.0-alpha.10
+	- Fix #121 [T. H. Wright]
+	- Prep for Logos 30+ support [N. Marti, T. H. Wright]
+- 4.0.0-alpha.9
+	- Fix #42 [T. H. Wright]
+	- Fix #76, #104, #111, #115 [T. H. Wright]
+- 4.0.0-alpha.8
+	- Fix #1 [T. H. Wright, N. Marti, T. Bleher, C. Reeder]
+	- Fix #102 [T. H. Wright]
+	- Fix #110 [N. Marti]
+- 4.0.0-alpha.7
+	- Various fixes [N. Marti]
 - 4.0.0-alpha.6
 	- Hotfix to get correct LOGOS_EXE value after installation [N. Marti]
 - 4.0.0-alpha.5

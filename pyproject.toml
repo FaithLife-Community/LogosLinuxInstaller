@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dependencies = [
+#    "altgraph",
+#    "certifi",
+#    "charset-normalizer",
+    "distro",
+#    "idna",
+    "packaging",
+    "psutil",
+    "pythondialog",
+    "requests",
+#    "tkinter",  # actually provided by a system package, not a python package
+#    "urllib3",
+]
+name = "ou_dedetai"
+dynamic = ["readme", "version"]
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+build = ["pyinstaller"]
+test = ["coverage"]
+
+[project.scripts]
+oudedetai = "ou_dedetai.main:main"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/plain"}
+version = {attr = "ou_dedetai.config.LLI_CURRENT_VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"ou_dedetai.img" = ["*icon.png"]

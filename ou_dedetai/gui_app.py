@@ -6,7 +6,6 @@
 import logging
 from pathlib import Path
 from queue import Queue
-from threading import Thread
 
 from tkinter import PhotoImage
 from tkinter import Tk
@@ -14,12 +13,15 @@ from tkinter import Toplevel
 from tkinter import filedialog as fd
 from tkinter.ttk import Style
 
-import config
-import control
-import gui
-import installer
-import utils
-import wine
+from . import config
+from . import control
+from . import gui
+from . import installer
+from . import logos
+from . import network
+from . import system
+from . import utils
+from . import wine
 
 
 class Root(Tk):
@@ -75,7 +77,7 @@ class Root(Tk):
 
         # Set panel icon.
         app_dir = Path(__file__).parent
-        self.icon = app_dir / 'img' / 'logos4-128-icon.png'
+        self.icon = app_dir / 'img' / 'icon.png'
         self.pi = PhotoImage(file=f'{self.icon}')
         self.iconphoto(False, self.pi)
 
@@ -85,15 +87,14 @@ class InstallerWindow():
         # Set root parameters.
         self.win = new_win
         self.root = root
-        self.win.title("Faithlife Bible Software Installer")
+        self.win.title(f"{config.name_app} Installer")
         self.win.resizable(False, False)
         self.gui = gui.InstallerGui(self.win)
 
         # Initialize variables.
         self.flproduct = None  # config.FLPRODUCT
-        self.release_thread = None
+        self.config_thread = None
         self.wine_exe = None
-        self.wine_thread = None
         self.winetricksbin = None
         self.appimages = None
         # self.appimage_verified = None
@@ -155,10 +156,8 @@ class InstallerWindow():
         self.check_evt = "<<CheckFile>>"
         self.root.bind(self.check_evt, self.update_file_check_progress)
         self.status_q = Queue()
-        self.root.bind(
-            "<<UpdateStatus>>",
-            self.update_status_text
-        )
+        self.status_evt = "<<UpdateStatus>>"
+        self.root.bind(self.status_evt, self.update_status_text)
         self.progress_q = Queue()
         self.root.bind(
             "<<UpdateProgress>>",
@@ -181,14 +180,16 @@ class InstallerWindow():
         self.start_ensure_config()
 
     def start_ensure_config(self):
-        self.config_thread = Thread(
-            target=installer.ensure_installation_config,
-            kwargs={'app': self},
-            daemon=True
+        # Ensure progress counter is reset.
+        config.INSTALL_STEP = 1
+        config.INSTALL_STEPS_COUNT = 0
+        self.config_thread = utils.start_thread(
+            installer.ensure_installation_config,
+            app=self,
         )
-        self.config_thread.start()
 
     def get_winetricks_options(self):
+        config.WINETRICKSBIN = None  # override config file b/c "Download" accounts for that  # noqa: E501
         self.gui.tricks_dropdown['values'] = utils.get_winetricks_options()
         self.gui.tricksvar.set(self.gui.tricks_dropdown['values'][0])
 
@@ -213,6 +214,7 @@ class InstallerWindow():
             w.state(state)
 
     def todo(self, evt=None, task=None):
+        logging.debug(f"GUI todo: {task=}")
         widgets = []
         if not task:
             if not self.todo_q.empty():
@@ -228,7 +230,6 @@ class InstallerWindow():
                 self.gui.release_check_button,
                 self.gui.wine_dropdown,
                 self.gui.wine_check_button,
-                # self.gui.tricks_dropdown,
                 self.gui.okay_button,
             ]
             self.set_input_widgets_state('disabled', widgets=widgets)
@@ -248,7 +249,7 @@ class InstallerWindow():
             if not self.gui.versionvar.get():
                 self.gui.versionvar.set(self.gui.version_dropdown['values'][1])
             self.set_version()
-        elif task == 'LOGOS_RELEASE_VERSION':
+        elif task == 'TARGET_RELEASE_VERSION':
             # Disable all input widgets after Release.
             widgets = [
                 self.gui.wine_dropdown,
@@ -256,23 +257,14 @@ class InstallerWindow():
                 self.gui.okay_button,
             ]
             self.set_input_widgets_state('disabled', widgets=widgets)
-            # if not self.gui.releasevar.get():
-            if not self.gui.release_dropdown['values']:
-                # No previous choice.
-                self.start_releases_check()
-            else:
-                # Check if previous choice was for other TARGETVERSION.
-                if config.TARGETVERSION == '9' and not self.gui.release_dropdown['values'][0].startswith('9'):  # noqa: E501
-                    self.start_releases_check()
-                if config.TARGETVERSION == '10' and self.gui.release_dropdown['values'][0].startswith('9'):  # noqa: E501
-                    self.start_releases_check()
+            self.start_releases_check()
         elif task == 'WINE_EXE':
             # Disable all input widgets after Wine Exe.
             widgets = [
                 self.gui.okay_button,
             ]
             self.set_input_widgets_state('disabled', widgets=widgets)
-            self.start_wine_versions_check()
+            self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
         elif task == 'WINETRICKSBIN':
             # Disable all input widgets after Winetricks.
             widgets = [
@@ -287,17 +279,35 @@ class InstallerWindow():
             self.set_input_widgets_state('disabled')
         elif task == 'DONE':
             self.update_install_progress()
+        elif task == 'CONFIG':
+            logging.info("Updating config file.")
+            utils.write_config(config.CONFIG_FILE)
 
     def set_product(self, evt=None):
-        if self.gui.productvar.get()[0] == 'C':  # ignore default text
+        if self.gui.productvar.get().startswith('C'):  # ignore default text
             return
         self.gui.flproduct = self.gui.productvar.get()
         self.gui.product_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
+            logging.debug(f"User changed FLPRODUCT to '{self.gui.flproduct}'")
             config.FLPRODUCT = None
+            config.FLPRODUCTi = None
+            config.VERBUM_PATH = None
+
+            config.TARGETVERSION = None
+            self.gui.versionvar.set('')
+
+            config.TARGET_RELEASE_VERSION = None
+            self.gui.releasevar.set('')
+
             config.INSTALLDIR = None
+            config.APPDIR_BINDIR = None
+
             config.WINE_EXE = None
-            config.WINETRICKSBIN = None
+            self.gui.winevar.set('')
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.product_q.put(self.gui.flproduct)
@@ -306,13 +316,20 @@ class InstallerWindow():
         self.gui.targetversion = self.gui.versionvar.get()
         self.gui.version_dropdown.selection_clear()
         if evt:  # manual override; reset dependent variables
-            logging.debug(f"Change TARGETVERSION to {self.gui.targetversion}")
+            logging.debug(f"User changed TARGETVERSION to '{self.gui.targetversion}'")  # noqa: E501
             config.TARGETVERSION = None
             self.gui.releasevar.set('')
-            config.LOGOS_RELEASE_VERSION = None
+            config.TARGET_RELEASE_VERSION = None
+            self.gui.releasevar.set('')
+
             config.INSTALLDIR = None
+            config.APPDIR_BINDIR = None
+
             config.WINE_EXE = None
-            config.WINETRICKSBIN = None
+            self.gui.winevar.set('')
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.version_q.put(self.gui.targetversion)
@@ -328,17 +345,12 @@ class InstallerWindow():
             self.release_evt,
             self.update_release_check_progress
         )
-        self.release_thread = Thread(
-            target=utils.get_logos_releases,
-            kwargs={'app': self},
-            daemon=True,
-        )
         # Start progress.
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
         self.gui.statusvar.set("Downloading Release list…")
         # Start thread.
-        self.release_thread.start()
+        utils.start_thread(network.get_logos_releases, app=self)
 
     def set_release(self, evt=None):
         if self.gui.releasevar.get()[0] == 'C':  # ignore default text
@@ -346,12 +358,22 @@ class InstallerWindow():
         self.gui.logos_release_version = self.gui.releasevar.get()
         self.gui.release_dropdown.selection_clear()
         if evt:  # manual override
-            config.LOGOS_RELEASE_VERSION = None
+            config.TARGET_RELEASE_VERSION = self.gui.logos_release_version
+            logging.debug(f"User changed TARGET_RELEASE_VERSION to '{self.gui.logos_release_version}'")  # noqa: E501
+
+            config.INSTALLDIR = None
+            config.APPDIR_BINDIR = None
+
+            config.WINE_EXE = None
+            self.gui.winevar.set('')
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
             self.release_q.put(self.gui.logos_release_version)
 
-    def start_find_appimage_files(self):
+    def start_find_appimage_files(self, release_version):
         # Setup queue, signal, thread.
         self.appimage_q = Queue()
         self.appimage_evt = "<<FindAppImageProgress>>"
@@ -359,22 +381,22 @@ class InstallerWindow():
             self.appimage_evt,
             self.update_find_appimage_progress
         )
-        self.appimage_thread = Thread(
-            target=utils.find_appimage_files,
-            kwargs={'app': self},
-            daemon=True
-        )
         # Start progress.
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
         self.gui.statusvar.set("Finding available wine AppImages…")
         # Start thread.
-        self.appimage_thread.start()
+        utils.start_thread(
+            utils.find_appimage_files,
+            release_version=release_version,
+            app=self,
+        )
 
-    def start_wine_versions_check(self):
-        if not self.appimages:
-            self.start_find_appimage_files()
-            return
+    def start_wine_versions_check(self, release_version):
+        if self.appimages is None:
+            self.appimages = []
+            # self.start_find_appimage_files(release_version)
+            # return
         # Setup queue, signal, thread.
         self.wines_q = Queue()
         self.wine_evt = "<<WineCheckProgress>>"
@@ -382,30 +404,35 @@ class InstallerWindow():
             self.wine_evt,
             self.update_wine_check_progress
         )
-        self.wine_thread = Thread(
-            target=utils.get_wine_options,
-            args=[
-                self.appimages,
-                utils.find_wine_binary_files()
-            ],
-            kwargs={'app': self},
-            daemon=True
-        )
         # Start progress.
         self.gui.progress.config(mode='indeterminate')
         self.gui.progress.start()
         self.gui.statusvar.set("Finding available wine binaries…")
         # Start thread.
-        self.wine_thread.start()
+        utils.start_thread(
+            utils.get_wine_options,
+            self.appimages,
+            utils.find_wine_binary_files(release_version),
+            app=self,
+        )
 
     def set_wine(self, evt=None):
         self.gui.wine_exe = self.gui.winevar.get()
         self.gui.wine_dropdown.selection_clear()
         if evt:  # manual override
+            logging.debug(f"User changed WINE_EXE to '{self.gui.wine_exe}'")
             config.WINE_EXE = None
+            config.SELECTED_APPIMAGE_FILENAME = None
+            config.WINEBIN_CODE = None
+
             self.start_ensure_config()
         else:
-            self.wine_q.put(self.gui.wine_exe)
+            self.wine_q.put(
+                utils.get_relative_path(
+                    utils.get_config_var(self.gui.wine_exe),
+                    config.INSTALLDIR
+                )
+            )
 
     def set_winetricks(self, evt=None):
         self.gui.winetricksbin = self.gui.tricksvar.get()
@@ -421,7 +448,7 @@ class InstallerWindow():
 
     def on_wine_check_released(self, evt=None):
         self.gui.wine_check_button.state(['disabled'])
-        self.start_wine_versions_check()
+        self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
 
     def set_skip_fonts(self, evt=None):
         self.gui.skip_fonts = 1 - self.gui.fontsvar.get()  # invert True/False
@@ -444,12 +471,7 @@ class InstallerWindow():
 
     def start_install_thread(self, evt=None):
         self.gui.progress.config(mode='determinate')
-        th = Thread(
-            target=installer.ensure_launcher_shortcuts,
-            kwargs={'app': self},
-            daemon=True
-        )
-        th.start()
+        utils.start_thread(installer.ensure_launcher_shortcuts, app=self)
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])
@@ -478,13 +500,15 @@ class InstallerWindow():
         self.stop_indeterminate_progress()
         if not self.appimage_q.empty():
             self.appimages = self.appimage_q.get()
-            self.start_wine_versions_check()
+            self.start_wine_versions_check(config.TARGET_RELEASE_VERSION)
 
     def update_wine_check_progress(self, evt=None):
         if evt and self.wines_q.empty():
             return
         self.gui.wine_dropdown['values'] = self.wines_q.get()
-        self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
+        if not self.gui.winevar.get():
+            # If no value selected, default to 1st item in list.
+            self.gui.winevar.set(self.gui.wine_dropdown['values'][0])
         self.set_wine()
         self.stop_indeterminate_progress()
         self.gui.wine_check_button.state(['!disabled'])
@@ -536,9 +560,11 @@ class ControlWindow():
     def __init__(self, root, *args, **kwargs):
         # Set root parameters.
         self.root = root
-        self.root.title("Faithlife Bible Software Control Panel")
+        self.root.title(f"{config.name_app} Control Panel")
         self.root.resizable(False, False)
         self.gui = gui.ControlGui(self.root)
+        self.actioncmd = None
+        self.logos = logos.LogosManager(app=self)
 
         text = self.gui.update_lli_label.cget('text')
         ver = config.LLI_CURRENT_VERSION
@@ -555,7 +581,10 @@ class ControlWindow():
         self.gui.remove_index_files_radio.config(
             command=self.on_action_radio_clicked
         )
-        self.gui.actions_button.config(command=self.gui.actioncmd)
+        self.gui.install_icu_radio.config(
+            command=self.on_action_radio_clicked
+        )
+        self.gui.actions_button.config(command=self.run_action_cmd)
 
         self.gui.loggingstatevar.set('Enable')
         self.gui.logging_button.config(
@@ -593,11 +622,12 @@ class ControlWindow():
         self.update_run_winetricks_button()
 
         self.logging_q = Queue()
-        self.root.bind('<<InitLoggingButton>>', self.initialize_logging_button)
-        self.root.bind('<<UpdateLoggingButton>>', self.update_logging_button)
+        self.logging_event = '<<UpdateLoggingButton>>'
+        self.root.bind(self.logging_event, self.update_logging_button)
         self.status_q = Queue()
+        self.status_evt = '<<UpdateControlStatus>>'
+        self.root.bind(self.status_evt, self.update_status_text)
         self.root.bind('<<ClearStatus>>', self.clear_status_text)
-        self.root.bind('<<UpdateStatus>>', self.update_status_text)
         self.progress_q = Queue()
         self.root.bind(
             '<<StartIndeterminateProgress>>',
@@ -624,16 +654,13 @@ class ControlWindow():
 
         # Start function to determine app logging state.
         if utils.app_is_installed():
-            t = Thread(
-                target=wine.get_app_logging_state,
-                kwargs={'app': self, 'init': True}
-            )
-            t.start()
             self.gui.statusvar.set('Getting current app logging status…')
             self.start_indeterminate_progress()
+            utils.start_thread(self.logos.get_app_logging_state)
 
     def configure_app_button(self, evt=None):
-        if utils.find_installed_product():
+        if utils.app_is_installed():
+            # wine.set_logos_paths()
             self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
             self.gui.app_button.config(command=self.run_logos)
             self.gui.get_winetricks_button.state(['!disabled'])
@@ -641,39 +668,43 @@ class ControlWindow():
             self.gui.app_button.config(command=self.run_installer)
 
     def run_installer(self, evt=None):
-        classname = "LogosLinuxInstaller"
-        self.new_win = Toplevel()
-        InstallerWindow(self.new_win, self.root, class_=classname)
+        classname = config.name_binary
+        self.installer_win = Toplevel()
+        InstallerWindow(self.installer_win, self.root, class_=classname)
         self.root.icon = config.LOGOS_ICON_URL
 
     def run_logos(self, evt=None):
-        t = Thread(target=wine.run_logos)
-        t.start()
+        utils.start_thread(self.logos.start)
+
+    def run_action_cmd(self, evt=None):
+        self.actioncmd()
 
     def on_action_radio_clicked(self, evt=None):
+        logging.debug("gui_app.ControlPanel.on_action_radio_clicked START")
         if utils.app_is_installed():
             self.gui.actions_button.state(['!disabled'])
             if self.gui.actionsvar.get() == 'run-indexing':
-                self.gui.actioncmd = self.run_indexing
+                self.actioncmd = self.run_indexing
             elif self.gui.actionsvar.get() == 'remove-library-catalog':
-                self.gui.actioncmd = self.remove_library_catalog
+                self.actioncmd = self.remove_library_catalog
             elif self.gui.actionsvar.get() == 'remove-index-files':
-                self.gui.actioncmd = self.remove_indexes
+                self.actioncmd = self.remove_indexes
+            elif self.gui.actionsvar.get() == 'install-icu':
+                self.actioncmd = self.install_icu
 
     def run_indexing(self, evt=None):
-        t = Thread(target=wine.run_indexing)
-        t.start()
+        utils.start_thread(self.logos.index)
 
     def remove_library_catalog(self, evt=None):
         control.remove_library_catalog()
 
     def remove_indexes(self, evt=None):
         self.gui.statusvar.set("Removing indexes…")
-        t = Thread(
-            target=control.remove_all_index_files,
-            kwargs={'app': self}
-        )
-        t.start()
+        utils.start_thread(control.remove_all_index_files, app=self)
+
+    def install_icu(self, evt=None):
+        self.gui.statusvar.set("Installing ICU files…")
+        utils.start_thread(wine.enforce_icu_data_files, app=self)
 
     def run_backup(self, evt=None):
         # Get backup folder.
@@ -691,17 +722,16 @@ class ControlWindow():
         self.gui.progress.config(mode='determinate')
         self.gui.progressvar.set(0)
         # Start backup thread.
-        t = Thread(target=control.backup, args=[self], daemon=True)
-        t.start()
+        utils.start_thread(control.backup, app=self)
 
     def run_restore(self, evt=None):
         # FIXME: Allow user to choose restore source?
         # Start restore thread.
-        t = Thread(target=control.restore, args=[self], daemon=True)
-        t.start()
+        utils.start_thread(control.restore, app=self)
 
     def install_deps(self, evt=None):
-        utils.check_dependencies()
+        self.start_indeterminate_progress()
+        utils.start_thread(utils.install_dependencies)
 
     def open_file_dialog(self, filetype_name, filetype_extension):
         file_path = fd.askopenfilename(
@@ -715,71 +745,53 @@ class ControlWindow():
 
     def update_to_latest_lli_release(self, evt=None):
         self.start_indeterminate_progress()
-        self.gui.statusvar.set("Updating to latest Logos Linux Installer version…")  # noqa: E501
-        t = Thread(
-            target=utils.update_to_latest_lli_release,
-            kwargs={'app': self},
-            daemon=True,
-        )
-        t.start()
+        self.gui.statusvar.set(f"Updating to latest {config.name_app} version…")  # noqa: E501
+        utils.start_thread(utils.update_to_latest_lli_release, app=self)
 
     def update_to_latest_appimage(self, evt=None):
         config.APPIMAGE_FILE_PATH = config.RECOMMENDED_WINE64_APPIMAGE_FULL_FILENAME  # noqa: E501
         self.start_indeterminate_progress()
         self.gui.statusvar.set("Updating to latest AppImage…")
-        t = Thread(
-            target=utils.set_appimage_symlink,
-            kwargs={'app': self},
-            daemon=True,
-        )
-        t.start()
+        utils.start_thread(utils.set_appimage_symlink, app=self)
 
     def set_appimage(self, evt=None):
+        # TODO: Separate as advanced feature.
         appimage_filename = self.open_file_dialog("AppImage", "AppImage")
         if not appimage_filename:
             return
-        config.SELECTED_APPIMAGE_FILENAME = appimage_filename
-        t = Thread(
-            target=utils.set_appimage_symlink,
-            kwargs={'app': self},
-            daemon=True,
-        )
-        t.start()
+        # config.SELECTED_APPIMAGE_FILENAME = appimage_filename
+        config.APPIMAGE_FILE_PATH = appimage_filename
+        utils.start_thread(utils.set_appimage_symlink, app=self)
 
     def get_winetricks(self, evt=None):
+        # TODO: Separate as advanced feature.
         self.gui.statusvar.set("Installing Winetricks…")
-        t1 = Thread(
-            target=utils.install_winetricks,
-            args=[config.APPDIR_BINDIR],
-            kwargs={'app': self},
-            daemon=True,
+        utils.start_thread(
+            system.install_winetricks,
+            config.APPDIR_BINDIR,
+            app=self
         )
-        t1.start()
         self.update_run_winetricks_button()
 
     def launch_winetricks(self, evt=None):
         self.gui.statusvar.set("Launching Winetricks…")
         # Start winetricks in thread.
-        t1 = Thread(target=wine.run_winetricks)
-        t1.start()
+        utils.start_thread(wine.run_winetricks)
         # Start thread to clear status after delay.
         args = [12000, self.root.event_generate, '<<ClearStatus>>']
-        t2 = Thread(target=self.root.after, args=args, daemon=True)
-        t2.start()
+        utils.start_thread(self.root.after, *args)
 
     def switch_logging(self, evt=None):
-        prev_state = self.gui.loggingstatevar.get()
-        new_state = 'Enable' if prev_state == 'Disable' else 'Disable'
-        kwargs = {
-            'action': new_state.lower(),
-            'app': self,
-        }
-        self.gui.statusvar.set(f"Switching app logging to '{prev_state}d'…")
+        desired_state = self.gui.loggingstatevar.get()
+        self.gui.statusvar.set(f"Switching app logging to '{desired_state}d'…")
+        self.start_indeterminate_progress()
         self.gui.progress.state(['!disabled'])
         self.gui.progress.start()
         self.gui.logging_button.state(['disabled'])
-        t = Thread(target=wine.switch_logging, kwargs=kwargs)
-        t.start()
+        utils.start_thread(
+            self.logos.switch_logging,
+            action=desired_state.lower()
+        )
 
     def initialize_logging_button(self, evt=None):
         self.gui.statusvar.set('')
@@ -793,8 +805,10 @@ class ControlWindow():
         self.gui.statusvar.set('')
         self.gui.progress.stop()
         self.gui.progress.state(['disabled'])
-        state = self.logging_q.get()
-        self.gui.loggingstatevar.set(state[:-1].title())
+        new_state = self.reverse_logging_state_value(self.logging_q.get())
+        new_text = new_state[:-1].title()
+        logging.debug(f"Updating app logging button text to: {new_text}")
+        self.gui.loggingstatevar.set(new_text)
         self.gui.logging_button.state(['!disabled'])
 
     def update_app_button(self, evt=None):
@@ -802,21 +816,21 @@ class ControlWindow():
         self.gui.app_buttonvar.set(f"Run {config.FLPRODUCT}")
         self.configure_app_button()
         self.update_run_winetricks_button()
+        self.gui.logging_button.state(['!disabled'])
 
     def update_latest_lli_release_button(self, evt=None):
-        status, reason = utils.compare_logos_linux_installer_version()
         msg = None
-        if utils.get_runmode() != 'binary':
+        if system.get_runmode() != 'binary':
             state = 'disabled'
             msg = "This button is disabled. Can't run self-update from script."
-        elif status == 0:
+        elif config.logos_linux_installer_status == 0:
             state = '!disabled'
-        elif status == 1:
+        elif config.logos_linux_installer_status == 1:
             state = 'disabled'
-            msg = "This button is disabled. Logos Linux Installer is up-to-date."  # noqa: E501
-        elif status == 2:
+            msg = f"This button is disabled. {config.name_app} is up-to-date."  # noqa: E501
+        elif config.logos_linux_installer_status == 2:
             state = 'disabled'
-            msg = "This button is disabled. Logos Linux Installer is newer than the latest release."  # noqa: E501
+            msg = f"This button is disabled. {config.name_app} is newer than the latest release."  # noqa: E501
         if msg:
             gui.ToolTip(self.gui.update_lli_button, msg)
         self.clear_status_text()
@@ -867,10 +881,6 @@ class ControlWindow():
         self.gui.progressvar.set(int(d))
 
     def update_progress(self, evt=None):
-        if self.config_thread.is_alive():
-            # Don't update config progress.
-            self.gui.progressvar.set(0)
-            return
         progress = self.progress_q.get()
         if not type(progress) is int:
             return
@@ -881,7 +891,12 @@ class ControlWindow():
             self.gui.progressvar.set(progress)
 
     def update_status_text(self, evt=None):
-        self.gui.statusvar.set(self.status_q.get())
+        if evt:
+            self.gui.statusvar.set(self.status_q.get())
+            self.root.after(3000, self.update_status_text)
+        else:  # clear status text if called manually and no progress shown
+            if self.gui.progressvar.get() == 0:
+                self.gui.statusvar.set('')
 
     def start_indeterminate_progress(self, evt=None):
         self.gui.progress.state(['!disabled'])
@@ -898,7 +913,7 @@ class ControlWindow():
 
 def control_panel_app():
     utils.set_debug()
-    classname = "LogosLinuxControlPanel"
+    classname = config.name_binary
     root = Root(className=classname)
     ControlWindow(root, class_=classname)
     root.mainloop()

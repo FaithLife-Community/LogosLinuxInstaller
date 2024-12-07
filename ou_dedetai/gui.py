@@ -2,6 +2,8 @@ from tkinter import Toplevel
 from tkinter import BooleanVar
 from tkinter import font
 from tkinter import IntVar
+from tkinter import messagebox
+from tkinter import simpledialog
 from tkinter import StringVar
 from tkinter.ttk import Button
 from tkinter.ttk import Checkbutton
@@ -12,7 +14,8 @@ from tkinter.ttk import Progressbar
 from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
-import config
+from . import config
+from . import utils
 
 
 class InstallerGui(Frame):
@@ -26,9 +29,9 @@ class InstallerGui(Frame):
         # Initialize vars from ENV.
         self.flproduct = config.FLPRODUCT
         self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.LOGOS_RELEASE_VERSION
+        self.logos_release_version = config.TARGET_RELEASE_VERSION
         self.default_config_path = config.DEFAULT_CONFIG_PATH
-        self.wine_exe = config.WINE_EXE
+        self.wine_exe = utils.get_wine_exe_path()
         self.winetricksbin = config.WINETRICKSBIN
         self.skip_fonts = config.SKIP_FONTS
         if self.skip_fonts is None:
@@ -120,27 +123,36 @@ class InstallerGui(Frame):
         self.progress = Progressbar(self, variable=self.progressvar)
 
         # Place widgets.
-        self.product_label.grid(column=0, row=0, sticky='nws', pady=2)
-        self.product_dropdown.grid(column=1, row=0, sticky='w', pady=2)
-        self.version_dropdown.grid(column=2, row=0, sticky='w', pady=2)
-        self.release_label.grid(column=0, row=1, sticky='w', pady=2)
-        self.release_dropdown.grid(column=1, row=1, sticky='w', pady=2)
-        self.release_check_button.grid(column=2, row=1, sticky='w', pady=2)
-        self.wine_label.grid(column=0, row=2, sticky='w', pady=2)
-        self.wine_dropdown.grid(column=1, row=2, columnspan=3, sticky='we', pady=2)  # noqa: E501
-        self.wine_check_button.grid(column=4, row=2, sticky='e', pady=2)
-        self.tricks_label.grid(column=0, row=3, sticky='w', pady=2)
-        self.tricks_dropdown.grid(column=1, row=3, sticky='we', pady=2)
-        self.fonts_label.grid(column=0, row=4, sticky='nws', pady=2)
-        self.fonts_checkbox.grid(column=1, row=4, sticky='w', pady=2)
-        self.skipdeps_label.grid(column=2, row=4, sticky='nws', pady=2)
-        self.skipdeps_checkbox.grid(column=3, row=4, sticky='w', pady=2)
-        self.cancel_button.grid(column=3, row=5, sticky='e', pady=2)
-        self.okay_button.grid(column=4, row=5, sticky='e', pady=2)
+        row = 0
+        self.product_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.product_dropdown.grid(column=1, row=row, sticky='w', pady=2)
+        self.version_dropdown.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.release_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.release_dropdown.grid(column=1, row=row, sticky='w', pady=2)
+        self.release_check_button.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.wine_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.wine_dropdown.grid(column=1, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        self.wine_check_button.grid(column=4, row=row, sticky='e', pady=2)
+        row += 1
+        self.tricks_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.tricks_dropdown.grid(column=1, row=row, sticky='we', pady=2)
+        row += 1
+        self.fonts_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.fonts_checkbox.grid(column=1, row=row, sticky='w', pady=2)
+        self.skipdeps_label.grid(column=2, row=row, sticky='nws', pady=2)
+        self.skipdeps_checkbox.grid(column=3, row=row, sticky='w', pady=2)
+        row += 1
+        self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
+        self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
+        row += 1
         # Status area
-        s1.grid(column=0, row=6, columnspan=5, sticky='we')
-        self.status_label.grid(column=0, row=7, columnspan=5, sticky='w', pady=2)  # noqa: E501
-        self.progress.grid(column=0, row=8, columnspan=5, sticky='we', pady=2)
+        s1.grid(column=0, row=row, columnspan=5, sticky='we')
+        row += 1
+        self.status_label.grid(column=0, row=row, columnspan=5, sticky='w', pady=2)  # noqa: E501
+        row += 1
+        self.progress.grid(column=0, row=row, columnspan=5, sticky='we', pady=2)  # noqa: E501
 
 
 class ControlGui(Frame):
@@ -153,7 +165,7 @@ class ControlGui(Frame):
         self.installdir = config.INSTALLDIR
         self.flproduct = config.FLPRODUCT
         self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.LOGOS_RELEASE_VERSION
+        self.logos_release_version = config.TARGET_RELEASE_VERSION
         self.logs = config.LOGS
         self.config_file = config.CONFIG_FILE
 
@@ -167,7 +179,6 @@ class ControlGui(Frame):
         # -> Run indexing, Remove library catalog, Remove all index files
         s1 = Separator(self, orient='horizontal')
         self.actionsvar = StringVar()
-        self.actioncmd = None
         self.actions_label = Label(self, text="App actions: ")
         self.run_indexing_radio = Radiobutton(
             self,
@@ -187,6 +198,12 @@ class ControlGui(Frame):
             variable=self.actionsvar,
             value='remove-index-files',
         )
+        self.install_icu_radio = Radiobutton(
+            self,
+            text="Install/Update ICU files",
+            variable=self.actionsvar,
+            value='install-icu',
+        )
         self.actions_button = Button(self, text="Run action")
         self.actions_button.state(['disabled'])
         s2 = Separator(self, orient='horizontal')
@@ -201,7 +218,7 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        self.update_lli_label = Label(self, text="Update Logos Linux Installer")  # noqa: E501
+        self.update_lli_label = Label(self, text=f"Update {config.name_app}")  # noqa: E501
         self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(
@@ -237,46 +254,55 @@ class ControlGui(Frame):
         self.progress.state(['disabled'])
 
         # Place widgets.
-        self.app_label.grid(column=0, row=0, sticky='w', pady=2)
-        self.app_button.grid(column=1, row=0, sticky='w', pady=2)
-
+        row = 0
+        self.app_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.app_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
         s1.grid(column=0, row=1, columnspan=3, sticky='we', pady=2)
-        self.actions_label.grid(column=0, row=2, sticky='e', padx=20, pady=2)
-        self.actions_button.grid(column=0, row=4, sticky='e', padx=20, pady=2)
-        self.run_indexing_radio.grid(column=1, row=2, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        self.remove_library_catalog_radio.grid(column=1, row=3, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        self.remove_index_files_radio.grid(column=1, row=4, sticky='w', pady=2, columnspan=2)  # noqa: E501
-        s2.grid(column=0, row=5, columnspan=3, sticky='we', pady=2)
-
-        self.config_label.grid(column=0, row=6, sticky='w', pady=2)
-        self.config_button.grid(column=1, row=6, sticky='w', pady=2)
-
-        self.deps_label.grid(column=0, row=7, sticky='w', pady=2)
-        self.deps_button.grid(column=1, row=7, sticky='w', pady=2)
-
-        self.backups_label.grid(column=0, row=8, sticky='w', pady=2)
-        self.backup_button.grid(column=1, row=8, sticky='w', pady=2)
-        self.restore_button.grid(column=2, row=8, sticky='w', pady=2)
-
-        self.update_lli_label.grid(column=0, row=9, sticky='w', pady=2)
-        self.update_lli_button.grid(column=1, row=9, sticky='w', pady=2)
-
-        self.latest_appimage_label.grid(column=0, row=10, sticky='w', pady=2)
-        self.latest_appimage_button.grid(column=1, row=10, sticky='w', pady=2)
-
-        self.set_appimage_label.grid(column=0, row=11, sticky='w', pady=2)
-        self.set_appimage_button.grid(column=1, row=11, sticky='w', pady=2)
-
-        self.winetricks_label.grid(column=0, row=12, sticky='w', pady=2)
-        self.run_winetricks_button.grid(column=1, row=12, sticky='w', pady=2)
-        self.get_winetricks_button.grid(column=2, row=12, sticky='w', pady=2)
-
-        self.logging_label.grid(column=0, row=13, sticky='w', pady=2)
-        self.logging_button.grid(column=1, row=13, sticky='w', pady=2)
-
-        s3.grid(column=0, row=14, columnspan=3, sticky='we', pady=2)
-        self.message_label.grid(column=0, row=15, columnspan=3, sticky='we', pady=2)  # noqa: E501
-        self.progress.grid(column=0, row=16, columnspan=3, sticky='we', pady=2)
+        row += 1
+        self.actions_label.grid(column=0, row=row, sticky='e', padx=20, pady=2)
+        self.run_indexing_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        self.remove_library_catalog_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        self.actions_button.grid(column=0, row=row, sticky='e', padx=20, pady=2)  # noqa: E501
+        self.remove_index_files_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        self.install_icu_radio.grid(column=1, row=row, sticky='w', pady=2, columnspan=2)  # noqa: E501
+        row += 1
+        s2.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)
+        row += 1
+        self.config_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.config_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.deps_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.deps_button.grid(column=1, row=row, sticky='w', pady=2)
+        # row += 1
+        # self.backups_label.grid(column=0, row=row, sticky='w', pady=2)
+        # self.backup_button.grid(column=1, row=row, sticky='w', pady=2)
+        # self.restore_button.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.update_lli_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.update_lli_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.latest_appimage_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.latest_appimage_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.set_appimage_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.set_appimage_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.winetricks_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.run_winetricks_button.grid(column=1, row=row, sticky='w', pady=2)
+        self.get_winetricks_button.grid(column=2, row=row, sticky='w', pady=2)
+        row += 1
+        self.logging_label.grid(column=0, row=row, sticky='w', pady=2)
+        self.logging_button.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        s3.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)
+        row += 1
+        self.message_label.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        row += 1
+        self.progress.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
 
 
 class ToolTip:
@@ -318,3 +344,46 @@ class ToolTip:
         if self.tooltip_visible:
             self.tooltip_window.destroy()
             self.tooltip_visible = False
+
+
+class PromptGui(Frame):
+    def __init__(self, root, title="", prompt="", **kwargs):
+        super(PromptGui, self).__init__(root, **kwargs)
+        self.options = {"title": title, "prompt": prompt}
+        if title is not None:
+            self.options['title'] = title
+        if prompt is not None:
+            self.options['prompt'] = prompt
+
+    def draw_prompt(self):
+        store_button = Button(
+            self.root,
+            text="Store Password",
+            command=lambda: input_prompt(self.root, self.options)
+        )
+        store_button.pack(pady=20)
+
+
+def show_error(message, fatal=True, detail=None, app=None, parent=None):  # noqa: E501
+    title = "Error"
+    if fatal:
+        title = "Fatal Error"
+
+    kwargs = {'message': message}
+    if parent and hasattr(app, parent):
+        kwargs['parent'] = app.__dict__.get(parent)
+    if detail:
+        kwargs['detail'] = detail
+    messagebox.showerror(title, **kwargs)
+    if fatal and hasattr(app, 'root'):
+        app.root.destroy()
+
+
+def ask_question(question, secondary):
+    return messagebox.askquestion(question, secondary)
+
+
+def input_prompt(root, title, prompt):
+    # Prompt for the password
+    input = simpledialog.askstring(title, prompt, show='*', parent=root)
+    return input

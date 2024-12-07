@@ -9,6 +9,8 @@ on:
       bin_name:
         description: "name of built binary"
         value: ${{ jobs.build.outputs.bin_name }}
+      sha:
+        value: ${{ github.sha }}
       sha_short:
         description: "1st few chars of commit SHA"
         value: ${{ jobs.build.outputs.sha_short }}
@@ -47,19 +49,17 @@ jobs:
       run: |
         # apt-get install python3-tk
         pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install coverage
-        pip install pyinstaller
+        pip install .[build,test]
 
     - name: Build with pyinstaller
       id: pyinstaller
       run: |
-        pyinstaller LogosLinuxInstaller.spec --clean
-        echo "bin_name=LogosLinuxInstaller" >> $GITHUB_OUTPUT
+        ./scripts/build-binary.sh
+        echo "bin_name=oudedetai" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LogosLinuxInstaller
-        path: dist/LogosLinuxInstaller
+        name: oudedetai
+        path: dist/oudedetai
         compression-level: 0
