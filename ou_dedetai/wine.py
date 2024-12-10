@@ -584,6 +584,10 @@ def get_wine_env():
     # if config.LOG_LEVEL > logging.INFO:
     #     wine_env['WINETRICKS_SUPER_QUIET'] = "1"
 
+    locale = os.getenv("LANG")
+    if locale:
+        wine_env["LANG"] =  locale
+
     # Config file takes precedence over the above variables.
     cfg = config.get_config_file_dict(config.CONFIG_FILE)
     if cfg is not None:
