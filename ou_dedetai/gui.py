@@ -14,31 +14,51 @@ from tkinter.ttk import Progressbar
 from tkinter.ttk import Radiobutton
 from tkinter.ttk import Separator
 
-from . import config
-from . import utils
+from ou_dedetai.app import App
+
+from . import constants
+
+
+class ChoiceGui(Frame):
+    _default_prompt: str = "Choose…"
+
+    def __init__(self, root, question: str, options: list[str], **kwargs):
+        super(ChoiceGui, self).__init__(root, **kwargs)
+        self.italic = font.Font(slant='italic')
+        self.config(padding=5)
+        self.grid(row=0, column=0, sticky='nwes')
+
+        # Label Row
+        self.question_label = Label(self, text=question)
+        # drop-down menu
+        self.answer_var = StringVar(value=self._default_prompt)
+        self.answer_dropdown = Combobox(self, textvariable=self.answer_var)
+        self.answer_dropdown['values'] = options
+        if len(options) > 0:
+            self.answer_dropdown.set(options[0])
+
+        # Cancel/Okay buttons row.
+        self.cancel_button = Button(self, text="Cancel")
+        self.okay_button = Button(self, text="Confirm")
+
+        # Place widgets.
+        row = 0
+        self.question_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.answer_dropdown.grid(column=1, row=row, sticky='w', pady=2)
+        row += 1
+        self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
+        self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
 
 
 class InstallerGui(Frame):
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, app: App, **kwargs):
         super(InstallerGui, self).__init__(root, **kwargs)
 
         self.italic = font.Font(slant='italic')
         self.config(padding=5)
         self.grid(row=0, column=0, sticky='nwes')
 
-        # Initialize vars from ENV.
-        self.flproduct = config.FLPRODUCT
-        self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.TARGET_RELEASE_VERSION
-        self.default_config_path = config.DEFAULT_CONFIG_PATH
-        self.wine_exe = utils.get_wine_exe_path()
-        self.winetricksbin = config.WINETRICKSBIN
-        self.skip_fonts = config.SKIP_FONTS
-        if self.skip_fonts is None:
-            self.skip_fonts = 0
-        self.skip_dependencies = config.SKIP_DEPENDENCIES
-        if self.skip_fonts is None:
-            self.skip_fonts = 0
+        self.app = app
 
         # Product/Version row.
         self.product_label = Label(self, text="Product & Version: ")
@@ -47,8 +67,8 @@ class InstallerGui(Frame):
         self.product_dropdown = Combobox(self, textvariable=self.productvar)
         self.product_dropdown.state(['readonly'])
         self.product_dropdown['values'] = ('Logos', 'Verbum')
-        if self.flproduct in self.product_dropdown['values']:
-            self.product_dropdown.set(self.flproduct)
+        if app.conf._raw.faithlife_product in self.product_dropdown['values']:
+            self.product_dropdown.set(app.conf._raw.faithlife_product)
         # version drop-down menu
         self.versionvar = StringVar()
         self.version_dropdown = Combobox(
@@ -59,8 +79,8 @@ class InstallerGui(Frame):
         self.version_dropdown.state(['readonly'])
         self.version_dropdown['values'] = ('9', '10')
         self.versionvar.set(self.version_dropdown['values'][1])
-        if self.targetversion in self.version_dropdown['values']:
-            self.version_dropdown.set(self.targetversion)
+        if app.conf._raw.faithlife_product_version in self.version_dropdown['values']:
+            self.version_dropdown.set(app.conf._raw.faithlife_product_version)
 
         # Release row.
         self.release_label = Label(self, text="Release: ")
@@ -69,13 +89,9 @@ class InstallerGui(Frame):
         self.release_dropdown = Combobox(self, textvariable=self.releasevar)
         self.release_dropdown.state(['readonly'])
         self.release_dropdown['values'] = []
-        if self.logos_release_version:
-            self.release_dropdown['values'] = [self.logos_release_version]
-            self.releasevar.set(self.logos_release_version)
-
-        # release check button
-        self.release_check_button = Button(self, text="Get Release List")
-        self.release_check_button.state(['disabled'])
+        if app.conf._raw.faithlife_product_release:
+            self.release_dropdown['values'] = [app.conf._raw.faithlife_product_release]
+            self.releasevar.set(app.conf._raw.faithlife_product_release)
 
         # Wine row.
         self.wine_label = Label(self, text="Wine exe: ")
@@ -83,11 +99,10 @@ class InstallerGui(Frame):
         self.wine_dropdown = Combobox(self, textvariable=self.winevar)
         self.wine_dropdown.state(['readonly'])
         self.wine_dropdown['values'] = []
-        if self.wine_exe:
-            self.wine_dropdown['values'] = [self.wine_exe]
-            self.winevar.set(self.wine_exe)
-        self.wine_check_button = Button(self, text="Get EXE List")
-        self.wine_check_button.state(['disabled'])
+        # Conditional only if wine_binary is actually set, don't prompt if it's not
+        if self.app.conf._raw.wine_binary:
+            self.wine_dropdown['values'] = [self.app.conf.wine_binary]
+            self.winevar.set(self.app.conf.wine_binary)
 
         # Winetricks row.
         self.tricks_label = Label(self, text="Winetricks: ")
@@ -95,32 +110,25 @@ class InstallerGui(Frame):
         self.tricks_dropdown = Combobox(self, textvariable=self.tricksvar)
         self.tricks_dropdown.state(['readonly'])
         values = ['Download']
-        if self.winetricksbin:
-            values.insert(0, self.winetricksbin)
+        if app.conf._raw.winetricks_binary:
+            values.insert(0, app.conf._raw.winetricks_binary)
         self.tricks_dropdown['values'] = values
         self.tricksvar.set(self.tricks_dropdown['values'][0])
 
         # Fonts row.
         self.fonts_label = Label(self, text="Install Fonts: ")
-        self.fontsvar = BooleanVar(value=1-self.skip_fonts)
+        self.fontsvar = BooleanVar(value=not self.app.conf.skip_install_fonts)
         self.fonts_checkbox = Checkbutton(self, variable=self.fontsvar)
 
         # Skip Dependencies row.
         self.skipdeps_label = Label(self, text="Install Dependencies: ")
-        self.skipdepsvar = BooleanVar(value=1-self.skip_dependencies)
+        self.skipdepsvar = BooleanVar(value=not self.app.conf.skip_install_system_dependencies) #noqa: E501
         self.skipdeps_checkbox = Checkbutton(self, variable=self.skipdepsvar)
 
         # Cancel/Okay buttons row.
         self.cancel_button = Button(self, text="Cancel")
         self.okay_button = Button(self, text="Install")
         self.okay_button.state(['disabled'])
-
-        # Status area.
-        s1 = Separator(self, orient='horizontal')
-        self.statusvar = StringVar()
-        self.status_label = Label(self, textvariable=self.statusvar)
-        self.progressvar = IntVar()
-        self.progress = Progressbar(self, variable=self.progressvar)
 
         # Place widgets.
         row = 0
@@ -130,11 +138,9 @@ class InstallerGui(Frame):
         row += 1
         self.release_label.grid(column=0, row=row, sticky='w', pady=2)
         self.release_dropdown.grid(column=1, row=row, sticky='w', pady=2)
-        self.release_check_button.grid(column=2, row=row, sticky='w', pady=2)
         row += 1
         self.wine_label.grid(column=0, row=row, sticky='w', pady=2)
         self.wine_dropdown.grid(column=1, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
-        self.wine_check_button.grid(column=4, row=row, sticky='e', pady=2)
         row += 1
         self.tricks_label.grid(column=0, row=row, sticky='w', pady=2)
         self.tricks_dropdown.grid(column=1, row=row, sticky='we', pady=2)
@@ -147,12 +153,6 @@ class InstallerGui(Frame):
         self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
         self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
         row += 1
-        # Status area
-        s1.grid(column=0, row=row, columnspan=5, sticky='we')
-        row += 1
-        self.status_label.grid(column=0, row=row, columnspan=5, sticky='w', pady=2)  # noqa: E501
-        row += 1
-        self.progress.grid(column=0, row=row, columnspan=5, sticky='we', pady=2)  # noqa: E501
 
 
 class ControlGui(Frame):
@@ -161,19 +161,15 @@ class ControlGui(Frame):
         self.config(padding=5)
         self.grid(row=0, column=0, sticky='nwes')
 
-        # Initialize vars from ENV.
-        self.installdir = config.INSTALLDIR
-        self.flproduct = config.FLPRODUCT
-        self.targetversion = config.TARGETVERSION
-        self.logos_release_version = config.TARGET_RELEASE_VERSION
-        self.logs = config.LOGS
-        self.config_file = config.CONFIG_FILE
-
         # Run/install app button
         self.app_buttonvar = StringVar()
         self.app_buttonvar.set("Install")
         self.app_label = Label(self, text="FaithLife app")
         self.app_button = Button(self, textvariable=self.app_buttonvar)
+
+        self.app_install_advancedvar = StringVar()
+        self.app_install_advancedvar.set("Advanced Install")
+        self.app_install_advanced = Button(self, textvariable=self.app_install_advancedvar) #noqa: E501
 
         # Installed app actions
         # -> Run indexing, Remove library catalog, Remove all index files
@@ -218,7 +214,9 @@ class ControlGui(Frame):
         self.backups_label = Label(self, text="Backup/restore data")
         self.backup_button = Button(self, text="Backup")
         self.restore_button = Button(self, text="Restore")
-        self.update_lli_label = Label(self, text=f"Update {config.name_app}")  # noqa: E501
+        # The normal text has three lines. Make this the same 
+        # in order for tkinker to know how large to draw it
+        self.update_lli_label = Label(self, text=f"Update {constants.APP_NAME}\n\n")  # noqa: E501
         self.update_lli_button = Button(self, text="Update")
         # AppImage buttons
         self.latest_appimage_label = Label(
@@ -257,6 +255,7 @@ class ControlGui(Frame):
         row = 0
         self.app_label.grid(column=0, row=row, sticky='w', pady=2)
         self.app_button.grid(column=1, row=row, sticky='w', pady=2)
+        self.show_advanced_install_button()
         row += 1
         s1.grid(column=0, row=1, columnspan=3, sticky='we', pady=2)
         row += 1
@@ -304,6 +303,8 @@ class ControlGui(Frame):
         row += 1
         self.progress.grid(column=0, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
 
+    def show_advanced_install_button(self):
+        self.app_install_advanced.grid(column=2, row=0, sticky='w', pady=2)
 
 class ToolTip:
     def __init__(self, widget, text):
@@ -342,8 +343,9 @@ class ToolTip:
 
     def hide_tooltip(self, event=None):
         if self.tooltip_visible:
-            self.tooltip_window.destroy()
             self.tooltip_visible = False
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
 
 
 class PromptGui(Frame):
@@ -354,12 +356,14 @@ class PromptGui(Frame):
             self.options['title'] = title
         if prompt is not None:
             self.options['prompt'] = prompt
+        self.root = root
 
     def draw_prompt(self):
+        text = "Store Password"
         store_button = Button(
             self.root,
-            text="Store Password",
-            command=lambda: input_prompt(self.root, self.options)
+            text=text,
+            command=lambda: input_prompt(self.root, text, self.options)
         )
         store_button.pack(pady=20)
 
