@@ -238,7 +238,7 @@ def ensure_winetricks_applied(app: App):
             wine.set_renderer(app, "gdi")
 
         if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
-            app.status("Setting Font Smooting to RGB…")
+            app.status("Setting Font Smoothing to RGB…")
             wine.install_font_smoothing(app)
 
         if not app.conf.skip_install_fonts and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
