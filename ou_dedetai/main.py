@@ -409,7 +409,7 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
         logging.info(f"Running function: {action.__name__}")  # noqa: E501
         action(ephemeral_config)
     else:  # install_required, but app not installed
-        print("App not installed, but required for this operation. Consider installing first.", file=sys.stderr) #noqa: E501
+        print("App is not installed, but required for this operation. Consider installing first.", file=sys.stderr) #noqa: E501
         sys.exit(1)
 
 

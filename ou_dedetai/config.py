@@ -66,6 +66,18 @@ class LegacyConfiguration:
     WINETRICKS_UNATTENDED: Optional[str] = None
 
     @classmethod
+    def bool_keys(cls) -> list[str]:
+        """Returns a list of keys that are of type bool"""
+        return [
+            "VERBOSE",
+            "SKIP_WINETRICKS",
+            "SKIP_FONTS",
+            "SKIP_DEPENDENCIES",
+            "DEBUG",
+            "CHECK_UPDATES"
+        ]
+
+    @classmethod
     def config_file_path(cls) -> str:
         return os.getenv("CONFIG_FILE") or constants.DEFAULT_CONFIG_PATH
 
@@ -86,7 +98,7 @@ class LegacyConfiguration:
 
     @classmethod
     def load_from_path(cls, config_file_path: str) -> "LegacyConfiguration":
-        config_dict = {}
+        config_dict: dict[str, str] = {}
         
         if not Path(config_file_path).exists():
             pass
@@ -126,17 +138,34 @@ class LegacyConfiguration:
                         config_dict[parts[0]] = value
 
         # Now restrict the key values pairs to just those found in LegacyConfiguration
-        output = {}
+        output: dict = {}
+        config_env = LegacyConfiguration.load_from_env().__dict__
         # Now update from ENV
-        for var in LegacyConfiguration().__dict__.keys():
-            if os.getenv(var) is not None:
-                config_dict[var] = os.getenv(var)
-            if var in config_dict:
-                output[var] = config_dict[var]
+        for var, env_var in config_env.items():
+            if env_var is not None:
+                output[var] = env_var
+            elif var in config_dict:
+                if var in LegacyConfiguration.bool_keys():
+                    output[var] = utils.parse_bool(config_dict[var])
+                else:
+                    output[var] = config_dict[var]
 
         # Populate the path this config was loaded from
         output["CONFIG_FILE"] = config_file_path
 
+        return LegacyConfiguration(**output)
+
+    @classmethod
+    def load_from_env(cls) -> "LegacyConfiguration":
+        output: dict = {}
+        # Now update from ENV
+        for var in LegacyConfiguration().__dict__.keys():
+            env_var = os.getenv(var)
+            if env_var is not None:
+                if var in LegacyConfiguration.bool_keys():
+                    output[var] = utils.parse_bool(env_var)
+                else:
+                    output[var] = env_var
         return LegacyConfiguration(**output)
 
 
@@ -354,7 +383,13 @@ class PersistentConfiguration:
             else:
                 logging.info("Not reading new values from non-json config")
         else:
-            logging.info("Not reading new values from non-existant config")
+            logging.info("Not reading new values from non-existent config")
+
+        # Now override with values from ENV
+        config_env = PersistentConfiguration.from_legacy(LegacyConfiguration.load_from_env()) #noqa: E501
+        for k, v in config_env.__dict__.items():
+            if v is not None:
+                config_dict[k] = v
 
         return PersistentConfiguration(**config_dict)
 
@@ -488,6 +523,13 @@ class Config:
         logging.debug("Current persistent config:")
         for k, v in self._raw.__dict__.items():
             logging.debug(f"{k}: {v}")
+        logging.debug("Current ephemeral config:")
+        for k, v in self._overrides.__dict__.items():
+            logging.debug(f"{k}: {v}")
+        logging.debug("Current network cache:")
+        for k, v in self._network._cache.__dict__.items():
+            logging.debug(f"{k}: {v}")
+        logging.debug("End config dump")
 
     def _ask_if_not_found(self, parameter: str, question: str, options: list[str], dependent_parameters: Optional[list[str]] = None) -> str:  #noqa: E501
         if not getattr(self._raw, parameter):
