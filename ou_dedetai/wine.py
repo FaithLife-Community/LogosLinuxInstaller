@@ -218,7 +218,7 @@ def check_wine_version_and_branch(release_version: str, test_binary,
     return True, "None"
 
 
-def initializeWineBottle(wine64_binary: str, app: App):
+def initializeWineBottle(wine64_binary: str, app: App) -> Optional[subprocess.Popen[bytes]]: #noqa: E501
     app.status("Initializing wine bottle…")
     logging.debug(f"{wine64_binary=}")
     # Avoid wine-mono window
