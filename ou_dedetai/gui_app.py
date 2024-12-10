@@ -544,7 +544,6 @@ class ControlWindow(GuiApp):
         self.update_latest_appimage_button()
 
     def update_to_latest_appimage(self, evt=None):
-        self.conf.wine_appimage_path = Path(self.conf.wine_appimage_recommended_file_name)  # noqa: E501
         self.status("Updating to latest AppImage…")
         self.start_thread(self.set_appimage_symlink)
 

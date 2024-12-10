@@ -557,36 +557,25 @@ def set_appimage_symlink(app: App):
     appimage_file_path = Path(app.conf.wine_appimage_path)
     appdir_bindir = Path(app.conf.installer_binary_dir)
     appimage_symlink_path = appdir_bindir / app.conf.wine_appimage_link_file_name
+
+    destination_file_path = appdir_bindir / appimage_file_path.name  # noqa: E501
+
     if appimage_file_path.name == app.conf.wine_appimage_recommended_file_name:  # noqa: E501
         # Default case.
+        # This saves in the install binary dir
         network.dwonload_recommended_appimage(app)
-        selected_appimage_file_path = appdir_bindir / appimage_file_path.name  # noqa: E501
-        bindir_appimage = selected_appimage_file_path / app.conf.installer_binary_dir  # noqa: E501
-        if not bindir_appimage.exists():
-            logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_dir}.")  # noqa: E501
-            shutil.copy(selected_appimage_file_path, f"{app.conf.installer_binary_dir}")
     else:
-        selected_appimage_file_path = appimage_file_path
         # Verify user-selected AppImage.
-        if not check_appimage(selected_appimage_file_path):
-            app.exit(f"Cannot use {selected_appimage_file_path}.")
+        if not check_appimage(appimage_file_path):
+            app.exit(f"Cannot use {appimage_file_path}.")
 
-        # Determine if user wants their AppImage in the app bin dir.
-        copy_question = (
-            f"Should the program copy {selected_appimage_file_path} to the"
-            f" {app.conf.installer_binary_dir} directory?"
-        )
-        # Copy AppImage if confirmed.
-        if app.approve(copy_question):
-            logging.info(f"Copying {selected_appimage_file_path} to {app.conf.installer_binary_dir}.")  # noqa: E501
-            dest = appdir_bindir / selected_appimage_file_path.name
-            if not dest.exists():
-                shutil.copy(selected_appimage_file_path, f"{app.conf.installer_binary_dir}")  # noqa: E501
-            selected_appimage_file_path = dest
+        if destination_file_path != appimage_file_path:
+            logging.info(f"Copying {destination_file_path} to {app.conf.installer_binary_dir}.")  # noqa: E501
+            shutil.copy(appimage_file_path, destination_file_path)
 
     delete_symlink(appimage_symlink_path)
-    os.symlink(selected_appimage_file_path, appimage_symlink_path)
-    app.conf.wine_appimage_path = selected_appimage_file_path  # noqa: E501
+    os.symlink(destination_file_path, appimage_symlink_path)
+    app.conf.wine_appimage_path = destination_file_path  # noqa: E501
 
 
 def update_to_latest_lli_release(app: App):

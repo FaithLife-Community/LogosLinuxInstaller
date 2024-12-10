@@ -343,6 +343,8 @@ def install(app: App):
     app.status('Installing…')
     ensure_launcher_shortcuts(app)
     app.status("Install Complete!", 100)
+    # Trigger a config update event to refresh the UIs
+    app._config_updated_event.set()
 
 
 def get_progress_pct(current, total):
