@@ -37,6 +37,12 @@ class GuiApp(App):
     def __init__(self, root: "Root", ephemeral_config: EphemeralConfiguration, **kwargs): #noqa: E501
         super().__init__(ephemeral_config)
         self.root = root
+        # Now spawn a new thread to ensure choices are set to set to defaults so user
+        # isn't App.ask'ed
+        def _populate_initial_defaults():
+            self.populate_defaults()
+        self.start_thread(_populate_initial_defaults)
+
 
     def _ask(self, question: str, options: list[str] | str) -> Optional[str]:
         # This cannot be run from the main thread as the dialog will never appear
@@ -104,10 +110,11 @@ class GuiApp(App):
 
         # Now that we know product and version are set we can download the releases
         # And use the first one
-        # This will delay the UI from loading, but will be more robust if it's done in a
-        # blocking manner like it is
         if self.conf._raw.faithlife_product_release is None:
-            self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
+            # Spawn a thread that does this, as the download takes a second
+            def _populate_product_release_default():
+                self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
+            self.start_thread(_populate_product_release_default)
 
         # Set the install_dir to default, no option in the GUI to change it
         if self.conf._raw.install_dir is None:
@@ -266,8 +273,6 @@ class InstallerWindow:
         self.get_winetricks_options()
 
         self.app.config_updated_hooks += [self._config_updated_hook]
-        # Ensure default choices are set so user isn't App.ask'ed
-        self.app.populate_defaults()
         # Start out enforcing this
         self._config_updated_hook()
 
@@ -408,7 +413,14 @@ class ControlWindow(GuiApp):
         self.actioncmd: Optional[Callable[[], None]] = None
 
         ver = constants.LLI_CURRENT_VERSION
-        text = f"Update {constants.APP_NAME}\ncurrent: v{ver}\nlatest: v{self.conf.app_latest_version}" #noqa: E501
+        text = f"Update {constants.APP_NAME}\ncurrent: v{ver}\nlatest: ..." #noqa: E501
+        # Spawn a thread to update the label with the current version
+        def _update_lli_version():
+            text = f"Update {constants.APP_NAME}\ncurrent: v{ver}\nlatest: v{self.conf.app_latest_version}" #noqa: E501
+            self.gui.update_lli_label.config(text=text)
+            self.update_latest_lli_release_button()
+        self.gui.update_lli_button.state(['disabled'])
+        self.start_thread(_update_lli_version)
         self.gui.update_lli_label.config(text=text)
         self.gui.run_indexing_radio.config(
             command=self.on_action_radio_clicked
@@ -441,7 +453,6 @@ class ControlWindow(GuiApp):
         self.gui.latest_appimage_button.config(
             command=self.update_to_latest_appimage
         )
-        self.update_latest_lli_release_button()
         self.gui.set_appimage_button.config(command=self.set_appimage)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
         self.gui.run_winetricks_button.config(command=self.launch_winetricks)
@@ -458,7 +469,6 @@ class ControlWindow(GuiApp):
         
         Fallback to defaults if we don't know a response"""
         def _install():
-            self.populate_defaults()
             installer.install(self)
             # Enable the run button
             self.gui.app_button.state(['!disabled'])
@@ -605,6 +615,7 @@ class ControlWindow(GuiApp):
         self.gui.logging_button.state(['!disabled'])
 
     def update_app_button(self, evt=None):
+        self.gui.app_button.state(['!disabled'])
         if self.is_installed():
             self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
             self.gui.app_button.config(command=self.run_logos)
@@ -615,6 +626,19 @@ class ControlWindow(GuiApp):
             self.gui.app_button.config(command=self.run_install)
             self.gui.app_install_advanced.config(command=self.run_installer)
             self.gui.show_advanced_install_button()
+            # This function checks to make sure the product/version/channel is non-None
+            if self.conf._network._faithlife_product_releases(
+                self.conf._raw.faithlife_product,
+                self.conf._raw.faithlife_product_version,
+                self.conf._raw.faithlife_product_version
+            ):
+                # Everything is ready, we can install
+                self.gui.app_button.state(['!disabled'])
+                self.gui.app_install_advanced.state(['!disabled'])
+            else:
+                # Disable Both install buttons
+                self.gui.app_button.state(['disabled'])
+                self.gui.app_install_advanced.state(['disabled'])
 
     def update_latest_lli_release_button(self, evt=None):
         msg = None
@@ -691,9 +715,15 @@ class ControlWindow(GuiApp):
     def _config_update_hook(self, evt=None):
         self.update_logging_button()
         self.update_app_button()
-        self.update_latest_lli_release_button()
-        self.update_latest_appimage_button()
         self.update_run_winetricks_button()
+        try:
+            self.update_latest_lli_release_button()
+        except Exception:
+            logging.exception("Failed to update release button")
+        try:
+            self.update_latest_appimage_button()
+        except Exception:
+            logging.exception("Failed to update appimage button")
 
 
     def current_logging_state_value(self) -> str:

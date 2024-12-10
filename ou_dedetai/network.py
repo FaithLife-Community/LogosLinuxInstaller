@@ -210,12 +210,14 @@ class NetworkRequests:
         self._cache = CachedRequests.load()
         self._cache.clean_if_stale(force=force_clean or False)
 
-    def faithlife_product_releases(
+    def _faithlife_product_releases(
         self,
-        product: str,
-        version: str,
-        channel: str
-    ) -> list[str]:
+        product: Optional[str],
+        version: Optional[str],
+        channel: Optional[str]
+    ) -> Optional[list[str]]:
+        if product is None or version is None or channel is None:
+            return None
         releases = self._cache.faithlife_product_releases
         if product not in releases:
             releases[product] = {}
@@ -225,13 +227,26 @@ class NetworkRequests:
             channel 
             not in releases[product][version]
         ):
-            releases[product][version][channel] = _get_faithlife_product_releases(
-                faithlife_product=product,
-                faithlife_product_version=version,
-                faithlife_product_release_channel=channel
-            )
-            self._cache._write()
+            return None
         return releases[product][version][channel]
+
+    def faithlife_product_releases(
+        self,
+        product: str,
+        version: str,
+        channel: str
+    ) -> list[str]:
+        output = self._faithlife_product_releases(product, version, channel)
+        if output is not None:
+            return output
+        output = _get_faithlife_product_releases(
+            faithlife_product=product,
+            faithlife_product_version=version,
+            faithlife_product_release_channel=channel
+        )
+        self._cache.faithlife_product_releases[product][version][channel] = output
+        self._cache._write()
+        return output
     
     def wine_appimage_recommended_url(self) -> str:
         repo = "FaithLife-Community/wine-appimages"

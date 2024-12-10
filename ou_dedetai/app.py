@@ -48,7 +48,10 @@ class App(abc.ABC):
                 self._config_updated_event.wait()
                 self._config_updated_event.clear()
                 for hook in self.config_updated_hooks:
-                    hook()
+                    try:
+                        hook()
+                    except Exception:
+                        logging.exception("Failed to run config update hook")
         _config_updated_hook_runner.__name__ = "Config Update Hook"
         self.start_thread(_config_updated_hook_runner, daemon_bool=True)
 
