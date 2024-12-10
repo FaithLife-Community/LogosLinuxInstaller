@@ -462,7 +462,6 @@ class ControlWindow(GuiApp):
             installer.install(self)
             # Enable the run button
             self.gui.app_button.state(['!disabled'])
-            self.update_app_button()
         # Disable the install buttons
         self.gui.app_button.state(['disabled'])
         self.gui.app_install_advanced.state(['disabled'])

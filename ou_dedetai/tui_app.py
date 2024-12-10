@@ -530,7 +530,6 @@ class TUI(App):
         def _install():
             try:
                 installer.install(app=self)
-                self.update_main_window_contents()
                 self.go_to_main_menu()
             except ReturningToMainMenu:
                 pass
@@ -856,6 +855,7 @@ class TUI(App):
         )
 
     def _config_update_hook(self):
+        self.update_main_window_contents()
         self.set_curses_colors()
         self.set_title()
 
