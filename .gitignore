@@ -8,4 +8,4 @@ venv/
 .venv/
 .idea/
 *.egg-info
-.vscode/
+.vscode
