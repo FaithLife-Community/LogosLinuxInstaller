@@ -504,7 +504,7 @@ def find_appimage_files(app: App) -> list[str]:
     return appimages
 
 
-def find_wine_binary_files(app: App, release_version: str) -> list[str]:
+def find_wine_binary_files(app: App, release_version: Optional[str]) -> list[str]:
     wine_binary_path_list = [
         "/usr/local/bin",
         os.path.expanduser("~") + "/bin",

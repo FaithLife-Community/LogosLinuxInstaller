@@ -111,10 +111,17 @@ class GuiApp(App):
         # Now that we know product and version are set we can download the releases
         # And use the first one
         if self.conf._raw.faithlife_product_release is None:
-            # Spawn a thread that does this, as the download takes a second
-            def _populate_product_release_default():
+            if self.conf._network._faithlife_product_releases(
+                self.conf._raw.faithlife_product,
+                self.conf._raw.faithlife_product_version,
+                self.conf._raw.faithlife_product_release_channel,
+            ) is not None:
                 self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
-            self.start_thread(_populate_product_release_default)
+            else:
+                # Spawn a thread that does this, as the download takes a second
+                def _populate_product_release_default():
+                    self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
+                self.start_thread(_populate_product_release_default)
 
         # Set the install_dir to default, no option in the GUI to change it
         if self.conf._raw.install_dir is None:
@@ -630,7 +637,7 @@ class ControlWindow(GuiApp):
             if self.conf._network._faithlife_product_releases(
                 self.conf._raw.faithlife_product,
                 self.conf._raw.faithlife_product_version,
-                self.conf._raw.faithlife_product_version
+                self.conf._raw.faithlife_product_release_channel
             ):
                 # Everything is ready, we can install
                 self.gui.app_button.state(['!disabled'])

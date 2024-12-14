@@ -835,7 +835,8 @@ class Config:
     def wine_binary_files(self) -> list[str]:
         if self._wine_binary_files is None:
             self._wine_binary_files = utils.find_wine_binary_files(
-                self.app, self.faithlife_product_release
+                self.app,
+                self._raw.faithlife_product_release
             )
         return self._wine_binary_files
 

@@ -189,7 +189,7 @@ def check_wine_rules(
         return True, "Default to trusting user override"
 
 
-def check_wine_version_and_branch(release_version: str, test_binary,
+def check_wine_version_and_branch(release_version: Optional[str], test_binary,
                                   faithlife_product_version):
     if not os.path.exists(test_binary):
         reason = "Binary does not exist."
