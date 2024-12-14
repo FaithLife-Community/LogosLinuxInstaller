@@ -361,7 +361,7 @@ def create_wine_appimage_symlinks(app: App):
         logging.debug("No need to symlink non-appimages")
         return
 
-    appimage_file = Path(app.conf.wine_appimage_path)
+    appimage_file = appdir_bindir / app.conf.wine_appimage_path.name
     appimage_filename = Path(app.conf.wine_appimage_path).name
     # Ensure appimage is copied to appdir_bindir.
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename) #noqa: E501
@@ -372,7 +372,8 @@ def create_wine_appimage_symlinks(app: App):
         app.status(f"Copying: {downloaded_file} into: {appdir_bindir}")
         shutil.copy(downloaded_file, appdir_bindir)
     os.chmod(appimage_file, 0o755)
-    appimage_filename = appimage_file.name
+    app.conf.wine_appimage_path = appimage_file
+    app.conf.wine_binary = str(appimage_file)
 
     appimage_link.unlink(missing_ok=True)  # remove & replace
     appimage_link.symlink_to(f"./{appimage_filename}")
