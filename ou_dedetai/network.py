@@ -237,7 +237,7 @@ class NetworkRequests:
         channel: str
     ) -> list[str]:
         output = self._faithlife_product_releases(product, version, channel)
-        if output is not None:
+        if output is not None and len(output) > 0:
             return output
         output = _get_faithlife_product_releases(
             faithlife_product=product,

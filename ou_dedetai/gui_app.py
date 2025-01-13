@@ -110,18 +110,23 @@ class GuiApp(App):
 
         # Now that we know product and version are set we can download the releases
         # And use the first one
-        if self.conf._raw.faithlife_product_release is None:
-            if self.conf._network._faithlife_product_releases(
-                self.conf._raw.faithlife_product,
-                self.conf._raw.faithlife_product_version,
-                self.conf._raw.faithlife_product_release_channel,
-            ) is not None:
+        # Also ensure that our network cache is populated
+        if self.conf._network._faithlife_product_releases(
+            self.conf._raw.faithlife_product,
+            self.conf._raw.faithlife_product_version,
+            self.conf._raw.faithlife_product_release_channel,
+        ):
+            if self.conf._raw.faithlife_product_release is None:
                 self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
-            else:
-                # Spawn a thread that does this, as the download takes a second
-                def _populate_product_release_default():
-                    self.conf.faithlife_product_release = self.conf.faithlife_product_releases[0] #noqa: E501
-                self.start_thread(_populate_product_release_default)
+        else:
+            # Spawn a thread that does this, as the download takes a second
+            def _populate_product_release_default():
+                # Always Get the latest release
+                latest_release = self.conf.faithlife_product_releases[0]
+                # If the release wasn't set before, set it now
+                if self.conf._raw.faithlife_product_release is None:
+                    self.conf.faithlife_product_release = latest_release
+            self.start_thread(_populate_product_release_default)
 
         # Set the install_dir to default, no option in the GUI to change it
         if self.conf._raw.install_dir is None:
@@ -633,12 +638,13 @@ class ControlWindow(GuiApp):
             self.gui.app_button.config(command=self.run_install)
             self.gui.app_install_advanced.config(command=self.run_installer)
             self.gui.show_advanced_install_button()
-            # This function checks to make sure the product/version/channel is non-None
-            if self.conf._network._faithlife_product_releases(
+            # Make sure the product/version/channel/release is non-None
+            if None not in [
                 self.conf._raw.faithlife_product,
                 self.conf._raw.faithlife_product_version,
-                self.conf._raw.faithlife_product_release_channel
-            ):
+                self.conf._raw.faithlife_product_release_channel,
+                self.conf._raw.faithlife_product_release
+            ]:
                 # Everything is ready, we can install
                 self.gui.app_button.state(['!disabled'])
                 self.gui.app_install_advanced.state(['!disabled'])
