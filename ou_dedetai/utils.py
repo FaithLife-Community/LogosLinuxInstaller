@@ -477,8 +477,8 @@ def find_appimage_files(app: App) -> list[str]:
     release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version #noqa: E501
     appimages = []
     directories = [
-        os.path.expanduser("~") + "/bin",
         app.conf.installer_binary_dir,
+        os.path.expanduser("~") + "/bin",
         app.conf.download_dir
     ]
     if app.conf._overrides.custom_binary_path is not None:
