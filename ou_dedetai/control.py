@@ -133,7 +133,6 @@ def backup_and_restore(mode: str, app: App):
     else:
         m = f"Backing up to {str(dst_dir)}…"
     app.status(m)
-    app.status("Starting backup…")
     t = app.start_thread(copy_data, src_dirs, dst_dir)
     try:
         counter = 0
