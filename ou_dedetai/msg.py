@@ -80,8 +80,7 @@ def initialize_logging():
 
     # Ensure log file parent folders exist.
     log_parent = Path(app_log_path).parent
-    if not log_parent.is_dir():
-        log_parent.mkdir(parents=True)
+    log_parent.mkdir(parents=True, exist_ok=True)
 
     # Define logging handlers.
     file_h = GzippedRotatingFileHandler(
