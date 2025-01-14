@@ -469,7 +469,7 @@ def get_package_manager() -> PackageManager | None:
         packages = (
             "fuse2 "  # appimages
             "samba wget "  # wine
-            "p7zip "  # winetricks
+            "p7zip "  # winetricks (this will likely rename to 7zip shortly)
             "curl gawk grep "  # other
         )
         incompatible_packages = ""  # appimagelauncher handled separately
@@ -486,7 +486,7 @@ def get_package_manager() -> PackageManager | None:
             packages = (
                 "fuse2 "  # appimages
                 "binutils libwbclient samba wget "  # wine
-                "p7zip "  # winetricks
+                "7zip "  # winetricks (this used to be called pzip)
                 "openjpeg2 libxcomposite libxinerama "  # display
                 "ocl-icd vulkan-icd-loader "  # hardware
                 "alsa-plugins gst-plugins-base-libs libpulse openal "  # audio
