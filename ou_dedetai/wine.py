@@ -398,7 +398,15 @@ def set_renderer(app: App, renderer: str):
 
 def set_win_version(app: App, exe: str, windows_version: str):
     if exe == "logos":
-        run_winetricks(app, '-q', 'settings', f'{windows_version}')
+        # This operation is equivilent to f"winetricks -q settings {windows_version}"
+        # but faster
+        process = run_wine_proc(
+            app.conf.wine_binary,
+            app,
+            exe_args=('winecfg', '/v', windows_version)
+        )
+        if process:
+            process.wait()
 
     elif exe == "indexer":
         reg = f"HKCU\\Software\\Wine\\AppDefaults\\{app.conf.faithlife_product}Indexer.exe"  # noqa: E501
