@@ -20,11 +20,11 @@ def check_wineserver(app: App):
     # (or at least kill it). Gotten into several states in dev where this happend
     # Normally when an msi install failed
     try:
-        process = run_wine_proc(app.conf.wineserver_binary, app, exe_args=["-p"])
+        process = run_wine_proc(app.conf.wineserver_binary, app)
         if not process:
             logging.debug("Failed to spawn wineserver to check it")
             return False
-        system.wait_pid(process)
+        process.wait()
         return process.returncode == 0
     except Exception:
         return False
@@ -36,7 +36,7 @@ def wineserver_kill(app: App):
         if not process:
             logging.debug("Failed to spawn wineserver to kill it")
             return False
-        system.wait_pid(process)
+        process.wait()
 
 
 def wineserver_wait(app: App):
@@ -45,7 +45,7 @@ def wineserver_wait(app: App):
         if not process:
             logging.debug("Failed to spawn wineserver to wait for it")
             return False
-        system.wait_pid(process)
+        process.wait()
 
 
 @dataclass
@@ -244,8 +244,7 @@ def wine_reg_install(app: App, reg_file, wine64_binary):
         exe="regedit.exe",
         exe_args=[reg_file]
     )
-    # NOTE: For some reason system.wait_pid results in the reg install failing.
-    # system.wait_pid(process)
+    # NOTE: For some reason waiting on this processes results in the reg install failing
     if process is None:
         app.exit("Failed to spawn command to install reg file")
     process.wait()
@@ -363,7 +362,7 @@ def run_winetricks(app: App, *args):
     process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
     if process is None:
         app.exit("Failed to spawn winetricks")
-    system.wait_pid(process)
+    process.wait()
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
     wineserver_wait(app)
     logging.debug(f"procs using {app.conf.wine_prefix}:")
@@ -418,7 +417,7 @@ def set_win_version(app: App, exe: str, windows_version: str):
         )
         if process is None:
             app.exit("Failed to spawn command to set windows version for indexer")
-        system.wait_pid(process)
+        process.wait()
 
 
 # FIXME: Consider when to re-run this if it changes.

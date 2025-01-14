@@ -178,7 +178,7 @@ class LogosManager:
                     process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGTERM)
-                    system.wait_pid(process)
+                    os.waitpid(-process.pid, 0)
 
     def index(self):
         self.indexing_state = State.STARTING
@@ -302,6 +302,6 @@ class LogosManager:
             exe_args=exe_args
         )
         if process:
-            system.wait_pid(process)
+            process.wait()
         wine.wineserver_wait(self.app)
         self.app.conf.faithlife_product_logging = state == state_enabled

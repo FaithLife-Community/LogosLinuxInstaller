@@ -202,7 +202,8 @@ def ensure_wineprefix_init(app: App):
         else:
             logging.debug("Initializing wineprefix.")
             process = wine.initializeWineBottle(app.conf.wine64_binary, app)
-            system.wait_pid(process)
+            if process:
+                process.wait()
             # wine.light_wineserver_wait()
             wine.wineserver_wait(app)
             logging.debug("Wine init complete.")
@@ -284,7 +285,8 @@ def ensure_product_installed(app: App):
         # FIXME: Should we try to cleanup on a failed msi?
         # Like terminating msiexec if already running for Logos
         process = wine.install_msi(app)
-        system.wait_pid(process)
+        if process:
+            process.wait()
 
     # Clean up temp files, etc.
     utils.clean_all()

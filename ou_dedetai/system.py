@@ -906,10 +906,6 @@ def install_winetricks(
     logging.debug("Winetricks installed.")
     return winetricks_path
 
-def wait_pid(process: Optional[subprocess.Popen]):
-    if process is not None:
-        os.waitpid(-process.pid, 0)
-
 
 def check_incompatibilities(app: App):
     # Check for AppImageLauncher
