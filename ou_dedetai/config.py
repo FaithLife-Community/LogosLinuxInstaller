@@ -1077,6 +1077,8 @@ class Config:
     
     @property
     def installed_faithlife_product_release(self) -> Optional[str]:
+        if self._raw.install_dir is None:
+            return None
         if self._installed_faithlife_product_release is None:
             self._installed_faithlife_product_release = utils.get_current_logos_version(self.install_dir) # noqa: E501
         return self._installed_faithlife_product_release

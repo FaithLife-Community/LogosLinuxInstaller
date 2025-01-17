@@ -338,8 +338,6 @@ class TUI(App):
         # Reset internal variable, it'll be reset next access
         self._console = None
         self.menu_screen.set_options(self.set_tui_menu_options())
-        # self.menu_screen.set_options(self.set_tui_menu_options(dialog=True))
-        self.switch_q.put(1)
         self.refresh()
 
     # ERR: On a sudden resize, the Curses menu is not properly resized,
