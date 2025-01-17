@@ -1,12 +1,13 @@
 import atexit
 from datetime import datetime
 import enum
-import glob
 import inspect
 import json
 import logging
 import os
 import queue
+import sqlite3
+import inotify.adapters # type: ignore
 import psutil
 import re
 import shutil
@@ -138,13 +139,13 @@ def file_exists(file_path: Optional[str | bytes | Path]) -> bool:
         return False
 
 
-def get_current_logos_version(install_dir: str) -> Optional[str]:
-    path_regex = f"{install_dir}/data/wine64_bottle/drive_c/users/*/AppData/Local/Logos/System/Logos.deps.json"  # noqa: E501
-    file_paths = glob.glob(path_regex)
+def get_current_logos_version(logos_appdata_dir: Optional[str]) -> Optional[str]:
+    if logos_appdata_dir is None:
+        return None
+    path = f"{logos_appdata_dir}/System/Logos.deps.json"  # noqa: E501
     logos_version_number: Optional[str] = None
-    if file_paths:
-        logos_version_file = file_paths[0]
-        with open(logos_version_file, 'r') as json_file:
+    if Path(path).exists():
+        with open(path, 'r') as json_file:
             json_data = json.load(json_file)
         for key in json_data.get('libraries', dict()):
             if key.startswith('Logos') and '/' in key:
@@ -156,8 +157,6 @@ def get_current_logos_version(install_dir: str) -> Optional[str]:
         else:
             logging.debug("Couldn't determine installed Logos version.")
             return None
-    else:
-        logging.debug("Logos.deps.json not found.")
     return None
 
 
@@ -683,8 +682,69 @@ def stopwatch(start_time=None, interval=10.0):
     else:
         return False, start_time
 
+
 def get_timestamp():
     return datetime.today().strftime('%Y-%m-%dT%H%M%S')
 
+
 def parse_bool(string: str) -> bool:
     return string.lower() in ['true', '1', 'y', 'yes']
+
+
+def watch_db(path: str, sql_statements: list[str]):
+    """Runs SQL statements against a sqlite db once to start with, then again every time
+    The sqlite db is written to.
+    
+    Handles -wal/-shm as well
+
+    This function may run infinitely, spawn it on it's own thread
+    """
+    # Silence inotify logs
+    logging.getLogger('inotify').setLevel(logging.CRITICAL)
+    i = inotify.adapters.Inotify()
+    i.add_watch(path)
+
+    def execute_sql(cur):
+        # logging.debug(f"Executing SQL against {path}: {sql_statements}")
+        for statement in sql_statements:
+            try:
+                cur.execute(statement)
+            # Database may be locked, keep trying later.
+            except sqlite3.OperationalError as e:
+                logging.exception("Failed to update db, probably locked")
+                pass
+
+    con = sqlite3.connect(path, autocommit=True)
+    cur = con.cursor()
+
+    # Execute once before we start the loop
+    execute_sql(cur)
+    swallow_one = True
+
+    # Keep track of if we've added -wal and -shm are added yet
+    # They may not exist when we start
+    watching_wal_and_shm = False
+    for event in i.event_gen(yield_nones=False):
+        (_, type_names, _, _) = event
+        # These files may not exist when it's executes for the first time
+        if (
+            not watching_wal_and_shm
+            and Path(path + "-wal").exists()
+            and Path(path + "-shm").exists()
+        ):
+            i.add_watch(path + "-wal")
+            i.add_watch(path + "-shm")
+            watching_wal_and_shm = True
+
+        if 'IN_MODIFY' in type_names or 'IN_CLOSE_WRITE' in type_names:
+            # Check to make sure that we aren't responding to our own write
+            if swallow_one:
+                swallow_one = False
+                continue
+            execute_sql(cur)
+            swallow_one = True
+    # Shouldn't be possible to get here, but on the off-chance it happens, 
+    # we'd like to know and cleanup
+    logging.debug(f"Stopped watching {path}")
+    cur.close()
+    con.close()

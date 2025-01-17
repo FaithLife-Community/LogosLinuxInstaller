@@ -1,11 +1,13 @@
 import queue
 import shutil
 import threading
+import time
 from typing import Optional, Tuple
 
 from ou_dedetai.app import App
 from ou_dedetai.config import EphemeralConfiguration
 from ou_dedetai.system import SuperuserCommandNotFound
+from ou_dedetai.logos import State as LogosRunningState
 
 from . import control
 from . import installer
@@ -68,6 +70,10 @@ class CLI(App):
 
     def run_installed_app(self):
         self.logos.start()
+        # Keep the process running so that our background threads can keep running
+        while self.logos.logos_state != LogosRunningState.STOPPED:
+            time.sleep(10)
+            self.logos.monitor()
 
     def stop_installed_app(self):
         self.logos.stop()

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import signal
 import subprocess
 import time
@@ -102,6 +103,8 @@ class LogosManager:
         wine_release, _ = wine.get_wine_release(self.app.conf.wine_binary)
 
         def run_logos():
+            self.prevent_logos_updates()
+            # self.set_auto_updates(False)
             if not self.app.conf.logos_exe:
                 raise ValueError("Could not find installed Logos EXE to run")
             process = wine.run_wine_proc(
@@ -111,6 +114,7 @@ class LogosManager:
             )
             if process is not None:
                 self.processes[self.app.conf.logos_exe] = process
+            self.logos_state = State.RUNNING
 
         # Ensure wine version is compatible with Logos release version.
         good_wine, reason = wine.check_wine_rules(
@@ -144,6 +148,52 @@ class LogosManager:
             #         time.sleep(0.1)
             #         self.monitor()
 
+    # XXX: consider:
+    # Only launch this thread if when we started logos the file doesn't exist (AKA first launch).
+    # We still probably want this to watch the first install (both for our maintainability and if the user selects "Automatically download new resources" checkbox, I'm not sure when that's applied)
+    # May need more thought, as we'd be disregarding the user's choice however in this case do they really want to?
+    # However due to removing the updates from the db as quickly as we do this setting might actually be "safe" to have on
+    #
+    # Perhaps we should see if the checkbox in the installer correlates to this option, if so perhaps we shouldn't touch at all?
+    def set_auto_updates(self, val: bool):
+        """Edits Logos' internal db entry corresponding to the option in:
+        Program Settings -> Internet -> Automatically Download New Resources
+        """
+        if self.app.conf.logos_appdata_dir is None:
+            return
+        logos_appdata_dir = Path(self.app.conf.logos_appdata_dir)
+        # The glob here is for a user identifier
+        db_glob = './Documents/*/LocalUserPreferences/PreferencesManager.db'
+        results = list(logos_appdata_dir.glob(db_glob))
+        if not results:
+            return None
+        db_path = results[0]
+        sql = (
+            """UPDATE Preferences SET Data='<data """ +
+            ('OptIn="true"' if val else 'OptIn="false"') +
+            """ StartDownloadHour="0" StopDownloadHour="0" MarkNewResourcesAsCloud="true" />' WHERE Type='UpdateManagerPreferences'""" #noqa: E501
+        )
+        self.app.start_thread(utils.watch_db, str(db_path), [sql])
+
+    def prevent_logos_updates(self):
+        """Edits Logos' internal database to remove pending installers
+        before it has a chance to apply them
+        """
+        if self.app.conf.logos_appdata_dir is None:
+            return
+        logos_appdata_dir = Path(self.app.conf.logos_appdata_dir)
+        # The glob here is for a user identifier
+        db_glob = './Data/*/UpdateManager/Updates.db'
+        results = list(logos_appdata_dir.glob(db_glob))
+        if not results:
+            return None
+        db_path = results[0]
+        sql = [
+            "DELETE FROM Installers WHERE 1",
+            "DELETE FROM Updates WHERE Source='Application Update'"
+        ]
+        self.app.start_thread(utils.watch_db, str(db_path), sql)
+
     def stop(self):
         logging.debug("Stopping LogosManager.")
         self.logos_state = State.STOPPING
@@ -167,7 +217,8 @@ class LogosManager:
         else:
             logging.debug("No Logos processes to stop.")
             self.logos_state = State.STOPPED
-        wine.wineserver_wait(self.app)
+        # The Logos process has exited, if we wait here it hangs
+        # wine.wineserver_wait(self.app)
 
     def end_processes(self):
         for process_name, process in self.processes.items():

@@ -790,6 +790,14 @@ class Config:
         return f"{self.install_dir}/data/bin"
 
     @property
+    def logos_appdata_dir(self) -> Optional[str]:
+        """Path to the user's Logos installation under AppData"""
+        wine_user = self.wine_user
+        if not wine_user:
+            return None
+        return self.wine_prefix + f'/drive_c/users/{wine_user}/AppData/Local/Logos'
+
+    @property
     # This used to be called WINEPREFIX
     def wine_prefix(self) -> str:
         if self._overrides.wine_prefix is not None:
@@ -1080,7 +1088,7 @@ class Config:
         if self._raw.install_dir is None:
             return None
         if self._installed_faithlife_product_release is None:
-            self._installed_faithlife_product_release = utils.get_current_logos_version(self.install_dir) # noqa: E501
+            self._installed_faithlife_product_release = utils.get_current_logos_version(self.logos_appdata_dir) # noqa: E501
         return self._installed_faithlife_product_release
 
     @property
