@@ -190,6 +190,7 @@ class LogosManager:
         db_path = results[0]
         sql = [
             "DELETE FROM Installers WHERE 1",
+            "DELETE FROM UpdateUrls WHERE 1",
             "DELETE FROM Updates WHERE Source='Application Update'"
         ]
         self.app.start_thread(utils.watch_db, str(db_path), sql)
