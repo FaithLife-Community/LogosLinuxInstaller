@@ -104,7 +104,7 @@ class LogosManager:
 
         def run_logos():
             self.prevent_logos_updates()
-            # self.set_auto_updates(False)
+            self.set_auto_updates(False)
             if not self.app.conf.logos_exe:
                 raise ValueError("Could not find installed Logos EXE to run")
             process = wine.run_wine_proc(
@@ -148,13 +148,9 @@ class LogosManager:
             #         time.sleep(0.1)
             #         self.monitor()
 
-    # XXX: consider:
-    # Only launch this thread if when we started logos the file doesn't exist (AKA first launch).
-    # We still probably want this to watch the first install (both for our maintainability and if the user selects "Automatically download new resources" checkbox, I'm not sure when that's applied)
-    # May need more thought, as we'd be disregarding the user's choice however in this case do they really want to?
-    # However due to removing the updates from the db as quickly as we do this setting might actually be "safe" to have on
-    #
-    # Perhaps we should see if the checkbox in the installer correlates to this option, if so perhaps we shouldn't touch at all?
+    # For now enforce this all the time, ideally we wouldn't override the user's choice
+    # But risks as they are, setting it to false is safer for now.
+    # Feel free to revisit when there is less chances of it breaking an install
     def set_auto_updates(self, val: bool):
         """Edits Logos' internal db entry corresponding to the option in:
         Program Settings -> Internet -> Automatically Download New Resources
