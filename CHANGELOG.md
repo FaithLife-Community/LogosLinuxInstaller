@@ -1,8 +1,16 @@
 # Changelog
 
 - 4.0.0-beta.6
+  - Fix #234 [N. Shaaban]
+  - Fix #187 [N. Shaaban]
+  - Fix #168 [N. Shaaban]
+  - Fix #155 [N. Shaaban]
+  - Fix #147 [N. Shaaban]
+  - Fix #253 [N. Marti]
+  - Fix #252 [N. Marti]
 	- Implemented network cache [N. Shaaban]
 	- Refactored configuration handling (no user action required) [N. Shaaban]
+  - Fix #235 [T. H. Wright]
 - 4.0.0-beta.5
 	- Filter out broken Logos v39 release [N. Shaaban]
 	- Fix #17 [T. H. Wright]
