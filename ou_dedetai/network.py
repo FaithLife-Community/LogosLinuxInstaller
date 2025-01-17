@@ -568,12 +568,10 @@ def _get_faithlife_product_releases(
         # if len(releases) == 5:
         #    break
 
-    # Disabled filtering: with Logos 30+, all versions are known to be working.
-    # Keeping code if it needs to be reactivated.
-    # filtered_releases = utils.filter_versions(releases, 36, 1)
-    # logging.debug(f"Available releases: {', '.join(releases)}")
-    # logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
-    filtered_releases = releases
+    # Logos 39+ doesn't install
+    filtered_releases = utils.filter_versions(releases, 39, 1)
+    logging.debug(f"Available releases: {', '.join(releases)}")
+    logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
     return filtered_releases
 
