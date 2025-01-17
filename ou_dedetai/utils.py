@@ -169,6 +169,10 @@ def check_logos_release_version(version, threshold, check_version_part):
         return False
 
 
+def filter_versions(versions, threshold, check_version_part):
+    return [version for version in versions if check_logos_release_version(version, threshold, check_version_part)]  # noqa: E501
+
+
 def get_winebin_code_and_desc(app: App, binary) -> Tuple[str, str | None]:
     """Gets the type of wine in use and it's description
     
