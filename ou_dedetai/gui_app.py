@@ -102,7 +102,6 @@ class GuiApp(App):
         the user can change these choices later"""
 
         # For the GUI, use defaults until user says otherwise.
-        # XXX: move these to constants
         if self.conf._raw.faithlife_product is None:
             self.conf.faithlife_product = constants.FAITHLIFE_PRODUCTS[0]
         if self.conf._raw.faithlife_product_version is None:
