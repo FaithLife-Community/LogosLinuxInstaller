@@ -1,61 +1,74 @@
 import curses
+import os
+from pathlib import Path
 import signal
 import textwrap
 
-from . import config
-from . import msg
-from . import utils
+from ou_dedetai import tui_screen
+from ou_dedetai.app import App
 
 
-def wrap_text(app, text):
+def wrap_text(app: App, text: str) -> list[str]:
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     # Turn text into wrapped text, line by line, centered
     if "\n" in text:
         lines = text.splitlines()
-        wrapped_lines = [textwrap.fill(line, app.window_width - (config.margin * 2)) for line in lines]
-        lines = '\n'.join(wrapped_lines)
+        wrapped_lines = [textwrap.fill(line, app.window_width - (app.terminal_margin * 2)) for line in lines] #noqa: E501
+        return wrapped_lines
     else:
-        wrapped_text = textwrap.fill(text, app.window_width - (config.margin * 2))
-        lines = wrapped_text.split('\n')
-    return lines
+        wrapped_text = textwrap.fill(text, app.window_width - (app.terminal_margin * 2))
+        return wrapped_text.splitlines()
 
 
-def write_line(app, stdscr, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL):
+def write_line(app: App, stdscr: curses.window, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL): #noqa: E501
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     try:
         stdscr.addnstr(start_y, start_x, text, char_limit, attributes)
     except curses.error:
-        signal.signal(signal.SIGWINCH, app.signal_resize)
+        # This may happen if we try to write beyond the screen limits
+        # May happen when the window is resized before we've handled it
+        pass
 
 
-def title(app, title_text, title_start_y_adj):
-    stdscr = app.get_main_window()
+def title(app: App, title_text, title_start_y_adj):
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
+    stdscr = app.main_window
+    if not stdscr:
+        raise Exception("Expected main window to be initialized, but it wasn't")
     title_lines = wrap_text(app, title_text)
-    title_start_y = max(0, app.window_height // 2 - len(title_lines) // 2)
+    # title_start_y = max(0, app.window_height // 2 - len(title_lines) // 2)
     last_index = 0
     for i, line in enumerate(title_lines):
         if i < app.window_height:
-            write_line(app, stdscr, i + title_start_y_adj, 2, line, app.window_width, curses.A_BOLD)
+            write_line(app, stdscr, i + title_start_y_adj, 2, line, app.window_width, curses.A_BOLD) #noqa: E501
         last_index = i
 
     return last_index
 
 
-def text_centered(app, text, start_y=0):
+def text_centered(app: App, text: str, start_y=0) -> tuple[int, list[str]]:
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     stdscr = app.get_menu_window()
-    if "\n" in text:
-        text_lines = wrap_text(app, text).splitlines()
-    else:
-        text_lines = wrap_text(app, text)
+    text_lines = wrap_text(app, text)
     text_start_y = start_y
     text_width = max(len(line) for line in text_lines)
     for i, line in enumerate(text_lines):
         if text_start_y + i < app.window_height:
             x = app.window_width // 2 - text_width // 2
-            write_line(app, stdscr, text_start_y + i, x, line, app.window_width, curses.A_BOLD)
+            write_line(app, stdscr, text_start_y + i, x, line, app.window_width, curses.A_BOLD) #noqa: E501
 
     return text_start_y, text_lines
 
 
-def spinner(app, index, start_y=0):
+def spinner(app: App, index: int, start_y: int = 0):
     spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"]
     i = index
     text_centered(app, spinner_chars[i], start_y)
@@ -64,7 +77,10 @@ def spinner(app, index, start_y=0):
 
 
 #FIXME: Display flickers.
-def confirm(app, question_text, height=None, width=None):
+def confirm(app: App, question_text: str, height=None, width=None):
+    from ou_dedetai.tui_app import TUI
+    if not isinstance(app, TUI):
+        raise ValueError("curses MUST be used with the TUI")
     stdscr = app.get_menu_window()
     question_text = question_text + " [Y/n]: "
     question_start_y, question_lines = text_centered(app, question_text)
@@ -80,16 +96,17 @@ def confirm(app, question_text, height=None, width=None):
         elif key.lower() == 'n':
             return False
 
-        write_line(app, stdscr, y, 0, "Type Y[es] or N[o]. ", app.window_width, curses.A_BOLD)
+        write_line(app, stdscr, y, 0, "Type Y[es] or N[o]. ", app.window_width, curses.A_BOLD) #noqa: E501
 
 
 class CursesDialog:
     def __init__(self, app):
-        self.app = app
-        self.stdscr = self.app.get_menu_window()
+        from ou_dedetai.tui_app import TUI
+        self.app: TUI = app
+        self.stdscr: curses.window = self.app.get_menu_window()
 
     def __str__(self):
-        return f"Curses Dialog"
+        return "Curses Dialog"
 
     def draw(self):
         pass
@@ -102,31 +119,37 @@ class CursesDialog:
 
 
 class UserInputDialog(CursesDialog):
-    def __init__(self, app, question_text, default_text):
+    def __init__(self, app, question_text: str, default_text: str):
         super().__init__(app)
         self.question_text = question_text
         self.default_text = default_text
         self.user_input = ""
         self.submit = False
-        self.question_start_y = None
-        self.question_lines = None
+
+        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text) #noqa: E501
+
 
     def __str__(self):
-        return f"UserInput Curses Dialog"
+        return "UserInput Curses Dialog"
 
     def draw(self):
         curses.echo()
         curses.curs_set(1)
         self.stdscr.clear()
-        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text)
+        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text) #noqa: E501
         self.input()
         curses.curs_set(0)
         curses.noecho()
         self.stdscr.refresh()
 
+    @property
+    def show_text(self) -> str:
+        """Text to show to the user. Normally their input"""
+        return self.user_input
+
     def input(self):
-        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.user_input, self.app.window_width)
-        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.user_input))
+        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.show_text, self.app.window_width) #noqa: E501
+        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.show_text)) #noqa: E501
 
         try:
             if key == -1:  # If key not found, keep processing.
@@ -136,6 +159,35 @@ class UserInputDialog(CursesDialog):
             elif key == curses.KEY_BACKSPACE or key == 127:
                 if len(self.user_input) > 0:
                     self.user_input = self.user_input[:-1]
+            elif key == 9: # Tab
+                # Handle tab complete if the input is path life
+                if self.user_input.startswith("~"):
+                    self.user_input = os.path.expanduser(self.user_input)
+                if self.user_input.startswith(os.path.sep):
+                    path = Path(self.user_input)
+                    dir_path = path.parent
+                    if self.user_input.endswith(os.path.sep):
+                        path_name = ""
+                        dir_path = path
+                    elif path.parent.exists():
+                        path_name = path.name
+                    if dir_path.exists():
+                        options = os.listdir(dir_path)
+                        options = [option for option in options if option.startswith(path_name)] #noqa: E501
+                        # Displaying all these options may be complicated, for now for
+                        # now only display if there is only one option
+                        if len(options) == 1:
+                            self.user_input = options[0]
+                            if Path(self.user_input).is_dir():
+                                self.user_input += os.path.sep
+                        # Or see if all the options have the same prefix
+                        common_chars = ""
+                        for i in range(min([len(option) for option in options])):
+                            # If all of the options are the same
+                            if len(set([option[i] for option in options])) == 1:
+                                common_chars += options[0][i]
+                        if common_chars:
+                            self.user_input = str(dir_path / common_chars)
             else:
                 self.user_input += chr(key)
         except KeyboardInterrupt:
@@ -152,39 +204,10 @@ class UserInputDialog(CursesDialog):
 
 
 class PasswordDialog(UserInputDialog):
-    def __init__(self, app, question_text, default_text):
-        super().__init__(app, question_text, default_text)
-
-        self.obfuscation = ""
-
-    def run(self):
-        if not self.submit:
-            self.draw()
-            return "Processing"
-        else:
-            if self.user_input is None or self.user_input == "":
-                self.user_input = self.default_text
-            return self.user_input
-
-    def input(self):
-        write_line(self.app, self.stdscr, self.question_start_y + len(self.question_lines) + 2, 10, self.obfuscation,
-                   self.app.window_width)
-        key = self.stdscr.getch(self.question_start_y + len(self.question_lines) + 2, 10 + len(self.obfuscation))
-
-        try:
-            if key == -1:  # If key not found, keep processing.
-                pass
-            elif key == ord('\n'):  # Enter key
-                self.submit = True
-            elif key == curses.KEY_BACKSPACE or key == 127:
-                if len(self.user_input) > 0:
-                    self.user_input = self.user_input[:-1]
-                    self.obfuscation = '*' * len(self.user_input[:-1])
-            else:
-                self.user_input += chr(key)
-                self.obfuscation = '*' * (len(self.obfuscation) + 1)
-        except KeyboardInterrupt:
-            signal.signal(signal.SIGINT, self.app.end)
+    @property
+    def show_text(self) -> str:
+        """Obfuscate the user's input"""
+        return "*" * len(self.user_input)
 
 
 class MenuDialog(CursesDialog):
@@ -198,18 +221,22 @@ class MenuDialog(CursesDialog):
         self.question_lines = None
 
     def __str__(self):
-        return f"Menu Curses Dialog"
+        return "Menu Curses Dialog"
 
     def draw(self):
         self.stdscr.erase()
-        self.app.active_screen.set_options(self.options)
-        config.total_pages = (len(self.options) - 1) // config.options_per_page + 1
+        # We should be on a menu screen at this point
+        if isinstance(self.app.active_screen, tui_screen.MenuScreen):
+            self.app.active_screen.set_options(self.options)
+        self.total_pages = (len(self.options) - 1) // self.app.options_per_page + 1
+        # Default menu_bottom to 0, it should get set to something larger
+        menu_bottom = 0
 
-        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text)
+        self.question_start_y, self.question_lines = text_centered(self.app, self.question_text) #noqa: E501
         # Display the options, centered
         options_start_y = self.question_start_y + len(self.question_lines) + 2
-        for i in range(config.options_per_page):
-            index = config.current_page * config.options_per_page + i
+        for i in range(self.app.options_per_page):
+            index = self.app.current_page * self.app.options_per_page + i
             if index < len(self.options):
                 option = self.options[index]
                 if type(option) is list:
@@ -219,10 +246,10 @@ class MenuDialog(CursesDialog):
                         wine_binary_path = option[1]
                         wine_binary_description = option[2]
                         wine_binary_path_wrapped = textwrap.wrap(
-                            f"Binary Path: {wine_binary_path}", self.app.window_width - 4)
+                            f"Binary Path: {wine_binary_path}", self.app.window_width - 4) #noqa: E501
                         option_lines.extend(wine_binary_path_wrapped)
                         wine_binary_desc_wrapped = textwrap.wrap(
-                            f"Description: {wine_binary_description}", self.app.window_width - 4)
+                            f"Description: {wine_binary_description}", self.app.window_width - 4) #noqa: E501
                         option_lines.extend(wine_binary_desc_wrapped)
                     else:
                         wine_binary_path = option[1]
@@ -240,43 +267,43 @@ class MenuDialog(CursesDialog):
                     y = options_start_y + i + j
                     x = max(0, self.app.window_width // 2 - len(line) // 2)
                     if y < self.app.menu_window_height:
-                        if index == config.current_option:
-                            write_line(self.app, self.stdscr, y, x, line, self.app.window_width, curses.A_REVERSE)
+                        if index == self.app.current_option:
+                            write_line(self.app, self.stdscr, y, x, line, self.app.window_width, curses.A_REVERSE) #noqa: E501
                         else:
-                            write_line(self.app, self.stdscr, y, x, line, self.app.window_width)
+                            write_line(self.app, self.stdscr, y, x, line, self.app.window_width) #noqa: E501
                 menu_bottom = y
 
                 if type(option) is list:
                     options_start_y += (len(option_lines))
 
         # Display pagination information
-        page_info = f"Page {config.current_page + 1}/{config.total_pages} | Selected Option: {config.current_option + 1}/{len(self.options)}"
-        write_line(self.app, self.stdscr, max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD)
+        page_info = f"Page {self.app.current_page + 1}/{self.total_pages} | Selected Option: {self.app.current_option + 1}/{len(self.options)}" #noqa: E501
+        write_line(self.app, self.stdscr, max(menu_bottom, self.app.menu_window_height) - 3, 2, page_info, self.app.window_width, curses.A_BOLD) #noqa: E501
 
     def do_menu_up(self):
-        if config.current_option == config.current_page * config.options_per_page and config.current_page > 0:
+        if self.app.current_option == self.app.current_page * self.app.options_per_page and self.app.current_page > 0: #noqa: E501
             # Move to the previous page
-            config.current_page -= 1
-            config.current_option = min(len(self.app.menu_options) - 1, (config.current_page + 1) * config.options_per_page - 1)
-        elif config.current_option == 0:
-            if config.total_pages == 1:
-                config.current_option = len(self.app.menu_options) - 1
+            self.app.current_page -= 1
+            self.app.current_option = min(len(self.app.menu_options) - 1, (self.app.current_page + 1) * self.app.options_per_page - 1) #noqa: E501
+        elif self.app.current_option == 0:
+            if self.total_pages == 1:
+                self.app.current_option = len(self.app.menu_options) - 1
             else:
-                config.current_page = config.total_pages - 1
-                config.current_option = len(self.app.menu_options) - 1
+                self.app.current_page = self.total_pages - 1
+                self.app.current_option = len(self.app.menu_options) - 1
         else:
-            config.current_option = max(0, config.current_option - 1)
+            self.app.current_option = max(0, self.app.current_option - 1)
 
     def do_menu_down(self):
-        if config.current_option == (config.current_page + 1) * config.options_per_page - 1 and config.current_page < config.total_pages - 1:
+        if self.app.current_option == (self.app.current_page + 1) * self.app.options_per_page - 1 and self.app.current_page < self.total_pages - 1: #noqa: E501
             # Move to the next page
-            config.current_page += 1
-            config.current_option = min(len(self.app.menu_options) - 1, config.current_page * config.options_per_page)
-        elif config.current_option == len(self.app.menu_options) - 1:
-            config.current_page = 0
-            config.current_option = 0
+            self.app.current_page += 1
+            self.app.current_option = min(len(self.app.menu_options) - 1, self.app.current_page * self.app.options_per_page) #noqa: E501
+        elif self.app.current_option == len(self.app.menu_options) - 1:
+            self.app.current_page = 0
+            self.app.current_option = 0
         else:
-            config.current_option = min(len(self.app.menu_options) - 1, config.current_option + 1)
+            self.app.current_option = min(len(self.app.menu_options) - 1, self.app.current_option + 1) #noqa: E501
 
     def input(self):
         if len(self.app.tui_screens) > 0:
@@ -288,13 +315,12 @@ class MenuDialog(CursesDialog):
         try:
             if key == -1:  # If key not found, keep processing.
                 pass
-            elif key == curses.KEY_RESIZE:
-                utils.send_task(self.app, 'RESIZE')
             elif key == curses.KEY_UP or key == 259:  # Up arrow
                 self.do_menu_up()
             elif key == curses.KEY_DOWN or key == 258:  # Down arrow
                 self.do_menu_down()
-            elif key == 27:  # Sometimes the up/down arrow key is represented by a series of three keys.
+            elif key == 27:
+                # Sometimes the up/down arrow key is represented by a series of 3 keys.
                 next_key = self.stdscr.getch()
                 if next_key == 91:
                     final_key = self.stdscr.getch()
@@ -303,12 +329,9 @@ class MenuDialog(CursesDialog):
                     elif final_key == 66:
                         self.do_menu_down()
             elif key == ord('\n') or key == 10:  # Enter key
-                self.user_input = self.options[config.current_option]
+                self.user_input = self.options[self.app.current_option]
             elif key == ord('\x1b'):
                 signal.signal(signal.SIGINT, self.app.end)
-            else:
-                msg.status("Input unknown.", self.app)
-                pass
         except KeyboardInterrupt:
             signal.signal(signal.SIGINT, self.app.end)
 

@@ -2,15 +2,12 @@ import gzip
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-import signal
 import shutil
 import sys
 
 from pathlib import Path
 
-from . import config
-from .gui import ask_question
-from .gui import show_error
+from ou_dedetai import constants
 
 
 class GzippedRotatingFileHandler(RotatingFileHandler):
@@ -65,7 +62,7 @@ def get_log_level_name(level):
     return name
 
 
-def initialize_logging(stderr_log_level):
+def initialize_logging():
     '''
     Log levels:
         Level       Value   Description
@@ -77,14 +74,17 @@ def initialize_logging(stderr_log_level):
         NOTSET      0       all events are handled
     '''
 
+    app_log_path = constants.DEFAULT_APP_LOG_PATH
+    # Ensure the application log's directory exists
+    os.makedirs(os.path.dirname(app_log_path), exist_ok=True)
+
     # Ensure log file parent folders exist.
-    log_parent = Path(config.LOGOS_LOG).parent
-    if not log_parent.is_dir():
-        log_parent.mkdir(parents=True)
+    log_parent = Path(app_log_path).parent
+    log_parent.mkdir(parents=True, exist_ok=True)
 
     # Define logging handlers.
     file_h = GzippedRotatingFileHandler(
-        config.LOGOS_LOG,
+        app_log_path,
         maxBytes=10*1024*1024,
         backupCount=5,
         encoding='UTF8'
@@ -92,13 +92,15 @@ def initialize_logging(stderr_log_level):
     file_h.name = "logfile"
     file_h.setLevel(logging.DEBUG)
     file_h.addFilter(DeduplicateFilter())
+    # FIXME: Consider adding stdout that displays INFO/DEBUG (if configured)
+    # and edit stderr to only display WARN/ERROR/CRITICAL
     # stdout_h = logging.StreamHandler(sys.stdout)
     # stdout_h.setLevel(stdout_log_level)
     stderr_h = logging.StreamHandler(sys.stderr)
     stderr_h.name = "terminal"
-    stderr_h.setLevel(stderr_log_level)
+    stderr_h.setLevel(logging.WARN)
     stderr_h.addFilter(DeduplicateFilter())
-    handlers = [
+    handlers: list[logging.Handler] = [
         file_h,
         # stdout_h,
         stderr_h,
@@ -111,6 +113,7 @@ def initialize_logging(stderr_log_level):
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=handlers,
     )
+    logging.debug(f"Installer log file: {app_log_path}")
 
 
 def initialize_tui_logging():
@@ -121,7 +124,7 @@ def initialize_tui_logging():
             break
 
 
-def update_log_level(new_level):
+def update_log_level(new_level: int | str):
     # Update logging level from config.
     for h in logging.getLogger().handlers:
         if type(h) is logging.StreamHandler:
@@ -129,225 +132,11 @@ def update_log_level(new_level):
     logging.info(f"Terminal log level set to {get_log_level_name(new_level)}")
 
 
-def cli_msg(message, end='\n'):
-    '''Prints message to stdout regardless of log level.'''
-    print(message, end=end)
-
-
-def logos_msg(message, end='\n'):
-    if config.DIALOG == 'curses':
-        pass
-    else:
-        cli_msg(message, end)
-
-
-def logos_progress():
-    if config.DIALOG == 'curses':
-        pass
-    else:
-        sys.stdout.write('.')
-        sys.stdout.flush()
-    # i = 0
-    # spinner = "|/-\\"
-    # sys.stdout.write(f"\r{text} {spinner[i]}")
-    # sys.stdout.flush()
-    # i = (i + 1) % len(spinner)
-    # time.sleep(0.1)
-
-
-def logos_warn(message):
-    if config.DIALOG == 'curses':
-        logging.warning(message)
-    else:
-        logos_msg(message)
-
-
-def ui_message(message, secondary=None, detail=None, app=None, parent=None, fatal=False):  # noqa: E501
-    if detail is None:
-        detail = ''
-    WIKI_LINK = f"{config.repo_link}/wiki"
-    TELEGRAM_LINK = "https://t.me/linux_logos"
-    MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
-    help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
-    if config.DIALOG == 'tk':
-        show_error(
-            message,
-            detail=f"{detail}\n\n{help_message}",
-            app=app,
-            fatal=fatal,
-            parent=parent
-        )
-    elif config.DIALOG == 'curses':
-        if secondary != "info":
-            status(message)
-            status(help_message)
-        else:
-            logos_msg(message)
-    else:
-        logos_msg(message)
-
-
-# TODO: I think detail is doing the same thing as secondary.
-def logos_error(message, secondary=None, detail=None, app=None, parent=None):
-    # if detail is None:
-    #     detail = ''
-    # WIKI_LINK = f"{config.repo_link}/wiki"
-    # TELEGRAM_LINK = "https://t.me/linux_logos"
-    # MATRIX_LINK = "https://matrix.to/#/#logosbible:matrix.org"
-    # help_message = f"If you need help, please consult:\n{WIKI_LINK}\n{TELEGRAM_LINK}\n{MATRIX_LINK}"  # noqa: E501
-    # if config.DIALOG == 'tk':
-    #     show_error(
-    #         message,
-    #         detail=f"{detail}\n\n{help_message}",
-    #         app=app,
-    #         parent=parent
-    #     )
-    # elif config.DIALOG == 'curses':
-    #     if secondary != "info":
-    #         status(message)
-    #         status(help_message)
-    #     else:
-    #         logos_msg(message)
-    # else:
-    #     logos_msg(message)
-    ui_message(message, secondary=secondary, detail=detail, app=app, parent=parent, fatal=True)  # noqa: E501
-
-    logging.critical(message)
-    if secondary is None or secondary == "":
-        try:
-            os.remove(config.pid_file)
-        except FileNotFoundError:  # no pid file when testing functions
-            pass
-        os.kill(os.getpgid(os.getpid()), signal.SIGKILL)
-
-    if hasattr(app, 'destroy'):
-        app.destroy()
-    sys.exit(1)
-
-
-def logos_warning(message, secondary=None, detail=None, app=None, parent=None):
-    ui_message(message, secondary=secondary, detail=detail, app=app, parent=parent)  # noqa: E501
-    logging.error(message)
-
-
-def cli_question(question_text, secondary=""):
-    while True:
-        try:
-            cli_msg(secondary)
-            yn = input(f"{question_text} [Y/n]: ")
-        except KeyboardInterrupt:
-            print()
-            logos_error("Cancelled with Ctrl+C")
-
-        if yn.lower() == 'y' or yn == '':  # defaults to "Yes"
-            return True
-        elif yn.lower() == 'n':
-            return False
-        else:
-            logos_msg("Type Y[es] or N[o].")
-
-
-def cli_continue_question(question_text, no_text, secondary):
-    if not cli_question(question_text, secondary):
-        logos_error(no_text)
-
-
-def gui_continue_question(question_text, no_text, secondary):
-    if ask_question(question_text, secondary) == 'no':
-        logos_error(no_text)
-
-
-def cli_acknowledge_question(question_text, no_text, secondary):
-    if not cli_question(question_text, secondary):
-        logos_msg(no_text)
-        return False
-    else:
-        return True
-
-
-def cli_ask_filepath(question_text):
-    try:
-        answer = input(f"{question_text} ")
-        return answer.strip('"').strip("'")
-    except KeyboardInterrupt:
-        print()
-        logos_error("Cancelled with Ctrl+C")
-
-
-def logos_continue_question(question_text, no_text, secondary, app=None):
-    if config.DIALOG == 'tk':
-        gui_continue_question(question_text, no_text, secondary)
-    elif config.DIALOG == 'cli':
-        cli_continue_question(question_text, no_text, secondary)
-    elif config.DIALOG == 'curses':
-        app.screen_q.put(
-            app.stack_confirm(
-                16,
-                app.confirm_q,
-                app.confirm_e,
-                question_text,
-                no_text,
-                secondary,
-                dialog=config.use_python_dialog
-            )
-        )
-    else:
-        logos_error(f"Unhandled question: {question_text}")
-
-
-def logos_acknowledge_question(question_text, no_text, secondary):
-    if config.DIALOG == 'curses':
-        pass
-    else:
-        return cli_acknowledge_question(question_text, no_text, secondary)
-
-
-def get_progress_str(percent):
-    length = 40
-    part_done = round(percent * length / 100)
-    part_left = length - part_done
-    return f"[{'*' * part_done}{'-' * part_left}]"
-
-
-def progress(percent, app=None):
-    """Updates progressbar values for TUI and GUI."""
-    if config.DIALOG == 'tk' and app:
-        app.progress_q.put(percent)
-        app.root.event_generate('<<UpdateProgress>>')
-        logging.info(f"Progress: {percent}%")
-    elif config.DIALOG == 'curses':
-        if app:
-            status(f"Progress: {percent}%", app)
-        else:
-            status(f"Progress: {get_progress_str(percent)}", app)
-    else:
-        logos_msg(get_progress_str(percent))  # provisional
-
-
-def status(text, app=None, end='\n'):
-    def strip_timestamp(msg, timestamp_length=20):
-        return msg[timestamp_length:]
-
-    timestamp = config.get_timestamp()
-    """Handles status messages for both TUI and GUI."""
-    if app is not None:
-        if config.DIALOG == 'tk':
-            app.status_q.put(text)
-            app.root.event_generate(app.status_evt)
-            logging.info(f"{text}")
-        elif config.DIALOG == 'curses':
-            if len(config.console_log) > 0:
-                last_msg = strip_timestamp(config.console_log[-1])
-                if last_msg != text:
-                    app.status_q.put(f"{timestamp} {text}")
-                    app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
-                    logging.info(f"{text}")
-            else:
-                app.status_q.put(f"{timestamp} {text}")
-                app.report_waiting(f"{app.status_q.get()}", dialog=config.use_python_dialog)  # noqa: E501
-                logging.info(f"{text}")
-        else:
-            logging.info(f"{text}")
-    else:
-        # Prints message to stdout regardless of log level.
-        logos_msg(text, end=end)
+def update_log_path(app_log_path: str | Path):
+    for h in logging.getLogger().handlers:
+        if type(h) is GzippedRotatingFileHandler and h.name == "logfile":
+            new_base_filename = os.path.abspath(os.fspath(app_log_path))
+            if new_base_filename != h.baseFilename:
+                # One last message on the old log to let them know it moved
+                logging.debug(f"Installer log file changed to: {app_log_path}")
+                h.baseFilename = new_base_filename

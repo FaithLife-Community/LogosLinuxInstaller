@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
 import argparse
 import curses
-try:
-    import dialog  # noqa: F401
-except ImportError:
-    pass
+import logging.handlers
+from typing import Callable, Tuple
+
+from ou_dedetai.config import (
+    EphemeralConfiguration, PersistentConfiguration, get_wine_prefix_path
+)
+
 import logging
 import os
-import shutil
 import sys
 
 from . import cli
-from . import config
-from . import control
+from . import constants
 from . import gui_app
 from . import msg
-from . import network
 from . import system
 from . import tui_app
 from . import utils
-from . import wine
-
-from .config import processes, threads
 
 
 def get_parser():
@@ -30,8 +27,8 @@ def get_parser():
     parser.add_argument(
         '-v', '--version', action='version',
         version=(
-            f"{config.LLI_TITLE}, "
-            f"{config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}"
+            f"{constants.APP_NAME}, "
+            f"{constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}"
         ),
     )
 
@@ -65,14 +62,14 @@ def get_parser():
         '-c', '--config', metavar='CONFIG_FILE',
         help=(
             "use a custom config file during installation "
-            f"[default: {config.DEFAULT_CONFIG_PATH}]"
+            f"[default: {constants.DEFAULT_CONFIG_PATH}]"
         ),
     )
     cfg.add_argument(
         '-f', '--force-root', action='store_true',
         help=(
-            "set LOGOS_FORCE_ROOT to true, which permits "
-            "the root user to use the script"
+            "Running Wine/winetricks as root is highly discouraged. "
+            "Set this to do allow it anyways"
         ),
     )
     cfg.add_argument(
@@ -86,6 +83,15 @@ def get_parser():
     cfg.add_argument(
         '-P', '--passive', action='store_true',
         help='run product installer non-interactively',
+    )
+    cfg.add_argument(
+        '-y', '--assume-yes', action='store_true',
+        help='Assumes yes (or default) to all prompts. '
+        'Useful for entirely non-interactive installs',
+    )
+    cfg.add_argument(
+        '-q', '--quiet', action='store_true',
+        help='Suppress all non-error output',
     )
 
     # Define runtime actions (mutually exclusive).
@@ -104,6 +110,10 @@ def get_parser():
     cmd.add_argument(
         '--run-installed-app', '-C', action='store_true',
         help='run installed FaithLife app',
+    )
+    cmd.add_argument(
+        '--stop-installed-app', action='store_true',
+        help='stop the installed FaithLife app if running',
     )
     cmd.add_argument(
         '--run-indexing', action='store_true',
@@ -138,7 +148,7 @@ def get_parser():
     )
     cmd.add_argument(
         '--update-self', '-u', action='store_true',
-        help=f'Update {config.name_app} to the latest release.',
+        help=f'Update {constants.APP_NAME} to the latest release.',
     )
     cmd.add_argument(
         '--update-latest-appimage', '-U', action='store_true',
@@ -197,117 +207,129 @@ def get_parser():
     return parser
 
 
-def parse_args(args, parser):
+def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfiguration], None]]: #noqa: E501
     if args.config:
-        config.CONFIG_FILE = args.config
-        config.set_config_env(config.CONFIG_FILE)
+        ephemeral_config = EphemeralConfiguration.load_from_path(args.config)
+    else:
+        ephemeral_config = EphemeralConfiguration.load()
+
+    if args.quiet:
+        msg.update_log_level(logging.WARNING)
+        ephemeral_config.quiet = True
 
     if args.verbose:
-        utils.set_verbose()
+        msg.update_log_level(logging.INFO)
 
     if args.debug:
-        utils.set_debug()
+        msg.update_log_level(logging.DEBUG)
 
     if args.delete_log:
-        config.DELETE_LOG = True
+        ephemeral_config.delete_log = True
 
     if args.set_appimage:
-        config.APPIMAGE_FILE_PATH = args.set_appimage[0]
+        ephemeral_config.wine_appimage_path = args.set_appimage[0]
 
     if args.skip_fonts:
-        config.SKIP_FONTS = True
+        ephemeral_config.install_fonts_skip = True
 
     if args.skip_winetricks:
-        config.SKIP_WINETRICKS = True
+        ephemeral_config.winetricks_skip = True
 
-    if network.check_for_updates:
-        config.CHECK_UPDATES = True
+    # FIXME: Should this have been args.check_for_updates?
+    # Should this even be an option?
+    # if network.check_for_updates:
+    #     ephemeral_config.check_updates_now = True
 
     if args.skip_dependencies:
-        config.SKIP_DEPENDENCIES = True
+        ephemeral_config.install_dependencies_skip = True
 
     if args.force_root:
-        config.LOGOS_FORCE_ROOT = True
-
-    if args.debug:
-        utils.set_debug()
+        ephemeral_config.app_run_as_root_permitted = True
 
     if args.custom_binary_path:
         if os.path.isdir(args.custom_binary_path):
-            config.CUSTOMBINPATH = args.custom_binary_path
+            # Set legacy environment variable for config to pick up
+            os.environ["CUSTOMBINPATH"] = args.custom_binary_path
         else:
             message = f"Custom binary path does not exist: \"{args.custom_binary_path}\"\n"  # noqa: E501
             parser.exit(status=1, message=message)
 
-    if args.passive:
-        config.PASSIVE = True
+    if args.assume_yes:
+        ephemeral_config.assume_yes = True
 
-    # Set ACTION function.
-    actions = {
-        'backup': cli.backup,
-        'create_shortcuts': cli.create_shortcuts,
-        'edit_config': cli.edit_config,
-        'get_winetricks': cli.get_winetricks,
-        'install_app': cli.install_app,
-        'install_d3d_compiler': cli.install_d3d_compiler,
-        'install_dependencies': cli.install_dependencies,
-        'install_fonts': cli.install_fonts,
-        'install_icu': cli.install_icu,
-        'remove_index_files': cli.remove_index_files,
-        'remove_install_dir': cli.remove_install_dir,
-        'remove_library_catalog': cli.remove_library_catalog,
-        'restore': cli.restore,
-        'run_indexing': cli.run_indexing,
-        'run_installed_app': cli.run_installed_app,
-        'run_winetricks': cli.run_winetricks,
-        'set_appimage': cli.set_appimage,
-        'toggle_app_logging': cli.toggle_app_logging,
-        'update_self': cli.update_self,
-        'update_latest_appimage': cli.update_latest_appimage,
-        'winetricks': cli.winetricks,
-    }
+    if args.passive or args.assume_yes:
+        ephemeral_config.faithlife_install_passive = True
 
-    config.ACTION = None
-    for arg, action in actions.items():
+
+    def cli_operation(action: str) -> Callable[[EphemeralConfiguration], None]:
+        """Wrapper for a function pointer to a given function under CLI
+        
+        Lazilay instantiates CLI at call-time"""
+        def _run(config: EphemeralConfiguration):
+            getattr(cli.CLI(config), action)()
+        output = _run
+        output.__name__ = action
+        return output
+
+    # Set action return function.
+    actions = [
+        'backup',
+        'create_shortcuts',
+        'edit_config',
+        'get_winetricks',
+        'install_app',
+        'install_d3d_compiler',
+        'install_dependencies',
+        'install_fonts',
+        'install_icu',
+        'remove_index_files',
+        'remove_install_dir',
+        'remove_library_catalog',
+        'restore',
+        'run_indexing',
+        'run_installed_app',
+        'stop_installed_app',
+        'run_winetricks',
+        'set_appimage',
+        'toggle_app_logging',
+        'update_self',
+        'update_latest_appimage',
+        'winetricks',
+    ]
+
+    run_action = None
+    for arg in actions:
         if getattr(args, arg):
-            if arg == "update_latest_appimage" or arg == "set_appimage":
-                logging.debug("Running an AppImage command.")
-                if config.WINEBIN_CODE != "AppImage" and config.WINEBIN_CODE != "Recommended":  # noqa: E501
-                    config.ACTION = "disabled"
-                    logging.debug("AppImage commands not added since WINEBIN_CODE != (AppImage|Recommended)")  # noqa: E501
-                    break
             if arg == "set_appimage":
-                config.APPIMAGE_FILE_PATH = getattr(args, arg)[0]
-                if not utils.file_exists(config.APPIMAGE_FILE_PATH):
-                    e = f"Invalid file path: '{config.APPIMAGE_FILE_PATH}'. File does not exist."  # noqa: E501
+                ephemeral_config.wine_appimage_path = getattr(args, arg)[0]
+                if not utils.file_exists(ephemeral_config.wine_appimage_path):
+                    e = f"Invalid file path: '{ephemeral_config.wine_appimage_path}'. File does not exist."  # noqa: E501
                     raise argparse.ArgumentTypeError(e)
-                if not utils.check_appimage(config.APPIMAGE_FILE_PATH):
-                    e = f"{config.APPIMAGE_FILE_PATH} is not an AppImage."
+                if not utils.check_appimage(ephemeral_config.wine_appimage_path):
+                    e = f"{ephemeral_config.wine_appimage_path} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
             if arg == 'winetricks':
-                config.winetricks_args = getattr(args, 'winetricks')
-            config.ACTION = action
+                ephemeral_config.winetricks_args = getattr(args, 'winetricks')
+            run_action = cli_operation(arg)
             break
-    if config.ACTION is None:
-        config.ACTION = run_control_panel
-    logging.debug(f"{config.ACTION=}")
+    if run_action is None:
+        run_action = run_control_panel
+    logging.debug(f"{run_action=}")
+    return ephemeral_config, run_action
 
 
-def run_control_panel():
-    logging.info(f"Using DIALOG: {config.DIALOG}")
-    if config.DIALOG is None or config.DIALOG == 'tk':
-        gui_app.control_panel_app()
+def run_control_panel(ephemeral_config: EphemeralConfiguration):
+    dialog = ephemeral_config.dialog or system.get_dialog()
+    logging.info(f"Using DIALOG: {dialog}")
+    if dialog == 'tk':
+        gui_app.control_panel_app(ephemeral_config)
     else:
         try:
-            curses.wrapper(tui_app.control_panel_app)
+            curses.wrapper(tui_app.control_panel_app, ephemeral_config)
         except KeyboardInterrupt:
             raise
         except SystemExit:
-            logging.info("Caught SystemExit, exiting gracefully...")
-            try:
-                close()
-            except Exception as e:
-                raise e
+            logging.info("Caught SystemExit, exiting gracefully…")
             raise
         except curses.error as e:
             logging.error(f"Curses error in run_control_panel(): {e}")
@@ -317,102 +339,48 @@ def run_control_panel():
             raise e
 
 
-def set_config():
+def setup_config() -> Tuple[EphemeralConfiguration, Callable[[EphemeralConfiguration], None]]: #noqa: E501
     parser = get_parser()
     cli_args = parser.parse_args()  # parsing early lets 'help' run immediately
 
+    # Get config based on env and configuration file temporarily just to load a couple 
+    # values out. We'll load this fully later.
+    temp = EphemeralConfiguration.load()
+    log_level = temp.log_level or constants.DEFAULT_LOG_LEVEL
+    app_log_path = temp.app_log_path or constants.DEFAULT_APP_LOG_PATH
+    del temp
+
     # Set runtime config.
-    # Initialize logging.
-    msg.initialize_logging(config.LOG_LEVEL)
-    current_log_level = config.LOG_LEVEL
-
-    # Set default config; incl. defining CONFIG_FILE.
-    utils.set_default_config()
-
-    # Update config from CONFIG_FILE.
-    if not utils.file_exists(config.CONFIG_FILE):  # noqa: E501
-        for legacy_config in config.LEGACY_CONFIG_FILES:
-            if utils.file_exists(legacy_config):
-                config.set_config_env(legacy_config)
-                utils.write_config(config.CONFIG_FILE)
-                os.remove(legacy_config)
-                break
-    else:
-        config.set_config_env(config.CONFIG_FILE)
+    # Update log configuration.
+    msg.update_log_level(log_level)
+    msg.update_log_path(app_log_path)
+    # test = logging.getLogger().handlers
 
     # Parse CLI args and update affected config vars.
-    parse_args(cli_args, parser)
-    # Update terminal log level if set in CLI and changed from current level.
-    if config.LOG_LEVEL != current_log_level:
-        msg.update_log_level(config.LOG_LEVEL)
-        current_log_level = config.LOG_LEVEL
-
-    # Update config based on environment variables.
-    config.get_env_config()
-    utils.set_runtime_config()
-    # Update terminal log level if set in environment and changed from current
-    # level.
-    if config.VERBOSE:
-        config.LOG_LEVEL = logging.VERBOSE
-    if config.DEBUG:
-        config.LOG_LEVEL = logging.DEBUG
-    if config.LOG_LEVEL != current_log_level:
-        msg.update_log_level(config.LOG_LEVEL)
+    return parse_args(cli_args, parser)
 
 
-def set_dialog():
-    # Set DIALOG and GUI variables.
-    if config.DIALOG is None:
-        system.get_dialog()
-    else:
-        config.DIALOG = config.DIALOG.lower()
-
-    if config.DIALOG == 'curses' and "dialog" in sys.modules and config.use_python_dialog is None:  # noqa: E501
-        config.use_python_dialog = system.test_dialog_version()
-
-        if config.use_python_dialog is None:
-            logging.debug("The 'dialog' package was not found. Falling back to Python Curses.")  # noqa: E501
-            config.use_python_dialog = False
-        elif config.use_python_dialog:
-            logging.debug("Dialog version is up-to-date.")
-            config.use_python_dialog = True
-        else:
-            logging.error("Dialog version is outdated. The program will fall back to Curses.")  # noqa: E501
-            config.use_python_dialog = False
-    logging.debug(f"Use Python Dialog?: {config.use_python_dialog}")
-    # Set Architecture
-
-    config.architecture, config.bits = system.get_architecture()
-    logging.debug(f"Current Architecture: {config.architecture}, {config.bits}bit.")
-    system.check_architecture()
+def is_app_installed(ephemeral_config: EphemeralConfiguration):
+    persistent_config = PersistentConfiguration.load_from_path(ephemeral_config.config_path) #noqa: E501
+    if persistent_config.faithlife_product is None or persistent_config.install_dir is None: #noqa: E501
+        # Not enough information stored to find the product
+        return False
+    wine_prefix = ephemeral_config.wine_prefix or get_wine_prefix_path(str(persistent_config.install_dir)) #noqa: E501
+    return utils.find_installed_product(persistent_config.faithlife_product, wine_prefix) #noqa: E501
 
 
-def check_incompatibilities():
-    # Check for AppImageLauncher
-    if shutil.which('AppImageLauncher'):
-        question_text = "Remove AppImageLauncher? A reboot will be required."
-        secondary = (
-            "Your system currently has AppImageLauncher installed.\n"
-            f"{config.name_app} is not compatible with AppImageLauncher.\n"
-            f"For more information, see: {config.repo_link}/issues/114"
-        )
-        no_text = "User declined to remove AppImageLauncher."
-        msg.logos_continue_question(question_text, no_text, secondary)
-        system.remove_appimagelauncher()
-
-
-def run():
+def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralConfiguration], None]): #noqa: E501
     # Run desired action (requested function, defaults to control_panel)
-    if config.ACTION == "disabled":
-        msg.logos_error("That option is disabled.", "info")
-    if config.ACTION.__name__ == 'run_control_panel':
+    if action == "disabled":
+        print("That option is disabled.", file=sys.stderr)
+        sys.exit(1)
+    if action.__name__ == 'run_control_panel':
         # if utils.app_is_installed():
         #     wine.set_logos_paths()
-        config.ACTION()  # run control_panel right away
+        action(ephemeral_config)  # run control_panel right away
         return
-
-    # Only control_panel ACTION uses TUI/GUI interface; all others are CLI.
-    config.DIALOG = 'cli'
+    
+    # Proceeding with the CLI interface
 
     install_required = [
         'backup',
@@ -425,35 +393,38 @@ def run():
         'restore',
         'run_indexing',
         'run_installed_app',
+        'stop_installed_app',
         'run_winetricks',
         'set_appimage',
         'toggle_app_logging',
         'winetricks',
     ]
-    if config.ACTION.__name__ not in install_required:
-        logging.info(f"Running function: {config.ACTION.__name__}")
-        config.ACTION()
-    elif utils.app_is_installed():  # install_required; checking for app
+    if action.__name__ not in install_required:
+        logging.info(f"Running function: {action.__name__}")
+        action(ephemeral_config)
+    elif is_app_installed(ephemeral_config):  # install_required; checking for app
         # wine.set_logos_paths()
         # Run the desired Logos action.
-        logging.info(f"Running function for {config.FLPRODUCT}: {config.ACTION.__name__}")  # noqa: E501
-        config.ACTION()
+        logging.info(f"Running function: {action.__name__}")  # noqa: E501
+        action(ephemeral_config)
     else:  # install_required, but app not installed
-        msg.logos_error("App not installed…")
+        print("App is not installed, but required for this operation. Consider installing first.", file=sys.stderr) #noqa: E501
+        sys.exit(1)
 
 
 def main():
-    set_config()
-    set_dialog()
-
-    # Log persistent config.
-    utils.log_current_persistent_config()
+    msg.initialize_logging()
+    ephemeral_config, action = setup_config()
+    system.check_architecture()
 
     # NOTE: DELETE_LOG is an outlier here. It's an action, but it's one that
     # can be run in conjunction with other actions, so it gets special
     # treatment here once config is set.
-    if config.DELETE_LOG and os.path.isfile(config.LOGOS_LOG):
-        control.delete_log_file_contents()
+    app_log_path = ephemeral_config.app_log_path or constants.DEFAULT_APP_LOG_PATH
+    if ephemeral_config.delete_log and os.path.isfile(app_log_path):
+        # Write empty file.
+        with open(app_log_path, 'w') as f:
+            f.write('')
 
     # Run safety checks.
     # FIXME: Fix utils.die_if_running() for GUI; as it is, it breaks GUI
@@ -461,38 +432,18 @@ def main():
     # Disabled until it can be fixed. Avoid running multiple instances of the
     # program.
     # utils.die_if_running()
-    utils.die_if_root()
+    if os.getuid() == 0 and not ephemeral_config.app_run_as_root_permitted:
+        print("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F", file=sys.stderr)  # noqa: E501
+        sys.exit(1)
 
     # Print terminal banner
-    logging.info(f"{config.LLI_TITLE}, {config.LLI_CURRENT_VERSION} by {config.LLI_AUTHOR}.")  # noqa: E501
-    logging.debug(f"Installer log file: {config.LOGOS_LOG}")
+    logging.info(f"{constants.APP_NAME}, {constants.LLI_CURRENT_VERSION} by {constants.LLI_AUTHOR}.")  # noqa: E501
 
-    check_incompatibilities()
-
-    network.check_for_updates()
-
-    run()
-
-
-def close():
-    logging.debug(f"Closing {config.name_app}.")
-    for thread in threads:
-        # Only wait on non-daemon threads.
-        if not thread.daemon:
-            thread.join()
-    # Only kill wine processes if closing the Control Panel. Otherwise, some
-    # CLI commands get killed as soon as they're started.
-    if config.ACTION.__name__ == 'run_control_panel' and len(processes) > 0:
-        wine.end_wine_processes()
-    else:
-        logging.debug("No extra processes found.")
-    logging.debug(f"Closing {config.name_app} finished.")
+    run(ephemeral_config, action)
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        close()
-
-    close()
+        pass
