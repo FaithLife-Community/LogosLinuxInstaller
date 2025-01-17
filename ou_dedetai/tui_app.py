@@ -357,7 +357,7 @@ class TUI(App):
         self.clear()
         self.init_curses()
         self.refresh()
-        logging.debug("Window resized.", self)
+        logging.debug("Window resized.")
         self.resizing = False
 
     def signal_resize(self, signum, frame):
