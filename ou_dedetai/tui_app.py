@@ -112,9 +112,8 @@ class TUI(App):
         # Lines for the on-screen console log
         self.console_log: list[str] = []
 
-        # Note to reviewers:
-        # This does expose some possibly untested code paths
-        #
+        # Turn off using python dialog for now, as it wasn't clear when it should have
+        # been used before. And doesn't add value.
         # Before some function calls didn't pass use_python_dialog falling back to False
         # now it all respects use_python_dialog
         # some menus may open in dialog that didn't before.
@@ -695,10 +694,11 @@ class TUI(App):
             self.reset_screen()
             utils.update_to_latest_recommended_appimage(self)
             self.go_to_main_menu()
+        # This isn't an option in set_utilities_menu_options
+        # This code path isn't reachable and isn't tested post-refactor
         elif choice == "Set AppImage":
             # TODO: Allow specifying the AppImage File
             appimages = self.conf.wine_app_image_files
-            # NOTE to reviewer: is this logic correct?
             appimage_choices = appimages
             appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
             self.menu_options = appimage_choices

@@ -111,7 +111,6 @@ def get_parser():
         '--run-installed-app', '-C', action='store_true',
         help='run installed FaithLife app',
     )
-    # NOTE to reviewers: this function was added mostly for tests
     cmd.add_argument(
         '--stop-installed-app', action='store_true',
         help='stop the installed FaithLife app if running',
