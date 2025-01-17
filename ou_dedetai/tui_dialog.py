@@ -89,22 +89,6 @@ def input(screen, question_text, height=None, width=None, init="",  title=None, 
     return code, input
 
 
-def password(screen, question_text, height=None, width=None, init="",  title=None, backtitle=None, colors=True):
-    dialog = Dialog()
-    dialog.autowidgetsize = True
-    options = {'colors': colors}
-    if height is not None:
-        options['height'] = height
-    if width is not None:
-        options['width'] = width
-    if title is not None:
-        options['title'] = title
-    if backtitle is not None:
-        options['backtitle'] = backtitle
-    code, password = dialog.passwordbox(question_text, init=init, insecure=True, **options)
-    return code, password
-
-
 def confirm(screen, question_text, yes_label="Yes", no_label="No",
             height=None, width=None, title=None, backtitle=None, colors=True):
     dialog = Dialog()

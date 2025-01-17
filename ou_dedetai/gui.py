@@ -346,24 +346,6 @@ class ToolTip:
             self.tooltip_visible = False
 
 
-class PromptGui(Frame):
-    def __init__(self, root, title="", prompt="", **kwargs):
-        super(PromptGui, self).__init__(root, **kwargs)
-        self.options = {"title": title, "prompt": prompt}
-        if title is not None:
-            self.options['title'] = title
-        if prompt is not None:
-            self.options['prompt'] = prompt
-
-    def draw_prompt(self):
-        store_button = Button(
-            self.root,
-            text="Store Password",
-            command=lambda: input_prompt(self.root, self.options)
-        )
-        store_button.pack(pady=20)
-
-
 def show_error(message, fatal=True, detail=None, app=None, parent=None):  # noqa: E501
     title = "Error"
     if fatal:
@@ -382,8 +364,3 @@ def show_error(message, fatal=True, detail=None, app=None, parent=None):  # noqa
 def ask_question(question, secondary):
     return messagebox.askquestion(question, secondary)
 
-
-def input_prompt(root, title, prompt):
-    # Prompt for the password
-    input = simpledialog.askstring(title, prompt, show='*', parent=root)
-    return input
