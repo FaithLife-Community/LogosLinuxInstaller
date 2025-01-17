@@ -474,7 +474,7 @@ def get_package_manager() -> PackageManager | None:
         )
         incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('pacman') is not None:  # arch, steamOS
-        install_command = ["pacman", "-Syu", "--overwrite", "\\*", "--noconfirm", "--needed"]  # noqa: E501
+        install_command = ["pacman", "-Syu", "--noconfirm", "--needed"]  # noqa: E501
         download_command = ["pacman", "-Sw", "-y"]
         remove_command = ["pacman", "-R", "--no-confirm"]  # noqa: E501
         query_command =  ["pacman", "-Q"]
@@ -918,3 +918,4 @@ def check_incompatibilities(app: App):
         )
         app.approve_or_exit(question_text, secondary)
         remove_appimagelauncher(app)
+
