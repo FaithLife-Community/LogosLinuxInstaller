@@ -184,6 +184,11 @@ class LogosManager:
         if not results:
             return None
         db_path = results[0]
+        # FIXME: I wonder if we can use the result of these deletion using RETURNING
+        # Then we could notify the user that there are updates.
+        # If we do that we'd have to consider if their other resources are up to date
+        # AND if their library is index and their library is prepared.
+        # Logos probably should be off for this
         sql = [
             "DELETE FROM Installers WHERE 1",
             "DELETE FROM UpdateUrls WHERE 1",
