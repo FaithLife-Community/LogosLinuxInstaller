@@ -66,9 +66,9 @@ def backup_and_restore(mode: str, app: App):
             restore_dir = Path(restore_dir).expanduser().resolve()
         source_dir_base = restore_dir
     else:
-        if not app.conf.logos_exe:
-            app.exit("Cannot backup, Logos is not installed")
-        source_dir_base = Path(app.conf.logos_exe).parent
+        if not app.conf.logos_appdata_dir:
+            app.exit("Cannot backup, Logos installation not found")
+        source_dir_base = app.conf.logos_appdata_dir
     src_dirs = [source_dir_base / d for d in data_dirs if Path(source_dir_base / d).is_dir()]  # noqa: E501
     logging.debug(f"{src_dirs=}")
     if not src_dirs:
