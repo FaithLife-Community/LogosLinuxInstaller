@@ -714,37 +714,35 @@ def watch_db(path: str, sql_statements: list[str]):
                 logging.exception("Failed to update db, probably locked")
                 pass
 
-    con = sqlite3.connect(path, autocommit=True)
-    cur = con.cursor()
+    with sqlite3.connect(path, autocommit=True) as con:
+        cur = con.cursor()
 
-    # Execute once before we start the loop
-    execute_sql(cur)
-    swallow_one = True
+        # Execute once before we start the loop
+        execute_sql(cur)
+        swallow_one = True
 
-    # Keep track of if we've added -wal and -shm are added yet
-    # They may not exist when we start
-    watching_wal_and_shm = False
-    for event in i.event_gen(yield_nones=False):
-        (_, type_names, _, _) = event
-        # These files may not exist when it's executes for the first time
-        if (
-            not watching_wal_and_shm
-            and Path(path + "-wal").exists()
-            and Path(path + "-shm").exists()
-        ):
-            i.add_watch(path + "-wal")
-            i.add_watch(path + "-shm")
-            watching_wal_and_shm = True
+        # Keep track of if we've added -wal and -shm are added yet
+        # They may not exist when we start
+        watching_wal_and_shm = False
+        for event in i.event_gen(yield_nones=False):
+            (_, type_names, _, _) = event
+            # These files may not exist when it's executes for the first time
+            if (
+                not watching_wal_and_shm
+                and Path(path + "-wal").exists()
+                and Path(path + "-shm").exists()
+            ):
+                i.add_watch(path + "-wal")
+                i.add_watch(path + "-shm")
+                watching_wal_and_shm = True
 
-        if 'IN_MODIFY' in type_names or 'IN_CLOSE_WRITE' in type_names:
-            # Check to make sure that we aren't responding to our own write
-            if swallow_one:
-                swallow_one = False
-                continue
-            execute_sql(cur)
-            swallow_one = True
-    # Shouldn't be possible to get here, but on the off-chance it happens, 
-    # we'd like to know and cleanup
-    logging.debug(f"Stopped watching {path}")
-    cur.close()
-    con.close()
+            if 'IN_MODIFY' in type_names or 'IN_CLOSE_WRITE' in type_names:
+                # Check to make sure that we aren't responding to our own write
+                if swallow_one:
+                    swallow_one = False
+                    continue
+                execute_sql(cur)
+                swallow_one = True
+        # Shouldn't be possible to get here, but on the off-chance it happens, 
+        # we'd like to know and cleanup
+        logging.debug(f"Stopped watching {path}")
