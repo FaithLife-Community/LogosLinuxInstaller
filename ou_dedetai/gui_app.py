@@ -34,9 +34,10 @@ class GuiApp(App):
 
     _exit_option: Optional[str] = None
 
-    def __init__(self, root: "Root", ephemeral_config: EphemeralConfiguration, **kwargs): #noqa: E501
+    def __init__(self, root: "Root", gui: gui.StatusGui, ephemeral_config: EphemeralConfiguration, **kwargs): #noqa: E501
         super().__init__(ephemeral_config)
         self.root = root
+        self._status_gui = gui
         # Now spawn a new thread to ensure choices are set to set to defaults so user
         # isn't App.ask'ed
         def _populate_initial_defaults():
@@ -72,15 +73,30 @@ class GuiApp(App):
             )
         return answer
 
+    def _status(self, message, percent = None):
+        message = message.lstrip("\r")
+        if percent is not None:
+            self._status_gui.progress.stop()
+            self._status_gui.progress.state(['disabled'])
+            self._status_gui.progress.config(mode='determinate')
+            self._status_gui.progressvar.set(percent)
+        else:
+            self._status_gui.progress.state(['!disabled'])
+            self._status_gui.progressvar.set(0)
+            self._status_gui.progress.config(mode='indeterminate')
+            self._status_gui.progress.start()
+        self._status_gui.statusvar.set(message)
+        if message:
+            super()._status(message, percent)
+
     def approve(self, question: str, context: str | None = None) -> bool:
         return messagebox.askquestion(question, context) == 'yes'
 
-    def exit(self, reason: str, intended: bool = False):
+    def _exit(self, reason: str, intended: bool = False):
         # Create a little dialog before we die so the user can see why this happened
         if not intended:
             gui.show_error(reason, detail=constants.SUPPORT_MESSAGE, fatal=True)
         self.root.destroy()
-        return super().exit(reason, intended)
     
     @property
     def superuser_command(self) -> str:
@@ -189,7 +205,7 @@ class Root(Tk):
 
         # Set panel icon.
         self.icon = constants.APP_IMAGE_DIR / 'icon.png'
-        self.pi = PhotoImage(file=f'{self.icon}')
+        self.pi = PhotoImage(file=f'{self.icon}', master=self)
         self.iconphoto(False, self.pi)
 
 
@@ -416,7 +432,7 @@ class InstallerWindow:
 class ControlWindow(GuiApp):
     def __init__(self, root, control_gui: gui.ControlGui, 
                  ephemeral_config: EphemeralConfiguration, *args, **kwargs):
-        super().__init__(root, ephemeral_config)
+        super().__init__(root, control_gui, ephemeral_config)
 
         # Set root parameters.
         self.root = root
@@ -604,22 +620,6 @@ class ControlWindow(GuiApp):
             action=desired_state.lower()
         )
 
-    def _status(self, message: str, percent: int | None = None):
-        message = message.lstrip("\r")
-        if percent is not None:
-            self.gui.progress.stop()
-            self.gui.progress.state(['disabled'])
-            self.gui.progress.config(mode='determinate')
-            self.gui.progressvar.set(percent)
-        else:
-            self.gui.progress.state(['!disabled'])
-            self.gui.progressvar.set(0)
-            self.gui.progress.config(mode='indeterminate')
-            self.gui.progress.start()
-        self.gui.statusvar.set(message)
-        if message:
-            super()._status(message, percent)
-
     def update_logging_button(self, evt=None):
         state = self.reverse_logging_state_value(self.current_logging_state_value())
         self.gui.loggingstatevar.set(state[:-1].title())
@@ -754,21 +754,27 @@ class ControlWindow(GuiApp):
         self._status('', 0)
 
 
-
-
-def control_panel_app(ephemeral_config: EphemeralConfiguration):
+def control_panel_app(
+    ephemeral_config: EphemeralConfiguration,
+    recovery: Optional[Callable[[App], None]] = None
+):
     classname = constants.BINARY_NAME
     root = Root(className=classname)
 
     # Need to title/resize and create the initial gui
-    # BEFORE mainloop is started to get sizing correct
-    # other things in the ControlWindow constructor are run after mainloop is running
+    # BEFORE mainloop is started to get sizing correct other things
+    # in the ControlWindow constructor are run after mainloop is running
     # To allow them to ask questions while the mainloop is running
     root.title(f"{constants.APP_NAME} Control Panel")
     root.resizable(False, False)
+
     control_gui = gui.ControlGui(root)
 
     def _start_control_panel():
+        if recovery:
+            recovery_gui = gui.RecoveryGui(root)
+            recovery(GuiApp(root, recovery_gui, ephemeral_config))
+            recovery_gui.destroy()
         ControlWindow(root, control_gui, ephemeral_config, class_=classname)
 
     # Start the control panel on a new thread so it can open dialogs

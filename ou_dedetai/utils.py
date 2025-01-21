@@ -711,7 +711,7 @@ def watch_db(path: str, sql_statements: list[str]):
                 cur.execute(statement)
             # Database may be locked, keep trying later.
             except sqlite3.OperationalError:
-                logging.exception("Failed to update db, probably locked")
+                logging.exception("Best-effort db update failed")
                 pass
 
     with sqlite3.connect(path, autocommit=True) as con:

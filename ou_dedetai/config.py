@@ -469,6 +469,30 @@ class PersistentConfiguration:
 def get_wine_prefix_path(install_dir: str) -> str:
     return f"{install_dir}/data/wine64_bottle"
 
+
+def get_wine_user(wine_prefix: str) -> Optional[str]:
+    users_path = f"{wine_prefix}/drive_c/users"
+    if not os.path.exists(users_path):
+        return None
+    # Cache a successful result (as it goes out to the fs)
+    users = os.listdir(users_path)
+    try:
+        users.remove("Public")
+    except ValueError:
+        pass
+    if users:
+        return users[0]
+    return None
+
+
+def get_logos_appdata_dir(
+    wine_prefix: str,
+    wine_user: str,
+    faithlife_product: str
+) -> str:
+    return f'{wine_prefix}/drive_c/users/{wine_user}/AppData/Local/{faithlife_product}'
+
+
 class Config:
     """Set of configuration values. 
     
@@ -496,7 +520,7 @@ class Config:
 
     # Start Cache of values unlikely to change during operation.
     # i.e. filesystem traversals
-    _logos_exe: Optional[str] = None
+    _wine_user: Optional[str] = None
     _download_dir: Optional[str] = None
     _wine_output_encoding: Optional[str] = None
     _installed_faithlife_product_release: Optional[str] = None
@@ -790,12 +814,21 @@ class Config:
         return f"{self.install_dir}/data/bin"
 
     @property
-    def logos_appdata_dir(self) -> Optional[str]:
+    def _logos_appdata_dir(self) -> Optional[str]:
         """Path to the user's Logos installation under AppData"""
+        # We don't want to prompt the user in this function
         wine_user = self.wine_user
-        if not wine_user:
+        if (
+            wine_user is None
+            or self._raw.faithlife_product is None
+            or self._raw.install_dir is None
+        ):
             return None
-        return self.wine_prefix + f'/drive_c/users/{wine_user}/AppData/Local/Logos'
+        return get_logos_appdata_dir(
+            self.wine_prefix,
+            wine_user,
+            self.faithlife_product
+        )
 
     @property
     # This used to be called WINEPREFIX
@@ -1011,27 +1044,24 @@ class Config:
 
     @property
     def logos_exe(self) -> Optional[str]:
-        # Cache a successful result
         if (
             # Ensure we have all the context we need before attempting
-            self._logos_exe is None
-            and self._raw.faithlife_product is not None
+            self._raw.faithlife_product is not None
             and self._raw.install_dir is not None
+            and self._logos_appdata_dir is not None
         ):
-            self._logos_exe = utils.find_installed_product(
-                self._raw.faithlife_product,
-                self.wine_prefix
-            )
-        return self._logos_exe
+            return f"{self._logos_appdata_dir}/{self._raw.faithlife_product}.exe"
+        return None
 
     @property
     def wine_user(self) -> Optional[str]:
-        path: Optional[str] = self.logos_exe
-        if path is None:
+        # We don't want to prompt the user for install_dir if it isn't set
+        if not self._raw.install_dir:
             return None
-        normalized_path: str = os.path.normpath(path)
-        path_parts = normalized_path.split(os.sep)
-        return path_parts[path_parts.index('users') + 1]
+        # Cache a successful result (as it goes out to the fs)
+        if not self._wine_user:
+            self._wine_user = get_wine_user(self.wine_prefix)
+        return self._wine_user
 
     @property
     def logos_cef_exe(self) -> Optional[str]:
@@ -1088,7 +1118,7 @@ class Config:
         if self._raw.install_dir is None:
             return None
         if self._installed_faithlife_product_release is None:
-            self._installed_faithlife_product_release = utils.get_current_logos_version(self.logos_appdata_dir) # noqa: E501
+            self._installed_faithlife_product_release = utils.get_current_logos_version(self._logos_appdata_dir) # noqa: E501
         return self._installed_faithlife_product_release
 
     @property

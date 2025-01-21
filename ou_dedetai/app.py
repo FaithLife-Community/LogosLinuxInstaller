@@ -135,9 +135,13 @@ class App(abc.ABC):
         options = ["Yes", "No"]
         return self.ask(question, options) == "Yes"
 
+    def _exit(self, reason: str, intended: bool = False) -> None:
+        """Cleanup any lingering objects, per-implementation specific"""
+
     def exit(self, reason: str, intended: bool = False) -> NoReturn:
         """Exits the application cleanly with a reason."""
         logging.debug(f"Closing {constants.APP_NAME}.")
+        self._exit(reason, intended)
         # Shutdown logos/indexer if we spawned it
         self.logos.end_processes()
         # Join threads
@@ -218,7 +222,7 @@ class App(abc.ABC):
         
         Args:
             message: str - if it ends with a \r that signifies that this message is
-                intended to be overrighten next time
+                intended to be overridden next time
             percent: Optional[int] - percent complete of the current overall operation
                 if None that signifies we can't track the progress.
                 Feel free to implement a spinner

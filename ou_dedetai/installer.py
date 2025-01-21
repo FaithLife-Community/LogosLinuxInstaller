@@ -287,6 +287,9 @@ def ensure_product_installed(app: App):
         process = wine.install_msi(app)
         if process:
             process.wait()
+    
+    # Clear installed version cache
+    app.conf._installed_faithlife_product_release = None
 
     # Clean up temp files, etc.
     utils.clean_all()
