@@ -184,6 +184,7 @@ def ensure_product_installer_download(app: App):
     logging.debug(f"> '{downloaded_file}' exists?: {Path(downloaded_file).is_file()}")  # noqa: E501
 
 
+
 def ensure_wineprefix_init(app: App):
     app.installer_step_count += 1
     ensure_product_installer_download(app=app)
@@ -289,6 +290,14 @@ def ensure_product_installed(app: App):
             process.wait()
 
     # Clean up temp files, etc.
+    mst_destination = Path(app.conf.install_dir) / "data/wine64_bottle/drive_c/LogosStubFailOK.mst"
+    if mst_destination and mst_destination.is_file():
+        try:
+            mst_destination.unlink()
+            logging.debug(f"Deleted MST file: {mst_destination}")
+        except Exception as e:
+            logging.warning(f"Could not delete MST file: {e}")
+            
     utils.clean_all()
 
     logging.debug(f"> {app.conf.logos_exe=}")

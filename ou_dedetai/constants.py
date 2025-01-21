@@ -1,9 +1,22 @@
 import logging
 import os
+import sys
+
 from pathlib import Path
 
 # This is relative to this file itself
 APP_IMAGE_DIR = Path(__file__).parent / "img"
+
+# Are we running from binary or src?
+if getattr(sys, 'frozen', False):
+    # We are running inside a PyInstaller bundle
+    BUNDLE_DIR = Path(sys._MEIPASS)
+else:
+    # We are running in normal development mode
+    BUNDLE_DIR = Path(__file__).resolve().parent
+
+# Now define an assets directory that works in both modes:
+APP_ASSETS_DIR = BUNDLE_DIR / 'assets'
 
 # Define app name variables.
 APP_NAME = 'Ou Dedetai'
