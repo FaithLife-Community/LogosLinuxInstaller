@@ -130,7 +130,8 @@ def check_wine_rules(
         WineRule(major=7, proton=True, minor_bad=[], allowed_releases=["staging"]),
         # devel permissible at this point
         WineRule(major=8, proton=False, minor_bad=[0], allowed_releases=["staging"], devel_allowed=16), #noqa: E501
-        WineRule(major=9, proton=False, minor_bad=[], allowed_releases=["devel", "staging"]) #noqa: E501
+        WineRule(major=9, proton=False, minor_bad=[], allowed_releases=["devel", "staging"]),  #noqa: E501
+        WineRule(major=10, proton=False, minor_bad=[], allowed_releases=["stable", "devel", "staging"])
     ]
 
     major_min, minor_min = required_wine_minimum
