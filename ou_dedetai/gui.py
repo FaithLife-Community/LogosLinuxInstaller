@@ -154,8 +154,37 @@ class InstallerGui(Frame):
         self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
         row += 1
 
+class StatusGui(Frame):
+    def __init__(self, root, *args, **kwargs):
+        super(StatusGui, self).__init__(root, **kwargs)
+        self.config(padding=5)
+        self.grid(row=0, column=0, sticky='nwes')
 
-class ControlGui(Frame):
+        self.statusvar = StringVar()
+        self.message_label = Label(self, textvariable=self.statusvar)
+        # Progress bar
+        self.progressvar = IntVar(value=0)
+        self.progress = Progressbar(
+            self,
+            mode='indeterminate',
+            orient='horizontal',
+            variable=self.progressvar
+        )
+        self.progress.state(['disabled'])
+
+
+class RecoveryGui(StatusGui):
+    def __init__(self, root, *args, **kwargs):
+        super(RecoveryGui, self).__init__(root, **kwargs)
+
+        self.app_label = Label(self, text="Recovering FaithLife app")
+        self.app_label.grid(column=0, row=0, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        Separator(self, orient='horizontal').grid(column=0, row=1)
+        self.message_label.grid(column=0, row=2, columnspan=3, sticky='we', pady=2)  # noqa: E501
+        self.progress.grid(column=0, row=3, columnspan=3, sticky='we', pady=2)  # noqa: E501
+
+
+class ControlGui(StatusGui):
     def __init__(self, root, *args, **kwargs):
         super(ControlGui, self).__init__(root, **kwargs)
         self.config(padding=5)
@@ -238,18 +267,6 @@ class ControlGui(Frame):
         self.logging_button = Button(self, textvariable=self.loggingstatevar)
         # Separator
         s3 = Separator(self, orient='horizontal')
-        # Status message label
-        self.statusvar = StringVar()
-        self.message_label = Label(self, textvariable=self.statusvar)
-        # Progress bar
-        self.progressvar = IntVar(value=0)
-        self.progress = Progressbar(
-            self,
-            mode='indeterminate',
-            orient='horizontal',
-            variable=self.progressvar
-        )
-        self.progress.state(['disabled'])
 
         # Place widgets.
         row = 0

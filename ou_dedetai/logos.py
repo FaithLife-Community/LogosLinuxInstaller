@@ -155,9 +155,9 @@ class LogosManager:
         """Edits Logos' internal db entry corresponding to the option in:
         Program Settings -> Internet -> Automatically Download New Resources
         """
-        if self.app.conf.logos_appdata_dir is None:
+        if self.app.conf._logos_appdata_dir is None:
             return
-        logos_appdata_dir = Path(self.app.conf.logos_appdata_dir)
+        logos_appdata_dir = Path(self.app.conf._logos_appdata_dir)
         # The glob here is for a user identifier
         db_glob = './Documents/*/LocalUserPreferences/PreferencesManager.db'
         results = list(logos_appdata_dir.glob(db_glob))
@@ -175,9 +175,9 @@ class LogosManager:
         """Edits Logos' internal database to remove pending installers
         before it has a chance to apply them
         """
-        if self.app.conf.logos_appdata_dir is None:
+        if self.app.conf._logos_appdata_dir is None:
             return
-        logos_appdata_dir = Path(self.app.conf.logos_appdata_dir)
+        logos_appdata_dir = Path(self.app.conf._logos_appdata_dir)
         # The glob here is for a user identifier
         db_glob = './Data/*/UpdateManager/Updates.db'
         results = list(logos_appdata_dir.glob(db_glob))

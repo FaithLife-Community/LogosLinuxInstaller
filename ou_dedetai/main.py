@@ -12,6 +12,8 @@ import logging
 import os
 import sys
 
+from ou_dedetai.repair import detect_and_recover
+
 from . import cli
 from . import constants
 from . import gui_app
@@ -264,7 +266,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
     def cli_operation(action: str) -> Callable[[EphemeralConfiguration], None]:
         """Wrapper for a function pointer to a given function under CLI
         
-        Lazilay instantiates CLI at call-time"""
+        Lazily instantiates CLI at call-time"""
         def _run(config: EphemeralConfiguration):
             getattr(cli.CLI(config), action)()
         output = _run
@@ -370,6 +372,10 @@ def is_app_installed(ephemeral_config: EphemeralConfiguration):
 
 
 def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralConfiguration], None]): #noqa: E501
+    # Attempt to repair installation if it is broken.
+    # Must be done before calling the action to avoid errosly thinking the app isn't
+    # installed when it's broken
+    detect_and_recover(ephemeral_config)
     # Run desired action (requested function, defaults to control_panel)
     if action == "disabled":
         print("That option is disabled.", file=sys.stderr)
