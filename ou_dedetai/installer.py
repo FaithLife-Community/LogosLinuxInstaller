@@ -31,9 +31,7 @@ def ensure_choices(app: App):
     logging.debug(f"> {app.conf.wine_appimage_recommended_file_name=}")
     logging.debug(f"> {app.conf.wine_binary_code=}")
     logging.debug(f"> {app.conf.wine_binary=}")
-    logging.debug(f"> {app.conf._raw.winetricks_binary=}")
     logging.debug(f"> {app.conf.skip_install_fonts=}")
-    logging.debug(f"> {app.conf._overrides.winetricks_skip=}")
     logging.debug(f"> {app.conf.faithlife_product_icon_path}")
     logging.debug(f"> {app.conf.faithlife_installer_download_url}")
     # Debug print the entire config
@@ -115,26 +113,11 @@ def ensure_wine_executables(app: App):
     logging.debug(f"> {app.conf.wine_binary=}")
     logging.debug(f"> {app.conf.wine64_binary=}")
     logging.debug(f"> {app.conf.wineserver_binary=}")
-    logging.debug(f"> {app.conf._raw.winetricks_binary=}")
-
-
-def ensure_winetricks_executable(app: App):
-    app.installer_step_count += 1
-    ensure_wine_executables(app=app)
-    app.installer_step += 1
-    app.status("Ensuring winetricks executable is available…")
-
-    if app.conf._winetricks_binary is None:
-        app.status("Downloading winetricks from the Internet…")
-        system.install_winetricks(app.conf.installer_binary_dir, app=app)
-
-    logging.debug(f"> {app.conf.winetricks_binary} is executable?: {os.access(app.conf.winetricks_binary, os.X_OK)}")  # noqa: E501
-    return 0
 
 
 def ensure_premade_winebottle_download(app: App):
     app.installer_step_count += 1
-    ensure_winetricks_executable(app=app)
+    ensure_wine_executables(app=app)
     app.installer_step += 1
     if app.conf.faithlife_product_version != '9':
         return
@@ -211,62 +194,9 @@ def ensure_wineprefix_init(app: App):
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 
-def ensure_winetricks_applied(app: App):
-    app.installer_step_count += 1
-    ensure_wineprefix_init(app=app)
-    app.installer_step += 1
-    app.status("Ensuring winetricks & other settings are applied…")
-    logging.debug('- disable winemenubuilder')
-    logging.debug('- settings renderer=gdi')
-    logging.debug('- corefonts')
-    logging.debug('- tahoma')
-    logging.debug('- settings fontsmooth=rgb')
-    logging.debug('- d3dcompiler_47')
-
-    if not app.conf.skip_winetricks:
-        usr_reg = None
-        sys_reg = None
-        usr_reg = Path(f"{app.conf.wine_prefix}/user.reg")
-        sys_reg = Path(f"{app.conf.wine_prefix}/system.reg")
-
-        # FIXME: consider supplying progresses to these sub-steps
-
-        if not utils.grep(r'"winemenubuilder.exe"=""', usr_reg):
-            app.status("Disabling winemenubuilder…")
-            wine.disable_winemenubuilder(app, app.conf.wine64_binary)
-
-        if not utils.grep(r'"renderer"="gdi"', usr_reg):
-            app.status("Setting Renderer to GDI…")
-            wine.set_renderer(app, "gdi")
-
-        if not utils.grep(r'"FontSmoothingType"=dword:00000002', usr_reg):
-            app.status("Setting Font Smoothing to RGB…")
-            wine.install_font_smoothing(app)
-
-        if not app.conf.skip_install_fonts and not utils.grep(r'"Tahoma \(TrueType\)"="tahoma.ttf"', sys_reg):  # noqa: E501
-            app.status("Installing fonts…")
-            wine.install_fonts(app)
-
-        if not utils.grep(r'"\*d3dcompiler_47"="native"', usr_reg):
-            app.status("Installing D3D…")
-            wine.install_d3d_compiler(app)
-
-        if not utils.grep(r'"ProductName"="Microsoft Windows 10"', sys_reg):
-            app.status(f"Setting {app.conf.faithlife_product} to Win10 Mode…")
-            wine.set_win_version(app, "logos", "win10")
-
-        # NOTE: Can't use utils.grep check here because the string
-        # "Version"="win10" might appear elsewhere in the registry.
-        app.status(f"Setting {app.conf.faithlife_product} Bible Indexing to Win10 Mode…")  # noqa: E501
-        wine.set_win_version(app, "indexer", "win10")
-        # wine.light_wineserver_wait()
-        wine.wineserver_wait(app)
-    logging.debug("> Done.")
-
-
 def ensure_icu_data_files(app: App):
     app.installer_step_count += 1
-    ensure_winetricks_applied(app=app)
+    ensure_wineprefix_init(app=app)
     app.installer_step += 1
     app.status("Ensuring ICU data files are installed…")
     logging.debug('- ICU data files')

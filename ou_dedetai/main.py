@@ -50,7 +50,7 @@ def get_parser():
     )
     cfg.add_argument(
         '-W', '--skip-winetricks', action='store_true',
-        help='skip winetricks installations. For development purposes only!!!',
+        help=argparse.SUPPRESS,
     )
     cfg.add_argument(
         '-V', '--verbose', action='store_true',
@@ -170,11 +170,11 @@ def get_parser():
     )
     cmd.add_argument(
         '--install-d3d-compiler', action='store_true',
-        help='Install d3dcompiler through Winetricks',
+        help=argparse.SUPPRESS,
     )
     cmd.add_argument(
         '--install-fonts', action='store_true',
-        help='Install fonts through Winetricks',
+        help=argparse.SUPPRESS,
     )
     cmd.add_argument(
         '--install-icu', action='store_true',
