@@ -73,7 +73,11 @@ def get_wine_release(binary: str) -> tuple[Optional[WineRelease], str]:
 
         if release is not None:
             ver_major = int(version.split('.')[0].lstrip('wine-'))  # remove 'wine-'
-            ver_minor = int(version.split('.')[1])
+            ver_minor_str = version.split('.')[1]
+            # In the case the version is an rc like wine-10.0-rc5
+            if '-' in ver_minor_str:
+                ver_minor_str = ver_minor_str.split("-")[0]
+            ver_minor = int(ver_minor_str)
             release = release.lstrip('(').rstrip(')').lower()  # remove parens
         else:
             ver_major = 0
