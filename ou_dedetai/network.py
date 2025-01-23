@@ -568,12 +568,12 @@ def _get_faithlife_product_releases(
         # if len(releases) == 5:
         #    break
 
-    # Logos 39+ doesn't install
-    filtered_releases = utils.filter_versions(releases, 39, 1)
-    logging.debug(f"Available releases: {', '.join(releases)}")
-    logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
+    #Filtering not needed at the moment but left here in case we want it later.
+    #filtered_releases = utils.filter_versions(releases, 40, 1)
+    #logging.debug(f"Available releases: {', '.join(releases)}")
+    #logging.debug(f"Filtered releases: {', '.join(filtered_releases)}")
 
-    return filtered_releases
+    return releases
 
 
 def update_lli_binary(app: App):

@@ -9,6 +9,7 @@ from pathlib import Path
 import tempfile
 from typing import Optional
 
+from ou_dedetai import constants
 from ou_dedetai.app import App
 
 from . import network
@@ -271,13 +272,35 @@ def disable_winemenubuilder(app: App, wine64_binary: str):
 
 def install_msi(app: App):
     app.status(f"Running MSI installer: {app.conf.faithlife_installer_name}.")
-    # Execute the .MSI
+    # Define the Wine executable and initial arguments for msiexec
     wine_exe = app.conf.wine64_binary
-    exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"] #noqa: E501
+    exe_args = ["/i", f"{app.conf.install_dir}/data/{app.conf.faithlife_installer_name}"]  # noqa: E501
+
+    # Add passive mode if specified
     if app.conf._overrides.faithlife_install_passive is True:
-        exe_args.append('/passive')
+        exe_args.append("/passive")
+
+    # Add MST transform if needed
+    release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version  # noqa: E501
+    if release_version is not None and utils.check_logos_release_version(release_version, 39, 1):
+        # Define source and destination for the MST file
+        mst_source = constants.APP_ASSETS_DIR / "LogosStubFailOK.mst"
+        mst_destination = Path(app.conf.install_dir) / "data/wine64_bottle/drive_c/LogosStubFailOK.mst"
+        
+        # Copy the MST file if it doesn't already exist
+        if not mst_destination.is_file():
+            shutil.copy(mst_source, mst_destination)
+        logging.debug(f"MST present: {mst_destination.is_file()}")
+
+        # Hard-code the Windows path for the MST file
+        transform_winpath = r"C:\LogosStubFailOK.mst"
+        exe_args.append(f'TRANSFORMS="{transform_winpath}"')
+        logging.debug(f"Hard-coded TRANSFORMS path added: {transform_winpath}")
+
+    # Log the msiexec command and run the process
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
     process = run_wine_proc(wine_exe, app, exe="msiexec", exe_args=exe_args)
+            
     return process
 
 
