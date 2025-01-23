@@ -86,7 +86,7 @@ def ensure_appimage_download(app: App):
     app.status("Ensuring wine AppImage is downloaded…")
 
     downloaded_file = None
-    appimage_path = app.conf.wine_appimage_path or app.conf.wine_appimage_recommended_file_name #noqa: E501
+    appimage_path = app.conf.wine_appimage_recommended_file_name #noqa: E501
     filename = Path(appimage_path).name
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, filename)
     if not downloaded_file:
@@ -293,7 +293,7 @@ def ensure_product_installed(app: App):
     app.conf._installed_faithlife_product_release = None
 
     # Clean up temp files, etc.
-    mst_destination = Path(app.conf.install_dir) / "data/wine64_bottle/drive_c/LogosStubFailOK.mst"
+    mst_destination = Path(app.conf.install_dir) / "data/wine64_bottle/drive_c/LogosStubFailOK.mst" #noqa E501
     if mst_destination and mst_destination.is_file():
         try:
             mst_destination.unlink()
@@ -374,9 +374,15 @@ def create_wine_appimage_symlinks(app: App):
     if app.conf.wine_binary_code not in ['AppImage', 'Recommended'] or app.conf.wine_appimage_path is None: #noqa: E501
         logging.debug("No need to symlink non-appimages")
         return
-
-    appimage_file = appdir_bindir / app.conf.wine_appimage_path.name
-    appimage_filename = Path(app.conf.wine_appimage_path).name
+    
+    # Only use the appimage_path if it exists
+    # It may not exist if it was an old install's .appimage
+    # where the install dir has been cleared.
+    if app.conf.wine_appimage_path.exists():
+        appimage_filename = app.conf.wine_appimage_path.name
+    else:
+        appimage_filename = app.conf.wine_appimage_recommended_file_name
+    appimage_file = appdir_bindir / appimage_filename
     # Ensure appimage is copied to appdir_bindir.
     downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, appimage_filename) #noqa: E501
     if downloaded_file is None:

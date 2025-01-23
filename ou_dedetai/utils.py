@@ -223,12 +223,14 @@ def get_wine_options(app: App) -> List[str]:  # noqa: E501
     logging.debug(f"{binaries=}")
     wine_binary_options = []
 
-    reccomended_appimage = f"{app.conf.installer_binary_dir}/{app.conf.wine_appimage_recommended_file_name}" # noqa: E501
+    recomended_appimage = f"{app.conf.installer_binary_dir}/{app.conf.wine_appimage_recommended_file_name}" # noqa: E501
+
+    if recomended_appimage in appimages:
+        appimages.remove(recomended_appimage)
 
     # Add AppImages to list
+    wine_binary_options.append(recomended_appimage)
     wine_binary_options.extend(appimages)
-    if reccomended_appimage not in wine_binary_options:
-        wine_binary_options.append(reccomended_appimage)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
