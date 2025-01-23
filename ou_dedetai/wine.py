@@ -74,7 +74,11 @@ def get_wine_release(binary: str) -> tuple[Optional[WineRelease], str]:
 
         if release is not None:
             ver_major = int(version.split('.')[0].lstrip('wine-'))  # remove 'wine-'
-            ver_minor = int(version.split('.')[1])
+            ver_minor_str = version.split('.')[1]
+            # In the case the version is an rc like wine-10.0-rc5
+            if '-' in ver_minor_str:
+                ver_minor_str = ver_minor_str.split("-")[0]
+            ver_minor = int(ver_minor_str)
             release = release.lstrip('(').rstrip(')').lower()  # remove parens
         else:
             ver_major = 0
@@ -131,7 +135,8 @@ def check_wine_rules(
         WineRule(major=7, proton=True, minor_bad=[], allowed_releases=["staging"]),
         # devel permissible at this point
         WineRule(major=8, proton=False, minor_bad=[0], allowed_releases=["staging"], devel_allowed=16), #noqa: E501
-        WineRule(major=9, proton=False, minor_bad=[], allowed_releases=["devel", "staging"]) #noqa: E501
+        WineRule(major=9, proton=False, minor_bad=[], allowed_releases=["devel", "staging"]),  #noqa: E501
+        WineRule(major=10, proton=False, minor_bad=[], allowed_releases=["stable", "devel", "staging"])
     ]
 
     major_min, minor_min = required_wine_minimum
