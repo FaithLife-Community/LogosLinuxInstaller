@@ -241,38 +241,50 @@ def initializeWineBottle(wine64_binary: str, app: App) -> Optional[subprocess.Po
     return process
 
 
-def wine_reg_install(app: App, reg_file, wine64_binary):
-    reg_file = str(reg_file)
-    app.status(f"Installing registry file: {reg_file}")
-    process = run_wine_proc(
-        wine64_binary,
-        app=app,
-        exe="regedit.exe",
-        exe_args=[reg_file]
-    )
-    # NOTE: For some reason waiting on this processes results in the reg install failing
-    if process is None:
-        app.exit("Failed to spawn command to install reg file")
-    process.wait()
-    if process is None or process.returncode != 0:
-        failed = "Failed to install reg file"
-        logging.debug(f"{failed}. {process=}")
-        app.exit(f"{failed}: {reg_file}")
-    elif process.returncode == 0:
-        logging.info(f"{reg_file} installed.")
-    wineserver_wait(app)
+def wine_reg_install(app: App, name: str, reg_text: str, wine64_binary: str):
+    with tempfile.TemporaryDirectory() as tempdir:
+        reg_file = Path(tempdir) / name
+        reg_file.write_text(reg_text)
+        app.status(f"Installing registry file: {reg_file}")  
+        try:
+            process = run_wine_proc(
+                wine64_binary,
+                app=app,
+                exe="regedit.exe",
+                exe_args=[str(reg_file)]
+            )
+            if process is None:
+                app.exit("Failed to spawn command to install reg file")
+            process.wait()
+            if process is None or process.returncode != 0:
+                failed = "Failed to install reg file"
+                logging.debug(f"{failed}. {process=}")
+                app.exit(f"{failed}: {reg_file}")
+            elif process.returncode == 0:
+                logging.info(f"{reg_file} installed.")
+            wineserver_wait(app)
+        finally:
+            reg_file.unlink()
 
 
 def disable_winemenubuilder(app: App, wine64_binary: str):
-    workdir = tempfile.mkdtemp()
-    reg_file = Path(workdir) / 'disable-winemenubuilder.reg'
-    reg_file.write_text(r'''REGEDIT4
+    name='disable-winemenubuilder.reg'
+    reg_text = r'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\DllOverrides]
 "winemenubuilder.exe"=""
-''')
-    wine_reg_install(app, reg_file, wine64_binary)
-    shutil.rmtree(workdir)
+'''
+    wine_reg_install(app, name, reg_text, wine64_binary)
+
+
+def set_renderer_to_gdi(app: App, wine64_binary: str):
+    name='set-renderer-to-gdi.reg'
+    reg_text = r'''REGEDIT4
+
+[HKEY_CURRENT_USER\Software\Wine\Direct3D]
+"renderer"="gdi"
+'''
+    wine_reg_install(app, name, reg_text, wine64_binary)
 
 
 def install_msi(app: App):
