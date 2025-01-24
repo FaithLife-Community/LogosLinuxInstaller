@@ -78,6 +78,13 @@ class CLI(App):
     def stop_installed_app(self):
         self.logos.stop()
 
+    def wine(self):
+        wine.run_wine_proc(
+            self.conf._overrides.wine_args[0],
+            self,
+            *(self.conf._overrides.wine_args[1:] or [])
+        )
+
     def run_winetricks(self):
         wine.run_winetricks(self)
 
