@@ -194,9 +194,35 @@ def ensure_wineprefix_init(app: App):
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 
-def ensure_icu_data_files(app: App):
+def ensure_wineprefix_config(app: App):
     app.installer_step_count += 1
     ensure_wineprefix_init(app=app)
+    app.installer_step += 1
+    app.status("Ensuring wineprefix configuration…")
+
+    # Force renderer=gdi in registry.
+    args = ('add', 'HKCU\Software\Wine\Direct3D', '/v', 'renderer', '/d', 'gdi', '/f')
+    process = wine.run_wine_proc(app.conf.wine64_binary, app, exe='reg', exe_args=args)
+    if process:
+        process.wait()
+    wine.wineserver_wait(app)
+    logging.debug("Wineprefix renderer set to 'gdi'.")
+
+    # Force winemenubuilder.exe='' in registry.
+    args = (
+        'add', 'HKCU\Software\Wine\DllOverrides',
+        '/v', 'winemenubuilder.exe', '/d', '', '/f'
+    )
+    process = wine.run_wine_proc(app.conf.wine64_binary, app, exe='reg', exe_args=args)
+    if process:
+        process.wait()
+    wine.wineserver_wait(app)
+    logging.debug("Wineprefix set to ignore winemenubuilder.exe.")
+
+
+def ensure_icu_data_files(app: App):
+    app.installer_step_count += 1
+    ensure_wineprefix_config(app=app)
     app.installer_step += 1
     app.status("Ensuring ICU data files are installed…")
     logging.debug('- ICU data files')
