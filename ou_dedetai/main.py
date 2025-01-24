@@ -165,6 +165,10 @@ def get_parser():
         help='download or update Winetricks',
     )
     cmd.add_argument(
+        '--wine', nargs="+",
+        help='run wine command',
+    )
+    cmd.add_argument(
         '--run-winetricks', action='store_true',
         help='start Winetricks window',
     )
@@ -296,6 +300,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
         'toggle_app_logging',
         'update_self',
         'update_latest_appimage',
+        'wine',
         'winetricks',
     ]
 
@@ -310,7 +315,9 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
                 if not utils.check_appimage(ephemeral_config.wine_appimage_path):
                     e = f"{ephemeral_config.wine_appimage_path} is not an AppImage."
                     raise argparse.ArgumentTypeError(e)
-            if arg == 'winetricks':
+            elif arg == 'wine':
+                ephemeral_config.wine_args = getattr(args, 'wine')
+            elif arg == 'winetricks':
                 ephemeral_config.winetricks_args = getattr(args, 'winetricks')
             run_action = cli_operation(arg)
             break
@@ -403,6 +410,7 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
         'run_winetricks',
         'set_appimage',
         'toggle_app_logging',
+        'wine',
         'winetricks',
     ]
     if action.__name__ not in install_required:
