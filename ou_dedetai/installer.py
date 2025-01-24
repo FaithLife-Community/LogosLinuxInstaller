@@ -201,7 +201,7 @@ def ensure_wineprefix_config(app: App):
     app.status("Ensuring wineprefix configuration…")
 
     # Force renderer=gdi in registry.
-    args = ('add', 'HKCU\Software\Wine\Direct3D', '/v', 'renderer', '/d', 'gdi', '/f')
+    args = ('add', 'HKCU\Software\Wine\Direct3D', '/f', '/v', 'renderer', '/d', 'gdi')
     process = wine.run_wine_proc(app.conf.wine64_binary, app, exe='reg', exe_args=args)
     if process:
         process.wait()
@@ -210,8 +210,8 @@ def ensure_wineprefix_config(app: App):
 
     # Force winemenubuilder.exe='' in registry.
     args = (
-        'add', 'HKCU\Software\Wine\DllOverrides',
-        '/v', 'winemenubuilder.exe', '/d', '', '/f'
+        'add', 'HKCU\Software\Wine\DllOverrides', '/f',
+        '/v', 'winemenubuilder.exe', '/d', '',
     )
     process = wine.run_wine_proc(app.conf.wine64_binary, app, exe='reg', exe_args=args)
     if process:
