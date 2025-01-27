@@ -407,7 +407,6 @@ def run_winetricks(app: App, *args):
         app.exit("Failed to spawn winetricks")
     process.wait()
     logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
-    wineserver_wait(app)
     logging.debug(f"procs using {app.conf.wine_prefix}:")
     for proc in utils.get_procs_using_file(app.conf.wine_prefix):
         logging.debug(f"{proc=}")
