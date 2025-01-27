@@ -220,7 +220,6 @@ def set_winetricks(app: App):
             return 0
         # Continue executing the download if it wasn't valid
 
-    system.install_winetricks(app.conf.installer_binary_dir, app)
     app.conf.winetricks_binary = os.path.join(
         app.conf.installer_binary_dir,
         "winetricks"

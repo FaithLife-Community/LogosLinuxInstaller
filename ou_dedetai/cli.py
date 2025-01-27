@@ -34,21 +34,12 @@ class CLI(App):
     def edit_config(self):
         control.edit_file(self.conf.config_file_path)
 
-    def get_winetricks(self):
-        control.set_winetricks(self)
-
     def install_app(self):
         installer.install(self)
         self.exit("Install has finished", intended=True)
 
-    def install_d3d_compiler(self):
-        wine.install_d3d_compiler(self)
-
     def install_dependencies(self):
         utils.install_dependencies(app=self)
-
-    def install_fonts(self):
-        wine.install_fonts(self)
 
     def install_icu(self):
         wine.enforce_icu_data_files(self)
@@ -80,9 +71,9 @@ class CLI(App):
 
     def wine(self):
         wine.run_wine_proc(
-            self.conf._overrides.wine_args[0],
+            self.conf.wine64_binary,
             self,
-            *(self.conf._overrides.wine_args[1:] or [])
+            exe_args=(self.conf._overrides.wine_args or [])
         )
 
     def run_winetricks(self):

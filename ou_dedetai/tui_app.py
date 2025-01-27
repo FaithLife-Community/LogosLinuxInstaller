@@ -476,17 +476,16 @@ class TUI(App):
             2: self.handle_ask_response,
             8: self.waiting,
             10: self.waiting_releases,
-            11: self.winetricks_menu_select,
-            12: self.logos.start,
-            13: self.waiting_finish,
-            14: self.waiting_resize,
-            15: self.password_prompt,
-            18: self.utilities_menu_select,
-            19: self.renderer_select,
-            20: self.win_ver_logos_select,
-            21: self.win_ver_index_select,
-            24: self.confirm_restore_dir,
-            25: self.choose_restore_dir,
+            11: self.logos.start,
+            12: self.waiting_finish,
+            13: self.waiting_resize,
+            14: self.password_prompt,
+            15: self.utilities_menu_select,
+            16: self.renderer_select,
+            17: self.win_ver_logos_select,
+            18: self.win_ver_index_select,
+            19: self.confirm_restore_dir,
+            20: self.choose_restore_dir,
         }
 
         # Capture menu exiting before processing in the rest of the handler
@@ -570,17 +569,6 @@ class TUI(App):
             self.active_screen.running = 0
             self.active_screen.choice = "Processing"
             control.remove_library_catalog(self)
-        elif choice.startswith("Winetricks"):
-            self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    11,
-                    self.todo_q,
-                    self.todo_e,
-                    "Winetricks Menu",
-                    self.set_winetricks_menu_options(),
-                )
-            )  # noqa: E501
         elif choice.startswith("Utilities"):
             self.reset_screen()
             self.screen_q.put(
@@ -596,62 +584,6 @@ class TUI(App):
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
             self.go_to_main_menu()
-
-    def winetricks_menu_select(self, choice):
-        if choice == "Download or Update Winetricks":
-            self.reset_screen()
-            control.set_winetricks(self)
-            self.go_to_main_menu()
-        elif choice == "Run Winetricks":
-            self.reset_screen()
-            self.status("Running winetricks…")
-            wine.run_winetricks(self)
-            self.go_to_main_menu()
-        elif choice == "Install d3dcompiler":
-            self.reset_screen()
-            self.status("Installing d3dcompiler…")
-            wine.install_d3d_compiler(self)
-            self.go_to_main_menu()
-        elif choice == "Install Fonts":
-            self.reset_screen()
-            wine.install_fonts(self)
-            self.go_to_main_menu()
-        elif choice == "Set Renderer":
-            self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    19,
-                    self.todo_q,
-                    self.todo_e,
-                    "Choose Renderer",
-                    self.set_renderer_menu_options(),
-                )
-            )
-            self.choice_q.put("0")
-        elif choice == "Set Windows Version for Logos":
-            self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    20,
-                    self.todo_q,
-                    self.todo_e,
-                    "Set Windows Version for Logos",
-                    self.set_win_ver_menu_options(),
-                )
-            )
-            self.choice_q.put("0")
-        elif choice == "Set Windows Version for Indexer":
-            self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    21,
-                    self.todo_q,
-                    self.todo_e,
-                    "Set Windows Version for Indexer",
-                    self.set_win_ver_menu_options(),
-                )
-            )
-            self.choice_q.put("0")
 
     def utilities_menu_select(self, choice):
         if choice == "Remove Library Catalog":
@@ -931,32 +863,13 @@ class TUI(App):
             labels_default = ["Install Logos Bible Software"]
         labels.extend(labels_default)
 
-        labels_support = ["Utilities →", "Winetricks →"]
+        labels_support = ["Utilities →"]
         labels.extend(labels_support)
 
         labels_options = ["Change Color Scheme"]
         labels.extend(labels_options)
 
         labels.append("Exit")
-
-        options = self.which_dialog_options(labels)
-
-        return options
-
-    def set_winetricks_menu_options(self):
-        labels = []
-        labels_support = [
-            "Download or Update Winetricks",
-            "Run Winetricks",
-            "Install d3dcompiler",
-            "Install Fonts",
-            "Set Renderer",
-            "Set Windows Version for Logos",
-            "Set Windows Version for Indexer",
-        ]
-        labels.extend(labels_support)
-
-        labels.append("Return to Main Menu")
 
         options = self.which_dialog_options(labels)
 

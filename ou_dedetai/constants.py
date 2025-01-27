@@ -51,7 +51,6 @@ LOGOS_WHITE = '#FCFCFC'
 LOGOS9_WINE64_BOTTLE_TARGZ_NAME = "wine64_bottle.tar.gz"
 LOGOS9_WINE64_BOTTLE_TARGZ_URL = f"https://github.com/ferion11/wine64_bottle_dotnet/releases/download/v5.11b/{LOGOS9_WINE64_BOTTLE_TARGZ_NAME}"  # noqa: E501
 PID_FILE = f'/tmp/{BINARY_NAME}.pid'
-WINETRICKS_VERSION = '20220411'
 
 FAITHLIFE_PRODUCTS = ["Logos", "Verbum"]
 FAITHLIFE_PRODUCT_VERSIONS = ["10", "9"]

@@ -389,7 +389,6 @@ def get_package_manager() -> PackageManager | None:
         packages = (
             "libfuse2 "  # appimages
             "binutils wget winbind "  # wine
-            "p7zip-full "  # winetricks
         )
         # NOTE: Package names changed together for Ubuntu 24+, Debian 13+, and
         # derivatives. This does not include an exhaustive list of distros that
@@ -408,7 +407,6 @@ def get_package_manager() -> PackageManager | None:
             packages = (
                 "libfuse3-3 "  # appimages
                 "binutils wget winbind "  # wine
-                "7zip "  # winetricks
             )
         logos_9_packages = ""  
         incompatible_packages = ""  # appimagelauncher handled separately
@@ -429,7 +427,6 @@ def get_package_manager() -> PackageManager | None:
         packages = (
             "fuse fuse-libs "  # appimages
             "mod_auth_ntlm_winbind samba-winbind samba-winbind-clients "  # wine  # noqa: E501
-            "p7zip-plugins "  # winetricks
         )
         incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('zypper') is not None:  # manjaro
@@ -441,7 +438,6 @@ def get_package_manager() -> PackageManager | None:
         packages = (
             "fuse2 "  # appimages
             "samba wget "  # wine
-            "7zip "  # winetricks
             "curl gawk grep "  # other
         )
         incompatible_packages = ""  # appimagelauncher handled separately
@@ -456,7 +452,6 @@ def get_package_manager() -> PackageManager | None:
             "gcompat"  # musl to glibc
             "fuse-common fuse"  # appimages
             "wget curl"  # network
-            "7zip"  # winetricks
             "samba sed grep gawk bash bash-completion"  # other
         )
         incompatible_packages = ""  # appimagelauncher handled separately
@@ -469,7 +464,6 @@ def get_package_manager() -> PackageManager | None:
         packages = (
             "fuse2 "  # appimages
             "samba wget "  # wine
-            "p7zip "  # winetricks (this will likely rename to 7zip shortly)
             "curl gawk grep "  # other
         )
         incompatible_packages = ""  # appimagelauncher handled separately
@@ -486,7 +480,6 @@ def get_package_manager() -> PackageManager | None:
             packages = (
                 "fuse2 "  # appimages
                 "binutils libwbclient samba wget "  # wine
-                "7zip "  # winetricks (this used to be called pzip)
                 "openjpeg2 libxcomposite libxinerama "  # display
                 "ocl-icd vulkan-icd-loader "  # hardware
                 "alsa-plugins gst-plugins-base-libs libpulse openal "  # audio
@@ -871,40 +864,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         else:
             logging.error("Please reboot then launch the installer again.")
             sys.exit(1)
-
-
-def install_winetricks(
-    installdir,
-    app: App,
-    version=constants.WINETRICKS_VERSION,
-    status_messages: bool = True
-) -> str:
-    winetricks_path = f"{installdir}/winetricks"
-    if status_messages:
-        app.status(f"Installing winetricks v{version}…")
-    base_url = "https://codeload.github.com/Winetricks/winetricks/zip/refs/tags"  # noqa: E501
-    zip_name = f"{version}.zip"
-    network.logos_reuse_download(
-        f"{base_url}/{version}",
-        zip_name,
-        app.conf.download_dir,
-        app=app,
-        status_messages=status_messages
-    )
-    wtzip = f"{app.conf.download_dir}/{zip_name}"
-    logging.debug(f"Extracting winetricks script into {installdir}…")
-    with zipfile.ZipFile(wtzip) as z:
-        for zi in z.infolist():
-            if zi.is_dir():
-                continue
-            zi.filename = Path(zi.filename).name
-            if zi.filename == 'winetricks':
-                z.extract(zi, path=installdir)
-                break
-    os.chmod(winetricks_path, 0o755)
-    app.conf.winetricks_binary = winetricks_path
-    logging.debug("Winetricks installed.")
-    return winetricks_path
 
 
 def check_incompatibilities(app: App):

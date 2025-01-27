@@ -277,11 +277,6 @@ class InstallerWindow:
             '<<ComboboxSelected>>',
             self.set_wine
         )
-        self.gui.tricks_dropdown.bind(
-            '<<ComboboxSelected>>',
-            self.set_winetricks
-        )
-        self.gui.fonts_checkbox.config(command=self.set_skip_fonts)
         self.gui.skipdeps_checkbox.config(command=self.set_skip_dependencies)
         self.gui.cancel_button.config(command=self.on_cancel_released)
         self.gui.okay_button.config(command=self.on_okay_released)
@@ -297,8 +292,6 @@ class InstallerWindow:
         )
 
         # Run commands.
-        self.get_winetricks_options()
-
         self.app.config_updated_hooks += [self._config_updated_hook]
         # Start out enforcing this
         self._config_updated_hook()
@@ -317,7 +310,6 @@ class InstallerWindow:
         self.gui.releasevar.set(self.conf.faithlife_product_release)
 
         self.gui.skipdepsvar.set(not self.conf.skip_install_system_dependencies)
-        self.gui.fontsvar.set(not self.conf.skip_install_fonts)
 
         # In case the product changes
         self.root.icon = Path(self.conf.faithlife_product_icon_path)
@@ -340,13 +332,6 @@ class InstallerWindow:
         # Reset install_dir to default based on possible new value
         self.conf.install_dir = self.conf.install_dir_default
 
-    def get_winetricks_options(self):
-        # override config file b/c "Download" accounts for that
-        # Type hinting ignored due to https://github.com/python/mypy/issues/3004
-        self.conf.winetricks_binary = None # type: ignore[assignment]
-        self.gui.tricks_dropdown['values'] = utils.get_winetricks_options() #noqa: E501
-        self.gui.tricksvar.set(self.gui.tricks_dropdown['values'][0])
-
     def set_input_widgets_state(self, state, widgets='all'):
         if state == 'enabled':
             state = ['!disabled']
@@ -357,7 +342,6 @@ class InstallerWindow:
             self.gui.version_dropdown,
             self.gui.release_dropdown,
             self.gui.wine_dropdown,
-            self.gui.tricks_dropdown,
             self.gui.okay_button,
         ]
         if widgets == 'all':
@@ -384,15 +368,6 @@ class InstallerWindow:
         self.conf.wine_binary = self.gui.winevar.get()
         self.gui.wine_dropdown.selection_clear()
         self._post_dropdown_change()
-
-    def set_winetricks(self, evt=None):
-        self.conf.winetricks_binary = self.gui.tricksvar.get()
-        self.gui.tricks_dropdown.selection_clear()
-        self._post_dropdown_change()
-
-    def set_skip_fonts(self, evt=None):
-        self.conf.skip_install_fonts = not self.gui.fontsvar.get()  # invert True/False
-        logging.debug(f"> {self.conf.skip_install_fonts=}")
 
     def set_skip_dependencies(self, evt=None):
         self.conf.skip_install_system_dependencies = self.gui.skipdepsvar.get()  # invert True/False  # noqa: E501
@@ -481,8 +456,6 @@ class ControlWindow(GuiApp):
             command=self.start_appimage_update
         )
         self.gui.set_appimage_button.config(command=self.set_appimage)
-        self.gui.get_winetricks_button.config(command=self.get_winetricks)
-        self.gui.run_winetricks_button.config(command=self.launch_winetricks)
 
         self._config_update_hook()
         # These can be expanded to change the UI based on config changes.
@@ -599,26 +572,6 @@ class ControlWindow(GuiApp):
         self.conf.wine_appimage_path = appimage_filename
         self.start_thread(self.set_appimage_symlink)
 
-    def get_winetricks(self, evt=None):
-        # TODO: Separate as advanced feature.
-        self.gui.statusvar.set("Installing Winetricks…")
-        self.start_thread(
-            system.install_winetricks,
-            self.conf.installer_binary_dir,
-            app=self
-        )
-
-    def launch_winetricks(self, evt=None):
-        self.status("Launching Winetricks…")
-        # Start winetricks in thread.
-        self.start_thread(self.run_winetricks)
-        # Start thread to clear status after delay.
-        args = [12000, self.clear_status]
-        self.start_thread(self.root.after, *args)
-
-    def run_winetricks(self):
-        wine.run_winetricks(self)
-
     def switch_logging(self, evt=None):
         desired_state = self.gui.loggingstatevar.get()
         self._status(f"Switching app logging to '{desired_state}d'…")
@@ -638,7 +591,6 @@ class ControlWindow(GuiApp):
         if self.is_installed():
             self.gui.app_buttonvar.set(f"Run {self.conf.faithlife_product}")
             self.gui.app_button.config(command=self.run_logos)
-            self.gui.get_winetricks_button.state(['!disabled'])
             self.gui.logging_button.state(['!disabled'])
             self.gui.app_install_advanced.grid_forget()
         else:
@@ -714,28 +666,9 @@ class ControlWindow(GuiApp):
         self.clear_status()
         self.gui.latest_appimage_button.state([state])
 
-    def update_run_winetricks_button(self, evt=None):
-        if self.conf._raw.winetricks_binary is not None:
-            # Path may be stored as relative
-            if Path(self.conf._raw.winetricks_binary).is_absolute():
-                winetricks_binary = self.conf._raw.winetricks_binary
-            elif self.conf._raw.install_dir is not None:
-                winetricks_binary = str(Path(self.conf._raw.install_dir) / self.conf._raw.winetricks_binary) #noqa: E501
-            else:
-                winetricks_binary = None
-
-            if winetricks_binary is not None and utils.file_exists(winetricks_binary):
-                state = '!disabled'
-            else:
-                state = 'disabled'
-        else:
-            state = 'disabled'
-        self.gui.run_winetricks_button.state([state])
-
     def _config_update_hook(self, evt=None):
         self.update_logging_button()
         self.update_app_button()
-        self.update_run_winetricks_button()
         try:
             self.update_latest_lli_release_button()
         except Exception:
