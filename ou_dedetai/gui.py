@@ -104,22 +104,6 @@ class InstallerGui(Frame):
             self.wine_dropdown['values'] = [self.app.conf.wine_binary]
             self.winevar.set(self.app.conf.wine_binary)
 
-        # Winetricks row.
-        self.tricks_label = Label(self, text="Winetricks: ")
-        self.tricksvar = StringVar()
-        self.tricks_dropdown = Combobox(self, textvariable=self.tricksvar)
-        self.tricks_dropdown.state(['readonly'])
-        values = ['Download']
-        if app.conf._raw.winetricks_binary:
-            values.insert(0, app.conf._raw.winetricks_binary)
-        self.tricks_dropdown['values'] = values
-        self.tricksvar.set(self.tricks_dropdown['values'][0])
-
-        # Fonts row.
-        self.fonts_label = Label(self, text="Install Fonts: ")
-        self.fontsvar = BooleanVar(value=not self.app.conf.skip_install_fonts)
-        self.fonts_checkbox = Checkbutton(self, variable=self.fontsvar)
-
         # Skip Dependencies row.
         self.skipdeps_label = Label(self, text="Install Dependencies: ")
         self.skipdepsvar = BooleanVar(value=not self.app.conf.skip_install_system_dependencies) #noqa: E501
@@ -142,13 +126,8 @@ class InstallerGui(Frame):
         self.wine_label.grid(column=0, row=row, sticky='w', pady=2)
         self.wine_dropdown.grid(column=1, row=row, columnspan=3, sticky='we', pady=2)  # noqa: E501
         row += 1
-        self.tricks_label.grid(column=0, row=row, sticky='w', pady=2)
-        self.tricks_dropdown.grid(column=1, row=row, sticky='we', pady=2)
-        row += 1
-        self.fonts_label.grid(column=0, row=row, sticky='nws', pady=2)
-        self.fonts_checkbox.grid(column=1, row=row, sticky='w', pady=2)
-        self.skipdeps_label.grid(column=2, row=row, sticky='nws', pady=2)
-        self.skipdeps_checkbox.grid(column=3, row=row, sticky='w', pady=2)
+        self.skipdeps_label.grid(column=0, row=row, sticky='nws', pady=2)
+        self.skipdeps_checkbox.grid(column=1, row=row, sticky='w', pady=2)
         row += 1
         self.cancel_button.grid(column=3, row=row, sticky='e', pady=2)
         self.okay_button.grid(column=4, row=row, sticky='e', pady=2)
@@ -255,12 +234,6 @@ class ControlGui(StatusGui):
         self.latest_appimage_button = Button(self, text="Run")
         self.set_appimage_label = Label(self, text="Set AppImage")
         self.set_appimage_button = Button(self, text="Run")
-        # Run winetricks
-        self.winetricks_label = Label(self, text="Winetricks")
-        self.run_winetricks_button = Button(self, text="Run")
-        self.run_winetricks_button.state(['disabled'])
-        self.get_winetricks_button = Button(self, text="Download/Update")
-        self.get_winetricks_button.state(['disabled'])
         # App logging toggle
         self.loggingstatevar = StringVar(value='Enable')
         self.logging_label = Label(self, text="Toggle app logging")
@@ -306,10 +279,6 @@ class ControlGui(StatusGui):
         row += 1
         self.set_appimage_label.grid(column=0, row=row, sticky='w', pady=2)
         self.set_appimage_button.grid(column=1, row=row, sticky='w', pady=2)
-        row += 1
-        self.winetricks_label.grid(column=0, row=row, sticky='w', pady=2)
-        self.run_winetricks_button.grid(column=1, row=row, sticky='w', pady=2)
-        self.get_winetricks_button.grid(column=2, row=row, sticky='w', pady=2)
         row += 1
         self.logging_label.grid(column=0, row=row, sticky='w', pady=2)
         self.logging_button.grid(column=1, row=row, sticky='w', pady=2)

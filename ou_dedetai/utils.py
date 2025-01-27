@@ -248,19 +248,10 @@ def get_winetricks_options() -> list[str]:
     local_winetricks_path = shutil.which('winetricks')
     winetricks_options = ['Download']
     if local_winetricks_path is not None:
-        if check_winetricks_version(local_winetricks_path):
-            winetricks_options.insert(0, local_winetricks_path)
-        else:
-            logging.info("Local winetricks is too old.")
+        winetricks_options.insert(0, local_winetricks_path)
     else:
         logging.info("Local winetricks not found.")
     return winetricks_options
-
-def check_winetricks_version(winetricks_path: str) -> bool:
-    # Check if local winetricks version matches expected
-    cmd = [winetricks_path, "--version"]
-    local_winetricks_version = subprocess.check_output(cmd).split()[0]
-    return str(local_winetricks_version) == constants.WINETRICKS_VERSION #noqa: E501
 
 
 def get_procs_using_file(file_path):
@@ -273,33 +264,6 @@ def get_procs_using_file(file_path):
         except psutil.AccessDenied:
             pass
     return procs
-
-
-# def get_pids_using_file(file_path, mode=None):
-#     pids = set()
-#     for proc in psutil.process_iter(['pid', 'open_files']):
-#         try:
-#             if mode is not None:
-#                 paths = [f.path for f in proc.open_files() if f.mode == mode]
-#             else:
-#                 paths = [f.path for f in proc.open_files()]
-#             if len(paths) > 0 and file_path in paths:
-#                 pids.add(proc.pid)
-#         except psutil.AccessDenied:
-#             pass
-#     return pids
-
-
-# def wait_process_using_dir(directory):
-#     logging.info(f"* Starting wait_process_using_dir for {directory}…")
-
-#     # Get pids and wait for them to finish.
-#     pids = get_pids_using_file(directory)
-#     for pid in pids:
-#         logging.info(f"wait_process_using_dir PID: {pid}")
-#         psutil.wait(pid)
-
-#     logging.info("* End of wait_process_using_dir.")
 
 
 def find_installed_product(faithlife_product: str, wine_prefix: str) -> Optional[str]:

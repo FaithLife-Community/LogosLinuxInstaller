@@ -405,22 +405,6 @@ def run_winetricks(app: App, *args):
         logging.debug(f"{proc=}")
     else:
         logging.debug('<None>')
-
-
-def install_d3d_compiler(app: App):
-    cmd = ['d3dcompiler_47']
-    run_winetricks(app, *cmd)
-
-
-def install_fonts(app: App):
-    fonts = ['corefonts', 'tahoma']
-    if not app.conf.skip_install_fonts:
-        for i, f in enumerate(fonts):
-            app.status(f"Configuring font: {f}…", i / len(fonts)) # noqa: E501
-            args = [f]
-            run_winetricks(app, *args)
-
-
 def install_font_smoothing(app: App):
     logging.info("Setting font smoothing…")
     args = ['settings', 'fontsmooth=rgb']

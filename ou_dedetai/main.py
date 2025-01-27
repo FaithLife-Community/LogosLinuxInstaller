@@ -45,14 +45,6 @@ def get_parser():
         help='skip dependencies check and installation',
     )
     cfg.add_argument(
-        '-F', '--skip-fonts', action='store_true',
-        help='skip font installations',
-    )
-    cfg.add_argument(
-        '-W', '--skip-winetricks', action='store_true',
-        help=argparse.SUPPRESS,
-    )
-    cfg.add_argument(
         '-V', '--verbose', action='store_true',
         help='enable verbose mode',
     )
@@ -161,26 +153,6 @@ def get_parser():
         help='Update the AppImage symlink. Requires a path.',
     )
     cmd.add_argument(
-        '--get-winetricks', action='store_true',
-        help='download or update Winetricks',
-    )
-    cmd.add_argument(
-        '--wine', nargs="+",
-        help='run wine command',
-    )
-    cmd.add_argument(
-        '--run-winetricks', action='store_true',
-        help='start Winetricks window',
-    )
-    cmd.add_argument(
-        '--install-d3d-compiler', action='store_true',
-        help=argparse.SUPPRESS,
-    )
-    cmd.add_argument(
-        '--install-fonts', action='store_true',
-        help=argparse.SUPPRESS,
-    )
-    cmd.add_argument(
         '--install-icu', action='store_true',
         help='Install ICU data files for Logos 30+',
     )
@@ -207,8 +179,22 @@ def get_parser():
         help=argparse.SUPPRESS,
     )
     cmd.add_argument(
+        '--wine', nargs="+",
+        help=(
+            'run wine command'
+            '; WARNING: wine will not accept user inpiut!'
+        ),
+    )
+    cmd.add_argument(
+        '--run-winetricks', action='store_true',
+        help='start winetricks window (if available)',
+    )
+    cmd.add_argument(
         '--winetricks', nargs='+',
-        help="run winetricks command",
+        help=(
+            "run winetricks command (if available)"
+            "; WARNING: winetricks will not accept user input!"
+        ),
     )
     return parser
 
@@ -234,12 +220,6 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
 
     if args.set_appimage:
         ephemeral_config.wine_appimage_path = args.set_appimage[0]
-
-    if args.skip_fonts:
-        ephemeral_config.install_fonts_skip = True
-
-    if args.skip_winetricks:
-        ephemeral_config.winetricks_skip = True
 
     # FIXME: Should this have been args.check_for_updates?
     # Should this even be an option?
@@ -282,11 +262,8 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
         'backup',
         'create_shortcuts',
         'edit_config',
-        'get_winetricks',
         'install_app',
-        'install_d3d_compiler',
         'install_dependencies',
-        'install_fonts',
         'install_icu',
         'remove_index_files',
         'remove_install_dir',
@@ -398,8 +375,6 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
     install_required = [
         'backup',
         'create_shortcuts',
-        'install_d3d_compiler',
-        'install_fonts',
         'install_icu',
         'remove_index_files',
         'remove_library_catalog',
@@ -447,7 +422,7 @@ def main():
     # program.
     # utils.die_if_running()
     if os.getuid() == 0 and not ephemeral_config.app_run_as_root_permitted:
-        print("Running Wine/winetricks as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F", file=sys.stderr)  # noqa: E501
+        print("Running Wine as root is highly discouraged. Use -f|--force-root if you must run as root. See https://wiki.winehq.org/FAQ#Should_I_run_Wine_as_root.3F", file=sys.stderr)  # noqa: E501
         sys.exit(1)
 
     # Print terminal banner
