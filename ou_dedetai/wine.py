@@ -355,38 +355,24 @@ def run_wine_proc(
 
     cmd = f"subprocess cmd: '{' '.join(command)}'"
     logging.debug(cmd)
+    if winecmd.endswith('winetricks'):
+        encoding = 'cp437'
+    else:
+        encoding = 'utf-8'
     try:
         with open(app.conf.app_wine_log_path, 'a') as wine_log:
             print(f"{utils.get_timestamp()}: {cmd}", file=wine_log)
-            process = system.popen_command(
+            return system.popen_command(
                 command,
                 stdout=wine_log,
                 stderr=wine_log,
                 env=env,
-                start_new_session=True
+                start_new_session=True,
+                encoding=encoding
             )
-            if process is not None:
-                if process.poll() is None and process.stdout is not None:
-                    with process.stdout:
-                        for line in iter(process.stdout.readline, b''):
-                            if winecmd.endswith('winetricks'):
-                                logging.debug(line.decode('cp437').rstrip())
-                            else:
-                                try:
-                                    logging.info(line.decode().rstrip())
-                                except UnicodeDecodeError:
-                                    if not init and app.conf.wine_output_encoding is not None: # noqa: E501
-                                        logging.info(line.decode(app.conf.wine_output_encoding).rstrip())  # noqa: E501
-                                    else:
-                                        logging.error("wine.run_wine_proc: Error while decoding: wine output encoding could not be found.")  # noqa: E501
-                return process
-            else:
-                return None
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Exception running '{' '.join(command)}': {e}")
-
-    return process
 
 
 def run_winetricks(app: App, *args):
