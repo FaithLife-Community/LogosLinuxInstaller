@@ -18,7 +18,7 @@ import sys
 import tarfile
 import time
 from ou_dedetai.app import App
-from packaging import version
+from packaging.version import Version
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -365,16 +365,16 @@ class VersionComparison(enum.Enum):
 
 
 def compare_logos_linux_installer_version(app: App) -> Optional[VersionComparison]:
-    current = constants.LLI_CURRENT_VERSION
-    latest = app.conf.app_latest_version
+    current = Version(constants.LLI_CURRENT_VERSION)
+    latest = Version(app.conf.app_latest_version)
 
-    if version.parse(current) < version.parse(latest):
+    if current < latest:
         # Current release is older than recommended.
         output = VersionComparison.OUT_OF_DATE
-    elif version.parse(current) > version.parse(latest):
+    elif current > latest:
         # Installed version is custom.
         output = VersionComparison.DEVELOPMENT
-    elif version.parse(current) == version.parse(latest):
+    elif current == latest:
         # Current release is latest.
         output = VersionComparison.UP_TO_DATE
 
@@ -388,10 +388,10 @@ def compare_recommended_appimage_version(app: App):
     wine_exe_path = app.conf.wine_binary
     wine_release, error_message = wine.get_wine_release(wine_exe_path)
     if wine_release is not None and wine_release is not False:
-        current_version = f"{wine_release.major}.{wine_release.minor}"
+        current_version = Version(f"{wine_release.major}.{wine_release.minor}")
         logging.debug(f"Current wine release: {current_version}")
 
-        recommended_version = app.conf.wine_appimage_recommended_version
+        recommended_version = Version(app.conf.wine_appimage_recommended_version)
         logging.debug(f"Recommended wine release: {recommended_version}")
         if current_version < recommended_version:
             # Current release is older than recommended.
