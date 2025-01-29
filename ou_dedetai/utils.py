@@ -604,6 +604,7 @@ def update_to_latest_recommended_appimage(app: App):
     app.conf.wine_appimage_path = Path(app.conf.wine_appimage_recommended_file_name)  # noqa: E501
     status, _ = compare_recommended_appimage_version(app)
     if status == 0:
+        # TODO: Consider also removing old appimage from install dir. 
         set_appimage_symlink(app)
     elif status == 1:
         logging.debug("The AppImage is already set to the latest recommended.")

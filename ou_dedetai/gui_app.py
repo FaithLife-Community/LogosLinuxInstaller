@@ -478,7 +478,7 @@ class ControlWindow(GuiApp):
             command=self.update_to_latest_lli_release
         )
         self.gui.latest_appimage_button.config(
-            command=self.update_to_latest_appimage
+            command=self.start_appimage_update
         )
         self.gui.set_appimage_button.config(command=self.set_appimage)
         self.gui.get_winetricks_button.config(command=self.get_winetricks)
@@ -579,9 +579,17 @@ class ControlWindow(GuiApp):
         utils.set_appimage_symlink(self)
         self.update_latest_appimage_button()
 
-    def update_to_latest_appimage(self, evt=None):
+    def start_appimage_update(self):
         self.status("Updating to latest AppImage…")
-        self.start_thread(self.set_appimage_symlink)
+        self.gui.latest_appimage_button.state(['disabled'])
+        evt = '<<AppImageUpdateDone>>'
+        self.root.bind(evt, self.update_latest_appimage_button)
+        self.start_thread(self.update_to_latest_appimage, evt=evt)
+
+    def update_to_latest_appimage(self, evt=None):
+        utils.update_to_latest_recommended_appimage(self)
+        self.root.event_generate(evt)
+
 
     def set_appimage(self, evt=None):
         # TODO: Separate as advanced feature.
