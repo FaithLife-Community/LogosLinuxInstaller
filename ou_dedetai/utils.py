@@ -568,7 +568,7 @@ def set_appimage_symlink(app: App):
     if appimage_file_path.name == app.conf.wine_appimage_recommended_file_name:  # noqa: E501
         # Default case.
         # This saves in the install binary dir
-        network.dwonload_recommended_appimage(app)
+        network.download_recommended_appimage(app)
     else:
         # Verify user-selected AppImage.
         if not check_appimage(appimage_file_path):
