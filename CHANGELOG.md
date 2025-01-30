@@ -1,5 +1,8 @@
 # Changelog
 
+- 4.0.0-beta.7
+	- Fix appimage update button to accept wine 10 (#282, #275) [N. Marti]
+	- Fix crash when downloading resources (seqURIs must be non-null and non-empty) (#275 #262 #283) [N. Shaaban]
 - 4.0.0-beta.6
 	- Fix #256 [J. Goodman]
 	- Fix #269 [T. H. Wright]
