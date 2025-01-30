@@ -521,7 +521,7 @@ def _get_latest_release_data(repository) -> SoftwareReleaseInfo:
         download_url=download_url
     )
 
-def dwonload_recommended_appimage(app: App):
+def download_recommended_appimage(app: App):
     wine64_appimage_full_filename = Path(app.conf.wine_appimage_recommended_file_name)  # noqa: E501
     dest_path = Path(app.conf.installer_binary_dir) / wine64_appimage_full_filename
     if dest_path.is_file():
