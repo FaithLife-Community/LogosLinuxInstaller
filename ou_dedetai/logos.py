@@ -190,11 +190,30 @@ class LogosManager:
         # AND if their library is index and their library is prepared.
         # Logos probably should be off for this
         sql = [
-            "DELETE FROM Installers WHERE 1",
-            "DELETE FROM UpdateUrls WHERE 1",
-            "DELETE FROM Updates WHERE Source='Application Update'"
+            # "DELETE FROM Installers WHERE 1",
+            # Cleanup the Update Ids that are associated with an application update
+            "DELETE FROM UpdateUrls WHERE UpdateId IN " +
+                "(SELECT UpdateId FROM Updates WHERE Source='Application Update')",
+            # Cleanup database relations and removes Application Updates
+            # Fixes corrupt DBs caused by an earlier
+            # version of the software #275
+            # If we don't do this, the application will crash when it tries to update.
+            "DELETE FROM Updates WHERE UpdateId NOT IN "+
+                "(SELECT UpdateId FROM UpdateUrls) OR "+
+                "Source='Application Update'",
+            # Also remove any UpdateId references that don't exist
+            "UPDATE Resources SET Status=1, UpdateId=NULL WHERE UpdateId IS NOT NULL "+
+                "AND UpdateId NOT IN (SELECT UpdateId FROM Updates)"
         ]
         self.app.start_thread(utils.watch_db, str(db_path), sql)
+
+    # Also noticed if the database Data/*/CloudResourceManager/CloudResources.db 
+    # table TransitionStates has a ResourceId that isn't registered in UpdateManager,
+    # logos will crash on startup. It can be recovered by removing those TransitionState
+    # entries.
+    # Perhaps we should attempt to recover in this state.
+    # Since there are no known user interaction steps to get into this state, leaving it
+    # alone for now. Only found it when manually modifying the database.
 
     def stop(self):
         logging.debug("Stopping LogosManager.")
@@ -212,13 +231,12 @@ class LogosManager:
         if pids:
             try:
                 system.run_command(['kill', '-9'] + pids)
-                self.logos_state = State.STOPPED
                 logging.debug(f"Stopped Logos processes at PIDs {', '.join(pids)}.")  # noqa: E501
             except Exception as e:
                 logging.debug(f"Error while stopping Logos processes: {e}.")  # noqa: E501
         else:
             logging.debug("No Logos processes to stop.")
-            self.logos_state = State.STOPPED
+        self.logos_state = State.STOPPED
         # The Logos process has exited, if we wait here it hangs
         # wine.wineserver_wait(self.app)
 
