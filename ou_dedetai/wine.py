@@ -249,6 +249,38 @@ def initializeWineBottle(wine64_binary: str, app: App) -> Optional[subprocess.Po
     return process
 
 
+def set_win_version(app: App, exe: str, windows_version: str):
+    if exe == "logos":
+        # This operation is equivilent to f"winetricks -q settings {windows_version}"
+        # but faster
+        process = run_wine_proc(
+            app.conf.wine_binary,
+            app,
+            exe_args=('winecfg', '/v', windows_version)
+        )
+        if process:
+            process.wait()
+
+    elif exe == "indexer":
+        reg = f"HKCU\\Software\\Wine\\AppDefaults\\{app.conf.faithlife_product}Indexer.exe"  # noqa: E501
+        exe_args = [
+            'add',
+            reg,
+            "/v", "Version",
+            "/t", "REG_SZ",
+            "/d", f"{windows_version}", "/f",
+            ]
+        process = run_wine_proc(
+            app.conf.wine_binary,
+            app,
+            exe='reg',
+            exe_args=exe_args
+        )
+        if process is None:
+            app.exit("Failed to spawn command to set windows version for indexer")
+        process.wait()
+
+
 def wine_reg_install(app: App, name: str, reg_text: str, wine64_binary: str):
     with tempfile.TemporaryDirectory() as tempdir:
         reg_file = Path(tempdir) / name
@@ -285,12 +317,32 @@ def disable_winemenubuilder(app: App, wine64_binary: str):
     wine_reg_install(app, name, reg_text, wine64_binary)
 
 
-def set_renderer_to_gdi(app: App, wine64_binary: str):
-    name='set-renderer-to-gdi.reg'
-    reg_text = r'''REGEDIT4
+def set_renderer(app: App, wine64_binary: str, value: str):
+    name=f'set-renderer-to-{value}.reg'
+    reg_text = rf'''REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Wine\Direct3D]
-"renderer"="gdi"
+"renderer"="{value}"
+'''
+    wine_reg_install(app, name, reg_text, wine64_binary)
+
+
+def set_fontsmoothing_to_rgb(app: App, wine64_binary: str):
+    # Possible registry values:
+    # "disable":      FontSmoothing=0; FontSmoothingOrientation=1; FontSmoothingType=0
+    # "gray/grey":    FontSmoothing=2; FontSmoothingOrientation=1; FontSmoothingType=1
+    # "bgr":          FontSmoothing=2; FontSmoothingOrientation=0; FontSmoothingType=2
+    # "rgb":          FontSmoothing=2; FontSmoothingOrientation=1; FontSmoothingType=2
+    # https://github.com/Winetricks/winetricks/blob/8cf82b3c08567fff6d3fb440cbbf61ac5cc9f9aa/src/winetricks#L17411
+
+    name='set-fontsmoothing-to-rgb.reg'
+    reg_text = r'''REGEDIT4
+
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"FontSmoothing"="2"
+"FontSmoothingGamma"=dword:00000578
+"FontSmoothingOrientation"=dword:00000001
+"FontSmoothingType"=dword:00000002
 '''
     wine_reg_install(app, name, reg_text, wine64_binary)
 
@@ -398,46 +450,6 @@ def run_winetricks(app: App, *args):
         logging.debug(f"{proc=}")
     else:
         logging.debug('<None>')
-def install_font_smoothing(app: App):
-    logging.info("Setting font smoothing…")
-    args = ['settings', 'fontsmooth=rgb']
-    run_winetricks(app, *args)
-
-
-def set_renderer(app: App, renderer: str):
-    run_winetricks(app, "-q", "settings", f"renderer={renderer}")
-
-
-def set_win_version(app: App, exe: str, windows_version: str):
-    if exe == "logos":
-        # This operation is equivilent to f"winetricks -q settings {windows_version}"
-        # but faster
-        process = run_wine_proc(
-            app.conf.wine_binary,
-            app,
-            exe_args=('winecfg', '/v', windows_version)
-        )
-        if process:
-            process.wait()
-
-    elif exe == "indexer":
-        reg = f"HKCU\\Software\\Wine\\AppDefaults\\{app.conf.faithlife_product}Indexer.exe"  # noqa: E501
-        exe_args = [
-            'add',
-            reg,
-            "/v", "Version",
-            "/t", "REG_SZ",
-            "/d", f"{windows_version}", "/f",
-            ]
-        process = run_wine_proc(
-            app.conf.wine_binary,
-            app,
-            exe='reg',
-            exe_args=exe_args
-        )
-        if process is None:
-            app.exit("Failed to spawn command to set windows version for indexer")
-        process.wait()
 
 
 # FIXME: Consider when to re-run this if it changes.
