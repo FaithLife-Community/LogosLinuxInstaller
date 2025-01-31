@@ -476,6 +476,7 @@ class TUI(App):
             2: self.handle_ask_response,
             8: self.waiting,
             10: self.waiting_releases,
+            11: self.wineconfig_menu_select,
             12: self.logos.start,
             13: self.waiting_finish,
             14: self.waiting_resize,
@@ -569,6 +570,17 @@ class TUI(App):
             self.active_screen.running = 0
             self.active_screen.choice = "Processing"
             control.remove_library_catalog(self)
+        elif choice.startswith("Wine Config"):
+            self.reset_screen()
+            self.screen_q.put(
+                self.stack_menu(
+                    11,
+                    self.todo_q,
+                    self.todo_e,
+                    "Wine Config Menu",
+                    self.set_wineconfig_menu_options(),
+                )
+            )
         elif choice.startswith("Utilities"):
             self.reset_screen()
             self.screen_q.put(
@@ -584,6 +596,49 @@ class TUI(App):
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
             self.go_to_main_menu()
+
+    def wineconfig_menu_select(self, choice):
+        if choice == "Run Winetricks":
+            self.reset_screen()
+            self.status("Running winetricks…")
+            wine.run_winetricks(self)
+            self.go_to_main_menu()
+        elif choice == "Set Renderer":
+            self.reset_screen()
+            self.screen_q.put(
+                self.stack_menu(
+                    19,
+                    self.todo_q,
+                    self.todo_e,
+                    "Choose Renderer",
+                    self.set_renderer_menu_options(),
+                )
+            )
+            self.choice_q.put("0")
+        elif choice == "Set Windows Version for Logos":
+            self.reset_screen()
+            self.screen_q.put(
+                self.stack_menu(
+                    20,
+                    self.todo_q,
+                    self.todo_e,
+                    "Set Windows Version for Logos",
+                    self.set_win_ver_menu_options(),
+                )
+            )
+            self.choice_q.put("0")
+        elif choice == "Set Windows Version for Indexer":
+            self.reset_screen()
+            self.screen_q.put(
+                self.stack_menu(
+                    21,
+                    self.todo_q,
+                    self.todo_e,
+                    "Set Windows Version for Indexer",
+                    self.set_win_ver_menu_options(),
+                )
+            )
+            self.choice_q.put("0")
 
     def utilities_menu_select(self, choice):
         if choice == "Remove Library Catalog":
@@ -863,13 +918,29 @@ class TUI(App):
             labels_default = ["Install Logos Bible Software"]
         labels.extend(labels_default)
 
-        labels_support = ["Utilities →"]
+        labels_support = ["Utilities →", "Wine Config →"]
         labels.extend(labels_support)
 
         labels_options = ["Change Color Scheme"]
         labels.extend(labels_options)
 
         labels.append("Exit")
+
+        options = self.which_dialog_options(labels)
+
+        return options
+
+    def set_wineconfig_menu_options(self):
+        labels = []
+        labels_support = [
+            "Run Winetricks",
+            "Set Renderer",
+            "Set Windows Version for Logos",
+            "Set Windows Version for Indexer",
+        ]
+        labels.extend(labels_support)
+
+        labels.append("Return to Main Menu")
 
         options = self.which_dialog_options(labels)
 
