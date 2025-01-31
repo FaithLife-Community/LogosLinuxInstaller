@@ -200,13 +200,17 @@ def ensure_wineprefix_config(app: App):
     app.installer_step += 1
     app.status("Ensuring wineprefix configuration…")
 
-    # Force renderer=gdi in registry.
-    wine.set_renderer_to_gdi(app=app, wine64_binary=app.conf.wine64_binary)
-    logging.debug("Wineprefix renderer set to 'gdi'.")
-
     # Force winemenubuilder.exe='' in registry.
+    logging.debug("Setting wineprefix registry to ignore winemenubuilder.exe.")
     wine.disable_winemenubuilder(app=app, wine64_binary=app.conf.wine64_binary)
-    logging.debug("Wineprefix set to ignore winemenubuilder.exe.")
+
+    # Force renderer=gdi in registry.
+    logging.debug("Setting renderer=gdi in wineprefix registry.")
+    wine.set_renderer(app=app, wine64_binary=app.conf.wine64_binary, value='gdi')
+
+    # Force fontsmooth=rgb in registry.
+    logging.debug("Setting fontsmoothing=rgb in wineprefix registry.")
+    wine.set_fontsmoothing_to_rgb(app=app, wine64_binary=app.conf.wine64_binary)
 
 
 def ensure_icu_data_files(app: App):

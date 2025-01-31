@@ -684,7 +684,7 @@ class TUI(App):
         if choice in ["gdi", "gl", "vulkan"]:
             self.reset_screen()
             self.status(f"Changing renderer to {choice}.", 0)
-            wine.set_renderer(self, choice)
+            wine.set_renderer(self, self.conf.wine64_binary, choice)
             self.status(f"Changed renderer to {choice}.", 100)
             self.go_to_main_menu()
 
