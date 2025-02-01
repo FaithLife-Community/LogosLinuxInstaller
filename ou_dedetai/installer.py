@@ -293,14 +293,6 @@ def ensure_product_installed(app: App):
     app.conf._installed_faithlife_product_release = None
 
     # Clean up temp files, etc.
-    mst_destination = Path(app.conf.install_dir) / "data/wine64_bottle/drive_c/LogosStubFailOK.mst" #noqa E501
-    if mst_destination and mst_destination.is_file():
-        try:
-            mst_destination.unlink()
-            logging.debug(f"Deleted MST file: {mst_destination}")
-        except Exception as e:
-            logging.warning(f"Could not delete MST file: {e}")
-            
     utils.clean_all()
 
     logging.debug(f"> {app.conf.logos_exe=}")
