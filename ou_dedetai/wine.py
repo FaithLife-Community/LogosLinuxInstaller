@@ -288,25 +288,20 @@ def install_msi(app: App):
     # Add MST transform if needed
     release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version  # noqa: E501
     if release_version is not None and utils.check_logos_release_version(release_version, 39, 1):
-        # Define source and destination for the MST file
-        mst_source = constants.APP_ASSETS_DIR / "LogosStubFailOK.mst"
-        mst_destination = Path(app.conf.install_dir) / "data/wine64_bottle/drive_c/LogosStubFailOK.mst"
-        
-        # Copy the MST file if it doesn't already exist
-        if not mst_destination.is_file():
-            shutil.copy(mst_source, mst_destination)
-        logging.debug(f"MST present: {mst_destination.is_file()}")
-
-        # Hard-code the Windows path for the MST file
-        transform_winpath = r"C:\LogosStubFailOK.mst"
-        exe_args.append(f'TRANSFORMS="{transform_winpath}"')
-        logging.debug(f"Hard-coded TRANSFORMS path added: {transform_winpath}")
+        # Define MST path and transform to windows path.
+        mst_path = constants.APP_ASSETS_DIR / "LogosStubFailOK.mst"
+        transform_winpath = subprocess.run(
+            [wine_exe, 'winepath', '-w', mst_path],
+            env=get_wine_env(app),
+            capture_output=True,
+            text=True
+        ).stdout.rstrip()
+        exe_args.append(f'TRANSFORMS={transform_winpath}')
+        logging.debug(f"TRANSFORMS windows path added: {transform_winpath}")
 
     # Log the msiexec command and run the process
     logging.info(f"Running: {wine_exe} msiexec {' '.join(exe_args)}")
-    process = run_wine_proc(wine_exe, app, exe="msiexec", exe_args=exe_args)
-            
-    return process
+    return run_wine_proc(wine_exe, app, exe="msiexec", exe_args=exe_args)
 
 
 def get_winecmd_encoding(app: App) -> Optional[str]:
