@@ -182,7 +182,7 @@ def get_parser():
         '--wine', nargs="+",
         help=(
             'run wine command'
-            '; WARNING: wine will not accept user inpiut!'
+            '; WARNING: wine will not accept user input!'
         ),
     )
     return parser
