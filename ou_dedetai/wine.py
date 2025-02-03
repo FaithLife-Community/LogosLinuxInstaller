@@ -56,37 +56,45 @@ class WineRelease:
     release: Optional[str]
 
 
+def get_devel_or_stable(version: str) -> str:
+    # Wine versioning states that x.0 is always stable branch, while x.y is devel.
+    # Ref: https://gitlab.winehq.org/wine/wine/-/wikis/Wine-User's-Guide#wine-from-winehq
+    if version.split('.')[1].startswith('0'):
+        return 'stable'
+    else:
+        return 'devel'
+
+
 # FIXME: consider raising exceptions on error
 def get_wine_release(binary: str) -> tuple[Optional[WineRelease], str]:
     cmd = [binary, "--version"]
     try:
         version_string = subprocess.check_output(cmd, encoding='utf-8').strip()
         logging.debug(f"Version string: {str(version_string)}")
-        release: Optional[str]
+        branch: Optional[str]
         try:
-            version, release = version_string.split()
+            wine_version, branch = version_string.split()  # release = (Staging)
+            branch = branch.lstrip('(').rstrip(')').lower()  # remove parens
         except ValueError:
             # Neither "Devel" nor "Stable" release is noted in version output
-            version = version_string
-            release = get_wine_branch(binary)
+            wine_version = version_string
+            branch = get_devel_or_stable(wine_version)
+        version = wine_version.lstrip('wine-')
+        logging.debug(f"Wine branch of {binary}: {branch}")
 
-        logging.debug(f"Wine branch of {binary}: {release}")
-
-        if release is not None:
+        if branch is not None:
             ver_major = int(version.split('.')[0].lstrip('wine-'))  # remove 'wine-'
             ver_minor_str = version.split('.')[1]
             # In the case the version is an rc like wine-10.0-rc5
             if '-' in ver_minor_str:
                 ver_minor_str = ver_minor_str.split("-")[0]
             ver_minor = int(ver_minor_str)
-            release = release.lstrip('(').rstrip(')').lower()  # remove parens
         else:
             ver_major = 0
             ver_minor = 0
 
-        wine_release = WineRelease(ver_major, ver_minor, release)
+        wine_release = WineRelease(ver_major, ver_minor, branch)
         logging.debug(f"Wine release of {binary}: {str(wine_release)}")
-
         if ver_major == 0:
             return None, "Couldn't determine wine version."
         else:
@@ -525,57 +533,6 @@ def get_registry_value(reg_path, name, app: App):
     else:
         logging.critical(err_msg)
     return value
-
-
-def get_mscoree_winebranch(mscoree_file: Path) -> Optional[str]:
-    try:
-        with mscoree_file.open('rb') as f:
-            for line in f:
-                m = re.search(rb'wine-[a-z]+', line)
-                if m is not None:
-                    return m[0].decode().lstrip('wine-')
-    except FileNotFoundError as e:
-        logging.error(e)
-    return None
-
-
-def get_wine_branch(binary: str) -> Optional[str]:
-    logging.info(f"Determining wine branch of '{binary}'")
-    binary_obj = Path(binary).expanduser().resolve()
-    if utils.check_appimage(binary_obj):
-        logging.debug(f"Mounting AppImage: {binary_obj}")
-        # Mount appimage to inspect files.
-        p = subprocess.Popen(
-            [binary_obj, '--appimage-mount'],
-            stdout=subprocess.PIPE,
-            encoding='UTF8'
-        )
-        branch = None
-        while p.returncode is None and p.stdout is not None:
-            for line in p.stdout:
-                if line.startswith('/tmp'):
-                    tmp_dir = Path(line.rstrip())
-                    for f in tmp_dir.glob('org.winehq.wine.desktop'):
-                        if not branch:
-                            for dline in f.read_text().splitlines():
-                                try:
-                                    k, v = dline.split('=')
-                                except ValueError:  # not a key=value line
-                                    continue
-                                if k == 'X-AppImage-Version':
-                                    branch = v.split('_')[0]
-                                    logging.debug(f"{branch=}")
-                                    break
-                p.send_signal(signal.SIGINT)
-            p.poll()
-        return branch
-    else:
-        logging.debug("Binary object is not an AppImage.")
-    logging.info(f"'{binary}' resolved to '{binary_obj}'")
-    mscoree64 = binary_obj.parents[1] / 'lib64' / 'wine' / 'x86_64-windows' / 'mscoree.dll'  # noqa: E501
-    if not mscoree64.exists():  #alpine
-        mscoree64 = binary_obj.parents[1] / 'lib' / 'wine' / 'x86_64-windows' / 'mscoree.dll'  # noqa: E501
-    return get_mscoree_winebranch(mscoree64)
 
 
 def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
