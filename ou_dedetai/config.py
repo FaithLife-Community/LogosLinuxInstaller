@@ -55,7 +55,6 @@ class LegacyConfiguration:
     LOGOS64_URL: Optional[str] = None
     SELECTED_APPIMAGE_FILENAME: Optional[str] = None
     SKIP_DEPENDENCIES: Optional[bool] = None
-    SKIP_FONTS: Optional[bool] = None
     use_python_dialog: Optional[str] = None
     VERBOSE: Optional[bool] = None
     WINEDEBUG: Optional[str] = None
@@ -69,7 +68,6 @@ class LegacyConfiguration:
         """Returns a list of keys that are of type bool"""
         return [
             "VERBOSE",
-            "SKIP_FONTS",
             "SKIP_DEPENDENCIES",
             "DEBUG",
             "CHECK_UPDATES"
@@ -196,8 +194,6 @@ class EphemeralConfiguration:
 
     install_dependencies_skip: Optional[bool]
     """Whether to skip installing system package dependencies"""
-    install_fonts_skip: Optional[bool]
-    """Whether to skip installing fonts in the wineprefix"""
 
     wine_dll_overrides: Optional[str]
     """Corresponds to wine's WINEDLLOVERRIDES"""
@@ -295,7 +291,6 @@ class EphemeralConfiguration:
             check_updates_now=legacy.CHECK_UPDATES,
             delete_log=delete_log,
             install_dependencies_skip=legacy.SKIP_DEPENDENCIES,
-            install_fonts_skip=legacy.SKIP_FONTS,
             wine_appimage_link_file_name=legacy.APPIMAGE_LINK_SELECTION_NAME,
             wine_appimage_path=legacy.SELECTED_APPIMAGE_FILENAME,
             wine_output_encoding=legacy.WINECMD_ENCODING,
@@ -1090,14 +1085,6 @@ class Config:
     @skip_install_system_dependencies.setter
     def skip_install_system_dependencies(self, val: bool):
         self._overrides.install_dependencies_skip = val
-
-    @property
-    def skip_install_fonts(self) -> bool:
-        return bool(self._overrides.install_fonts_skip)
-
-    @skip_install_fonts.setter
-    def skip_install_fonts(self, val: bool):
-        self._overrides.install_fonts_skip = val
 
     @property
     def download_dir(self) -> str:

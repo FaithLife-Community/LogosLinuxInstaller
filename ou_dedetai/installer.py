@@ -31,7 +31,6 @@ def ensure_choices(app: App):
     logging.debug(f"> {app.conf.wine_appimage_recommended_file_name=}")
     logging.debug(f"> {app.conf.wine_binary_code=}")
     logging.debug(f"> {app.conf.wine_binary=}")
-    logging.debug(f"> {app.conf.skip_install_fonts=}")
     logging.debug(f"> {app.conf.faithlife_product_icon_path}")
     logging.debug(f"> {app.conf.faithlife_installer_download_url}")
     # Debug print the entire config
