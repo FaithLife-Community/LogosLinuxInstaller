@@ -407,10 +407,6 @@ def run_wine_proc(
 
     cmd = f"subprocess cmd: '{' '.join(command)}'"
     logging.debug(cmd)
-    if winecmd.endswith('winetricks'):
-        encoding = 'cp437'
-    else:
-        encoding = 'utf-8'
     try:
         with open(app.conf.app_wine_log_path, 'a') as wine_log:
             print(f"{utils.get_timestamp()}: {cmd}", file=wine_log)
@@ -420,35 +416,18 @@ def run_wine_proc(
                 stderr=wine_log,
                 env=env,
                 start_new_session=True,
-                encoding=encoding
+                encoding='utf-8'
             )
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Exception running '{' '.join(command)}': {e}")
 
 
-def run_winetricks(app: App, *args):
-    cmd = [*args]
-    if "-q" not in args and app.conf.winetricks_binary:
-        cmd.insert(0, "-q")
-    logging.info(f"running \"winetricks {' '.join(cmd)}\"")
-    process = run_wine_proc(app.conf.winetricks_binary, app, exe_args=cmd)
-    if process is None:
-        app.exit("Failed to spawn winetricks")
-    process.wait()
-    logging.info(f"\"winetricks {' '.join(cmd)}\" DONE!")
-    logging.debug(f"procs using {app.conf.wine_prefix}:")
-    for proc in utils.get_procs_using_file(app.conf.wine_prefix):
-        logging.debug(f"{proc=}")
-    else:
-        logging.debug('<None>')
-
-
 # FIXME: Consider when to re-run this if it changes.
 # Perhaps we should have a "apply installation updates"
 # or similar mechanism to ensure all of our latest methods are installed
-# including but not limited to: system packages, winetricks options,
-# icu files, fonts, registry edits, etc.
+# including but not limited to: system packages, icu files, fonts, registry
+# edits, etc.
 #
 # Seems like we want to have a more holistic mechanism for ensuring
 # all users use the latest and greatest.
@@ -575,8 +554,6 @@ def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
     wine_env = os.environ.copy()
     winepath = Path(app.conf.wine_binary)
     if winepath.name != 'wine64':  # AppImage
-        # Winetricks commands can fail if 'wine64' is not explicitly defined.
-        # https://github.com/Winetricks/winetricks/issues/2084#issuecomment-1639259359
         winepath = Path(app.conf.wine64_binary)
     wine_env_defaults = {
         'WINE': str(winepath),
@@ -585,10 +562,6 @@ def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
         'WINELOADER': str(winepath),
         'WINEPREFIX': app.conf.wine_prefix,
         'WINESERVER': app.conf.wineserver_binary,
-        # The following seems to cause some winetricks commands to fail; e.g.
-        # 'winetricks settings win10' exits with ec = 1 b/c it fails to find
-        # %ProgramFiles%, %AppData%, etc.
-        # 'WINETRICKS_SUPER_QUIET': '',
     }
     for k, v in wine_env_defaults.items():
         wine_env[k] = v

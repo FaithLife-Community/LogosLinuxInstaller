@@ -244,16 +244,6 @@ def get_wine_options(app: App) -> List[str]:  # noqa: E501
     return wine_binary_options
 
 
-def get_winetricks_options() -> list[str]:
-    local_winetricks_path = shutil.which('winetricks')
-    winetricks_options = ['Download']
-    if local_winetricks_path is not None:
-        winetricks_options.insert(0, local_winetricks_path)
-    else:
-        logging.info("Local winetricks not found.")
-    return winetricks_options
-
-
 def get_procs_using_file(file_path):
     procs = set()
     for proc in psutil.process_iter(['pid', 'open_files', 'name']):

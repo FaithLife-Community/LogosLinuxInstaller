@@ -22,7 +22,6 @@ class LegacyConfiguration:
     current_logos_version: Optional[str] = None # Unused in new code
     curses_colors: Optional[str] = None
     INSTALLDIR: Optional[str] = None
-    WINETRICKSBIN: Optional[str] = None
     WINEBIN_CODE: Optional[str] = None
     WINE_EXE: Optional[str] = None
     WINECMD_ENCODING: Optional[str] = None
@@ -61,7 +60,6 @@ class LegacyConfiguration:
     WINEDLLOVERRIDES: Optional[str] = None
     WINEPREFIX: Optional[str] = None
     WINESERVER_EXE: Optional[str] = None
-    WINETRICKS_UNATTENDED: Optional[str] = None
 
     @classmethod
     def bool_keys(cls) -> list[str]:
@@ -187,10 +185,6 @@ class EphemeralConfiguration:
     app_log_path: Optional[str]
     app_wine_log_path: Optional[str]
     """Path to log wine's output to"""
-    app_winetricks_unattended: Optional[bool]
-    """Whether or not to send -q to winetricks for all winetricks commands.
-    
-    Some commands always send -q"""
 
     install_dependencies_skip: Optional[bool]
     """Whether to skip installing system package dependencies"""
@@ -238,9 +232,6 @@ class EphemeralConfiguration:
     
     Accepted values: tk (GUI), curses (TUI), cli (CLI)"""
 
-    winetricks_args: Optional[list[str]] = None
-    """Arguments to winetricks if the action is running winetricks"""
-
     terminal_app_prefer_dialog: Optional[bool] = None
 
     # Start of values just set via cli arg
@@ -258,9 +249,6 @@ class EphemeralConfiguration:
         elif legacy.VERBOSE:
             log_level = logging.INFO
             wine_debug = ""
-        app_winetricks_unattended = None
-        if legacy.WINETRICKS_UNATTENDED is not None:
-            app_winetricks_unattended = utils.parse_bool(legacy.WINETRICKS_UNATTENDED)
         delete_log = None
         if legacy.DELETE_LOG is not None:
             delete_log = utils.parse_bool(legacy.DELETE_LOG)
@@ -286,7 +274,6 @@ class EphemeralConfiguration:
             wine_prefix=legacy.WINEPREFIX,
             app_wine_log_path=legacy.wine_log,
             app_log_path=legacy.LOGOS_LOG,
-            app_winetricks_unattended=app_winetricks_unattended,
             config_path=config_file,
             check_updates_now=legacy.CHECK_UPDATES,
             delete_log=delete_log,
@@ -329,7 +316,6 @@ class PersistentConfiguration:
     faithlife_product_release: Optional[str] = None
     faithlife_product_logging: Optional[bool] = None
     install_dir: Optional[str] = None
-    winetricks_binary: Optional[str] = None
     wine_binary: Optional[str] = None
     # This is where to search for wine
     wine_binary_code: Optional[str] = None
@@ -389,12 +375,6 @@ class PersistentConfiguration:
         faithlife_product_logging = None
         if legacy.LOGS is not None:
             faithlife_product_logging = utils.parse_bool(legacy.LOGS)
-        winetricks_binary = None
-        if (
-            legacy.WINETRICKSBIN is not None
-            and legacy.WINETRICKSBIN != constants.DOWNLOAD
-        ):
-            winetricks_binary = legacy.WINETRICKSBIN
         install_dir = None
         if legacy.INSTALLDIR is not None:
             install_dir = str(Path(os.path.expanduser(legacy.INSTALLDIR)).absolute())
@@ -409,7 +389,6 @@ class PersistentConfiguration:
             app_release_channel=legacy.lli_release_channel or 'stable',
             wine_binary=legacy.WINE_EXE,
             wine_binary_code=legacy.WINEBIN_CODE,
-            winetricks_binary=winetricks_binary,
             faithlife_product_logging=faithlife_product_logging,
             _legacy=legacy
         )
@@ -437,7 +416,7 @@ class PersistentConfiguration:
         if self.install_dir is not None:
             # Ensure all paths stored are relative to install_dir
             for k, v in output.items():
-                if k in ["install_dir", "INSTALLDIR", "WINETRICKSBIN"]:
+                if k in ["install_dir", "INSTALLDIR"]:
                     if v is not None:
                         output[k] = str(v)
                     continue
@@ -644,7 +623,6 @@ class Config:
             # Wine is dependent on the product/version selected
             self._raw.wine_binary = None
             self._raw.wine_binary_code = None
-            self._raw.winetricks_binary = None
 
             self._write()
 
@@ -707,72 +685,6 @@ class Config:
     @property
     def app_release_channel(self) -> str:
         return self._raw.app_release_channel
-
-    @property
-    def winetricks_binary(self) -> str:
-        """Download winetricks if it doesn't exist"""
-        from ou_dedetai import system
-        if (
-            self._raw.winetricks_binary is not None and
-            not Path(self._absolute_from_install_dir(self._raw.winetricks_binary)).exists() #noqa: E501
-        ):
-            logging.info("Given winetricks doesn't exist. Downloading from internet")
-            self._raw.winetricks_binary = None
-
-        if (
-            self._winetricks_binary is None
-            # Informs mypy of the type without relying on implementation of 
-            # self._winetricks_binary
-            or self._raw.winetricks_binary is None
-        ):
-            self._raw.winetricks_binary = system.install_winetricks(
-                self.installer_binary_dir,
-                app=self.app,
-                status_messages=False
-            )
-        return self._absolute_from_install_dir(self._raw.winetricks_binary)
-
-    @winetricks_binary.setter
-    def winetricks_binary(self, value: Optional[str | Path]):
-        if value is not None:
-            # Legacy had this value be "Download" when the user wanted the default
-            # Now we encode that in None
-            if value == constants.DOWNLOAD:
-                value = None
-            else:
-                value = self._relative_from_install_dir(value)
-        if value is not None:
-            if not Path(self._absolute_from_install_dir(value)).exists():
-                raise ValueError("Winetricks binary must exist")
-        if self._raw.winetricks_binary != value:
-            if value is not None:
-                self._raw.winetricks_binary = self._relative_from_install_dir(value)
-            else:
-                self._raw.winetricks_binary = None
-            self._write()
-
-    @property
-    def _winetricks_binary(self) -> Optional[str]:
-        """Get the path to winetricks
-        
-        Prompt if the user has any choices besides download
-        """
-        question = f"Should the script use the system's local winetricks or download the latest winetricks from the Internet? The script needs to set some Wine options that {self.faithlife_product} requires on Linux."  # noqa: E501
-        options = utils.get_winetricks_options()
-        # Only prompt if the user has other options besides Downloading.
-        # the legacy WINETRICKSBIN config key is still supported.
-        if len(options) == 1:
-            # Use whatever we have stored
-            output = self._raw.winetricks_binary
-        else:
-            if self._raw.winetricks_binary is None:
-                self.winetricks_binary = self.app.ask(question, options)
-            output = self._raw.winetricks_binary
-
-        if output is not None:
-            return self._absolute_from_install_dir(output)
-        else:
-            return None
 
     @property
     def install_dir_default(self) -> str:
@@ -981,13 +893,6 @@ class Config:
         if self._overrides.app_log_path is not None:
             return self._overrides.app_log_path
         return constants.DEFAULT_APP_LOG_PATH
-
-    @property
-    def app_winetricks_unattended(self) -> bool:
-        """If true, pass -q to winetricks"""
-        if self._overrides.app_winetricks_unattended is not None:
-            return self._overrides.app_winetricks_unattended
-        return False
 
     def toggle_faithlife_product_release_channel(self):
         if self._raw.faithlife_product_release_channel == "stable":

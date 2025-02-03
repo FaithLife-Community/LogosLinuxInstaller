@@ -598,12 +598,7 @@ class TUI(App):
             self.go_to_main_menu()
 
     def wineconfig_menu_select(self, choice):
-        if choice == "Run Winetricks":
-            self.reset_screen()
-            self.status("Running winetricks…")
-            wine.run_winetricks(self)
-            self.go_to_main_menu()
-        elif choice == "Set Renderer":
+        if choice == "Set Renderer":
             self.reset_screen()
             self.screen_q.put(
                 self.stack_menu(
@@ -933,7 +928,6 @@ class TUI(App):
     def set_wineconfig_menu_options(self):
         labels = []
         labels_support = [
-            "Run Winetricks",
             "Set Renderer",
             "Set Windows Version for Logos",
             "Set Windows Version for Indexer",
