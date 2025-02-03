@@ -56,7 +56,6 @@ class LegacyConfiguration:
     SELECTED_APPIMAGE_FILENAME: Optional[str] = None
     SKIP_DEPENDENCIES: Optional[bool] = None
     SKIP_FONTS: Optional[bool] = None
-    SKIP_WINETRICKS: Optional[bool] = None
     use_python_dialog: Optional[str] = None
     VERBOSE: Optional[bool] = None
     WINEDEBUG: Optional[str] = None
@@ -70,7 +69,6 @@ class LegacyConfiguration:
         """Returns a list of keys that are of type bool"""
         return [
             "VERBOSE",
-            "SKIP_WINETRICKS",
             "SKIP_FONTS",
             "SKIP_DEPENDENCIES",
             "DEBUG",
@@ -196,7 +194,6 @@ class EphemeralConfiguration:
     
     Some commands always send -q"""
 
-    winetricks_skip: Optional[bool]
     install_dependencies_skip: Optional[bool]
     """Whether to skip installing system package dependencies"""
     install_fonts_skip: Optional[bool]
@@ -287,7 +284,6 @@ class EphemeralConfiguration:
             faithlife_product_version=legacy.LOGOS_VERSION,
             faithlife_installer_name=legacy.LOGOS_EXECUTABLE,
             faithlife_installer_download_url=legacy.LOGOS64_URL,
-            winetricks_skip=legacy.SKIP_WINETRICKS,
             log_level=log_level,
             wine_debug=wine_debug,
             wine_dll_overrides=legacy.WINEDLLOVERRIDES,
@@ -1086,10 +1082,6 @@ class Config:
         if self._overrides.log_level is not None:
             return self._overrides.log_level
         return constants.DEFAULT_LOG_LEVEL
-
-    @property
-    def skip_winetricks(self) -> bool:
-        return bool(self._overrides.winetricks_skip)
 
     @property
     def skip_install_system_dependencies(self) -> bool:
