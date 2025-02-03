@@ -76,9 +76,6 @@ class CLI(App):
             exe_args=(self.conf._overrides.wine_args or [])
         )
 
-    def run_winetricks(self):
-        wine.run_winetricks(self)
-
     def set_appimage(self):
         utils.set_appimage_symlink(app=self)
 
@@ -90,9 +87,6 @@ class CLI(App):
 
     def update_self(self):
         utils.update_to_latest_lli_release(self)
-
-    def winetricks(self):
-        wine.run_winetricks(self, *(self.conf._overrides.winetricks_args or []))
 
     _exit_option: str = "Exit"
 

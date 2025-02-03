@@ -62,7 +62,7 @@ def get_parser():
     cfg.add_argument(
         '-f', '--force-root', action='store_true',
         help=(
-            "Running Wine/winetricks as root is highly discouraged. "
+            "Running Wine as root is highly discouraged. "
             "Set this to do allow it anyways"
         ),
     )
@@ -185,17 +185,6 @@ def get_parser():
             '; WARNING: wine will not accept user inpiut!'
         ),
     )
-    cmd.add_argument(
-        '--run-winetricks', action='store_true',
-        help='start winetricks window (if available)',
-    )
-    cmd.add_argument(
-        '--winetricks', nargs='+',
-        help=(
-            "run winetricks command (if available)"
-            "; WARNING: winetricks will not accept user input!"
-        ),
-    )
     return parser
 
 
@@ -272,13 +261,11 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
         'run_indexing',
         'run_installed_app',
         'stop_installed_app',
-        'run_winetricks',
         'set_appimage',
         'toggle_app_logging',
         'update_self',
         'update_latest_appimage',
         'wine',
-        'winetricks',
     ]
 
     run_action = None
@@ -294,8 +281,6 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
                     raise argparse.ArgumentTypeError(e)
             elif arg == 'wine':
                 ephemeral_config.wine_args = getattr(args, 'wine')
-            elif arg == 'winetricks':
-                ephemeral_config.winetricks_args = getattr(args, 'winetricks')
             run_action = cli_operation(arg)
             break
     if run_action is None:
@@ -382,11 +367,9 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
         'run_indexing',
         'run_installed_app',
         'stop_installed_app',
-        'run_winetricks',
         'set_appimage',
         'toggle_app_logging',
         'wine',
-        'winetricks',
     ]
     if action.__name__ not in install_required:
         logging.info(f"Running function: {action.__name__}")
