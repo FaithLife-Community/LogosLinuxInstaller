@@ -369,7 +369,6 @@ def run(ephemeral_config: EphemeralConfiguration, action: Callable[[EphemeralCon
         'stop_installed_app',
         'set_appimage',
         'toggle_app_logging',
-        'wine',
     ]
     if action.__name__ not in install_required:
         logging.info(f"Running function: {action.__name__}")
