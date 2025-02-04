@@ -22,6 +22,7 @@ class LegacyConfiguration:
     current_logos_version: Optional[str] = None # Unused in new code
     curses_colors: Optional[str] = None
     INSTALLDIR: Optional[str] = None
+    # WINETRICKSBIN: Optional[str] = None
     WINEBIN_CODE: Optional[str] = None
     WINE_EXE: Optional[str] = None
     WINECMD_ENCODING: Optional[str] = None
