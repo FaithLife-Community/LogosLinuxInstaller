@@ -5,29 +5,27 @@ if [[ $SNAP_NAME != oudedetai ]]; then
     echo "ERROR: Not running in oudedetai snap environment."
     exit 1
 fi
+TARGETVERSION="10"
+INSTALLDIR="$SNAP_USER_COMMON"
+WINE_EXE="$SNAP/bin/wine64"
 
+# Set from snapcraft.yaml.
 msg="ERROR: Empty env variable:"
 if [[ -z $FLPRODUCT ]]; then
     echo "$msg FLPRODUCT"
     exit 1
-elif [[ -z $INSTALLDIR ]]; then
-    echo "$msg INSTALLDIR"
-    exit 1
-elif [[ -z $TARGETVERSION ]]; then
-    echo "$msg TARGETVERSION"
-    exit 1
 elif [[ -z $TARGET_RELEASE_VERSION ]]; then
     echo "$msg TARGET_RELEASE_VERSION"
-    exit 1
-elif [[ -z $WINE_EXE ]]; then
-    echo "$msg WINE_EXE"
     exit 1
 fi
 
 
 # Ensure config file.
-CONFIG_FILE=$SNAP_USER_DATA/${SNAP_NAME}.json
+config_dir="$SNAP_USER_DATA/.config/FaithLife-Community"
+mkdir -p "$config_dir"
+CONFIG_FILE="${config_dir}/${SNAP_NAME}.json"
 if [[ ! -r $CONFIG_FILE ]]; then
+    echo '{}' > "$CONFIG_FILE"
     tmp=$(mktemp)
     jq --arg a "$FLPRODUCT" '.faithlife_product = $a' "$CONFIG_FILE" > "$tmp"
     mv "$tmp" "$CONFIG_FILE"
