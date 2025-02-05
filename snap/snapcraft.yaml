@@ -1,6 +1,6 @@
-name: logos-linux-installer
+name: oudedetai
 base: core24
-adopt-info: lli
+adopt-info: oudedetai
 summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
 description: |
   This repository contains a Python program for installing and maintaining
@@ -11,17 +11,94 @@ description: |
 grade: stable
 confinement: strict
 
+platforms:
+  amd64:
+
+environment:
+  # Define config variables.
+  FLPRODUCT: Logos
+  TARGET_RELEASE_VERSION: "39.1.0.0006"
+  TARGETVERSION: "10"
+  INSTALLDIR: $SNAP_USER_DATA
+  WINE_EXE: $SNAP/bin/wine64
+  # Define runtime variables.
+  PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
+  PYTHON_APT_PACKAGES_PATH: $SNAP/usr/lib/python3.12
+  PYTHON_LIB_DYNLOAD_PATH: $SNAP/usr/lib/python3.12/lib-dynload
+  TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
+  TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
+  PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY:$PYTHONPATH
+
 apps:
-  logos-linux-installer:
-    command: bin/LogoLinuxInstaller
-  run:
-    command: bin/LogosLinuxInstaller --run-installed-app
+  oudedetai:
+    extensions: [gnome]
+    command: bin/run.sh
+    plugs: &allplugs
+      - audio-playback
+      - home
+      - network
+      - opengl
+      - removable-media
+
+# package-repositories:
+#   - type: apt
+
 
 parts:
-  # wine:
-  #   source: 
-
-  lli:
-    source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/v4.0.0-beta.1.tar.gz
+  bin:
+    source: ./snap/bin
     plugin: dump
-    
+    organize:
+      run.sh: bin/run.sh
+
+  # icu:
+  #   source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
+  #   plugin: nil
+  #   organize:
+  #     '*.tar.gz': etc/
+
+  # wine-apt:  # installs most recent devel version
+  #   plugin: nil
+  #   build-packages: [wget]
+  #   override-stage: |
+  #     dpkg --add-architecture i386
+  #     mkdir -pm755 /etc/apt/keyrings
+  #     wget -qO /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
+  #     wget -qNP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+  #     apt-get update
+  #     apt-get -y install --install-recommends winehq-devel
+  #     craftctl default
+
+  wine-custom:
+    source: https://github.com/sil-car/wine-builds/releases/download/wine_10.0/wine_10.0+24.04.tar.xz
+    plugin: dump
+    organize:
+      'wine_*/bin': bin
+      'wine_*/lib': lib
+      'wine_*/share': share
+    stage-packages:
+      - libavcodec60
+      - libavformat60
+      - libavutil58
+      - libusb-1.0-0
+      - libxkbregistry0
+
+  oudedetai:
+    ## FIXME: just for testing
+    source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
+    source-branch: snap-pkg
+    ##
+    # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
+    plugin: python
+    override-pull: |
+      craftctl default
+      craftctl set version=$(git describe --tag)
+
+  oudedetai-cleanup:
+    after: [oudedetai]
+    plugin: nil
+    stage-packages:
+      - jq
+      - libncurses6
+      - libncursesw6
+      - python3-tk
