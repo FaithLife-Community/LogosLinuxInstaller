@@ -18,9 +18,6 @@ environment:
   # Define config variables.
   FLPRODUCT: Logos
   TARGET_RELEASE_VERSION: "39.1.0.0006"
-  TARGETVERSION: "10"
-  INSTALLDIR: $SNAP_USER_COMMON
-  WINE_EXE: $SNAP/bin/wine64
   # Define runtime variables.
   PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
   PYTHON_APT_PACKAGES_PATH: $SNAP/usr/lib/python3.12
@@ -92,11 +89,16 @@ parts:
       craftctl default
       craftctl set version=$(git describe --tag)
 
-  oudedetai-cleanup:
-    after: [oudedetai]
+  cleanup:
+    after:
+      - wine-custom
+      - oudedetai
     plugin: nil
     stage-packages:
       - jq
       - libncurses6
       - libncursesw6
       - python3-tk
+    override-prime: |
+      rm -f lib/x86_64-linux-gnu/libicudata.so*
+      craftctl default
