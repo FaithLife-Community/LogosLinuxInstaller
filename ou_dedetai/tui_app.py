@@ -899,7 +899,7 @@ class TUI(App):
 
     def set_tui_menu_options(self):
         labels = []
-        if system.get_runmode() == "binary":
+        if constants.RUNMODE == "binary":
             status = utils.compare_logos_linux_installer_version(self)
             if status == utils.VersionComparison.OUT_OF_DATE:
                 labels.append(f"Update {constants.APP_NAME}")
