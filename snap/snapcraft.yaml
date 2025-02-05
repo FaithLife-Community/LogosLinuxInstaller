@@ -19,7 +19,7 @@ environment:
   FLPRODUCT: Logos
   TARGET_RELEASE_VERSION: "39.1.0.0006"
   TARGETVERSION: "10"
-  INSTALLDIR: $SNAP_USER_DATA
+  INSTALLDIR: $SNAP_USER_COMMON
   WINE_EXE: $SNAP/bin/wine64
   # Define runtime variables.
   PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
