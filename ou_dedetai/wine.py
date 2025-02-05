@@ -144,7 +144,7 @@ def check_wine_rules(
         # devel permissible at this point
         WineRule(major=8, proton=False, minor_bad=[0], allowed_releases=["staging"], devel_allowed=16), #noqa: E501
         WineRule(major=9, proton=False, minor_bad=[], allowed_releases=["devel", "staging"]),  #noqa: E501
-        WineRule(major=10, proton=False, minor_bad=[], allowed_releases=["stable", "devel", "staging"])
+        WineRule(major=10, proton=False, minor_bad=[], allowed_releases=["stable", "devel", "staging"]) #noqa: E501
     ]
 
     major_min, minor_min = required_wine_minimum
@@ -359,14 +359,15 @@ def install_msi(app: App):
 
     # Add MST transform if needed
     release_version = app.conf.installed_faithlife_product_release or app.conf.faithlife_product_version  # noqa: E501
-    if release_version is not None and utils.check_logos_release_version(release_version, 39, 1):
+    if release_version is not None and utils.check_logos_release_version(release_version, 39, 1): #noqa: E501
         # Define MST path and transform to windows path.
         mst_path = constants.APP_ASSETS_DIR / "LogosStubFailOK.mst"
+        # FIXME: move this to run_wine_proc after types are cleaner
         transform_winpath = subprocess.run(
             [wine_exe, 'winepath', '-w', mst_path],
-            env=get_wine_env(app),
+            env=system.fix_ld_library_path(get_wine_env(app)),
             capture_output=True,
-            text=True
+            text=True,
         ).stdout.rstrip()
         exe_args.append(f'TRANSFORMS={transform_winpath}')
         logging.debug(f"TRANSFORMS windows path added: {transform_winpath}")
@@ -429,6 +430,7 @@ def run_wine_proc(
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Exception running '{' '.join(command)}': {e}")
+    return None
 
 
 # FIXME: Consider when to re-run this if it changes.
@@ -507,7 +509,7 @@ def get_registry_value(reg_path, name, app: App):
     return value
 
 
-def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
+def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None) -> dict[str, str]: #noqa: E501
     wine_env = os.environ.copy()
     winepath = Path(app.conf.wine_binary)
     if winepath.name != 'wine64':  # AppImage
@@ -528,4 +530,5 @@ def get_wine_env(app: App, additional_wine_dll_overrides: Optional[str]=None):
 
     updated_env = {k: wine_env.get(k) for k in wine_env_defaults.keys()}
     logging.debug(f"Wine env: {updated_env}")
-    return wine_env
+    # Extra safe calling this here, it should be called run run_command anyways
+    return system.fix_ld_library_path(wine_env)

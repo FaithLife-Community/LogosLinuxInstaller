@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
+from collections.abc import MutableMapping
 import distro
 import logging
 import os
@@ -10,17 +11,40 @@ import struct
 import subprocess
 import sys
 import time
-import zipfile
-from pathlib import Path
 
 from ou_dedetai.app import App
 
 
 from . import constants
-from . import network
 
 
-# TODO: Replace functions in control.py and wine.py with Popen command.
+def fix_ld_library_path(env: Optional[MutableMapping[str, str]]) -> dict[str, str]: #noqa: E501
+    """Removes pyinstaller bundled dynamic linked libraries when executing commands
+
+    - https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html#launching-external-programs-from-the-frozen-application
+    - https://pyinstaller.org/en/latest/runtime-information.html#library-path-considerations
+    """
+    # even when we don't pass env to Popen (or similar), we still don't want to use
+    # pyinstaller's dynamic linked libraries.
+    # In order to avoid this, we need to set env
+    if env is None:
+        env = dict(os.environ)
+    else:
+        env = dict(env)
+    
+    # *BSD uses LD_LIBRARY_PATH, AIX uses LIBPATH
+    for lp_key in ["LD_LIBRARY_PATH", "LIBPATH"]:
+        lp_orig = env.pop(lp_key + '_ORIG', None)
+        if lp_orig is not None:
+            env[lp_key] = lp_orig  # restore the original, unmodified value
+        else:
+            # This happens when LD_LIBRARY_PATH was not set.
+            # Remove the env var as a last resort:
+            env.pop(lp_key, None)
+
+    return env
+
+
 def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.CompletedProcess]:  # noqa: E501
     check = kwargs.get("check", True)
     text = kwargs.get("text", True)
@@ -57,6 +81,8 @@ def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.Co
 
     if isinstance(command, str) and not shell:
         command = command.split()
+
+    env = fix_ld_library_path(env)
 
     for attempt in range(retries):
         try:
@@ -96,6 +122,7 @@ def run_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.Co
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred in run_command() while executing \"{command}\": {e}.")  # noqa: E501
             logging.debug(f"Command failed with output:\n{e.stdout}\nand stderr:\n{e.stderr}") #noqa: E501
+            # FIXME: Move this logic to the caller
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
@@ -141,6 +168,8 @@ def popen_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.
     if isinstance(command, str) and not shell:
         command = command.split()
 
+    env = fix_ld_library_path(env)
+
     for _ in range(retries):
         try:
             process = subprocess.Popen(
@@ -175,6 +204,7 @@ def popen_command(command, retries=1, delay=0, **kwargs) -> Optional[subprocess.
 
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred in popen_command() while executing \"{command}\": {e}")  # noqa: E501
+            # FIXME: Move this logic to the caller
             if "lock" in str(e):
                 logging.debug(f"Database appears to be locked. Retrying in {delay} seconds…")  # noqa: E501
                 time.sleep(delay)
@@ -202,10 +232,11 @@ def get_pids(query) -> list[psutil.Process]:
 def reboot(superuser_command: str):
     logging.info("Rebooting system.")
     command = f"{superuser_command} reboot now"
-    subprocess.run(
+    run_command(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        capture_output=False,
         shell=True,
         text=True
     )
