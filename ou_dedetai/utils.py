@@ -83,7 +83,9 @@ def clean_all():
     logging.info("done")
 
 
-def get_user_downloads_dir() -> str:
+def get_user_downloads_dir():
+    if os.getenv('SNAP_USER_COMMON'):
+        return os.getenv('SNAP_USER_COMMON')
     home = Path.home()
     xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
     user_dirs_file = xdg_config / 'user-dirs.dirs'
