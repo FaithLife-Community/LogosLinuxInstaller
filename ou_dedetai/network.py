@@ -177,7 +177,7 @@ class CachedRequests:
     def _write(self) -> None:
         """Writes the cache to disk. Done internally when there are changes"""
         path = Path(constants.NETWORK_CACHE_PATH)
-        path.parent.mkdir(exist_ok=True)
+        path.parent.mkdir(exist_ok=True, parents=True)
         with open(path, "w") as f:
             json.dump(self.__dict__, f, indent=4, sort_keys=True, default=vars)
             f.write("\n")
