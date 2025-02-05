@@ -84,11 +84,9 @@ parts:
       - libxkbregistry0
 
   oudedetai:
-    ## FIXME: just for testing
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
+    # FIXME: just for testing
     source-branch: snap-pkg
-    ##
-    # source: https://github.com/FaithLife-Community/LogosLinuxInstaller/archive/refs/tags/${SNAPCRAFT_PROJECT_VERSION}.tar.gz
     plugin: python
     override-pull: |
       craftctl default

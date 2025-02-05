@@ -50,7 +50,7 @@ fi
 # Ensure Logos is installed.
 app_exe="$(find "${INSTALLDIR}/wine64_bottle" -wholename "*${FLPRODUCT}/${FLPRODUCT}.exe" 2>/dev/null)"
 if [[ -z $app_exe ]]; then
-    oudedetai --install-app $@
+    oudedetai --install-app --skip-dependencies $@
     ec=$?
     if [[ $ec -ne 0 ]]; then
         exit $ec

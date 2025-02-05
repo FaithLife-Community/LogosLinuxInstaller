@@ -529,14 +529,6 @@ def get_package_manager() -> PackageManager | None:
             )
         logos_9_packages = ""
         incompatible_packages = ""  # appimagelauncher handled separately
-    elif os.environ.get('SNAP_NAME') == constants.BINARY_NAME: # snap package
-        install_command = None
-        download_command = None
-        remove_command = None
-        query_command = None
-        query_prefix = None
-        packages = None
-        incompatible_packages = None
     else:
         # Add more conditions for other package managers as needed.
         logging.critical("Your package manager is not yet supported. Please contact the developers.") #noqa: E501
@@ -552,7 +544,7 @@ def get_package_manager() -> PackageManager | None:
         logos_9_packages=logos_9_packages,
         query_prefix=query_prefix
     )
-    logging.debug("Package Manager: {output}")
+    logging.debug(f"Package Manager: {output}")
     return output
 
 
