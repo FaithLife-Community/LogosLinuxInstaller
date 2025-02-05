@@ -18,6 +18,13 @@ from ou_dedetai.app import App
 from . import constants
 
 
+def get_runmode():
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return 'binary'
+    else:
+        return 'script'
+
+
 def fix_ld_library_path(env: Optional[MutableMapping[str, str]]) -> dict[str, str]: #noqa: E501
     """Removes pyinstaller bundled dynamic linked libraries when executing commands
 
@@ -31,16 +38,20 @@ def fix_ld_library_path(env: Optional[MutableMapping[str, str]]) -> dict[str, st
         env = dict(os.environ)
     else:
         env = dict(env)
-    
-    # *BSD uses LD_LIBRARY_PATH, AIX uses LIBPATH
-    for lp_key in ["LD_LIBRARY_PATH", "LIBPATH"]:
-        lp_orig = env.pop(lp_key + '_ORIG', None)
-        if lp_orig is not None:
-            env[lp_key] = lp_orig  # restore the original, unmodified value
-        else:
-            # This happens when LD_LIBRARY_PATH was not set.
-            # Remove the env var as a last resort:
-            env.pop(lp_key, None)
+
+    # Only do this when running in binary mode
+    # Since LD_LIBRARY_PATH is core to how binaries work, we don't want it
+    # modified unless we know we need to.
+    if get_runmode() == 'binary':
+        # *BSD uses LD_LIBRARY_PATH, AIX uses LIBPATH
+        for lp_key in ["LD_LIBRARY_PATH", "LIBPATH"]:
+            lp_orig = env.pop(lp_key + '_ORIG', None)
+            if lp_orig is not None:
+                env[lp_key] = lp_orig  # restore the original, unmodified value
+            else:
+                # This happens when LD_LIBRARY_PATH was not set.
+                # Remove the env var as a last resort:
+                env.pop(lp_key, None)
 
     return env
 
@@ -452,7 +463,7 @@ def get_package_manager() -> PackageManager | None:
         # query_command =  ["dnf", "list", "installed"]
         # Fedora 41
         # query_command =  ["dnf", "list", "--installed"]
-        query_command =  ["rpm", "-qa"]  # workaround
+        query_command =  ["rpm", "-qa", "--qf", "'%{NAME}'"]  # specifying a format is so we can match exactly on the package name #noqa: E501
         query_prefix = ''
         # logos_10_packages = "patch fuse3 fuse3-libs mod_auth_ntlm_winbind samba-winbind samba-winbind-clients cabextract bc libxml2 curl"  # noqa: E501
         packages = (
@@ -537,13 +548,6 @@ def get_package_manager() -> PackageManager | None:
     return output
 
 
-def get_runmode():
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        return 'binary'
-    else:
-        return 'script'
-
-
 def query_packages(package_manager: PackageManager, packages, mode="install") -> list[str]: #noqa: E501
     result = None
     missing_packages = []
@@ -584,7 +588,13 @@ def query_packages(package_manager: PackageManager, packages, mode="install") ->
                         status[p] = 'Conflicting'
                     break
             else:
-                if line.strip().startswith(f"{package_manager.query_prefix}{p}") and mode == "install":  # noqa: E501
+                package_line_start = f"{package_manager.query_prefix}{p}"
+                # For rpm we can match the whole line
+                if package_manager.query[0] == 'rpm' and line.strip() == package_line_start: #noqa: E501
+                    logging.debug(f"'{p}' installed: {line}")
+                    status[p] = "Installed"
+                    break
+                elif line.strip().startswith(package_line_start) and mode == "install":  # noqa: E501
                     logging.debug(f"'{p}' installed: {line}")
                     status[p] = "Installed"
                     break
@@ -750,7 +760,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         return
 
     install_deps_failed = False
-    manual_install_required = False
     reboot_required = False
     message: Optional[str] = None
     secondary: Optional[str] = None
@@ -763,7 +772,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     conflicting_packages = []
     package_list = []
     bad_package_list = []
-    bad_os = ['fedora', 'arch', 'alpine']
 
     package_manager = get_package_manager()
 
@@ -792,11 +800,7 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         mode="remove",
     )
 
-    if os_name in bad_os:
-        m = "Your distro requires manual dependency installation."
-        logging.error(m)
-        return
-    elif missing_packages and conflicting_packages:
+    if missing_packages and conflicting_packages:
         message = f"Your {os_name} computer requires installing and removing some software.\nProceed?"  # noqa: E501
         secondary = f"To continue, the program will attempt to install the following package(s) by using '{package_manager.install}':\n{missing_packages}\nand will remove the following package(s) by using '{package_manager.remove}':\n{conflicting_packages}"  # noqa: E501
     elif missing_packages:
@@ -805,12 +809,12 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     elif conflicting_packages:
         message = f"Your {os_name} computer requires removing some software.\nProceed?"  # noqa: E501
         secondary = f"To continue, the program will attempt to remove the following package(s) by using '{package_manager.remove}':\n{conflicting_packages}"  # noqa: E501
+    else:
+        message = None
+        secondary = None
 
     if message is None:
         logging.debug("No missing or conflicting dependencies found.")
-    elif not message:
-        m = "Your distro requires manual dependency installation."
-        logging.error(m)
     else:
         app.approve_or_exit(message, secondary)
 
@@ -858,24 +862,8 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
         f"{app.superuser_command}", 'sh', '-c', '"', *command, '"'
     ]
     command_str = ' '.join(final_command)
-    # TODO: Fix fedora/arch handling.
-    if os_name in ['fedora', 'arch']:
-        manual_install_required = True
-        sudo_command = command_str.replace("pkexec", "sudo")
-        message = "The system needs to install/remove packages, but it requires manual intervention."  # noqa: E501
-        detail = (
-            "Please run the following command in a terminal, then restart "
-            f"{constants.APP_NAME}:\n{sudo_command}\n"
-        )
-        from ou_dedetai import gui_app
-        if isinstance(app, gui_app.GuiApp):
-            detail += "\nThe command has been copied to the clipboard."  # noqa: E501
-            app.root.clipboard_clear()
-            app.root.clipboard_append(sudo_command)
-            app.root.update()
-        app.approve_or_exit(message + " \n" + detail)
 
-    if not install_deps_failed and not manual_install_required:
+    if not install_deps_failed:
         try:
             logging.debug(f"Attempting to run this command: {command_str}")
             run_command(command_str, shell=True)
