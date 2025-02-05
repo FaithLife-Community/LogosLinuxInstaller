@@ -1,16 +1,27 @@
 import logging
 import os
 import sys
-
 from pathlib import Path
+
+
+def get_runmode() -> str:
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return 'binary'
+    elif os.environ.get('SNAP'):
+        return 'snap'
+    else:
+        return 'script'
+
 
 # This is relative to this file itself
 APP_IMAGE_DIR = Path(__file__).parent / "img"
 
 # Are we running from binary or src?
-if getattr(sys, 'frozen', False):
-    # We are running inside a PyInstaller bundle
+RUNMODE = get_runmode()
+if RUNMODE == 'binary':
     BUNDLE_DIR = Path(sys._MEIPASS)
+elif RUNMODE == 'snap':
+    BUNDLE_DIR = Path(os.environ.get('SNAP'))
 else:
     # We are running in normal development mode
     BUNDLE_DIR = Path(__file__).resolve().parent

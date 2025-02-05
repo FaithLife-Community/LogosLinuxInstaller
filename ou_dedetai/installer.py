@@ -259,8 +259,7 @@ def ensure_launcher_executable(app: App):
     app.installer_step_count += 1
     ensure_config_file(app=app)
     app.installer_step += 1
-    runmode = system.get_runmode()
-    if runmode == 'binary':
+    if constants.RUNMODE == 'binary':
         app.status(f"Copying launcher to {app.conf.install_dir}…")
 
         # Copy executable into install dir.
@@ -282,8 +281,7 @@ def ensure_launcher_shortcuts(app: App):
     ensure_launcher_executable(app=app)
     app.installer_step += 1
     app.status("Creating launcher shortcuts…")
-    runmode = system.get_runmode()
-    if runmode == 'binary':
+    if constants.RUNMODE == 'binary':
         app.status("Creating launcher shortcuts…")
         create_launcher_shortcuts(app)
     else:
@@ -376,7 +374,7 @@ def create_launcher_shortcuts(app: App):
     logos_icon_path = app_dir / logos_icon_src.name
     app_icon_path = app_dir / app_icon_src.name
 
-    if system.get_runmode() == 'binary':
+    if constants.RUNMODE == 'binary':
         lli_executable = f"{installdir}/{constants.BINARY_NAME}"
     else:
         script = Path(sys.argv[0]).expanduser().resolve()

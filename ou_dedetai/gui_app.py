@@ -615,9 +615,9 @@ class ControlWindow(GuiApp):
     def update_latest_lli_release_button(self, evt=None):
         msg = None
         result = utils.compare_logos_linux_installer_version(self)
-        if system.get_runmode() != 'binary':
+        if constants.RUNMODE != 'binary':
             state = 'disabled'
-            msg = "This button is disabled. Can't run self-update from script."
+            msg = f"This button is disabled. Can't run self-update from {constants.RUNMODE}."  # noqa: E501
         elif result == utils.VersionComparison.OUT_OF_DATE:
             state = '!disabled'
         elif result == utils.VersionComparison.UP_TO_DATE:

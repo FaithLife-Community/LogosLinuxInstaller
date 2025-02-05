@@ -264,8 +264,7 @@ def get_dialog() -> str:
         dialog - tk (graphical), curses (terminal ui), or cli (command line)
     """
     if not os.environ.get('DISPLAY'):
-        print("The installer does not work unless you are running a display", file=sys.stderr)  # noqa: E501
-        sys.exit(1)
+        logging.critical("The installer does not work unless you are running a display")  # noqa: E501
 
     dialog = os.getenv('DIALOG')
     # find dialog
@@ -528,7 +527,16 @@ def get_package_manager() -> PackageManager | None:
                 "libva mpg123 v4l-utils "  # video
                 "libxslt sqlite "  # misc
             )
+        logos_9_packages = ""
         incompatible_packages = ""  # appimagelauncher handled separately
+    elif os.environ.get('SNAP_NAME') == constants.BINARY_NAME: # snap package
+        install_command = None
+        download_command = None
+        remove_command = None
+        query_command = None
+        query_prefix = None
+        packages = None
+        incompatible_packages = None
     else:
         # Add more conditions for other package managers as needed.
         logging.critical("Your package manager is not yet supported. Please contact the developers.") #noqa: E501

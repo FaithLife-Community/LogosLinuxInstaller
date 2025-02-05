@@ -540,8 +540,8 @@ def set_appimage_symlink(app: App):
 def update_to_latest_lli_release(app: App):
     result = compare_logos_linux_installer_version(app)
 
-    if system.get_runmode() != 'binary':
-        logging.error(f"Can't update {constants.APP_NAME} when run as a script.")
+    if constants.RUNMODE != 'binary':
+        logging.error(f"Can't update {constants.APP_NAME} when run as {constants.RUNMODE}.")  # noqa: E501
     elif result == VersionComparison.OUT_OF_DATE:
         network.update_lli_binary(app=app)
     elif result == VersionComparison.UP_TO_DATE:
