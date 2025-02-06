@@ -233,6 +233,9 @@ class EphemeralConfiguration:
     
     Accepted values: tk (GUI), curses (TUI), cli (CLI)"""
 
+    wine_args: Optional[list[str]] = None
+    """Arguments when running wine from cli"""
+
     terminal_app_prefer_dialog: Optional[bool] = None
 
     # Start of values just set via cli arg

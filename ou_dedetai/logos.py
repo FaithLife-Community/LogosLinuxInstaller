@@ -97,6 +97,9 @@ class LogosManager:
             except Exception as e:
                 # pass
                 logging.error(e)
+        else:
+            # Useful if the install directory got deleted while executing
+            self.logos_state = State.STOPPED
 
     def start(self):
         self.logos_state = State.STARTING

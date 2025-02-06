@@ -7,7 +7,6 @@ import logging
 import queue
 import os
 import shutil
-import subprocess
 import time
 from pathlib import Path
 
@@ -18,7 +17,7 @@ from . import utils
 
 
 def edit_file(config_file: str):
-    subprocess.Popen(['xdg-open', config_file])
+    system.run_command(['xdg-open', config_file])
 
 
 def backup(app: App):
