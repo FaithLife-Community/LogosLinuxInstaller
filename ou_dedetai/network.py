@@ -305,8 +305,7 @@ def logos_reuse_download(
     status_messages: bool = True
 ):
     dirs = [
-        app.conf.install_dir,
-        os.getcwd(),
+        app.conf.user_download_dir,
         app.conf.download_dir,
     ]
     found = 1
