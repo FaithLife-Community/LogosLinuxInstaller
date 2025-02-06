@@ -326,7 +326,7 @@ class PersistentConfiguration:
     backup_dir: Optional[str] = None
 
     # Color to use in curses. Either "Logos", "Light", or "Dark"
-    curses_colors: str = "Logos"
+    curses_color_scheme: str = "Logos"
     # Faithlife's release channel. Either "stable" or "beta"
     faithlife_product_release_channel: str = "stable"
     # The Installer's release channel. Either "stable" or "beta"
@@ -385,7 +385,7 @@ class PersistentConfiguration:
         return PersistentConfiguration(
             faithlife_product=legacy.FLPRODUCT,
             backup_dir=legacy.BACKUPDIR,
-            curses_colors=legacy.curses_colors or 'Logos',
+            curses_color_scheme=legacy.curses_colors,
             faithlife_product_release=legacy.TARGET_RELEASE_VERSION,
             faithlife_product_release_channel=legacy.logos_release_channel or 'stable',
             faithlife_product_version=legacy.TARGETVERSION,
@@ -502,7 +502,7 @@ class Config:
     _wine_appimage_files: Optional[list[str]] = None
 
     # Start constants
-    _curses_colors_valid_values = ["Light", "Dark", "Logos"]
+    _curses_color_scheme_valid_values = ["Light", "Dark", "Logos"]
 
     # Singleton logic, this enforces that only one config object exists at a time.
     def __new__(cls, *args, **kwargs) -> "Config":
@@ -923,24 +923,28 @@ class Config:
         return output
     
     @property
-    def curses_colors(self) -> str:
+    def curses_color_scheme(self) -> str:
         """Color for the curses dialog
         
         returns one of: Logos, Light or Dark"""
-        return self._raw.curses_colors
+        return self._raw.curses_color_scheme
 
-    @curses_colors.setter
-    def curses_colors(self, value: str):
-        if value not in self._curses_colors_valid_values:
-            raise ValueError(f"Invalid curses theme, expected one of: {", ".join(self._curses_colors_valid_values)} but got: {value}") # noqa: E501
-        self._raw.curses_colors = value
+    @curses_color_scheme.setter
+    def curses_color_scheme(self, value: str):
+        if value is None:
+            value = "Logos"
+        if value not in self._curses_color_scheme_valid_values:
+            raise ValueError(f"Invalid curses theme, expected one of: {", ".join(self._curses_color_scheme_valid_values)} but got: {value}") # noqa: E501
+        self._raw.curses_color_scheme = value
         self._write()
     
     def cycle_curses_color_scheme(self):
-        new_index = self._curses_colors_valid_values.index(self.curses_colors) + 1
-        if new_index == len(self._curses_colors_valid_values):
+        if self.curses_color_scheme is None:
+            self.curses_color_scheme = "Logos"
+        new_index = self._curses_color_scheme_valid_values.index(self.curses_color_scheme) + 1
+        if new_index == len(self._curses_color_scheme_valid_values):
             new_index = 0
-        self.curses_colors = self._curses_colors_valid_values[new_index]
+        self.curses_color_scheme = self._curses_color_scheme_valid_values[new_index]
 
     @property
     def logos_exe(self) -> Optional[str]:

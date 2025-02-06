@@ -236,20 +236,20 @@ class TUI(App):
         curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
 
-    def set_curses_colors(self):
-        if self.conf.curses_colors == "Logos":
+    def set_curses_color_scheme(self):
+        if self.conf.curses_color_scheme == "Logos":
             self.stdscr.bkgd(" ", curses.color_pair(3))
             if self.main_window:
                 self.main_window.bkgd(" ", curses.color_pair(3))
             if self.menu_window:
                 self.menu_window.bkgd(" ", curses.color_pair(3))
-        elif self.conf.curses_colors == "Light":
+        elif self.conf.curses_color_scheme == "Light":
             self.stdscr.bkgd(" ", curses.color_pair(6))
             if self.main_window:
                 self.main_window.bkgd(" ", curses.color_pair(6))
             if self.menu_window:
                 self.menu_window.bkgd(" ", curses.color_pair(6))
-        elif self.conf.curses_colors == "Dark":
+        elif self.conf.curses_color_scheme == "Dark":
             self.stdscr.bkgd(" ", curses.color_pair(7))
             if self.main_window:
                 self.main_window.bkgd(" ", curses.color_pair(7))
@@ -287,7 +287,7 @@ class TUI(App):
         try:
             if curses.has_colors():
                 self.set_curses_style()
-                self.set_curses_colors()
+                self.set_curses_color_scheme()
 
             curses.curs_set(0)
             curses.noecho()
@@ -836,7 +836,7 @@ class TUI(App):
 
     def _config_update_hook(self):
         self.update_main_window_contents()
-        self.set_curses_colors()
+        self.set_curses_color_scheme()
         self.set_title()
 
     # def get_password(self, dialog):
