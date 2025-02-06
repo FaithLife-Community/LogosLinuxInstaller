@@ -547,12 +547,10 @@ class TUI(App):
             self.reset_screen()
             self.logos.start()
             self.menu_screen.set_options(self.set_tui_menu_options())
-            # XXX: this used to "switch screens" here. Does it need to?
         elif self.conf._raw.faithlife_product and choice == f"Stop {self.conf.faithlife_product}": #noqa: E501
             self.reset_screen()
             self.logos.stop()
             self.menu_screen.set_options(self.set_tui_menu_options())
-            # XXX: this used to "switch screens" here. Does it need to?
         elif choice == "Run Indexing":
             self.active_screen.running = 0
             self.active_screen.choice = "Processing"
