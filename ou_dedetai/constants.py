@@ -43,15 +43,20 @@ CACHE_LIFETIME_HOURS = 12
 """How long to wait before considering our version cache invalid"""
 
 if RUNMODE == 'snap':
-    CACHE_PARENT = os.getenv('SNAP_USER_COMMON')
+    cache_dir = Path(os.getenv('SNAP_USER_COMMON')) / '.cache'
 else:
-    CACHE_PARENT = os.getenv('HOME')
+    try:
+        cache_dir = Path(os.getenv('XDG_CACHE_HOME'))
+    except TypeError:
+        cache_dir = Path(os.getenv('HOME')) / '.cache'
+
 
 # Set other run-time variables not set in the env.
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{BINARY_NAME}.json")  # noqa: E501
-DEFAULT_APP_WINE_LOG_PATH= os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")  # noqa: E501
-DEFAULT_APP_LOG_PATH= os.path.expanduser(f"~/.local/state/FaithLife-Community/{BINARY_NAME}.log")  # noqa: E501
-NETWORK_CACHE_PATH = str(Path(CACHE_PARENT) / '.cache/FaithLife-Community/network.json')
+DEFAULT_APP_WINE_LOG_PATH = os.path.expanduser("~/.local/state/FaithLife-Community/wine.log")  # noqa: E501
+DEFAULT_APP_LOG_PATH = os.path.expanduser(f"~/.local/state/FaithLife-Community/{BINARY_NAME}.log")  # noqa: E501
+DEFAULT_CACHE_DIR = str(cache_dir / 'FaithLife-Community')
+NETWORK_CACHE_PATH = f"{DEFAULT_CACHE_DIR}/network.json"
 DEFAULT_WINEDEBUG = "fixme-all,err-all"
 LEGACY_CONFIG_FILES = [
     os.path.expanduser("~/.config/FaithLife-Community/Logos_on_Linux.json"),
