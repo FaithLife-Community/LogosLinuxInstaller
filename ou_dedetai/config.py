@@ -496,6 +496,7 @@ class Config:
     # i.e. filesystem traversals
     _wine_user: Optional[str] = None
     _download_dir: Optional[str] = None
+    _user_download_dir: Optional[str] = None
     _wine_output_encoding: Optional[str] = None
     _installed_faithlife_product_release: Optional[str] = None
     _wine_binary_files: Optional[list[str]] = None
@@ -999,9 +1000,15 @@ class Config:
     @property
     def download_dir(self) -> str:
         if self._download_dir is None:
-            self._download_dir = utils.get_user_downloads_dir()
+            self._download_dir = constants.DEFAULT_CACHE_DIR
         return self._download_dir
     
+    @property
+    def user_download_dir(self) -> str:
+        if self._user_download_dir is None:
+            self._user_download_dir = utils.get_user_downloads_dir()
+        return self._user_download_dir
+
     @property
     def installed_faithlife_product_release(self) -> Optional[str]:
         if self._raw.install_dir is None:
