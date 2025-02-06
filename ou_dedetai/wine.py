@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 import logging
 import os
-import re
 import shutil
-import signal
 import subprocess
 from pathlib import Path
 import tempfile
@@ -82,16 +80,12 @@ def get_wine_release(binary: str) -> tuple[Optional[WineRelease], str]:
         version = wine_version.lstrip('wine-')
         logging.debug(f"Wine branch of {binary}: {branch}")
 
-        if branch is not None:
-            ver_major = int(version.split('.')[0].lstrip('wine-'))  # remove 'wine-'
-            ver_minor_str = version.split('.')[1]
-            # In the case the version is an rc like wine-10.0-rc5
-            if '-' in ver_minor_str:
-                ver_minor_str = ver_minor_str.split("-")[0]
-            ver_minor = int(ver_minor_str)
-        else:
-            ver_major = 0
-            ver_minor = 0
+        ver_major = int(version.split('.')[0].lstrip('wine-'))  # remove 'wine-'
+        ver_minor_str = version.split('.')[1]
+        # In the case the version is an rc like wine-10.0-rc5
+        if '-' in ver_minor_str:
+            ver_minor_str = ver_minor_str.split("-")[0]
+        ver_minor = int(ver_minor_str)
 
         wine_release = WineRelease(ver_major, ver_minor, branch)
         logging.debug(f"Wine release of {binary}: {str(wine_release)}")
