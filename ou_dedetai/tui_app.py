@@ -60,9 +60,7 @@ class TUI(App):
         self.status_e = threading.Event()
         self.todo_q: Queue[str] = Queue()
         self.todo_e = threading.Event()
-        self.screen_q: Queue[None] = Queue()
         self.choice_q: Queue[str] = Queue()
-        self.switch_q: Queue[int] = Queue()
 
         # Install and Options
         self.password_q: Queue[str] = Queue()
@@ -337,13 +335,7 @@ class TUI(App):
         curses.endwin()
 
     def update_main_window_contents(self):
-        self.clear()
-        self.title = f"Welcome to {constants.APP_NAME} {constants.LLI_CURRENT_VERSION} ({self.conf.app_release_channel})"  # noqa: E501
-        self.subtitle = f"Logos Version: {self.conf.installed_faithlife_product_release} ({self.conf.faithlife_product_release_channel})"  # noqa: E501
-        # Reset internal variable, it'll be reset next access
-        self._console = None
         self.menu_screen.set_options(self.set_tui_menu_options())
-        self.refresh()
 
     # ERR: On a sudden resize, the Curses menu is not properly resized,
     # and we are not currently dynamically passing the menu options based
@@ -373,13 +365,6 @@ class TUI(App):
                 and self.active_screen.text == "Screen Too Small"
             ):
                 self.choice_q.put("Return to Main Menu")
-        else:
-            if self.active_screen.screen_id == 14:
-                self.update_tty_dimensions()
-                if self.window_height > 9:
-                    self.switch_q.put(1)
-                elif self.window_width > 34:
-                    self.switch_q.put(1)
 
     def draw_resize_screen(self):
         self.clear()
@@ -431,14 +416,6 @@ class TUI(App):
                             self.choice_q.get(),
                         )
 
-                    if self.screen_q.qsize() > 0:
-                        self.screen_q.get()
-                        self.switch_q.put(1)
-
-                    if self.switch_q.qsize() > 0:
-                        self.switch_q.get()
-                        self.switch_screen()
-
                     if len(self.tui_screens) == 0:
                         self.active_screen = self.menu_screen
                     else:
@@ -485,7 +462,6 @@ class TUI(App):
             11: self.wineconfig_menu_select,
             12: self.logos.start,
             13: self.waiting_finish,
-            14: self.waiting_resize,
             15: self.password_prompt,
             18: self.utilities_menu_select,
             19: self.renderer_select,
@@ -500,7 +476,6 @@ class TUI(App):
             if choice == "Return to Main Menu":
                 self.tui_screens = []
             self.reset_screen()
-            self.switch_q.put(1)
             # FIXME: There is some kind of graphical glitch that activates on returning
             # to Main Menu, but not from all submenus.
             # Further, there appear to be issues with how the program exits on Ctrl+C as
@@ -525,6 +500,7 @@ class TUI(App):
         self.total_pages = 0
 
     def go_to_main_menu(self):
+        self.tui_screens = []
         self.reset_screen()
         self.menu_screen.choice = "Processing"
         self.choice_q.put("Return to Main Menu")
@@ -562,12 +538,12 @@ class TUI(App):
             self.reset_screen()
             self.logos.start()
             self.menu_screen.set_options(self.set_tui_menu_options())
-            self.switch_q.put(1)
+            # XXX: this used to "switch screens" here. Does it need to?
         elif self.conf._raw.faithlife_product and choice == f"Stop {self.conf.faithlife_product}": #noqa: E501
             self.reset_screen()
             self.logos.stop()
             self.menu_screen.set_options(self.set_tui_menu_options())
-            self.switch_q.put(1)
+            # XXX: this used to "switch screens" here. Does it need to?
         elif choice == "Run Indexing":
             self.active_screen.running = 0
             self.active_screen.choice = "Processing"
@@ -578,26 +554,22 @@ class TUI(App):
             control.remove_library_catalog(self)
         elif choice.startswith("Wine Config"):
             self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    11,
-                    self.todo_q,
-                    self.todo_e,
-                    "Wine Config Menu",
-                    self.set_wineconfig_menu_options(),
-                )
+            self.stack_menu(
+                11,
+                self.todo_q,
+                self.todo_e,
+                "Wine Config Menu",
+                self.set_wineconfig_menu_options(),
             )
         elif choice.startswith("Utilities"):
             self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    18,
-                    self.todo_q,
-                    self.todo_e,
-                    "Utilities Menu",
-                    self.set_utilities_menu_options(),
-                )
-            )  # noqa: E501
+            self.stack_menu(
+                18,
+                self.todo_q,
+                self.todo_e,
+                "Utilities Menu",
+                self.set_utilities_menu_options(),
+            )
         elif choice == "Change Color Scheme":
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
@@ -606,38 +578,32 @@ class TUI(App):
     def wineconfig_menu_select(self, choice):
         if choice == "Set Renderer":
             self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    19,
-                    self.todo_q,
-                    self.todo_e,
-                    "Choose Renderer",
-                    self.set_renderer_menu_options(),
-                )
+            self.stack_menu(
+                19,
+                self.todo_q,
+                self.todo_e,
+                "Choose Renderer",
+                self.set_renderer_menu_options(),
             )
             self.choice_q.put("0")
         elif choice == "Set Windows Version for Logos":
             self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    20,
-                    self.todo_q,
-                    self.todo_e,
-                    "Set Windows Version for Logos",
-                    self.set_win_ver_menu_options(),
-                )
+            self.stack_menu(
+                20,
+                self.todo_q,
+                self.todo_e,
+                "Set Windows Version for Logos",
+                self.set_win_ver_menu_options(),
             )
             self.choice_q.put("0")
         elif choice == "Set Windows Version for Indexer":
             self.reset_screen()
-            self.screen_q.put(
-                self.stack_menu(
-                    21,
-                    self.todo_q,
-                    self.todo_e,
-                    "Set Windows Version for Indexer",
-                    self.set_win_ver_menu_options(),
-                )
+            self.stack_menu(
+                21,
+                self.todo_q,
+                self.todo_e,
+                "Set Windows Version for Indexer",
+                self.set_win_ver_menu_options(),
             )
             self.choice_q.put("0")
 
@@ -660,12 +626,10 @@ class TUI(App):
         elif choice == "Change Logos Release Channel":
             self.reset_screen()
             self.conf.toggle_faithlife_product_release_channel()
-            self.update_main_window_contents()
             self.go_to_main_menu()
         elif choice == f"Change {constants.APP_NAME} Release Channel":
             self.reset_screen()
             self.conf.toggle_installer_release_channel()
-            self.update_main_window_contents()
             self.go_to_main_menu()
         elif choice == "Install Dependencies":
             self.reset_screen()
@@ -691,11 +655,9 @@ class TUI(App):
             appimage_choices.extend(["Input Custom AppImage", "Return to Main Menu"])
             self.menu_options = appimage_choices
             question = "Which AppImage should be used?"
-            self.screen_q.put(
-                self.stack_menu(
-                    1, self.appimage_q, self.appimage_e, question, appimage_choices
-                )
-            )  # noqa: E501
+            self.stack_menu(
+                1, self.appimage_q, self.appimage_e, question, appimage_choices
+            )
         elif choice == "Install ICU":
             self.reset_screen()
             wine.enforce_icu_data_files(self)
@@ -781,11 +743,9 @@ class TUI(App):
             answer = options
         elif isinstance(options, list):
             self.menu_options = self.which_dialog_options(options)
-            self.screen_q.put(
-                self.stack_menu(
-                    2, Queue(), threading.Event(), question, self.menu_options
-                )
-            )  # noqa: E501
+            self.stack_menu(
+                2, Queue(), threading.Event(), question, self.menu_options
+            )
 
             # Now wait for it to complete.
             self.ask_answer_event.wait()
@@ -793,15 +753,13 @@ class TUI(App):
 
         self.ask_answer_event.clear()
         if answer in [PROMPT_OPTION_DIRECTORY, PROMPT_OPTION_FILE]:
-            self.screen_q.put(
-                self.stack_input(
-                    2,
-                    Queue(),
-                    threading.Event(),
-                    question,
-                    os.path.expanduser("~/"),
-                )
-            )  # noqa: E501
+            self.stack_input(
+                2,
+                Queue(),
+                threading.Event(),
+                question,
+                os.path.expanduser("~/"),
+            )
             # Now wait for it to complete
             self.ask_answer_event.wait()
             new_answer = self.ask_answer_queue.get()
@@ -815,7 +773,6 @@ class TUI(App):
         if answer == self._exit_option:
             self.tui_screens = []
             self.reset_screen()
-            self.switch_q.put(1)
             raise ReturningToMainMenu
 
         return answer
@@ -829,15 +786,13 @@ class TUI(App):
         if self.console_log[-1] == message:
             return
         self.console_log.append(message)
-        self.screen_q.put(
-            self.stack_text(
-                8,
-                self.status_q,
-                self.status_e,
-                message,
-                wait=True,
-                percent=percent or 0,
-            )
+        self.stack_text(
+            8,
+            self.status_q,
+            self.status_e,
+            message,
+            wait=True,
+            percent=percent or 0,
         )
 
     def _config_update_hook(self):
