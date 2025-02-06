@@ -39,12 +39,6 @@ if [[ ! -r $CONFIG_FILE ]]; then
     mv "$tmp" "$CONFIG_FILE"
 fi
 
-# # Ensure ICU downloaded files.
-# icu_gz=icu-win.tar.gz
-# if [[ ! -r ${SNAP_USER_COMMON}/${icu_gz} ]]; then
-#     cp "${SNAP}/etc/${icu_gz}" "$SNAP_USER_COMMON"
-# fi
-
 # Ensure Logos is installed.
 app_exe="$(find "${INSTALLDIR}/wine64_bottle" -wholename "*${FLPRODUCT}/${FLPRODUCT}.exe" 2>/dev/null)"
 if [[ -z $app_exe ]]; then

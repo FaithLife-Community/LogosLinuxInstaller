@@ -13,8 +13,6 @@ def get_runmode() -> str:
         return 'script'
 
 
-# This is relative to this file itself
-APP_IMAGE_DIR = Path(__file__).parent / "img"
 
 # Are we running from binary or src?
 RUNMODE = get_runmode()
@@ -26,7 +24,8 @@ else:
     # We are running in normal development mode
     BUNDLE_DIR = Path(__file__).resolve().parent
 
-# Now define an assets directory that works in both modes:
+# Now define assets and img directories.
+APP_IMAGE_DIR = BUNDLE_DIR / 'img'
 APP_ASSETS_DIR = BUNDLE_DIR / 'assets'
 
 # Define app name variables.

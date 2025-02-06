@@ -16,20 +16,31 @@ platforms:
 
 environment:
   # Define config variables.
-  FLPRODUCT: Logos
-  TARGET_RELEASE_VERSION: "39.1.0.0006"
+  # FLPRODUCT: Logos
+  # TARGET_RELEASE_VERSION: "39.1.0.0006"
+  TARGETVERSION: "10"
+  INSTALLDIR: "$SNAP_USER_COMMON"
+  WINE_EXE: "$SNAP/bin/wine64"
   # Define runtime variables.
-  PYTHON_SITE_PACKAGES_PATH: $SNAP/lib/python3.12/site-packages
-  PYTHON_APT_PACKAGES_PATH: $SNAP/usr/lib/python3.12
-  PYTHON_LIB_DYNLOAD_PATH: $SNAP/usr/lib/python3.12/lib-dynload
+  # https://forum.snapcraft.io/t/modulenotfounderror-no-module-named-tkinter/28707/5?u=n8marti
   TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
   TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
-  PYTHONPATH: $PYTHON_SITE_PACKAGES_PATH:$PYTHON_APT_PACKAGES_PATH:$PYTHON_LIB_DYNLOAD_PATH:$TCL_LIBRARY:$TK_LIBRARY:$PYTHONPATH
+  TCLLIBPATH: $SNAP/usr/lib/tcltk/$CRAFT_ARCH_TRIPLET_BUILD_FOR/tk8.6
+  PYTHON_SITE_PKGS: $SNAP/lib/python3.12/site-packages
+  PYTHON_APT_PKGS: $SNAP/usr/lib/python3.12
+  PYTHON_LIB_DYNLD: $SNAP/usr/lib/python3.12/lib-dynload
+  PYTHONPATH: $PYTHON_SITE_PKGS:$PYTHON_APT_PKGS:$PYTHON_LIB_DYNLD #:$TCL_LIBRARY:$TK_LIBRARY
+  # https://forum.snapcraft.io/t/libpxbackend-1-0-so-cannot-open-shared-object-file-no-such-file-or-directory/44263/2
+  # To avoid "ImportError: libBLT.2.5.so.8.6: cannot open shared object file: No such file or directory"
+  # TCLTK_LIB: $SNAP/usr/lib/tcltk/$CRAFT_ARCH_TRIPLET_BUILD_FOR/tk8.6
+  # BLT_LIB: $SNAP/usr/lib/blt2.5
+  LD_LIBRARY_PATH: $SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR # :$TCLTK_LIB:$BLT_LIB:$TK_LIB
 
 apps:
   oudedetai:
     extensions: [gnome]
-    command: bin/run.sh
+    # command: bin/run.sh
+    command: bin/oudedetai
     plugs: &allplugs
       - audio-playback
       - home
@@ -37,22 +48,26 @@ apps:
       - opengl
       - removable-media
 
-# package-repositories:
-#   - type: apt
-
-
 parts:
-  bin:
-    source: ./snap/bin
+  # bin:
+  #   source: ./snap/bin
+  #   plugin: dump
+  #   organize:
+  #     run.sh: bin/run.sh
+  #   stage-packages:
+  #     - jq
+
+  assets:
+    source: ./ou_dedetai/assets
     plugin: dump
     organize:
-      run.sh: bin/run.sh
+      '*': assets/
 
-  # icu:
-  #   source: https://github.com/FaithLife-Community/icu/releases/download/72.1-custom%2B4/icu-win.tar.gz
-  #   plugin: nil
-  #   organize:
-  #     '*.tar.gz': etc/
+  img:
+    source: ./ou_dedetai/img
+    plugin: dump
+    organize:
+      '*': img/
 
   # wine-apt:  # installs most recent devel version
   #   plugin: nil
@@ -88,17 +103,18 @@ parts:
     override-pull: |
       craftctl default
       craftctl set version=$(git describe --tag)
+    stage-packages:
+      - libncurses6
+      - libncursesw6
+      - python3-tk
 
   cleanup:
     after:
       - wine-custom
       - oudedetai
     plugin: nil
-    stage-packages:
-      - jq
-      - libncurses6
-      - libncursesw6
-      - python3-tk
     override-prime: |
-      rm -f lib/x86_64-linux-gnu/libicudata.so*
-      craftctl default
+      rm -f lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicudata.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicuio.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicutest.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicutu.so*

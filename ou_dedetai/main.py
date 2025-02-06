@@ -215,7 +215,7 @@ def parse_args(args, parser) -> Tuple[EphemeralConfiguration, Callable[[Ephemera
     # if network.check_for_updates:
     #     ephemeral_config.check_updates_now = True
 
-    if args.skip_dependencies:
+    if args.skip_dependencies or constants.RUNMODE == 'snap':
         ephemeral_config.install_dependencies_skip = True
 
     if args.force_root:

@@ -12,17 +12,8 @@ import subprocess
 import sys
 import time
 
+from ou_dedetai import constants
 from ou_dedetai.app import App
-
-
-from . import constants
-
-
-def get_runmode():
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        return 'binary'
-    else:
-        return 'script'
 
 
 def fix_ld_library_path(env: Optional[MutableMapping[str, str]]) -> dict[str, str]: #noqa: E501
@@ -42,7 +33,7 @@ def fix_ld_library_path(env: Optional[MutableMapping[str, str]]) -> dict[str, st
     # Only do this when running in binary mode
     # Since LD_LIBRARY_PATH is core to how binaries work, we don't want it
     # modified unless we know we need to.
-    if get_runmode() == 'binary':
+    if constants.RUNMODE == 'binary':
         # *BSD uses LD_LIBRARY_PATH, AIX uses LIBPATH
         for lp_key in ["LD_LIBRARY_PATH", "LIBPATH"]:
             lp_orig = env.pop(lp_key + '_ORIG', None)
