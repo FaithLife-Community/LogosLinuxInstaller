@@ -131,11 +131,8 @@ class LogosManager:
             if reason is not None:
                 logging.debug(f"Warning: Wine Check: {reason}")
             wine.wineserver_kill(self.app)
-            app = self.app
-            from ou_dedetai.gui_app import GuiApp
-            if not isinstance(self.app, GuiApp):
-                # Don't send "Running" message to GUI b/c it never clears.
-                app.status(f"Running {self.app.conf.faithlife_product}…")
+            # Don't send "Running" message to GUI b/c it never clears.
+            logging.info(f"Running {self.app.conf.faithlife_product}…")
             self.app.start_thread(run_logos, daemon_bool=False)
             # NOTE: The following code would keep the CLI open while running
             # Logos, but since wine logging is sent directly to wine.log,
