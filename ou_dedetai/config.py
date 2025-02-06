@@ -325,7 +325,7 @@ class PersistentConfiguration:
     wine_binary_code: Optional[str] = None
     backup_dir: Optional[str] = None
 
-    # Color to use in curses. Either "Logos", "Light", or "Dark"
+    # Color to use in curses. Either "System", "Logos", "Light", or "Dark"
     curses_color_scheme: str = "Logos"
     # Faithlife's release channel. Either "stable" or "beta"
     faithlife_product_release_channel: str = "stable"
@@ -502,7 +502,7 @@ class Config:
     _wine_appimage_files: Optional[list[str]] = None
 
     # Start constants
-    _curses_color_scheme_valid_values = ["Light", "Dark", "Logos"]
+    _curses_color_scheme_valid_values = ["System", "Light", "Dark", "Logos"]
 
     # Singleton logic, this enforces that only one config object exists at a time.
     def __new__(cls, *args, **kwargs) -> "Config":
@@ -926,7 +926,7 @@ class Config:
     def curses_color_scheme(self) -> str:
         """Color for the curses dialog
         
-        returns one of: Logos, Light or Dark"""
+        returns one of: System, Logos, Light or Dark"""
         return self._raw.curses_color_scheme
 
     @curses_color_scheme.setter

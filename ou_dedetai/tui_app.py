@@ -228,21 +228,27 @@ class TUI(App):
         curses.init_color(curses.COLOR_BLUE, 0, 510, 1000)  # Logos Blue
         curses.init_color(curses.COLOR_CYAN, 906, 906, 906)  # Logos Gray
         curses.init_color(curses.COLOR_WHITE, 988, 988, 988)  # Logos White
-        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_CYAN)
+        curses.init_pair(1, -1, -1)  # System
         curses.init_pair(2, curses.COLOR_BLUE, curses.COLOR_WHITE)
         curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLUE)
-        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)  # Logos
         curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_BLUE)
-        curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Light
+        curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Dark
 
     def set_curses_color_scheme(self):
-        if self.conf.curses_color_scheme == "Logos":
-            self.stdscr.bkgd(" ", curses.color_pair(3))
+        if self.conf.curses_color_scheme == "System":
+            self.stdscr.bkgd(" ", curses.color_pair(1))
             if self.main_window:
-                self.main_window.bkgd(" ", curses.color_pair(3))
+                self.main_window.bkgd(" ", curses.color_pair(1))
             if self.menu_window:
-                self.menu_window.bkgd(" ", curses.color_pair(3))
+                self.menu_window.bkgd(" ", curses.color_pair(1))
+        elif self.conf.curses_color_scheme == "Logos":
+            self.stdscr.bkgd(" ", curses.color_pair(4))
+            if self.main_window:
+                self.main_window.bkgd(" ", curses.color_pair(4))
+            if self.menu_window:
+                self.menu_window.bkgd(" ", curses.color_pair(4))
         elif self.conf.curses_color_scheme == "Light":
             self.stdscr.bkgd(" ", curses.color_pair(6))
             if self.main_window:
