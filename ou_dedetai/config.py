@@ -326,7 +326,7 @@ class PersistentConfiguration:
     backup_dir: Optional[str] = None
 
     # Color to use in curses. Either "System", "Logos", "Light", or "Dark"
-    curses_color_scheme: str = "Logos"
+    curses_color_scheme: Optional[str] = None
     # Faithlife's release channel. Either "stable" or "beta"
     faithlife_product_release_channel: str = "stable"
     # The Installer's release channel. Either "stable" or "beta"
@@ -927,21 +927,17 @@ class Config:
         """Color for the curses dialog
         
         returns one of: System, Logos, Light or Dark"""
-        return self._raw.curses_color_scheme
+        return self._raw.curses_color_scheme or 'Logos'
 
     @curses_color_scheme.setter
-    def curses_color_scheme(self, value: str):
-        if value is None:
-            value = "Logos"
-        if value not in self._curses_color_scheme_valid_values:
+    def curses_color_scheme(self, value: Optional[str]):
+        if value is not None and value not in self._curses_color_scheme_valid_values:
             raise ValueError(f"Invalid curses theme, expected one of: {", ".join(self._curses_color_scheme_valid_values)} but got: {value}") # noqa: E501
         self._raw.curses_color_scheme = value
         self._write()
     
     def cycle_curses_color_scheme(self):
-        if self.curses_color_scheme is None:
-            self.curses_color_scheme = "Logos"
-        new_index = self._curses_color_scheme_valid_values.index(self.curses_color_scheme) + 1
+        new_index = self._curses_color_scheme_valid_values.index(self.curses_color_scheme) + 1 # noqa: E501
         if new_index == len(self._curses_color_scheme_valid_values):
             new_index = 0
         self.curses_color_scheme = self._curses_color_scheme_valid_values[new_index]
