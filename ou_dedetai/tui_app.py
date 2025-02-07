@@ -217,7 +217,7 @@ class TUI(App):
         self.main_window = curses.newwin(self.main_window_height, curses.COLS, 0, 0)
         self.menu_window = curses.newwin(
             self.menu_window_height, curses.COLS, self.main_window_height + 1, 0
-        )  # noqa: E501
+        )
         resize_lines = tui_curses.wrap_text(self, "Screen too small.")
         self.resize_window = curses.newwin(len(resize_lines) + 1, curses.COLS, 0, 0)
 
@@ -413,7 +413,7 @@ class TUI(App):
         self.report_waiting(f"{self.console_message}")  # noqa: E501
 
         self.active_screen = self.menu_screen
-        last_time = time.time()
+        check_resize_last_time = last_time = time.time()
         self.logos.monitor()
 
         while self.llirunning:
@@ -459,6 +459,15 @@ class TUI(App):
                 self.draw_resize_screen()
             elif self.window_width < 10:
                 self.terminal_margin = 0  # Avoid drawing errors on very small screens
+            # Check every second to see if the screen resized without our know-how
+            # This is done on a timer because curses.is_term_resized takes a fair bit of
+            # time for this loop
+            # If flashing is observed on a screen, it's possible this timer needs to be 
+            # increased
+            check_resize, check_resize_last_time = utils.stopwatch(check_resize_last_time, 1) #noqa: E501
+            if check_resize and curses.is_term_resized(self.window_height, self.window_width): #noqa: E501
+                # The screen has changed sizes since we last checked. Resize
+                self.resize_curses()
 
     def run(self):
         try:
@@ -669,7 +678,6 @@ class TUI(App):
             self.go_to_main_menu()
         elif choice == "Install Dependencies":
             self.reset_screen()
-            self.update_windows()
             utils.install_dependencies(self)
             self.go_to_main_menu()
         elif choice == "Back Up Data":
