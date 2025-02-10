@@ -287,7 +287,7 @@ def ensure_launcher_shortcuts(app: App):
     else:
         # This is done so devs can run this without it clobbering their install
         app.status(
-            "Running from source. Won't clobber your desktop shortcuts",
+            f"Runmode is '{constants.RUNMODE}'. Won't create desktop shortcuts",
         )
 
 def install(app: App):
@@ -347,8 +347,27 @@ def create_wine_appimage_symlinks(app: App):
         p.symlink_to(f"./{app.conf.wine_appimage_link_file_name}")
 
 
-def create_desktop_file(name, contents):
-    launcher_path = Path(f"~/.local/share/applications/{name}").expanduser()
+def create_desktop_file(
+    filename: str,
+    app_name: str,
+    exec_cmd: str,
+    icon_path: str,
+    wm_class: str,
+):
+    contents = f"""[Desktop Entry]
+Name={app_name}
+GenericName=FaithLife Wine App Installer
+Comment=Manages FaithLife Bible Software via Wine
+Exec={exec_cmd}
+Icon={icon_path}
+Terminal=false
+Type=Application
+StartupWMClass={wm_class}
+Categories=Education;
+Keywords=Logos;Verbum;Bible;Control;
+"""
+    xdg_data_home = Path(os.getenv('XDG_DATA_HOME', Path.home()))
+    launcher_path = xdg_data_home / 'applications' / filename
     if launcher_path.is_file():
         logging.info(f"Removing desktop launcher at {launcher_path}.")
         launcher_path.unlink()
@@ -359,6 +378,7 @@ def create_desktop_file(name, contents):
     with launcher_path.open('w') as f:
         f.write(contents)
     os.chmod(launcher_path, 0o755)
+    return launcher_path
 
 
 def create_launcher_shortcuts(app: App):
@@ -376,6 +396,8 @@ def create_launcher_shortcuts(app: App):
 
     if constants.RUNMODE == 'binary':
         lli_executable = f"{installdir}/{constants.BINARY_NAME}"
+    elif constants.RUNMODE == 'snap':
+        lli_executable = f"{os.getenv('SNAP')}/bin/{constants.BINARY_NAME}"
     else:
         script = Path(sys.argv[0]).expanduser().resolve()
         repo_dir = None
@@ -399,41 +421,21 @@ def create_launcher_shortcuts(app: App):
         else:
             logging.info(f"Icon found at {path}.")
 
-    # Set launcher file names and content.
-    desktop_files = [
-        (
-            f"{flproduct}Bible.desktop",
-            f"""[Desktop Entry]
-Name={flproduct}Bible
-Comment=A Bible Study Library with Built-In Tools
-Exec={lli_executable} --run-installed-app
-Icon={logos_icon_path}
-Terminal=false
-Type=Application
-StartupWMClass={flproduct.lower()}.exe
-Categories=Education;
-Keywords={flproduct};Logos;Bible;Control;
-"""
-        ),
-        (
-            f"{constants.BINARY_NAME}.desktop",
-            f"""[Desktop Entry]
-Name={constants.APP_NAME}
-GenericName=FaithLife Wine App Installer
-Comment=Manages FaithLife Bible Software via Wine
-Exec={lli_executable}
-Icon={app_icon_path}
-Terminal=false
-Type=Application
-StartupWMClass={constants.BINARY_NAME}
-Categories=Education;
-Keywords={flproduct};Logos;Bible;Control;
-"""
-        ),
-    ]
-
-    # Create the files.
-    for file_name, content in desktop_files:
-        create_desktop_file(file_name, content)
-        fpath = Path.home() / '.local' / 'share' / 'applications' / file_name
-        logging.debug(f"> File exists?: {fpath}: {fpath.is_file()}")
+    # Create Logos/Verbum desktop file.
+    logos_path = create_desktop_file(
+        f"{flproduct}Bible.desktop",
+        f"{flproduct}Bible",
+        f"{lli_executable} --run-installed-app",
+        logos_icon_path,
+        f"{flproduct.lower()}.exe",
+    )
+    logging.debug(f"> File exists?: {logos_path}: {logos_path.is_file()}")
+    # Create Ou Dedetai desktop file.
+    app_path = create_desktop_file(
+        f"{constants.BINARY_NAME}.desktop",
+        constants.APP_NAME,
+        lli_executable,
+        app_icon_path,
+        constants.BINARY_NAME,
+    )
+    logging.debug(f"> File exists?: {app_path}: {app_path.is_file()}")
