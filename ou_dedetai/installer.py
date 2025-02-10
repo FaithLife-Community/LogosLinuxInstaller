@@ -366,7 +366,8 @@ StartupWMClass={wm_class}
 Categories=Education;
 Keywords=Logos;Verbum;Bible;Control;
 """
-    xdg_data_home = Path(os.getenv('XDG_DATA_HOME', Path.home()))
+    local_share = Path.home() / '.local' / 'share'
+    xdg_data_home = Path(os.getenv('XDG_DATA_HOME', local_share))
     launcher_path = xdg_data_home / 'applications' / filename
     if launcher_path.is_file():
         logging.info(f"Removing desktop launcher at {launcher_path}.")
