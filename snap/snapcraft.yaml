@@ -57,7 +57,7 @@ apps:
 
 parts:
   bin:
-    source: ./snap/bin
+    source: snap/bin
     plugin: dump
     organize:
       run.sh: bin/run.sh
@@ -65,14 +65,22 @@ parts:
   #     - jq
 
   assets:
-    source: ./ou_dedetai/assets
+    source: ou_dedetai/assets
     plugin: dump
+    override-build: |
+      find $CRAFT_PROJECT_DIR -maxdepth 4 -type d
+      find CRAFT_PART_SRC -maxdepth 4 -type d
+      craftctl default
     organize:
       '*': assets/
 
   img:
-    source: ./ou_dedetai/img
+    source: ou_dedetai/img
     plugin: dump
+    override-build: |
+      find $CRAFT_PROJECT_DIR -type d
+      find CRAFT_PART_SRC -type d
+      craftctl default
     organize:
       '*': img/
 
