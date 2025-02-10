@@ -624,9 +624,10 @@ class Config:
             # Install Dir has the name of the product and it's version. Reset it too
             if self._overrides.install_dir is None:
                 self._raw.install_dir = None
-            # Wine is dependent on the product/version selected
-            self._raw.wine_binary = None
-            self._raw.wine_binary_code = None
+            # While different versions have different wine version requirements,
+            # In order to support WINE_EXE we shouldn't clobber here.
+            # self._raw.wine_binary = None
+            # self._raw.wine_binary_code = None
 
             self._write()
 
