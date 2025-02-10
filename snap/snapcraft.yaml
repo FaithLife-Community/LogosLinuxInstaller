@@ -104,8 +104,6 @@ parts:
 
   oudedetai:
     source: https://github.com/FaithLife-Community/LogosLinuxInstaller.git
-    # FIXME: just for testing
-    source-branch: snap-pkg
     plugin: python
     override-pull: |
       craftctl default
