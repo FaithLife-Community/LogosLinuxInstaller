@@ -11,6 +11,13 @@ description: |
 grade: stable
 confinement: strict
 icon: ou_dedetai/img/icon.svg # or post-build: snap/img/icon.svg
+license: MIT
+issues: https://github.com/FaithLife-Community/LogosLinuxInstaller/Issues
+contact:
+  - https://t.me/linux_logos
+  - https://matrix.to/#/#logosbible:matrix.org
+website: https://github.com/FaithLife-Community/LogosLinuxInstaller/wiki
+
 
 platforms:
   amd64:
