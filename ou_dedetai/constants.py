@@ -44,11 +44,7 @@ CACHE_LIFETIME_HOURS = 12
 if RUNMODE == 'snap':
     cache_dir = Path(os.getenv('SNAP_USER_COMMON')) / '.cache'
 else:
-    try:
-        cache_dir = Path(os.getenv('XDG_CACHE_HOME'))
-    except TypeError:
-        cache_dir = Path(os.getenv('HOME')) / '.cache'
-
+    cache_dir = Path(os.getenv('XDG_CACHE_HOME'), Path.home() / '.cache')
 
 # Set other run-time variables not set in the env.
 DEFAULT_CONFIG_PATH = os.path.expanduser(f"~/.config/FaithLife-Community/{BINARY_NAME}.json")  # noqa: E501
