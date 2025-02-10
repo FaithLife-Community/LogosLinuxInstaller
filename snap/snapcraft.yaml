@@ -10,17 +10,16 @@ description: |
   licensed under the MIT License.
 grade: stable
 confinement: strict
+icon: ou_dedetai/img/icon.svg # or post-build: snap/img/icon.svg
 
 platforms:
   amd64:
 
 environment:
   # Define config variables.
-  # FLPRODUCT: Logos
-  # TARGET_RELEASE_VERSION: "39.1.0.0006"
-  TARGETVERSION: "10"
   INSTALLDIR: "$SNAP_USER_COMMON"
   WINE_EXE: "$SNAP/bin/wine64"
+  WINEBIN_CODE: "Custom"
   # Define runtime variables.
   # https://forum.snapcraft.io/t/modulenotfounderror-no-module-named-tkinter/28707/5?u=n8marti
   TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
@@ -29,17 +28,13 @@ environment:
   PYTHON_SITE_PKGS: $SNAP/lib/python3.12/site-packages
   PYTHON_APT_PKGS: $SNAP/usr/lib/python3.12
   PYTHON_LIB_DYNLD: $SNAP/usr/lib/python3.12/lib-dynload
-  PYTHONPATH: $PYTHON_SITE_PKGS:$PYTHON_APT_PKGS:$PYTHON_LIB_DYNLD #:$TCL_LIBRARY:$TK_LIBRARY
+  PYTHONPATH: $PYTHON_SITE_PKGS:$PYTHON_APT_PKGS:$PYTHON_LIB_DYNLD
   # https://forum.snapcraft.io/t/libpxbackend-1-0-so-cannot-open-shared-object-file-no-such-file-or-directory/44263/2
-  # To avoid "ImportError: libBLT.2.5.so.8.6: cannot open shared object file: No such file or directory"
-  # TCLTK_LIB: $SNAP/usr/lib/tcltk/$CRAFT_ARCH_TRIPLET_BUILD_FOR/tk8.6
-  # BLT_LIB: $SNAP/usr/lib/blt2.5
-  LD_LIBRARY_PATH: $SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR # :$TCLTK_LIB:$BLT_LIB:$TK_LIB
+  LD_LIBRARY_PATH: $SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR
 
 apps:
   oudedetai:
     extensions: [gnome]
-    # command: bin/run.sh
     command: bin/oudedetai
     plugs: &allplugs
       - audio-playback
@@ -48,12 +43,22 @@ apps:
       - opengl
       - removable-media
 
+  logos:
+    extensions: [gnome]
+    command: bin/run.sh Logos
+    plugs: *allplugs
+
+  verbum:
+    extensions: [gnome]
+    command: bin/run.sh Verbum
+    plugs: *allplugs
+
 parts:
-  # bin:
-  #   source: ./snap/bin
-  #   plugin: dump
-  #   organize:
-  #     run.sh: bin/run.sh
+  bin:
+    source: ./snap/bin
+    plugin: dump
+    organize:
+      run.sh: bin/run.sh
   #   stage-packages:
   #     - jq
 
@@ -114,7 +119,21 @@ parts:
       - oudedetai
     plugin: nil
     override-prime: |
+      # Remove libraries from snapcraft build lint warnings.
       rm -f lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicudata.so*
+      rm -f usr/lib/libBLTlite.2.5.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libcjson_utils.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libform.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libformw.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libhwy_contrib.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libhwy_test.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicui18n.so*
       rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicuio.so*
       rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicutest.so*
       rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libicutu.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libmenu.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libmenuw.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libpanel.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libpanelw.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libtheora.so*
+      rm -f usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libzvbi-chains.so*
