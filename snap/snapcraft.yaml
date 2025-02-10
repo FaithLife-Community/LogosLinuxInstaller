@@ -42,6 +42,7 @@ apps:
       - network
       - opengl
       - removable-media
+      - system-observe
       - system-trace
 
   logos:
