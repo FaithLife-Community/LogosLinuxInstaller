@@ -85,7 +85,7 @@ def clean_all():
 
 def get_user_downloads_dir() -> str:
     home = Path.home()
-    downloads_path = str(home) # no guarantee that ~/Downloads exists (e.g. arch)
+    downloads_path = str(home / 'Downloads')
 
     xdg_config = Path(os.getenv('XDG_CONFIG_HOME', home / '.config'))
     user_dirs_file = xdg_config / 'user-dirs.dirs'
