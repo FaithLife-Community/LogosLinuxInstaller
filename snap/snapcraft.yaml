@@ -67,20 +67,25 @@ parts:
   assets:
     source: ou_dedetai/assets
     plugin: dump
-    override-build: |
-      find $CRAFT_PROJECT_DIR -type d
-      find $CRAFT_PART_SRC -type d
-      craftctl default
     organize:
       '*': assets/
 
   img:
     source: ou_dedetai/img
     plugin: dump
-    override-build: |
-      find $CRAFT_PROJECT_DIR -type d
-      find $CRAFT_PART_SRC -type d
+    override-pull: |
       craftctl default
+      find $CRAFT_PART_SRC -maxdepth 2
+    override-build: |
+      find $CRAFT_PART_BUILD -maxdepth 2
+      craftctl default
+      find $CRAFT_PART_INSTALL -maxdepth 2
+    override-stage: |
+      craftctl default
+      find $CRAFT_STAGE -maxdepth 2
+    override-prime: |
+      craftctl default
+      find $CRAFT_PRIME -maxdepth 2
     organize:
       '*': img/
 
@@ -116,6 +121,8 @@ parts:
     override-pull: |
       craftctl default
       craftctl set version=$(git describe --tag)
+    # override-stage: |
+
     stage-packages:
       - libncurses6
       - libncursesw6
