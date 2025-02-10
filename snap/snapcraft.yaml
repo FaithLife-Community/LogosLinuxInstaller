@@ -68,8 +68,8 @@ parts:
     source: ou_dedetai/assets
     plugin: dump
     override-build: |
-      find $CRAFT_PROJECT_DIR -maxdepth 4 -type d
-      find CRAFT_PART_SRC -maxdepth 4 -type d
+      find $CRAFT_PROJECT_DIR -type d
+      find $CRAFT_PART_SRC -type d
       craftctl default
     organize:
       '*': assets/
@@ -79,7 +79,7 @@ parts:
     plugin: dump
     override-build: |
       find $CRAFT_PROJECT_DIR -type d
-      find CRAFT_PART_SRC -type d
+      find $CRAFT_PART_SRC -type d
       craftctl default
     organize:
       '*': img/
