@@ -4,8 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import config
-import LogosLinuxInstaller as LLI
+import ou_dedetai.config as config
+import ou_dedetai.main as LLI
 
 
 class TestLLICli(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_create_shortcuts(self):
         cli_args = self.parser.parse_args(args=['--create-shortcuts'])
         LLI.parse_args(cli_args, self.parser)
-        self.assertEqual('ensure_launcher_shortcuts', config.ACTION.__name__)
+        self.assertEqual('create_shortcuts', config.ACTION.__name__)
 
     def test_parse_args_custom_binary_path_good(self):
         user_path = str(Path.home())
@@ -74,12 +74,12 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_install_app(self):
         cli_args = self.parser.parse_args(args=['--install-app'])
         LLI.parse_args(cli_args, self.parser)
-        self.assertEqual('ensure_launcher_shortcuts', config.ACTION.__name__)
+        self.assertEqual('install_app', config.ACTION.__name__)
 
     def test_parse_args_install_dependencies(self):
         cli_args = self.parser.parse_args(args=['--install-dependencies'])
         LLI.parse_args(cli_args, self.parser)
-        self.assertEqual('check_dependencies', config.ACTION.__name__)
+        self.assertEqual('install_dependencies', config.ACTION.__name__)
 
     def test_parse_args_passive(self):
         cli_args = self.parser.parse_args(args=['--passive'])
@@ -89,7 +89,7 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_remove_index_files(self):
         cli_args = self.parser.parse_args(args=['--remove-index-files'])
         LLI.parse_args(cli_args, self.parser)
-        self.assertEqual('remove_all_index_files', config.ACTION.__name__)
+        self.assertEqual('remove_index_files', config.ACTION.__name__)
 
     def test_parse_args_remove_install_dir(self):
         cli_args = self.parser.parse_args(args=['--remove-install-dir'])
@@ -114,7 +114,7 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_run_installed_app(self):
         cli_args = self.parser.parse_args(args=['--run-installed-app'])
         LLI.parse_args(cli_args, self.parser)
-        self.assertEqual('run_logos', config.ACTION.__name__)
+        self.assertEqual('run_installed_app', config.ACTION.__name__)
 
     def test_parse_args_run_winetricks(self):
         cli_args = self.parser.parse_args(args=['--run-winetricks'])
@@ -153,7 +153,7 @@ class TestLLICli(unittest.TestCase):
     def test_parse_args_toggle_app_logging(self):
         cli_args = self.parser.parse_args(args=['--toggle-app-logging'])
         LLI.parse_args(cli_args, self.parser)
-        self.assertEqual('switch_logging', config.ACTION.__name__)
+        self.assertEqual('toggle_app_logging', config.ACTION.__name__)
 
     def test_parse_args_update_latest_appimage_disabled(self):
         config.WINEBIN_CODE = None
@@ -166,7 +166,7 @@ class TestLLICli(unittest.TestCase):
         cli_args = self.parser.parse_args(args=['--update-latest-appimage'])
         LLI.parse_args(cli_args, self.parser)
         self.assertEqual(
-            'update_to_latest_recommended_appimage',
+            'update_latest_appimage',
             config.ACTION.__name__
         )
 
@@ -174,7 +174,7 @@ class TestLLICli(unittest.TestCase):
         cli_args = self.parser.parse_args(args=['--update-self'])
         LLI.parse_args(cli_args, self.parser)
         self.assertEqual(
-            'update_to_latest_lli_release',
+            'update_self',
             config.ACTION.__name__
         )
 
@@ -185,22 +185,21 @@ class TestLLICli(unittest.TestCase):
 
 
 class TestLLI(unittest.TestCase):
-    @patch('tui_app.control_panel_app')
-    @patch('gui_app.control_panel_app')
-    def test_run_control_panel_curses(self, mock_gui, mock_tui):
+    @patch('curses.wrapper')
+    def test_run_control_panel_curses(self, mock_curses):
         config.DIALOG = 'curses'
         LLI.run_control_panel()
-        self.assertTrue(mock_tui.called)
+        self.assertTrue(mock_curses.called)
 
-    @patch('tui_app.control_panel_app')
-    @patch('gui_app.control_panel_app')
+    @patch('ou_dedetai.tui_app.control_panel_app')
+    @patch('ou_dedetai.gui_app.control_panel_app')
     def test_run_control_panel_none(self, mock_gui, mock_tui):
         config.DIALOG = None
         LLI.run_control_panel()
         self.assertTrue(mock_gui.called)
 
-    @patch('tui_app.control_panel_app')
-    @patch('gui_app.control_panel_app')
+    @patch('ou_dedetai.tui_app.control_panel_app')
+    @patch('ou_dedetai.gui_app.control_panel_app')
     def test_run_control_panel_tk(self, mock_gui, mock_tui):
         config.DIALOG = 'tk'
         LLI.run_control_panel()

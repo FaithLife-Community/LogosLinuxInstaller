@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dependencies = [
+#    "altgraph",
+#    "certifi",
+#    "charset-normalizer",
+    "distro",
+#    "idna",
+    "packaging",
+    "psutil",
+    "pythondialog",
+    "requests",
+    "inotify", # Required for watching when the auto-update setting changes
+#    "tkinter",  # actually provided by a system package, not a python package
+#    "urllib3",
+]
+name = "ou_dedetai"
+dynamic = ["readme", "version"]
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+build = ["pyinstaller"]
+test = ["coverage"]
+
+[project.scripts]
+oudedetai = "ou_dedetai.main:main"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/plain"}
+version = {attr = "ou_dedetai.constants.LLI_CURRENT_VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"ou_dedetai.img" = ["*icon.png"]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
+[tool.mypy]
+warn_unreachable = true
+disallow_untyped_defs = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+extra_checks = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "ou_dedetai.config"
+disallow_untyped_calls = true
+
+disallow_any_generic = false
+strict_equality = true

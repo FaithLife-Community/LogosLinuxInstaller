@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Logos Bible
+GenericName=FaithLife Wine App Installer
+Comment=Manages FaithLife Bible Software via Wine (snap)
+Exec=oudedetai.logos
+Icon=${SNAP}/meta/gui/logos.png
+Terminal=false
+Type=Application
+StartupWMClass=logos.exe
+Categories=Education;
+Keywords=Logos;Bible;
