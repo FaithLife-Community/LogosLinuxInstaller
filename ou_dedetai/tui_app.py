@@ -503,6 +503,8 @@ class TUI(App):
         self.tui_screens = []
         self.reset_screen()
         self.menu_screen.choice = "Processing"
+        # Reset running state of main menu so it can submit again.
+        self.menu_screen.running = 0
         self.choice_q.put("Return to Main Menu")
 
     def main_menu_select(self, choice):
