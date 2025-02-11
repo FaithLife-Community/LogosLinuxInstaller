@@ -1,18 +1,26 @@
 name: oudedetai
 base: core24
 adopt-info: oudedetai
-summary: Install and maintain FaithLife's Logos Bible (Verbum) Software.
+summary: Install and maintain FaithLife's proprietary Logos Bible (Verbum) Software.
 description: |
-  This repository contains a Python program for installing and maintaining
-  FaithLife's Logos Bible (Verbum) Software on Linux.
+  A Python program for installing and maintaining FaithLife's Logos Bible (Verbum) Software on Linux.
 
-  This program is created and maintained by the FaithLife Community and is
-  licensed under the MIT License.
+  NOTE: The way this app manages multiple executables is currently incompatible with snap confinement policy. Until a solution is found the snap needs to be installed with the `--devmode` flag to work properly. So, for the _beta_ release:
+
+    sudo snap install oudedetai --devmode --beta
+
+  Similarly, updates can only be done manually, by this command:
+
+    sudo snap refresh oudedetai --devmode --beta
+
+  This program is created and maintained by the FaithLife Community and is licensed under the MIT License.
+
 grade: stable
 confinement: strict
 icon: ou_dedetai/img/icon.svg # or post-build: snap/img/icon.svg
 license: MIT
-issues: https://github.com/FaithLife-Community/LogosLinuxInstaller/Issues
+source-code: https://github.com/FaithLife-Community/LogosLinuxInstaller
+issues: https://github.com/FaithLife-Community/LogosLinuxInstaller/issues
 contact:
   - https://t.me/linux_logos
   - https://matrix.to/#/#logosbible:matrix.org
@@ -28,7 +36,7 @@ environment:
   WINE_EXE: "$SNAP/bin/wine64"
   WINEBIN_CODE: "Custom"
   # Define runtime variables.
-  # https://forum.snapcraft.io/t/modulenotfounderror-no-module-named-tkinter/28707/5?u=n8marti
+  # https://forum.snapcraft.io/t/modulenotfounderror-no-module-named-tkinter/28707/5
   TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
   TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
   TCLLIBPATH: $SNAP/usr/lib/tcltk/$CRAFT_ARCH_TRIPLET_BUILD_FOR/tk8.6
