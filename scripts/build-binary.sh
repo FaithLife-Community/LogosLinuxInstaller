@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 start_dir="$PWD"
 script_dir="$(dirname "$0")"
 repo_root="$(dirname "$script_dir")"
@@ -16,5 +17,8 @@ if ! python -m coverage run -m unittest -b; then
     echo "Run 'python -m coverage run -m unittest -b -v' to see which test is failing"
     exit 1
 fi
+# Ensure the source in our python venv is up to date
+python3 -m pip install .
+# Build the installer binary
 pyinstaller --clean --log-level DEBUG ou_dedetai.spec
 cd "$start_dir"

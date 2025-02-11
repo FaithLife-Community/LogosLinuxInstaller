@@ -1,5 +1,26 @@
 # Changelog
 
+- 4.0.0-beta.7
+	- Fix appimage update button to accept wine 10 (#282, #275) [N. Marti]
+	- Fix crash when downloading resources (seqURIs must be non-null and non-empty) (#275 #262 #283) [N. Shaaban]
+- 4.0.0-beta.6
+	- Fix #256 [J. Goodman]
+	- Fix #269 [T. H. Wright]
+	- Fix #234 [N. Shaaban]
+	- Fix #187 [N. Shaaban]
+	- Fix #168 [N. Shaaban]
+	- Fix #155 [N. Shaaban]
+	- Fix #147 [N. Shaaban]
+	- Fix #253 [N. Marti]
+	- Fix #252 [N. Marti]
+	- Implemented network cache [N. Shaaban]
+	- Refactored configuration handling (no user action required) [N. Shaaban]
+  	- Fix #235 [T. H. Wright]
+- 4.0.0-beta.5
+	- Filter out broken Logos v39 release [N. Shaaban]
+	- Fix #17 [T. H. Wright]
+	- Make dependency lists more precise [M. Marti, N. Shaaban]
+	- Fix #230 [N. Shaaban]
 - 4.0.0-beta.4
 	- Fix #220 [N. Shaaban]
 - 4.0.0-beta.3

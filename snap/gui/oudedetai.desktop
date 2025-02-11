@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Ou Dedetai
+GenericName=FaithLife Wine App Installer
+Comment=Manages FaithLife Bible Software via Wine
+Exec=oudedetai
+Icon=${SNAP}/meta/gui/oudedetai.png
+Terminal=false
+Type=Application
+StartupWMClass=Ou Dedetai
+Categories=Education;
+Keywords=Logos;Verbum;Bible;Control;

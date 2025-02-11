@@ -20,13 +20,17 @@ fi
 echo "Warning: You will likely need to install build dependencies for your system."
 echo "e.g. Debian 12 requires:"
 echo "build-essential gdb lcov pkg-config libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev lzma lzma-dev tk-dev uuid-dev zlib1g-dev wget"
-read -r -p "Continue? [y/N] " ans
+read -r -p "Continue? [Y/n] " ans
 if [[ ${ans,,} != 'y' && $ans != '' ]]; then
     exit 1
 fi
 
+# Switch into a temporary directory
+TEMP_DIR=`mktemp -d`
+cd $TEMP_DIR
+
 # Download and build python3.12 from source.
-echo "Downloading $python_src..."
+echo "Downloading $python_src…"
 wget "$python_src"
 if [[ -r "$tarxz" ]]; then
     tar xf "$tarxz"
@@ -45,11 +49,8 @@ else
 fi
 
 # Install python.
-echo "Installing..."
-./configure \
-    --enable-shared \
-    --enable-loadable-sqlite-extensions \
-    --prefix="$prefix"
+echo "Installing…"
+./configure --enable-shared --prefix="$prefix"
 make
 sudo make install
 
@@ -66,3 +67,6 @@ if [[ "$prefix" == '/opt' ]]; then
     echo "LD_LIBRARY_PATH=${prefix}/lib $python_exec_path"
 fi
 cd ~
+# This fails to remove some __pycache__ files that sudo make install generated.
+# No worries, they'll be removed next system reboot (as it's a temp folder)
+rm -rf $TEMP_DIR 2> /dev/null

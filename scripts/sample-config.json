@@ -1,0 +1,11 @@
+{
+  "app_release_channel": "stable",
+  "faithlife_product": "Logos",
+  "faithlife_product_release": "37.2.0.12",
+  "faithlife_product_release_channel": "stable",
+  "faithlife_product_version": "10",
+  "install_dir": "/home/$USER/LogosBible10",
+  "wine_binary": "data/bin/wine-devel_9.19-x86_64.AppImage",
+  "winetricks_binary": "data/bin/winetricks"
+}
+

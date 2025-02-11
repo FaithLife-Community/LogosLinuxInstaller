@@ -38,7 +38,7 @@ echo "Virtual env setup as '${venv}/'. Activate with:"
 echo "source ${venv}/bin/activate"
 echo
 echo "Install runtime dependencies with:"
-echo "pip install -r requirements.txt"
+echo "pip install ."
 echo
-echo "To build locally install pyinstaller with:"
-echo "pip install pyinstaller"
+echo "To build locally install:"
+echo "pip install .[build]"

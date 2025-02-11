@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Verbum Bible
+GenericName=FaithLife Wine App Installer
+Comment=Manages FaithLife Bible Software via Wine (snap)
+Exec=oudedetai.verbum
+Icon=${SNAP}/meta/gui/verbum.png
+Terminal=false
+Type=Application
+StartupWMClass=verbum.exe
+Categories=Education;
+Keywords=Verbum;Bible;
