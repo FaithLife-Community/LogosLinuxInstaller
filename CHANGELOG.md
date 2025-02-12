@@ -1,5 +1,19 @@
 # Changelog
 
+- 4.0.0-beta.8
+	- Fix dynamic linking in subprocess calls. (#292 #293) [N. Shaaban]
+	- Remove need for manual dependency installation on arch/~~alpine~~/fedora (#143 #236 #293). Alpine still needs to be fixed [N. Shaaban]
+	- Fixes wine binary installations (#286 #288) [N. Marti]
+	- Removed need for winetricks, and removed it's subcommand. Added a wine subcommand (#254 #170 #177 #258 #267) [N. Marti]
+	- Fix wine version parsing when wine is compiled manually (#291) [N. Marti]
+	- Fix setting TUI Color scheme (#259 #297 #278 #302)  [T. H. Wright, N. Shaaban]
+	- Create snap definition (#239 #298) [N. Marti]
+	- Create a flatpak definition (#309 #307) [N. Shaaban]
+	- Default downloads to XDG_CACHE_HOME rather than ~/Downloads (#237 #298) [N. Marti]
+	- Fixes issue where WINE_EXE isn't respect on clean installs (#306) [N. Shaaban]
+	- Added nix-shell for running from source on NixOS. Desktop shortcuts won't get created. (#306) [N. Shaaban]
+	- Remove "Running Logos" status message in the TUI so menu is still interactive after starting Logos (#302) [N. Shaaban]
+	- Handle resize in more cases on the TUI (#304) [N. Shaaban]
 - 4.0.0-beta.7
 	- Fix appimage update button to accept wine 10 (#282, #275) [N. Marti]
 	- Fix crash when downloading resources (seqURIs must be non-null and non-empty) (#275 #262 #283) [N. Shaaban]
@@ -19,7 +33,7 @@
 - 4.0.0-beta.5
 	- Filter out broken Logos v39 release [N. Shaaban]
 	- Fix #17 [T. H. Wright]
-	- Make dependency lists more precise [M. Marti, N. Shaaban]
+	- Make dependency lists more precise [N. Marti, N. Shaaban]
 	- Fix #230 [N. Shaaban]
 - 4.0.0-beta.4
 	- Fix #220 [N. Shaaban]
