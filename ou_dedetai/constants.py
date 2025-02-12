@@ -59,7 +59,7 @@ LEGACY_CONFIG_FILES = [
     os.path.expanduser("~/.config/Logos_on_Linux/Logos_on_Linux.conf")
 ]
 LLI_AUTHOR = "Ferion11, John Goodman, T. H. Wright, N. Marti, N. Shaaban"
-LLI_CURRENT_VERSION = "4.0.0-beta.7"
+LLI_CURRENT_VERSION = "4.0.0-beta.8"
 DEFAULT_LOG_LEVEL = logging.WARNING
 LOGOS_BLUE = '#0082FF'
 LOGOS_GRAY = '#E7E7E7'
