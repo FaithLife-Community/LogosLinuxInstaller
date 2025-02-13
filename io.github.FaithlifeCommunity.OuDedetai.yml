@@ -77,7 +77,6 @@ modules:
           - export DIALOG=tk
           - export INSTALLDIR=$XDG_DATA_HOME/LogosBible10
           - /app/bin/oudedetai "$@"
-          # - /app/bin/oudedetai --run-installed-app || (/app/bin/oudedetai --install-app --passive --debug -y && /app/bin/oudedetai --run-installed-app)
       - type: script
         dest-filename: entrypoint.product.sh
         commands:
