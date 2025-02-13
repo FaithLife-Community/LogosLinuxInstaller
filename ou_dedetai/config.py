@@ -1000,7 +1000,7 @@ class Config:
     @property
     def download_dir(self) -> str:
         if self._download_dir is None:
-            self._download_dir = constants.DEFAULT_CACHE_DIR
+            self._download_dir = str(constants.CACHE_DIR)
         return self._download_dir
     
     @property
