@@ -7,5 +7,5 @@ Icon=${SNAP}/meta/gui/verbum.png
 Terminal=false
 Type=Application
 StartupWMClass=verbum.exe
-Categories=Education;
+Categories=Education;Spirituality;
 Keywords=Verbum;Bible;

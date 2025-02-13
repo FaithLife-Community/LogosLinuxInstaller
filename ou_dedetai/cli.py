@@ -63,7 +63,7 @@ class CLI(App):
         self.logos.start()
         # Keep the process running so that our background threads can keep running
         while self.logos.logos_state != LogosRunningState.STOPPED:
-            time.sleep(10)
+            time.sleep(3)
             self.logos.monitor()
 
     def stop_installed_app(self):

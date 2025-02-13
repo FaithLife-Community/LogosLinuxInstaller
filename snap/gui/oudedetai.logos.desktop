@@ -7,5 +7,5 @@ Icon=${SNAP}/meta/gui/logos.png
 Terminal=false
 Type=Application
 StartupWMClass=logos.exe
-Categories=Education;
+Categories=Education;Spirituality;
 Keywords=Logos;Bible;

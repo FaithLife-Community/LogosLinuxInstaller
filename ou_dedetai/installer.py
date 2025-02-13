@@ -8,7 +8,6 @@ from ou_dedetai.app import App
 
 from . import constants
 from . import network
-from . import system
 from . import utils
 from . import wine
 
@@ -351,7 +350,7 @@ def create_desktop_file(
     filename: str,
     app_name: str,
     exec_cmd: str,
-    icon_path: str,
+    icon_path: str | Path,
     wm_class: str,
 ):
     contents = f"""[Desktop Entry]
@@ -397,9 +396,7 @@ def create_launcher_shortcuts(app: App):
 
     if constants.RUNMODE == 'binary':
         lli_executable = f"{installdir}/{constants.BINARY_NAME}"
-    elif constants.RUNMODE == 'snap':
-        lli_executable = f"{os.getenv('SNAP')}/bin/{constants.BINARY_NAME}"
-    else:
+    elif constants.RUNMODE == "source":
         script = Path(sys.argv[0]).expanduser().resolve()
         repo_dir = None
         for p in script.parents:
@@ -414,6 +411,9 @@ def create_launcher_shortcuts(app: App):
         if not py_bin.is_file():
             app.exit("Could not locate python binary in virtual environment.")  # noqa: E501
         lli_executable = f"env DIALOG=tk {py_bin} {script}"
+    elif constants.RUNMODE in ["snap", "flatpak"]:
+        logging.info(f"Not creating launcher shortcuts, {constants.RUNMODE} already handles this") #noqa: E501
+        return
 
     for (src, path) in [(app_icon_src, app_icon_path), (logos_icon_src, logos_icon_path)]:  # noqa: E501
         if not path.is_file():
