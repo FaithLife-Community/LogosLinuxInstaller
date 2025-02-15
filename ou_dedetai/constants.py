@@ -24,9 +24,9 @@ def get_runmode() -> str:
 # Are we running from binary or src?
 RUNMODE = get_runmode()
 _snap = os.environ.get('SNAP')
-if hasattr(sys, '_MEIPASS') and (RUNMODE == 'binary' or RUNMODE == "flatpak"):
+if hasattr(sys, '_MEIPASS'):
     BUNDLE_DIR = Path(sys._MEIPASS)
-elif _snap is not None and RUNMODE == 'snap':
+elif _snap is not None:
     BUNDLE_DIR = Path(_snap)
 else:
     # We are running in normal development mode
@@ -53,7 +53,7 @@ CACHE_LIFETIME_HOURS = 12
 if RUNMODE == 'snap':
     _snap_user_common = os.getenv('SNAP_USER_COMMON')
     if _snap_user_common is None:
-        raise ValueError("SNAP_USER_COMMON environment MUST be set when running a snap")
+        raise ValueError("SNAP_USER_COMMON environment MUST exist when running a snap.")
     CACHE_DIR = Path(_snap_user_common) / '.cache' / 'FaithLife-Community'
     del _snap_user_common
 else:
