@@ -111,8 +111,8 @@ modules:
           Terminal=false
           Type=Application
           StartupWMClass=Ou Dedetai
-          Categories=Education;Spirituality;
-          Keywords=Logos;Verbum;Bible;Control;
+          Categories=Education;Spirituality;Languages;Literature;Maps;
+          Keywords=Logos;Verbum;FaithLife;Bible;Control;Christianity;Catholic;Jesus;
       - type: inline
         dest-filename: logos.desktop
         contents: |
@@ -125,8 +125,8 @@ modules:
           Terminal=false
           Type=Application
           StartupWMClass=logos.exe
-          Categories=Education;Spirituality;
-          Keywords=Logos;Bible;
+          Categories=Education;Spirituality;Languages;Literature;Maps;
+          Keywords=Logos;FaithLife;Bible;Christianity;Jesus;
       - type: inline
         dest-filename: verbum.desktop
         contents: |
@@ -139,8 +139,8 @@ modules:
           Terminal=false
           Type=Application
           StartupWMClass=verbum.exe
-          Categories=Education;Spirituality;
-          Keywords=Verbum;Bible;
+          Categories=Education;Spirituality;Languages;Literature;Maps;
+          Keywords=Verbum;FaithLife;Bible;Christianity;Catholic;Jesus;
       - type: inline
         dest-filename: appdata.xml
         contents: |

@@ -7,5 +7,5 @@ Icon=${SNAP}/meta/gui/oudedetai.png
 Terminal=false
 Type=Application
 StartupWMClass=Ou Dedetai
-Categories=Education;Spirituality;
-Keywords=Logos;Verbum;Bible;Control;
+Categories=Education;Spirituality;Languages;Literature;Maps;
+Keywords=Logos;Verbum;FaithLife;Bible;Control;Christianity;Catholic;Jesus;
