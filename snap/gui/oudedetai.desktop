@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Ou Dedetai
-GenericName=FaithLife Wine App Installer
-Comment=Manages FaithLife Bible Software via Wine
+GenericName=FaithLife App Installer
+Comment=Installs and manages either Logos or Verbum via Wine and Snap. Community supported.
 Exec=oudedetai
 Icon=${SNAP}/meta/gui/oudedetai.png
 Terminal=false

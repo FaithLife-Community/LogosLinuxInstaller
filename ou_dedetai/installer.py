@@ -349,14 +349,16 @@ def create_wine_appimage_symlinks(app: App):
 def create_desktop_file(
     filename: str,
     app_name: str,
+    generic_name: str,
+    comment: str,
     exec_cmd: str,
     icon_path: str | Path,
     wm_class: str,
 ):
     contents = f"""[Desktop Entry]
 Name={app_name}
-GenericName=FaithLife Wine App Installer
-Comment=Manages FaithLife Bible Software via Wine
+GenericName={generic_name}
+Comment={comment}
 Exec={exec_cmd}
 Icon={icon_path}
 Terminal=false
@@ -425,7 +427,9 @@ def create_launcher_shortcuts(app: App):
     # Create Logos/Verbum desktop file.
     logos_path = create_desktop_file(
         f"{flproduct}Bible.desktop",
-        f"{flproduct}Bible",
+        f"{flproduct}",
+        "Bible",
+        "Runs Faithlife Bible Software via Wine (snap). Community supported.",
         f"{lli_executable} --run-installed-app",
         logos_icon_path,
         f"{flproduct.lower()}.exe",
@@ -435,6 +439,8 @@ def create_launcher_shortcuts(app: App):
     app_path = create_desktop_file(
         f"{constants.BINARY_NAME}.desktop",
         constants.APP_NAME,
+        "FaithLife App Installer",
+        "Installs and manages either Logos or Verbum via wine. Community supported.",
         lli_executable,
         app_icon_path,
         constants.BINARY_NAME,

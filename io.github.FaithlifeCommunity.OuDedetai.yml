@@ -105,7 +105,7 @@ modules:
           [Desktop Entry]
           Name=Ou Dedetai
           GenericName=FaithLife Wine App Installer
-          Comment=Manages FaithLife Bible Software via Wine
+          Comment=Installs and manages either Logos or Verbum via Wine and Flatpak. Community supported.
           Exec=/app/bin/entrypoint.sh
           Icon=/app/share/icons/hicolor/512x512/apps/oudedetai.png
           Terminal=false
@@ -119,7 +119,7 @@ modules:
           [Desktop Entry]
           Name=Logos Bible
           GenericName=Logos
-          Comment=Launches FaithLife's Logos Bible Software via Wine
+          Comment=Runs Faithlife Bible Software via Wine and Flatpak. Community supported.
           Exec=/app/bin/entrypoint.product.sh Logos
           Icon=/app/share/icons/hicolor/512x512/apps/logos.png
           Terminal=false
@@ -133,7 +133,7 @@ modules:
           [Desktop Entry]
           Name=Verbum Bible
           GenericName=Verbum
-          Comment=Launches FaithLife's Verbum Bible Software via Wine
+          Comment=Runs Faithlife Bible Software via Wine and Flatpak. Community supported.
           Exec=/app/bin/entrypoint.product.sh Verbum
           Icon=/app/share/icons/hicolor/512x512/apps/verbum.png
           Terminal=false
