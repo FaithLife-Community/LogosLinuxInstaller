@@ -12,7 +12,7 @@ echo "Starting $FLPRODUCT"
 export TARGETVERSION="10"
 
 # Ensure Faithlife app is installed.
-app_exe="$(find "${INSTALLDIR}/wine64_bottle" -wholename "*${FLPRODUCT}/${FLPRODUCT}.exe" 2>/dev/null)"
+app_exe="$(find "${INSTALLDIR}/data/wine64_bottle" -wholename "*${FLPRODUCT}/${FLPRODUCT}.exe" 2>/dev/null)"
 if [[ -z $app_exe ]]; then
     oudedetai --install-app --assume-yes $@
     ec=$?
