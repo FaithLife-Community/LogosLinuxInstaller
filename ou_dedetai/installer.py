@@ -362,8 +362,8 @@ Icon={icon_path}
 Terminal=false
 Type=Application
 StartupWMClass={wm_class}
-Categories=Education;
-Keywords=Logos;Verbum;Bible;Control;
+Categories=Education;Spirituality;Languages;Literature;Maps;
+Keywords=Logos;Verbum;FaithLife;Bible;Control;Christianity;Jesus;
 """
     local_share = Path.home() / '.local' / 'share'
     xdg_data_home = Path(os.getenv('XDG_DATA_HOME', local_share))
