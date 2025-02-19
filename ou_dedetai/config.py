@@ -85,6 +85,7 @@ class LegacyConfiguration:
         if not utils.file_exists(config_file_path):
             for legacy_config in constants.LEGACY_CONFIG_FILES:
                 if utils.file_exists(legacy_config):
+                    Path(config_file_path).parent.mkdir(parents=True, exist_ok=True)
                     os.rename(legacy_config, config_file_path)
                     break
         # This may be a config that used to be in the legacy location
