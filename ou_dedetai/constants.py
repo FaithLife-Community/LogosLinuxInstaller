@@ -59,6 +59,7 @@ if RUNMODE == 'snap':
 else:
     CACHE_DIR = Path(os.getenv('XDG_CACHE_HOME', Path.home() / '.cache' / 'FaithLife-Community')) #noqa: E501
 
+XDG_DATA_HOME = Path(os.getenv('XDG_DATA_HOME', Path.home() / '.local/share' / 'FaithLife-Community'))
 CONFIG_DIR = os.getenv("XDG_CONFIG_HOME", "~/.config") + "/FaithLife-Community"
 STATE_DIR = os.getenv("XDG_STATE_HOME", "~/.local/state") + "/FaithLife-Community"
 
