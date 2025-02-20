@@ -699,7 +699,7 @@ class Config:
 
     @property
     def install_dir_default(self) -> str:
-        return f"{str(Path.home())}/{self.faithlife_product}Bible{self.faithlife_product_version}"  # noqa: E501
+        return f"{str(constants.XDG_DATA_HOME)}/{constants.BINARY_NAME}"  # noqa: E501
 
     @property
     def install_dir(self) -> str:
