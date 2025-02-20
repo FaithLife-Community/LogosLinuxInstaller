@@ -386,7 +386,6 @@ class PackageManager:
     query_prefix: str
 
     packages: str
-    logos_9_packages: str
     
     incompatible_packages: str
     # For future expansion:
@@ -407,8 +406,6 @@ def get_package_manager() -> PackageManager | None:
     query_command: list[str]
     query_prefix: str
     packages: str
-    # FIXME: Missing Logos 9 Packages
-    logos_9_packages: str = ""
     incompatible_packages: str
 
     if shutil.which('apt') is not None:  # debian, ubuntu, & derivatives
@@ -440,7 +437,6 @@ def get_package_manager() -> PackageManager | None:
                 "libfuse3-3 "  # appimages
                 "binutils wget winbind "  # wine
             )
-        logos_9_packages = ""  
         incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('dnf') is not None:  # rhel, fedora
         install_command = ["dnf", "install", "-y"]
@@ -518,7 +514,6 @@ def get_package_manager() -> PackageManager | None:
                 "libva mpg123 v4l-utils "  # video
                 "libxslt sqlite "  # misc
             )
-        logos_9_packages = ""
         incompatible_packages = ""  # appimagelauncher handled separately
     elif os_name == "org.freedesktop.platform":
         # Flatpak
@@ -539,7 +534,6 @@ def get_package_manager() -> PackageManager | None:
         remove=remove_command,
         incompatible_packages=incompatible_packages,
         packages=packages,
-        logos_9_packages=logos_9_packages,
         query_prefix=query_prefix
     )
     logging.debug(f"Package Manager: {output}")
@@ -783,9 +777,6 @@ def install_dependencies(app: App, target_version=10):  # noqa: E501
     package_list = package_manager.packages.split()
 
     bad_package_list = package_manager.incompatible_packages.split()
-
-    if target_version == 9:
-        package_list.extend(package_manager.logos_9_packages.split())
 
     logging.debug("Querying packages…")
     missing_packages = query_packages(
