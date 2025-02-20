@@ -113,38 +113,9 @@ def ensure_wine_executables(app: App):
     logging.debug(f"> {app.conf.wineserver_binary=}")
 
 
-def ensure_premade_winebottle_download(app: App):
-    app.installer_step_count += 1
-    ensure_wine_executables(app=app)
-    app.installer_step += 1
-    if app.conf.faithlife_product_version != '9':
-        return
-    app.status(f"Ensuring {constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME} bottle is downloaded…")  # noqa: E501
-
-    downloaded_file = utils.get_downloaded_file_path(app.conf.download_dir, constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME)  # noqa: E501
-    if not downloaded_file:
-        downloaded_file = Path(app.conf.download_dir) / app.conf.faithlife_installer_name #noqa: E501
-    network.logos_reuse_download(
-        constants.LOGOS9_WINE64_BOTTLE_TARGZ_URL,
-        constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME,
-        app.conf.download_dir,
-        app=app,
-    )
-    # Install bottle.
-    bottle = Path(app.conf.wine_prefix)
-    if not bottle.is_dir():
-        # FIXME: this code seems to be logos 9 specific, why is it here?
-        utils.install_premade_wine_bottle(
-            app.conf.download_dir,
-            f"{app.conf.install_dir}/data"
-        )
-
-    logging.debug(f"> '{downloaded_file}' exists?: {Path(downloaded_file).is_file()}")  # noqa: E501
-
-
 def ensure_product_installer_download(app: App):
     app.installer_step_count += 1
-    ensure_premade_winebottle_download(app=app)
+    ensure_wine_executables(app=app)
     app.installer_step += 1
     app.status(f"Ensuring {app.conf.faithlife_product} installer is downloaded…")
 
@@ -176,19 +147,13 @@ def ensure_wineprefix_init(app: App):
     logging.debug(f"{init_file=}")
     if not init_file.is_file():
         logging.debug(f"{init_file} does not exist")
-        if app.conf.faithlife_product_version == '9':
-            utils.install_premade_wine_bottle(
-                app.conf.download_dir,
-                f"{app.conf.install_dir}/data",
-            )
-        else:
-            logging.debug("Initializing wineprefix.")
-            process = wine.initializeWineBottle(app.conf.wine64_binary, app)
-            if process:
-                process.wait()
-            # wine.light_wineserver_wait()
-            wine.wineserver_wait(app)
-            logging.debug("Wine init complete.")
+        logging.debug("Initializing wineprefix.")
+        process = wine.initializeWineBottle(app.conf.wine64_binary, app)
+        if process:
+            process.wait()
+        # wine.light_wineserver_wait()
+        wine.wineserver_wait(app)
+        logging.debug("Wine init complete.")
     logging.debug(f"> {init_file} exists?: {init_file.is_file()}")
 
 

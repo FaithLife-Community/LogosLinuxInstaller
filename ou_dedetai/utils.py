@@ -122,12 +122,10 @@ def install_dependencies(app: App):
     if targetversion == 10:
         system.install_dependencies(app, target_version=10)  # noqa: E501
     elif targetversion == 9:
-        system.install_dependencies(
-            app,
-            target_version=9
-        )
+        app.status("Logos 9 not supported.", 100)
+        app.exit("Logos 9 not supported.", False)
     else:
-        logging.error(f"Unknown Target version, expecting 9 or 10 but got: {app.conf.faithlife_product_version}.") #noqa: E501
+        logging.error(f"Unknown Target version, expecting 10 but got: {app.conf.faithlife_product_version}.") #noqa: E501
 
     app.status("Installed dependencies.", 100)
 
@@ -305,13 +303,6 @@ def get_latest_folder(folder_path):
     logging.info(f"Latest folder: {latest}")
     return latest
 
-
-def install_premade_wine_bottle(srcdir, appdir):
-    logging.info(f"Extracting: '{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}' into: {appdir}")  # noqa: E501
-    shutil.unpack_archive(
-        f"{srcdir}/{constants.LOGOS9_WINE64_BOTTLE_TARGZ_NAME}",
-        appdir
-    )
 
 class VersionComparison(enum.Enum):
     OUT_OF_DATE = enum.auto()
