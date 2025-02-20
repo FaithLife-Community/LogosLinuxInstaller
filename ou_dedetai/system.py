@@ -719,12 +719,12 @@ def postinstall_dependencies_steamos(superuser_command: str):
 def postinstall_dependencies_alpine(superuser_command: str):
     user = os.getlogin()
     command = [
-        superuser_command, "modprobe", "fuse", "&&",
-        superuser_command, "rc-update", "add", "fuse", "boot", "&&",
-        superuser_command, "sed", "-i", "'s/#user_allow_other/user_allow_other/g'", "/etc/fuse.conf", "&&", #noqa: E501
-        superuser_command, "addgroup", "fuse", "&&",
-        superuser_command, "adduser", f"{user}", "fuse", "&&",
-        superuser_command, "rc-service", "fuse", "restart",
+        superuser_command, "modprobe ", "fuse ", "&& ",
+        superuser_command, "bash ", "-c ", "if \( ! rc-service -e fuse ); then rc-update add fuse boot ", "&& ",
+        superuser_command, "sed ", "-i ", "'s/#user_allow_other/user_allow_other/g' ", "/etc/fuse.conf ", "&& ", #noqa: E501
+        superuser_command, "addgroup ", "fuse ", "&& ",
+        superuser_command, "adduser ", f"{user} ", "fuse ", "&& ",
+        superuser_command, "bash ", "-c ", "if \( ! rc-service -e fuse ); then rc-service fuse restart ", "&& ",
     ]
     return command
 
