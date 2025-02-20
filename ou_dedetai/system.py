@@ -480,11 +480,11 @@ def get_package_manager() -> PackageManager | None:
         query_command = ["apk", "list", "-i"]
         query_prefix = ''
         packages = (
-            "bash bash-completion"  # bash support
-            "gcompat"  # musl to glibc
-            "fuse-common fuse"  # appimages
-            "wget curl"  # network
-            "samba sed grep gawk bash bash-completion"  # other
+            "bash bash-completion "  # bash support
+            "gcompat "  # musl to glibc
+            "fuse-common fuse "  # appimages
+            "wget curl "  # network
+            "samba sed grep gawk bash bash-completion "  # other
         )
         incompatible_packages = ""  # appimagelauncher handled separately
     elif shutil.which('pamac') is not None:  # manjaro
