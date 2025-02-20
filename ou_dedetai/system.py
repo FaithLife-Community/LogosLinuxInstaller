@@ -482,7 +482,7 @@ def get_package_manager() -> PackageManager | None:
         packages = (
             "bash bash-completion "  # bash support
             "gcompat "  # musl to glibc
-            "fuse-common fuse "  # appimages
+            "fuse-common fuse fuse3 "  # appimages
             "wget curl "  # network
             "samba sed grep gawk bash bash-completion "  # other
         )
