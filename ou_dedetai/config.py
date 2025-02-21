@@ -396,7 +396,21 @@ class PersistentConfiguration:
             faithlife_product_logging=faithlife_product_logging,
             _legacy=legacy
         )
-    
+
+    def write_json_file(self, output: dict, config_file_path: str) -> None:
+        logging.info(f"Writing config to {config_file_path}")
+        os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+        try:
+            with open(config_file_path, 'w') as config_file:
+                # Write this into a string first to avoid partial writes
+                # if encoding fails (which it shouldn't)
+                json_str = json.dumps(output, indent=4, sort_keys=True)
+                config_file.write(json_str)
+                config_file.write('\n')
+        except IOError as e:
+            logging.error(f"Error writing to file {config_file_path}: {e}")  # noqa: E501
+            # Continue, the installer can still operate even if it fails to write.
+
     def write_config(self) -> None:
         config_file_path = LegacyConfiguration.config_file_path()
         # Copy the values into a flat structure for easy json dumping
@@ -414,9 +428,6 @@ class PersistentConfiguration:
             ):
                 del output[k]
 
-        logging.info(f"Writing config to {config_file_path}")
-        os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
-
         if self.install_dir is not None:
             # Ensure all paths stored are relative to install_dir
             for k, v in output.items():
@@ -427,19 +438,12 @@ class PersistentConfiguration:
                 if (isinstance(v, str) and v.startswith(self.install_dir)): #noqa: E501
                     output[k] = utils.get_relative_path(v, self.install_dir)
 
-        try:
-            with open(config_file_path, 'w') as config_file:
-                # Write this into a string first to avoid partial writes
-                # if encoding fails (which it shouldn't)
-                json_str = json.dumps(output, indent=4, sort_keys=True)
-                config_file.write(json_str)
-                config_file.write('\n')
-        except IOError as e:
-            logging.error(f"Error writing to config file {config_file_path}: {e}")  # noqa: E501
-            # Continue, the installer can still operate even if it fails to write.
+            portable_config_path = os.path.expanduser(self.install_dir + f"/{constants.BINARY_NAME}.json")
+            self.write_json_file(output, portable_config_path)
 
+        self.write_json_file(output, config_file_path)
 
-# Needed this logic outside this class too for before when when the app is initialized
+# Needed this logic outside this class too for before when the app is initialized
 def get_wine_prefix_path(install_dir: str) -> str:
     return f"{install_dir}/data/wine64_bottle"
 
