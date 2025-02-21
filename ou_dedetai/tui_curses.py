@@ -13,12 +13,13 @@ def wrap_text(app: App, text: str) -> list[str]:
     if not isinstance(app, TUI):
         raise ValueError("curses MUST be used with the TUI")
     # Turn text into wrapped text, line by line, centered
+    column_width = app.window_width - (app.terminal_margin * 2)
     if "\n" in text:
         lines = text.splitlines()
-        wrapped_lines = [textwrap.fill(line, app.window_width - (app.terminal_margin * 2)) for line in lines] #noqa: E501
+        wrapped_lines = [textwrap.fill(line, column_width) for line in lines] #noqa: E501
         return wrapped_lines
     else:
-        wrapped_text = textwrap.fill(text, app.window_width - (app.terminal_margin * 2))
+        wrapped_text = textwrap.fill(text, column_width)
         return wrapped_text.splitlines()
 
 
@@ -60,10 +61,11 @@ def text_centered(app: App, text: str, start_y=0) -> tuple[int, list[str]]:
     text_lines = wrap_text(app, text)
     text_start_y = start_y
     text_width = max(len(line) for line in text_lines)
+    column_margin = app.terminal_margin * 2
     for i, line in enumerate(text_lines):
         if text_start_y + i < app.window_height:
             x = app.window_width // 2 - text_width // 2
-            write_line(app, stdscr, text_start_y + i, x, line, app.window_width, curses.A_BOLD) #noqa: E501
+            write_line(app, stdscr, text_start_y + i, max(column_margin, x), line, app.window_width - (column_margin * 2), curses.A_BOLD) #noqa: E501  # column_margin is doubled to account for the left side's column_margin
 
     return text_start_y, text_lines
 

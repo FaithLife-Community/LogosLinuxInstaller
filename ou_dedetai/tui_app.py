@@ -69,7 +69,7 @@ class TUI(App):
         self.appimage_e = threading.Event()
         self._installer_thread: Optional[threading.Thread] = None
 
-        self.terminal_margin = 0
+        self.terminal_margin = 2
         self.resizing = False
         # These two are updated in set_window_dimensions
         self.console_log_lines = 0
