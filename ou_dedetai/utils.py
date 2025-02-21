@@ -117,7 +117,7 @@ def install_dependencies(app: App):
         targetversion = int(app.conf.faithlife_product_version)
     else:
         targetversion = 10
-    app.status(f"Checking Logos {str(targetversion)} dependencies…")
+    app.status(f"Checking {app.conf.faithlife_product} {str(targetversion)} dependencies…")
 
     if targetversion == 10:
         system.install_dependencies(app, target_version=10)  # noqa: E501
