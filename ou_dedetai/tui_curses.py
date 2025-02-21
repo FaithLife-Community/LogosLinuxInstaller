@@ -13,14 +13,15 @@ def wrap_text(app: App, text: str) -> list[str]:
     if not isinstance(app, TUI):
         raise ValueError("curses MUST be used with the TUI")
     # Turn text into wrapped text, line by line, centered
-    column_width = app.window_width - (app.terminal_margin * 2)
+    column_margin = app.terminal_margin * 2
+    column_width = app.window_width - column_margin
     if "\n" in text:
         lines = text.splitlines()
-        wrapped_lines = [textwrap.fill(line, column_width) for line in lines] #noqa: E501
-        return wrapped_lines
+        wrapped_lines = [textwrap.fill(line, column_width).splitlines() for line in lines] #noqa: E501
+        wrapped_text = [wrapped for sublist in wrapped_lines for wrapped in sublist]
     else:
-        wrapped_text = textwrap.fill(text, column_width)
-        return wrapped_text.splitlines()
+        wrapped_text = textwrap.fill(text, column_width).splitlines()
+    return wrapped_text
 
 
 def write_line(app: App, stdscr: curses.window, start_y, start_x, text, char_limit, attributes=curses.A_NORMAL): #noqa: E501
