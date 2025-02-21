@@ -230,8 +230,10 @@ def get_wine_options(app: App) -> List[str]:  # noqa: E501
         appimages.remove(recomended_appimage)
 
     # Add AppImages to list
-    wine_binary_options.append(recomended_appimage)
-    wine_binary_options.extend(appimages)
+    os_name, _ = system.get_os()
+    if os_name != "alpine":
+        wine_binary_options.append(recomended_appimage)
+        wine_binary_options.extend(appimages)
 
     sorted_binaries = sorted(list(set(binaries)))
     logging.debug(f"{sorted_binaries=}")
