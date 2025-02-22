@@ -616,8 +616,7 @@ class Config:
     def faithlife_product_version(self) -> str:
         if self._overrides.faithlife_product_version is not None:
             return self._overrides.faithlife_product_version
-        if self.conf.faithlife_product_version is None:
-            return "10"  # Keep following for historical reasons.
+        return "10"  # Keep following for historical reasons.
         #question = f"Which version of {self.faithlife_product} should the script install?: "  # noqa: E501
         #options = constants.FAITHLIFE_PRODUCT_VERSIONS
         #return self._ask_if_not_found("faithlife_product_version", question, options, []) # noqa: E501
