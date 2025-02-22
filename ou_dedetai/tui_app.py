@@ -68,6 +68,7 @@ class TUI(App):
         self.appimage_q: Queue[str] = Queue()
         self.appimage_e = threading.Event()
         self._installer_thread: Optional[threading.Thread] = None
+        self._cancel_install_event = threading.Event()
 
         self.terminal_margin = 2
         self.resizing = False
@@ -466,6 +467,7 @@ class TUI(App):
             0: self.main_menu_select,
             1: self.custom_appimage_select,
             2: self.handle_ask_response,
+            3: self.installer_menu_select,
             8: self.waiting,
             10: self.waiting_releases,
             11: self.wineconfig_menu_select,
@@ -481,7 +483,7 @@ class TUI(App):
         }
 
         # Capture menu exiting before processing in the rest of the handler
-        if screen_id not in [0, 2] and (choice in ["Return to Main Menu", "Exit"]):
+        if screen_id not in [0] and (choice in ["Return to Main Menu", "Exit"]):
             if choice == "Return to Main Menu":
                 self.tui_screens = []
             self.reset_screen()
@@ -517,32 +519,19 @@ class TUI(App):
         self.choice_q.put("Return to Main Menu")
 
     def main_menu_select(self, choice):
-        def _install():
-            try:
-                installer.install(app=self)
-                self.go_to_main_menu()
-            except ReturningToMainMenu:
-                pass
         if choice is None or choice == "Exit":
             logging.info("Exiting installation.")
             self.tui_screens = []
             self.llirunning = False
         elif choice.startswith("Install"):
             self.reset_screen()
-            self.installer_step = 0
-            self.installer_step_count = 0
-            if self._installer_thread is not None:
-                # The install thread should have completed with ReturningToMainMenu
-                # Check just in case
-                if self._installer_thread.is_alive():
-                    raise Exception("Previous install is still running")
-                # Reset user choices and try again!
-                self.conf.faithlife_product = None # type: ignore[assignment]
-            self._installer_thread = self.start_thread(
-                _install,
-                daemon_bool=True,
+            self.stack_menu(
+                3,
+                self.todo_q,
+                self.todo_e,
+                "Installer Choice",
+                self.set_installer_choice_menu_options(),
             )
-
         elif choice.startswith(f"Update {constants.APP_NAME}"):
             utils.update_to_latest_lli_release(self)
         elif self.conf._raw.faithlife_product and choice == f"Run {self.conf._raw.faithlife_product}": #noqa: E501
@@ -583,6 +572,49 @@ class TUI(App):
             self.status("Changing color scheme")
             self.conf.cycle_curses_color_scheme()
             self.go_to_main_menu()
+
+    def installer_menu_select(self, choice):
+        def _install():
+            try:
+                if self._cancel_install_event.is_set():
+                    return
+                installer.install(app=self)
+                if self._cancel_install_event.is_set():
+                    return
+                self.go_to_main_menu()
+            except ReturningToMainMenu:
+                pass
+
+        if self._installer_thread is not None:
+            # The install thread should have completed with ReturningToMainMenu
+            # Check just in case
+            if self._installer_thread.is_alive():
+                try:
+                    self.conf.faithlife_product = None  # type: ignore[assignment]
+                    self.conf.faithlife_product_version = None
+                    self.conf.faithlife_product_release = None
+                    self.conf.install_dir = None
+                    self._cancel_install_event.set()
+                    self._installer_thread.join(timeout=0.2)
+                    self._installer_thread = None
+                except:
+                    raise Exception("Previous install is still running")
+
+        self.reset_screen()
+        self.installer_step = 0
+        self.installer_step_count = 0
+
+        if choice.startswith("Default"):
+            logging.debug(f"{self.conf.faithlife_product=}")
+            self.conf._overrides.assume_yes = True
+        elif choice.startswith("Custom"):
+            pass  # Stub
+
+        self._cancel_install_event.clear()
+        self._installer_thread = self.start_thread(
+            _install,
+            daemon_bool=True,
+        )
 
     def wineconfig_menu_select(self, choice):
         if choice == "Set Renderer":
@@ -889,6 +921,20 @@ class TUI(App):
         labels.extend(labels_options)
 
         labels.append("Exit")
+
+        options = self.which_dialog_options(labels)
+
+        return options
+
+    def set_installer_choice_menu_options(self):
+        labels = []
+        labels_support = [
+            "Default",
+            "Custom",
+        ]
+        labels.extend(labels_support)
+
+        labels.append("Return to Main Menu")
 
         options = self.which_dialog_options(labels)
 
